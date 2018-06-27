@@ -1,0 +1,43 @@
+#!/bin/bash -e
+
+function authentication_token {
+  user="$1"
+  api_key="$2"
+  raw_token="$(curl -k -X POST -d $api_key https://localhost/authn/test/$user/authenticate)"
+  token=$(echo -n $raw_token | base64 | tr -d '\r\n')
+  echo "$token"
+}
+
+function user_authentication_token {
+  user="$1"
+  api_key="$(curl -k --user admin:secret https://localhost/authn/test/login)"
+  token=$(authentication_token $user $api_key)
+  echo "$token"
+}
+
+# Authenticate with a user
+auth_token=$(user_authentication_token "admin")
+
+secret="production/myapp/database/username"
+encoded_secret="production%2Fmyapp%2Fdatabase%2Fusername"
+
+# Set a variable
+resp=$(curl -k \
+      -X POST \
+      -H "Authorization: Token token=\"$auth_token\"" \
+      --data "foo-bar" \
+      "https://localhost/secrets/test/variable/$encoded_secret")
+
+# Retrieve variable value
+resp=$(curl -k \
+      -H "Authorization: Token token=\"$auth_token\"" \
+      "https://localhost/secrets/test/variable/$encoded_secret")
+
+echo "$resp"
+
+
+# Authenticate with a host
+host="host%2Ftest-host-1"
+api_key=""
+auth_token=$(authentication_token $host $api_key)
+echo "$auth_token"

@@ -1,0 +1,47 @@
+#!/bin/bash -e
+
+function finish {
+  docker-compose down -v
+  rm -rf cli_cache
+}
+trap finish EXIT
+
+function print_help() {
+  cat << EOF
+NAME
+    Starts and configures a Conjur Appliance. Once Conjur is configured, the
+    appliance logs are streamed.
+
+
+SYNOPSIS
+    cli [global options] command [command options] [arguments...]
+GLOBAL OPTIONS
+    --help                                    - Show this message
+
+    --skip-pull                               - Does not pull a fresh Conjur master before starting
+
+EOF
+exit
+}
+
+PULL_ARGS="--pull"
+while true ; do
+  case "$1" in
+    --skip-pull ) PULL_ARGS="" ; shift ;;
+    -h | --help ) print_help ; shift ;;
+     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+  esac
+done
+
+if [ "$PULL_ARGS" == "--pull" ]; then
+  docker pull registry2.itci.conjur.net/conjur-appliance:5.0-stable
+  docker pull conjurinc/cli5
+fi
+
+docker-compose up -d --no-deps conjur
+
+docker-compose exec conjur bash -c "
+  evoke configure master -h conjur-master.local -p secret test
+"
+
+docker-compose logs -f conjur
