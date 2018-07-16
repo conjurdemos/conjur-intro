@@ -29,70 +29,83 @@ IAM Role
 
 
 ## Actions
-Created Role (conjur-role) with policy:
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": ["s3:ListBucket"],
-      "Resource": ["arn:aws:s3:::conjur-development-releases"]
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "s3:GetObject"
-      ],
-      "Resource": ["arn:aws:s3:::conjur-development-releases/*"]
-    }
-  ]
-}
-```
+* Pull down most recent Conjur Appliance and save it to a `tar` file.
+  ```sh
+  $ docker pull registry.tld/conjur-appliance:5.0.0-rc1
+  $ docker save -o conjur-v5-rc1.tar registry.tld/conjur-appliance:5.0.0-rc1
+  ```
+* Create an S3 bucket (ex. `conjur-development-releases`)
+* Created Role (`conjur-role`) with policy permission to access the S3 bucket to download the Conjur Image:
+  ```json
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": ["s3:ListBucket"],
+        "Resource": ["arn:aws:s3:::conjur-development-releases"]
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "s3:GetObject"
+        ],
+        "Resource": ["arn:aws:s3:::conjur-development-releases/*"]
+      }
+    ]
+  }
+  ```
 
-docker save -o conjur-v5-rc1.tar registry.tld/conjur-appliance:5.0.0-rc1
+* Upload tar (ex. `conjur-v5-rc1.tar`) into the S3 bucket.
+* Make sure you have the pem for EC2 instance:
+  ```sh
+  $ cp ~/Downloads/jason-conjur-test.pem .
+  $ chmod 600 jason-conjur-test.pem
+  $ ssh -i jason-conjur-test.pem ubuntu@34.232.68.235
 
-cp ~/Downloads/jason-conjur-test.pem .
-chmod 600 jason-conjur-test.pem
-ssh -i jason-conjur-test.pem ubuntu@34.232.68.235
+  # run on EC2 Instance
+  $ sudo apt-get update
+  $ sudo apt install -y awscli
+  $ sudo mkdir /src
+  $ sudo aws s3 cp s3://conjur-development-releases/conjur-v5-rc1.tar /src/
 
-sudo apt-get update
-sudo apt install -y awscli
-sudo mkdir /src
-sudo aws s3 cp s3://jv-conjur-demo/conjur-v5-rc1.tar /src/
+  $ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+  $ sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+  $ sudo apt-get update
+  $ sudo apt-get install -y docker-ce
 
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-sudo apt-get update
-sudo apt-get install -y docker-ce
+  $ sudo docker load --input /src/conjur-v5-rc1.tar
+  $ sudo docker run --name conjur -d --restart=always --security-opt seccomp:unconfined -p "443:443" -e "CONJUR_AUTHENTICATORS=authn-iam/staging" registry.tld/conjur-appliance:5.0.0-rc1
+  sudo docker exec conjur evoke configure master -h ec2-34-224-2-198.compute-1.amazonaws.com -p secret demo
+  ```
 
-sudo docker load --input /src/conjur-v5-rc1.tar
-sudo docker run --name conjur -d --restart=always --security-opt seccomp:unconfined -p "443:443" -e "CONJUR_AUTHENTICATORS=authn-iam/staging" registry.tld/conjur-appliance:5.0.0-rc1
-sudo docker exec conjur evoke configure master -h ec2-34-224-2-198.compute-1.amazonaws.com -p secret demo
+* Load Policy (locally, after setting the `host` variable in the `./cli` file)
+  ```
+  ./cli conjur policy load --replace root policy/users.yml
+  ./cli conjur policy load root policy/policy.yml
+  ./cli conjur policy load root policy/staging-iam-policy.yml
+  ./cli conjur policy load root policy/staging-myapp.yml
+  ./cli conjur policy load staging policy/database.yml
+  ./cli conjur policy load root policy/entitlements.yml
+  ./cli conjur variable values add staging/postgres-database/url test-url
+  ```
 
+Launch a remote node
+  ```
+  $ ssh -i jason-conjur-test.pem ubuntu@52.87.89.237
+  $ sudo apt-get update
+  $ sudo apt-get install -y ruby ruby-dev build-essential
 
-# Load Policy (locally, after setting the `host` variable in the `./cli` file)
-./cli conjur policy load --replace root policy/users.yml
-./cli conjur policy load root policy/policy.yml
-./cli conjur policy load root policy/staging-iam-policy.yml
-./cli conjur policy load root policy/staging-myapp.yml
-./cli conjur policy load staging policy/database.yml
-./cli conjur policy load root policy/entitlements.yml
-./cli conjur variable values add staging/postgres-database/url test-url
-
-# Remote node
-ssh -i jason-conjur-test.pem ubuntu@52.87.89.237
-sudo apt-get update
-sudo apt-get install -y ruby ruby-dev build-essential
-
-scp -i jason-conjur-test.pem cli_cache/conjur-demo.pem ubuntu@52.87.89.237:/home/ubuntu/conjur-demo.pem
+  $ scp -i jason-conjur-test.pem cli_cache/conjur-demo.pem ubuntu@52.87.89.237:/home/ubuntu/conjur-demo.pem
 
 
-sudo gem install sinatra --no-rdoc --no-ri
-sudo gem install aws-sdk --no-rdoc --no-ri
-sudo gem install conjur-api --no-rdoc --no-ri
+  $ sudo gem install sinatra --no-rdoc --no-ri
+  $ sudo gem install aws-sdk --no-rdoc --no-ri
+  $ sudo gem install conjur-api --no-rdoc --no-ri
+  ```
 
-```
+Ruby test code
+```ruby
 require 'aws-sigv4'
 require 'aws-sdk'
 
