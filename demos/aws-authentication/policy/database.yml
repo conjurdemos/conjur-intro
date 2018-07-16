@@ -1,0 +1,35 @@
+- !policy
+  id: postgres-database
+  body:
+    - &variables
+      - !variable url
+      - !variable username
+      - !variable
+          id: password
+          annotations:
+            rotation/rotator: postgresql/password
+            rotation/ttl: PT10M
+            rotation/postgresql/password/length: 32
+
+    # Create a group that will have permission to retrieve variables
+    - !group secrets-users
+
+    # Create a group that will have permission to manage variables
+    - !group secrets-managers
+
+    # Give the `secrets-users` group permission to retrieve variables
+    - !permit
+      role: !group secrets-users
+      privilege: [ read, execute ]
+      resource: *variables
+
+    # Give the `secrets-managers` group permission to update variables
+    - !permit
+      role: !group secrets-managers
+      privilege: [ update ]
+      resource: *variables
+
+    # Give the `secrets-managers` group read and execute permission as well as update
+    - !grant
+      member: !group secrets-managers
+      role: !group secrets-users

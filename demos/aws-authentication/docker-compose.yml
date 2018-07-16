@@ -1,0 +1,14 @@
+version: "3"
+services:
+
+  client:
+    image: conjurinc/cli5
+    working_dir:  -w /src/cli
+    environment:
+      CONJUR_APPLIANCE_URL: https://conjur
+      CONJUR_ACCOUNT: test
+      CONJUR_AUTHN_LOGIN: admin
+    links:
+      - conjur:conjur
+    volumes:
+      - ./cli_cache:/root

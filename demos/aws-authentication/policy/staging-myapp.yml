@@ -1,0 +1,19 @@
+
+---
+- !policy
+  id: staging-myapp
+  body:
+    # Create a layer to hold this application's hosts
+    - !layer myapp
+
+    # Create a host using the namespace `aws` to identify this as an AWS resource.
+    # The host ID needs to match the AWS ARN of the role we wish to to authenticate.
+    - !host 888977921603/staging-myapp-ec2
+    - !host 888977921603/staging-myapp-lambda
+
+    # Add our hosts into our layer
+    - !grant
+      role: !layer myapp
+      members:
+        - !host 888977921603/staging-myapp-ec2
+        - !host 888977921603/staging-myapp-lambda

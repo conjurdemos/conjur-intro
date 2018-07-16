@@ -1,0 +1,9 @@
+# Give all hosts in the layer the abilitity to authenticate
+- !grant
+  role: !group conjur/authn-iam/staging/clients
+  member: !host staging-myapp/888977921603/staging-myapp-ec2
+
+# Give the host in our layer permission to retrieve variables
+- !grant
+  member: !layer staging-myapp/myapp
+  role: !group staging/postgres-database/secrets-users
