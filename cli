@@ -18,8 +18,8 @@ exit
 function proxy_command {
   cmd="$@"
   docker-compose run --rm -w /src/cli --entrypoint /bin/bash client -c "
-    if [ ! -e /root/conjur-cucumber.pem ]; then
-      conjur init -u https://conjur -a cucumber
+    if [ ! -e /root/conjur-demo.pem ]; then
+      conjur init -u https://conjur -a demo
     fi
     conjur authn login -u admin -p secret
     eval exec \"$cmd\"

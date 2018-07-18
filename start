@@ -41,7 +41,7 @@ fi
 docker-compose up -d --no-deps conjur
 
 docker-compose exec conjur bash -c "
-  evoke configure master -h conjur-master.local -p secret test
+  evoke configure master -h conjur-master.local -p secret demo
 "
 
 docker-compose logs -f conjur
