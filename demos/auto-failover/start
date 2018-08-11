@@ -1,0 +1,55 @@
+#!/bin/bash -ex
+
+docker-compose up -d --no-deps conjur-master-1 conjur-master-2 conjur-master-3 conjur-master-4
+
+docker-compose exec conjur-master-1 bash -c "
+  evoke configure master \
+  --master-altnames=\"localhost,conjur-master-1,conjur-master-2,conjur-master-3,conjur-master-4\" \
+  -h conjur-master.local \
+  -p secret demo
+"
+
+./cli conjur policy load root policy/root.yml
+./cli conjur policy load conjur policy/cluster.yml
+
+docker-compose exec conjur-master-1 bash -c "
+  evoke cluster enroll -n conjur-master-1 conjur
+"
+
+docker-compose exec conjur-master-1 bash -c "
+  evoke ca issue conjur-master-2
+  evoke ca issue conjur-master-3
+  evoke ca issue conjur-master-4
+  evoke seed standby conjur-master-2 conjur-master-1 > /opt/conjur/backup/conjur-master-2-seed.tar
+  evoke seed standby conjur-master-3 conjur-master-1 > /opt/conjur/backup/conjur-master-3-seed.tar
+  evoke seed standby conjur-master-4 conjur-master-1 > /opt/conjur/backup/conjur-master-4-seed.tar
+"
+
+docker-compose exec conjur-master-2 bash -c "
+  evoke unpack seed /opt/conjur/backup/conjur-master-2-seed.tar
+  evoke configure standby
+"
+docker-compose exec conjur-master-3 bash -c "
+  evoke unpack seed /opt/conjur/backup/conjur-master-3-seed.tar
+  evoke configure standby
+"
+docker-compose exec conjur-master-4 bash -c "
+  evoke unpack seed /opt/conjur/backup/conjur-master-4-seed.tar
+  evoke configure standby
+"
+
+docker-compose exec conjur-master-1 bash -c "
+  evoke replication sync
+"
+
+docker-compose exec conjur-master-2 bash -c "
+  evoke cluster enroll -n conjur-master-2 conjur
+"
+
+docker-compose exec conjur-master-3 bash -c "
+  evoke cluster enroll -n conjur-master-3 conjur
+"
+
+docker-compose exec conjur-master-4 bash -c "
+  evoke cluster enroll -n conjur-master-4 conjur
+  "
