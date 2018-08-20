@@ -1,0 +1,5 @@
+#!/bin/bash -eu
+
+docker-compose run --rm cli -c "conjur init -u \$CONJUR_APPLIANCE_URL -a \$CONJUR_ACCOUNT"
+docker-compose run --rm cli -c "conjur authn login -u \$CONJUR_AUTHN_LOGIN"
+docker-compose run --rm cli -c "conjur policy load root /src/cli/mutual_tls.yml"

@@ -1,0 +1,19 @@
+#!/bin/bash -e
+
+# Generate root and intermediate CA certificates
+
+if [ ! -d ca/ca ]; then
+  docker-compose run --rm ca
+fi
+
+auth_header=$(docker-compose run --rm cli -c 'conjur authn authenticate -H' | tr -d '\n') 
+
+# Store the intermediate private key in Conjur
+curl -v -H "$auth_header" \
+     "http://localhost:8080/resources/cucumber"
+
+# Store the intermediate cert chain in Conjur
+# curl -vv -4 --data-binary "@ca/ca/ca-chain.crt" \
+#      -H "Content-Type: text/plain" \
+#      -H "$(docker-compose run --rm cli -c 'conjur authn authenticate -H')" \
+#      "http://localhost/secrets/cucumber/variable/conjur/mutual-tls/ca/cert-chain"

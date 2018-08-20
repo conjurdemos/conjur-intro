@@ -1,0 +1,17 @@
+#!/bin/bash -eu
+
+docker-compose pull
+docker-compose build
+
+# Generate Conjur data key if it doesn't exist
+if [ ! -f conjur/data_key ]; then
+    echo "Generating Conjur data key..."
+    docker-compose run --no-deps --rm conjur data-key generate > conjur/data_key
+fi
+
+# Start Conjur
+export CONJUR_DATA_KEY="$(< conjur/data_key)"
+docker-compose up -d conjur
+
+# Create cucumber account and admin role
+docker-compose exec conjur conjurctl account create cucumber > conjur/admin_info
