@@ -20,6 +20,7 @@ client.
     ```
 
 2. Load the policy configuring the CA and 2 host identities
+    > Use admin password in `conjur/admin_info`
     ```sh-session
     ./1_load_policy
     ```
@@ -32,12 +33,14 @@ client.
 
 4. Log the web server host into Conjur and request a host certificate from the
   Conjur CA
+    > Use host password in `cli/host_logins` for mutual `mutual-tls/server`
     ```sh-session
-    ./3_create_host_cert
+    ./3_create_server_cert
     ```
 
 5. Log the web client into Conjur and request a client certificate from tbe
   Conjur CA
+    > Use host password in `cli/host_logins` for mutual `mutual-tls/client`
     ```sh-session
     ./4_create_client_cert
     ```
