@@ -10,13 +10,15 @@ chmod 400 ca/root.key
 
 # Generate a root CA certificate
 openssl req -new -x509 -sha256 -days 730 \
+        -config openssl.conf \
         -subj "/C=US/ST=./L=./O=./CN=Conjur Root CA" \
+        -extensions v3_ca \
         -key ca/root.key \
         -out ca/root.crt
 chmod 444 ca/root.crt
 
 # Generate an intermediate CA key
-openssl genrsa -aes256 \
+openssl genrsa \
       -out ca/intermediate.key 4096
 chmod 400 ca/intermediate.key
 
@@ -28,7 +30,9 @@ openssl req -new -sha256 \
 
 # Sign the intermediate CA with the root cert
 openssl x509 -req -days 1000 \
+      -extfile openssl.conf \
       -in ca/intermediate.csr \
+      -extensions v3_intermediate_ca \
       -CA ca/root.crt \
       -CAkey ca/root.key \
       -CAcreateserial \

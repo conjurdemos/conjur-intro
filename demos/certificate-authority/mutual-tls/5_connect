@@ -1,0 +1,18 @@
+#!/bin/bash -eu
+
+echo Starting server...
+docker-compose rm -fs server
+docker-compose build server
+docker-compose up -d server
+echo 
+
+echo Connecting with no cert chain or client cert...
+docker-compose run --rm client bash -c "curl -v https://server" || true
+echo
+
+echo Connecting with cert chain but no client cert...
+docker-compose run --rm client bash -c "curl -v --cacert /client/ca-chain.crt https://server" || true
+echo
+
+echo Connection with cert chain and client cert...
+docker-compose run --rm client bash -c "curl -v --cacert /client/ca-chain.crt --cert /client/client.crt --key /client/client.key https://server" || true

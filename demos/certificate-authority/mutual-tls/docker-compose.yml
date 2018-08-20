@@ -2,9 +2,26 @@ version: "3"
 services:
   server:
     build: ./server
+    environment:
+      CONJUR_APPLIANCE_URL: http://conjur
+      CONJUR_ACCOUNT: cucumber
+      CONJUR_AUTHN_LOGIN: mutual-tls/server
+      CA_SERVICE_ID: mutual-tls
+    ports:
+      - "9080:80"
+      - "9443:443"
+    volumes:
+      - ./server:/server
   
   client:
     build: ./client
+    environment:
+      CONJUR_APPLIANCE_URL: http://conjur
+      CONJUR_ACCOUNT: cucumber
+      CONJUR_AUTHN_LOGIN: mutual-tls/client
+      CA_SERVICE_ID: mutual-tls
+    volumes:
+      - ./client:/client
 
   # conjur:
   #   image: registry2.itci.conjur.net/conjur-appliance-cuke-master:5.0-stable

@@ -1,0 +1,5 @@
+#!/bin/bash -eu
+
+rm -rf server/server.crt
+docker-compose run --rm server /server/request_certificate
+chmod 444 server/server.crt

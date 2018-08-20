@@ -2,4 +2,5 @@
 
 docker-compose run --rm cli -c "conjur init -u \$CONJUR_APPLIANCE_URL -a \$CONJUR_ACCOUNT"
 docker-compose run --rm cli -c "conjur authn login -u \$CONJUR_AUTHN_LOGIN"
-docker-compose run --rm cli -c "conjur policy load root /src/cli/mutual_tls.yml"
+host_logins=$(docker-compose run --rm cli -c "conjur policy load root /src/cli/mutual_tls.yml")
+echo $host_logins > cli/host_logins
