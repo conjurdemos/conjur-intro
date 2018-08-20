@@ -1,0 +1,12 @@
+conjur/data_key
+conjur/admin_info
+cli/cache/.conjurrc
+cli/cache/.bash_history
+ca/ca/root.srl
+ca/ca/root.key
+ca/ca/root.crt
+ca/ca/intermediate.key
+ca/ca/intermediate.csr
+ca/ca/intermediate.crt
+ca/ca/ca-chain.crt
+ca/.rnd
