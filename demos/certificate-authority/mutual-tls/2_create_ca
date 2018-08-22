@@ -6,7 +6,7 @@ if [ ! -d ca/ca ]; then
   docker-compose run --rm ca
 fi
 
-auth_header=$(docker-compose run --rm cli -c 'conjur authn authenticate -H' | tr -d '\r\n') 
+auth_header=$(docker-compose run --rm -T cli -c 'conjur authn authenticate -H') 
 
 echo Store the intermediate CA private key in Conjur...
 curl --data-binary "@ca/ca/intermediate.key" \

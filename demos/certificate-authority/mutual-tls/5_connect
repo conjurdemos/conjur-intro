@@ -1,18 +1,30 @@
-#!/bin/bash -eu
+#!/bin/bash -e
 
-echo Starting server...
-docker-compose rm -fs server
-docker-compose build server
-docker-compose up -d server
-echo 
+# Determine which extra services should be loaded when working with authenticators
+INCLUDE_CERT_CHAIN=false
+INCLUDE_CLIENT_CERT=false
+while true ; do
+  case "$1" in
+    --ca-chain ) INCLUDE_CERT_CHAIN=true ; shift ;;
+    --client-cert ) INCLUDE_CLIENT_CERT=true ; shift ;;
+     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+  esac
+done
 
-echo Connecting with no cert chain or client cert...
-docker-compose run --rm client bash -c "curl -v https://server" || true
-echo
+echo "Starting server..."
+docker-compose rm -fs server > /dev/null 2>&1
+docker-compose build server > /dev/null 2>&1
+docker-compose up -d server > /dev/null 2>&1
 
-echo Connecting with cert chain but no client cert...
-docker-compose run --rm client bash -c "curl -v --cacert /client/ca-chain.crt https://server" || true
-echo
+args=""
 
-echo Connection with cert chain and client cert...
-docker-compose run --rm client bash -c "curl -v --cacert /client/ca-chain.crt --cert /client/client.crt --key /client/client.key https://server" || true
+if [[ $INCLUDE_CERT_CHAIN = true ]]; then
+  args="$args --cacert /client/ca-chain.crt"
+fi
+
+if [[ $INCLUDE_CLIENT_CERT = true ]]; then
+  args="$args --cert /client/client.crt --key /client/client.key"
+fi
+
+echo "Connecting client (Certificate Chain=$INCLUDE_CERT_CHAIN, Client Certificate=$INCLUDE_CLIENT_CERT)..."
+docker-compose run --rm client bash -c "curl $args https://server" || true
