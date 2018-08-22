@@ -45,7 +45,7 @@ token=$(curl -s -X POST -d $api_key \
 ca_response=$(curl -s -X POST -d "ttl=P1D" --data-urlencode "csr@/server/server.csr" \
                 -H "Authorization: Token token=\"$token\"" \
                 -H "Accept: application/x-pem-file" \
-                "$CONJUR_APPLIANCE_URL/ca/$CONJUR_ACCOUNT/$CA_SERVICE_ID/hosts/$encoded_login")
+                "$CONJUR_APPLIANCE_URL/ca/$CONJUR_ACCOUNT/$CA_SERVICE_ID/sign")
 
 echo "$ca_response"
 echo "$ca_response" > /server/server.crt
