@@ -1,0 +1,53 @@
+#!/bin/bash -eu
+
+rm -rf ca
+mkdir -p ca
+
+# Generate a root CA key
+openssl genrsa -aes256 \
+        -out ca/root.key 4096 
+chmod 400 ca/root.key
+
+# Generate a root CA certificate
+openssl req -new -x509 -sha256 -days 730 \
+        -config openssl.conf \
+        -subj "/C=US/ST=./L=./O=./CN=Conjur Root CA" \
+        -extensions v3_ca \
+        -key ca/root.key \
+        -out ca/root.crt
+chmod 444 ca/root.crt
+
+# Generate an intermediate CA key
+openssl genrsa \
+      -out ca/intermediate.key 4096
+chmod 400 ca/intermediate.key
+
+# Generate a CSR for the intermediate certificate
+openssl req -new -sha256 \
+      -subj "/C=US/ST=./L=./O=./CN=Conjur Intermediate CA" \
+      -key ca/intermediate.key \
+      -out ca/intermediate.csr
+
+# Sign the intermediate CA with the root cert
+openssl x509 -req -days 1000 \
+      -extfile openssl.conf \
+      -in ca/intermediate.csr \
+      -extensions v3_intermediate_ca \
+      -CA ca/root.crt \
+      -CAkey ca/root.key \
+      -CAcreateserial \
+      -out ca/intermediate.crt
+chmod 444 ca/intermediate.crt
+
+# Verify the intermediate certificate
+openssl x509 -noout -text \
+      -in ca/intermediate.crt
+
+# Verify the intermediate cert against the root cert
+openssl verify -CAfile ca/root.crt \
+      ca/intermediate.crt
+
+cat ca/intermediate.crt \
+      ca/root.crt > ca/ca-chain.crt
+chmod 444 ca/ca-chain.crt
+

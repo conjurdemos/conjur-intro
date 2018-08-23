@@ -1,0 +1,30 @@
+#!/bin/bash -e
+
+# Determine which extra services should be loaded when working with authenticators
+INCLUDE_CERT_CHAIN=false
+INCLUDE_CLIENT_CERT=false
+while true ; do
+  case "$1" in
+    --ca-chain ) INCLUDE_CERT_CHAIN=true ; shift ;;
+    --client-cert ) INCLUDE_CLIENT_CERT=true ; shift ;;
+     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+  esac
+done
+
+echo "Starting server..."
+docker-compose rm -fs server > /dev/null 2>&1
+docker-compose build server > /dev/null 2>&1
+docker-compose up -d server > /dev/null 2>&1
+
+args=""
+
+if [[ $INCLUDE_CERT_CHAIN = true ]]; then
+  args="$args --cacert /client/ca-chain.crt"
+fi
+
+if [[ $INCLUDE_CLIENT_CERT = true ]]; then
+  args="$args --cert /client/client.crt --key /client/client.key"
+fi
+
+echo "Connecting client (Certificate Chain=$INCLUDE_CERT_CHAIN, Client Certificate=$INCLUDE_CLIENT_CERT)..."
+docker-compose run --rm client bash -c "curl $args https://server" || true

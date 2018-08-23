@@ -1,0 +1,72 @@
+version: "3"
+services:
+  server:
+    build: ./server
+    environment:
+      CONJUR_APPLIANCE_URL: http://conjur
+      CONJUR_ACCOUNT: cucumber
+      CONJUR_AUTHN_LOGIN: mutual-tls/server
+      CA_SERVICE_ID: mutual-tls
+    ports:
+      - "9080:80"
+      - "9443:443"
+    volumes:
+      - ./server:/server
+  
+  client:
+    build: ./client
+    environment:
+      CONJUR_APPLIANCE_URL: http://conjur
+      CONJUR_ACCOUNT: cucumber
+      CONJUR_AUTHN_LOGIN: mutual-tls/client
+      CA_SERVICE_ID: mutual-tls
+    volumes:
+      - ./client:/client
+
+  # conjur:
+  #   image: registry2.itci.conjur.net/conjur-appliance-cuke-master:5.0-stable
+  #   ports:
+  #     - "443:443"
+  #   expose:
+  #     - "443"
+  #   security_opt:
+  #       - "seccomp:unconfined"
+  #   volumes:
+  #     - certs:/opt/conjur/etc/ssl
+
+  conjur:
+    image: registry2.itci.conjur.net/cyberark/conjur:ca_signing_service
+    command: server
+    environment:
+      DATABASE_URL: postgres://postgres@database/postgres
+      CONJUR_DATA_KEY:
+    depends_on: [ database ]
+    ports:
+      - "8080:80"
+    expose:
+      - "80"
+
+  database:
+    image: postgres:9.3
+
+  cli:
+    image: cyberark/conjur-cli:5
+    working_dir: /src/cli
+    entrypoint: bash
+    environment:
+      CONJUR_APPLIANCE_URL: http://conjur
+      CONJUR_ACCOUNT: cucumber
+      CONJUR_AUTHN_LOGIN: admin
+
+    volumes:
+      - ./cli:/src/cli
+      - ./cli/cache:/root
+      - certs:/opt/conjur/etc/ssl
+
+  ca:
+    build: ./ca
+    volumes: 
+      - ./ca:/root
+
+volumes:
+  certs:

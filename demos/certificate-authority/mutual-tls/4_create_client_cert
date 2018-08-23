@@ -1,0 +1,5 @@
+#!/bin/bash -eu
+
+rm -rf client/client.crt
+docker-compose run --rm client /client/request_certificate
+chmod 444 client/client.crt
