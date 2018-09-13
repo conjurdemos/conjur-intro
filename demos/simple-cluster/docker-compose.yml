@@ -1,7 +1,7 @@
 version: "3"
 services:
   conjur-master:
-    image: registry.tld/conjur-appliance:5.0-stable
+    image: registry2.itci.conjur.net/conjur-appliance:5.0-stable
     ports:
       - "443:443"
     expose:
@@ -13,7 +13,7 @@ services:
       - backups:/opt/conjur/backup/
 
   conjur-follower:
-    image: registry.tld/conjur-appliance:5.0-stable
+    image: registry2.itci.conjur.net/conjur-appliance:5.0-stable
     expose:
       - "443"
     security_opt:
@@ -22,7 +22,7 @@ services:
       - backups:/opt/conjur/backup/
 
   conjur-standby:
-    image: registry.tld/conjur-appliance:5.0-stable
+    image: registry2.itci.conjur.net/conjur-appliance:5.0-stable
     expose:
       - "443"
       - "5432"

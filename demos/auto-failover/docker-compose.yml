@@ -1,7 +1,7 @@
 version: "3"
 services:
   conjur-master-1:
-    image: registry.tld/conjur-appliance:5.0-stable
+    image: registry2.itci.conjur.net/conjur-appliance:5.0-stable
     ports:
       - "443:443"
     expose:
@@ -11,13 +11,9 @@ services:
     volumes:
       - certs:/opt/conjur/etc/ssl
       - backups:/opt/conjur/backup/
-    # links:
-    #   - conjur-master-2
-    #   - conjur-master-3
-    #   - conjur-master-4
 
   conjur-master-2:
-    image: registry.tld/conjur-appliance:5.0-stable
+    image: registry2.itci.conjur.net/conjur-appliance:5.0-stable
     ports:
       - "444:443"
     expose:
@@ -27,13 +23,9 @@ services:
     volumes:
       - certs:/opt/conjur/etc/ssl
       - backups:/opt/conjur/backup/
-    # links:
-    #   - conjur-master-1
-    #   - conjur-master-3
-    #   - conjur-master-4
 
   conjur-master-3:
-    image: registry.tld/conjur-appliance:5.0-stable
+    image: registry2.itci.conjur.net/conjur-appliance:5.0-stable
     ports:
       - "445:443"
     expose:
@@ -43,13 +35,9 @@ services:
     volumes:
       - certs:/opt/conjur/etc/ssl
       - backups:/opt/conjur/backup/
-    # links:
-    #   - conjur-master-1
-    #   - conjur-master-2
-    #   - conjur-master-4
 
   conjur-master-4:
-    image: registry.tld/conjur-appliance:5.0-stable
+    image: registry2.itci.conjur.net/conjur-appliance:5.0-stable
     ports:
       - "446:443"
     expose:
@@ -59,10 +47,6 @@ services:
     volumes:
       - certs:/opt/conjur/etc/ssl
       - backups:/opt/conjur/backup/
-    # links:
-    #   - conjur-master-1:conjur-master-1
-    #   - conjur-master-2:conjur-master-2
-    #   - conjur-master-3:conjur-master-3
 
   client:
     image: cyberark/conjur-cli:5
