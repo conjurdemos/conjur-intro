@@ -1,5 +1,7 @@
 version: "3"
 services:
+
+  # nginx web server
   server:
     build: ./server
     environment:
@@ -13,6 +15,7 @@ services:
     volumes:
       - ./server:/server
   
+  # curl web client
   client:
     build: ./client
     environment:
@@ -22,20 +25,15 @@ services:
       CA_SERVICE_ID: mutual-tls
     volumes:
       - ./client:/client
-
-  # conjur:
-  #   image: registry2.itci.conjur.net/conjur-appliance-cuke-master:5.0-stable
-  #   ports:
-  #     - "443:443"
-  #   expose:
-  #     - "443"
-  #   security_opt:
-  #       - "seccomp:unconfined"
-  #   volumes:
-  #     - certs:/opt/conjur/etc/ssl
+  
+  # Service for generating our root and intermediate CA
+  ca:
+    build: ./ca
+    volumes: 
+      - ./ca:/root
 
   conjur:
-    image: registry2.itci.conjur.net/cyberark/conjur:ca_signing_service
+    image: cyberark/conjur
     command: server
     environment:
       DATABASE_URL: postgres://postgres@database/postgres
@@ -61,12 +59,6 @@ services:
     volumes:
       - ./cli:/src/cli
       - ./cli/cache:/root
-      - certs:/opt/conjur/etc/ssl
-
-  ca:
-    build: ./ca
-    volumes: 
-      - ./ca:/root
 
 volumes:
   certs:
