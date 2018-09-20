@@ -52,4 +52,4 @@ docker-compose exec conjur-master-3 bash -c "
 
 docker-compose exec conjur-master-4 bash -c "
   evoke cluster enroll -n conjur-master-4 conjur
-  "
+"

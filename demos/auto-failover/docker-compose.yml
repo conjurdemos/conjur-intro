@@ -55,8 +55,6 @@ services:
       CONJUR_APPLIANCE_URL: https://conjur-master-1
       CONJUR_ACCOUNT: demo
       CONJUR_AUTHN_LOGIN: admin
-    # links:
-    #   - conjur-master-1
     volumes:
       - .:/src/cli
       - ./cli_cache:/root
