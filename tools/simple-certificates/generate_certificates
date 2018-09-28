@@ -8,7 +8,7 @@ function ssl_proxy {
 }
 
 domain='mycompany.local'
-nodes=( 'master-1' 'master-2' 'master-3' 'follower-1' 'follower-2' 'follower-3' )
+nodes=( 'master-1' 'master-2' 'master-3' 'follower-1' 'follower-2' )
 
 certificate_password='secret'
 
@@ -27,7 +27,7 @@ if [ ! -f $path/certs/ca.cert.pem ]; then
   ssl_proxy openssl req -config /configs/root-openssl.cnf \
     -passout pass:$certificate_password \
     -passin pass:$certificate_password \
-    -subj \"/C=US/ST=Massachusetts/L=Newton/O=CyberArk/OU=Conjur/CN=$domain\" \
+    -subj \"/C=US/ST=Massachusetts/L=Newton/O=CyberArk/OU=Conjur/CN=Root CA\" \
     -key private/ca.key.pem \
     -new -x509 -days 7300 -sha256 -extensions v3_ca \
     -out certs/ca.cert.pem
@@ -57,7 +57,7 @@ if [ ! -f $path/certs/intermediate.cert.pem ]; then
   ssl_proxy openssl req -config /configs/intermediate-openssl.cnf -new -sha256 \
       -passout pass:$certificate_password \
       -passin pass:$certificate_password \
-      -subj \"/C=US/ST=Massachusetts/L=Newton/O=CyberArk/OU=Conjur/CN=$domain\" \
+      -subj \"/C=US/ST=Massachusetts/L=Newton/O=CyberArk/OU=Conjur/CN=Intermediate CA\" \
       -key private/intermediate.key.pem \
       -out csr/intermediate.csr.pem
 
