@@ -1,0 +1,116 @@
+#!/bin/bash -e
+
+function ssl_proxy {
+  local cmd="$@"
+  docker run -it -v "$(pwd):/src" -v "$(pwd)/configs:/configs" -w "/src/$path" jordi/caroot bash -c "
+    $cmd
+  "
+}
+
+domain='mycompany.local'
+nodes=( 'master-1' 'master-2' 'master-3' 'follower-1' 'follower-2' 'follower-3' )
+
+certificate_password='secret'
+
+path='certificates/root'
+if [ ! -f $path/certs/ca.cert.pem ]; then
+  mkdir -p $path/certs $path/crl $path/newcerts $path/private
+  chmod 700 $path/private
+  touch $path/index.txt
+  echo 1000 > $path/serial
+
+  # Root Key
+  ssl_proxy openssl genrsa -aes256 -passout pass:$certificate_password -out private/ca.key.pem 4096
+  ssl_proxy chmod 400 private/ca.key.pem
+
+  # Root Certificate
+  ssl_proxy openssl req -config /configs/root-openssl.cnf \
+    -passout pass:$certificate_password \
+    -passin pass:$certificate_password \
+    -subj \"/C=US/ST=Massachusetts/L=Newton/O=CyberArk/OU=Conjur/CN=$domain\" \
+    -key private/ca.key.pem \
+    -new -x509 -days 7300 -sha256 -extensions v3_ca \
+    -out certs/ca.cert.pem
+
+  ssl_proxy chmod 444 certs/ca.cert.pem
+
+  ssl_proxy openssl x509 -noout -text -in certs/ca.cert.pem
+fi
+
+path='certificates/intermediate'
+if [ ! -f $path/certs/intermediate.cert.pem ]; then
+
+  # Generate Intermediate pair
+  mkdir -p $path/certs $path/crl $path/csr $path/newcerts $path/private
+  chmod 700 $path/private
+  touch $path/index.txt
+  echo 1000 > $path/serial
+  echo 1000 > $path/crlnumber
+
+  # Intermediate Key
+  ssl_proxy openssl genrsa -aes256 \
+      -passout pass:$certificate_password \
+      -out private/intermediate.key.pem 4096
+  ssl_proxy chmod 400 private/intermediate.key.pem
+
+  # Intermediate Certificate
+  ssl_proxy openssl req -config /configs/intermediate-openssl.cnf -new -sha256 \
+      -passout pass:$certificate_password \
+      -passin pass:$certificate_password \
+      -subj \"/C=US/ST=Massachusetts/L=Newton/O=CyberArk/OU=Conjur/CN=$domain\" \
+      -key private/intermediate.key.pem \
+      -out csr/intermediate.csr.pem
+
+  # Sign Intermediate with Root
+  ssl_proxy openssl ca -config /configs/root-openssl.cnf -extensions v3_intermediate_ca \
+        -days 3650 -notext -md sha256 -batch \
+        -passin pass:$certificate_password \
+        -in csr/intermediate.csr.pem \
+        -out certs/intermediate.cert.pem
+
+  ssl_proxy chmod 444 certs/intermediate.cert.pem
+
+  # View Certificate
+  ssl_proxy openssl x509 -noout -text \
+        -in certs/intermediate.cert.pem
+
+
+  # Validate Intermediate certificate
+  ssl_proxy openssl verify -CAfile /src/certificates/root/certs/ca.cert.pem \
+        /src/certificates/intermediate/certs/intermediate.cert.pem
+
+  # Create Certificate Chain for Intermediate (with Root)
+  ssl_proxy 'cat /src/certificates/intermediate/certs/intermediate.cert.pem \
+        /src/certificates/root/certs/ca.cert.pem > /src/certificates/intermediate/certs/ca-chain.cert.pem'
+
+  ssl_proxy chmod 444 /src/certificates/intermediate/certs/ca-chain.cert.pem
+fi
+
+for i in "${nodes[@]}"
+do
+  fqdn="$i.$domain"
+  folder="certificates/nodes/$fqdn"
+
+  if [ ! -f $folder/$fqdn.cert.pem ]; then
+    echo $fqdn
+    mkdir -p $folder
+
+    # Generate private key
+    ssl_proxy openssl genrsa -out /src/$folder/$fqdn.key.pem 2048
+    chmod 400 $folder/$fqdn.key.pem
+
+    # Generate CSR
+    ssl_proxy openssl req -config /configs/intermediate-openssl.cnf \
+        -subj \"/C=US/ST=Massachusetts/L=Newton/O=CyberArk/OU=Conjur/CN=$fqdn\" \
+        -key /src/$folder/$fqdn.key.pem \
+        -new -sha256 -out /src/$folder/$fqdn.csr.pem
+
+    # Sign CSR with Intermediate certificate
+    ssl_proxy openssl ca -config /configs/intermediate-openssl.cnf \
+        -extensions server_cert -days 375 -notext -md sha256 -batch \
+        -passin pass:$certificate_password \
+        -in /src/$folder/$fqdn.csr.pem \
+        -out /src/$folder/$fqdn.cert.pem
+    chmod 444 $folder/$fqdn.cert.pem
+  fi
+done
