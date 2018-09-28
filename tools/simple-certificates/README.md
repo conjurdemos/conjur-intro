@@ -5,12 +5,12 @@ Creates certificates to mimic the PKI certificates a customer might find in thei
 This script will generate:
 - Root key/certificate
 - Intermediate key/certificate, signed by Root
-- Conjur Node certificates:
-    - master-1.mycompany.local
-    - master-2.mycompany.local
-    - master-3.mycompany.local
-    - follower-1.mycompany.local
-    - follower-2.mycompany.local
+- Conjur Node certificates, all signed by the Intermediate:
+    - `master-1.mycompany.local`
+    - `master-2.mycompany.local`
+    - `master-3.mycompany.local`
+    - `follower-1.mycompany.local`
+    - `follower-2.mycompany.local`
 
 ### Generate
 To create these certificates, navigate to this directory and run:
@@ -40,6 +40,6 @@ domain='cyberark.local'
 nodes=( 'master' 'follower1' 'follower2' )
 ```
 will produce singed certificates for the following:
-- master.cyberark.local
-- follower1.cyberark.local
-- follower2.cyberark.local
+- `master.cyberark.local`
+- `follower1.cyberark.local`
+- `follower2.cyberark.local`
