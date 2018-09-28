@@ -8,6 +8,8 @@ Miscellaneous utilities that make it easier to make, manage, and run demos
 - [Auto-Failover Cluster](demos/auto-failover/README.md)
 
 ## Tools
+- [Generate Signed Certificates](tools/simple-certificates/)
+
 
 ### `./start`
 `start` provides a dead simple mechanism for starting a Conjur Appliance.
