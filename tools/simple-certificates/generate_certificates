@@ -2,13 +2,14 @@
 
 function ssl_proxy {
   local cmd="$@"
-  docker run -it -v "$(pwd):/src" -v "$(pwd)/configs:/configs" -w "/src/$path" jordi/caroot bash -c "
+  docker run -it -v "$(pwd):/src" -v "$(pwd)/configs:/configs" -w "/src/$path" -e "SAN=$san" jordi/caroot bash -c "
     $cmd
   "
 }
 
 domain='mycompany.local'
 nodes=( 'master-1' 'master-2' 'master-3' 'follower-1' 'follower-2' )
+altname='DNS:master.mycompany.local'
 
 certificate_password='secret'
 
@@ -100,8 +101,11 @@ do
     chmod 400 $folder/$fqdn.key.pem
 
     # Generate CSR
+    san="DNS:$fqdn,$altname"
+
     ssl_proxy openssl req -config /configs/intermediate-openssl.cnf \
         -subj \"/C=US/ST=Massachusetts/L=Newton/O=CyberArk/OU=Conjur/CN=$fqdn\" \
+        -extensions san_env \
         -key /src/$folder/$fqdn.key.pem \
         -new -sha256 -out /src/$folder/$fqdn.csr.pem
 
@@ -109,8 +113,13 @@ do
     ssl_proxy openssl ca -config /configs/intermediate-openssl.cnf \
         -extensions server_cert -days 375 -notext -md sha256 -batch \
         -passin pass:$certificate_password \
+        -extensions san_env \
         -in /src/$folder/$fqdn.csr.pem \
         -out /src/$folder/$fqdn.cert.pem
     chmod 444 $folder/$fqdn.cert.pem
+
+    # View Certificate
+    ssl_proxy openssl x509 -noout -text \
+          -in /src/$folder/$fqdn.cert.pem
   fi
 done

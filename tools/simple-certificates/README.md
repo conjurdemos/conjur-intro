@@ -32,14 +32,17 @@ The domain can be customized by changing the following lines in `generate_certif
 ```
 domain='mycompany.local'
 nodes=( 'master-1' 'master-2' 'master-3' 'follower-1' 'follower-2' )
+altname='DNS:master.mycompany.local'
 ```
 
 Updating to the following:
 ```
 domain='cyberark.local'
 nodes=( 'master' 'follower1' 'follower2' )
+altname='DNS:master.cyberark.local'
 ```
-will produce singed certificates for the following:
+will produce signed certificates for the following domains:
 - `master.cyberark.local`
 - `follower1.cyberark.local`
 - `follower2.cyberark.local`
+including the Altname: `master.cyberark.local`
