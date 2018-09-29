@@ -45,4 +45,5 @@ will produce signed certificates for the following domains:
 - `master.cyberark.local`
 - `follower1.cyberark.local`
 - `follower2.cyberark.local`
+
 including the Altname: `master.cyberark.local`
