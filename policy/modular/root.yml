@@ -1,0 +1,12 @@
+- !group team_leads
+- !group security_ops
+
+# Define "staging" namespace, owned by the "team_leads"
+- !policy
+  id: staging
+  owner: !group team_leads
+
+# Define "production" namespace, owned by the "security_ops" team
+- !policy
+  id: production
+  owner: !group security_ops

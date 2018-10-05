@@ -1,0 +1,40 @@
+- !policy
+  id: postgres-database
+  body:
+    - &variables
+      - !variable
+        id: username
+        annotations:
+          description: Database username
+      - !variable
+        id: password
+        annotations:
+          description: Database password
+      - !variable
+        id: url
+        annotations:
+          description: Database URL
+      - !variable
+        id: port
+        annotations:
+          description: Database port
+
+    - !group secrets-users
+    - !group secrets-managers
+
+    # secrets-users can read and execute
+    - !permit
+      resource: *variables
+      privileges: [ read, execute ]
+      role: !group secrets-users
+
+    # secrets-managers can update (and read and execute, via role grant)
+    - !permit
+      resource: *variables
+      privileges: [ update ]
+      role: !group secrets-managers
+
+    # secrets-managers has role secrets-users
+    - !grant
+      member: !group secrets-managers
+      role: !group secrets-users

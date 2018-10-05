@@ -1,0 +1,7 @@
+- !policy
+  id: application
+  body:
+  - !layer
+
+  # - !host-factory
+  #   layer: [ !layer ]
