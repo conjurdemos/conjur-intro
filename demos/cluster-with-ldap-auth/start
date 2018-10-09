@@ -1,0 +1,53 @@
+#!/bin/bash -ex
+
+function print_help() {
+  cat << EOF
+Starts a Conjur cluster locally.
+Usage: start [options]
+    --load-data     Loads sample policy along once th cluster
+    -h, --help      Shows this help message.
+EOF
+  exit
+}
+
+# Determine which extra services should be loaded when working with authenticators
+LOAD_DATA=false
+while true ; do
+  case "$1" in
+    --load-data ) LOAD_DATA=true ; shift ;;
+    -h | --help ) print_help ; shift ;;
+     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+  esac
+done
+
+
+docker-compose up -d --no-deps conjur-master conjur-standby conjur-follower
+
+docker-compose exec conjur-master bash -c "
+  evoke configure master \
+  -h conjur-master.mycompany.local \
+  -p secret demo
+"
+
+docker-compose exec conjur-master bash -c "
+  evoke seed standby conjur-standby.mycompany.local > /opt/conjur/backup/standby-seed.tar
+  evoke seed follower conjur-follower.mycompany.local > /opt/conjur/backup/follower-seed.tar
+"
+
+docker-compose exec conjur-standby bash -c "
+  evoke unpack seed /opt/conjur/backup/standby-seed.tar
+  evoke configure standby
+"
+
+docker-compose exec conjur-follower bash -c "
+  evoke unpack seed /opt/conjur/backup/follower-seed.tar
+  evoke configure follower
+"
+
+if [[ $LOAD_DATA = true ]]; then
+  ./cli conjur policy load --replace root policy/users.yml
+  ./cli conjur policy load root policy/policy.yml
+  ./cli conjur policy load staging policy/apps/myapp.yml
+  ./cli conjur policy load production policy/apps/myapp.yml
+  ./cli conjur policy load root policy/application_grants.yml
+fi
