@@ -7,35 +7,48 @@ services:
     expose:
       - "443"
       - "5432"
+      - "1999"
     security_opt:
         - "seccomp:unconfined"
     volumes:
       - backups:/opt/conjur/backup/
+      - ./files:/conjur_files
 
   conjur-follower:
     image: registry2.itci.conjur.net/conjur-appliance:5.0-stable
     expose:
       - "443"
+    ports:
+      - "444:443"
     security_opt:
         - "seccomp:unconfined"
+    links:
+      - "conjur-master:conjur-master.mycompany.local"
     volumes:
       - backups:/opt/conjur/backup/
+      - ./files:/conjur_files
 
   conjur-standby:
     image: registry2.itci.conjur.net/conjur-appliance:5.0-stable
+    ports:
+        - "544:443"
     expose:
       - "443"
       - "5432"
+      - "1999"
     security_opt:
         - "seccomp:unconfined"
+    links:
+      - "conjur-master:conjur-master.mycompany.local"
     volumes:
       - backups:/opt/conjur/backup/
+      - ./files:/conjur_files
 
   client:
     image: cyberark/conjur-cli:5
     working_dir:  -w /src/cli
     environment:
-      CONJUR_APPLIANCE_URL: https://conjur-master-1
+      CONJUR_APPLIANCE_URL: https://conjur-master
       CONJUR_ACCOUNT: demo
       CONJUR_AUTHN_LOGIN: admin
     volumes:
