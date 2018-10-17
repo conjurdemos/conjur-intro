@@ -1,0 +1,15 @@
+#!/bin/bash -e
+
+container=$(docker ps -aqf "name=conjur-intro_conjur")
+if [ "$1" != "" ]; then
+  while [ "$1" != "" ]; do
+    filename=$(basename "$1")
+
+    docker cp $1 $container:/tmp/$filename
+    docker exec $container dpkg -i /tmp/$filename
+
+    shift
+  done
+  docker exec $container sv stop conjur
+  docker exec $container sv start conjur
+fi
