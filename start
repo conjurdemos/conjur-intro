@@ -1,10 +1,9 @@
-#!/bin/bash -e
+#!/bin/bash -ex
 
 function finish {
   docker-compose down -v
   rm -rf cli_cache
 }
-trap finish EXIT
 
 function print_help() {
   cat << EOF
@@ -14,27 +13,37 @@ NAME
 
 
 SYNOPSIS
-    cli [global options] command [command options] [arguments...]
+    start [global options]
+    
 GLOBAL OPTIONS
     --help                                    - Show this message
 
     --skip-pull                               - Does not pull a fresh Conjur master before starting
+
+    --tag <appliance-tag>                     - Starts a Conjur Appliance of the version specified
 
 EOF
 exit
 }
 
 PULL_ARGS="--pull"
+TAG="5.0-stable"
 while true ; do
   case "$1" in
     --skip-pull ) PULL_ARGS="" ; shift ;;
     -h | --help ) print_help ; shift ;;
+    --tag ) shift ; TAG="$1" ; shift ;;
      * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
   esac
 done
 
+trap finish EXIT
+
+
+export IMAGE_TAG=$TAG
+
 if [ "$PULL_ARGS" == "--pull" ]; then
-  docker pull registry2.itci.conjur.net/conjur-appliance:5.0-stable
+  docker pull registry2.itci.conjur.net/conjur-appliance:$IMAGE_TAG
   docker pull conjurinc/cli5
 fi
 
