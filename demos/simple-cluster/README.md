@@ -67,7 +67,7 @@ $ ./start --load-data
 Flags can be combined to provide combinations of these actions. Below is an example of how to configure a cluster with custom certificates, encrypted with a master key, and load sample data into the cluster:
 
 ```
-$ ./start --master-key --custom-certs  --load-data
+$ ./start --master-key --custom-certs --load-data
 ```
 
 ### Logging into your Cluster
