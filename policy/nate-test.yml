@@ -1,0 +1,11 @@
+# Secret Declarations
+- &secrets
+  - !variable cokec/username
+  - !variable cokec/password
+  - !variable cokez/username
+  - !variable cokez/password
+# User & Manager Groups
+  - !permit
+    role: !group /conjur-root-admins
+    privileges: [ read, execute ]
+    resources: *secrets
