@@ -1,6 +1,8 @@
 # Simple Cluster Demo
 
-This script configures a Conjur cluster with a master, follower and standby. This script does not configure the cluster to be an auto-failover, high availability cluster. Optionally, clusters can be configured with any or all of the following:
+This script configures a high availability Conjur cluster with a master, follower and standby. This script does not configure the cluster to be an auto-failover cluster. 
+
+Optionally, clusters can be configured with any or all of the following:
 
 - Sample data
 - Master Key encryption
