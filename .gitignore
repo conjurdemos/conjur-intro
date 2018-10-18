@@ -1,6 +1,5 @@
 cli_cache/*
 **/cli_cache/*
 *.tar
-*.pem
 
 tools/simple-certificates/certificates/*

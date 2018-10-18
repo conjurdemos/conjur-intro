@@ -1,0 +1,4 @@
+# Grant the team_leads permission to read+write the "myapp" variables in production
+- !grant
+  member: !group developers
+  role: !group staging/myapp/secrets-users

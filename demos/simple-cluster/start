@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash -ex
 
 function print_help() {
   cat << EOF
@@ -32,7 +32,7 @@ docker-compose up -d --no-deps conjur-master.mycompany.local conjur-standby.myco
 
 docker-compose exec conjur-master.mycompany.local bash -c "
   evoke configure master \
-  -h conjur-master \
+  -h conjur-master.mycompany.local \
   -p secret demo
 "
 if [[ $CUSTOM_CERTS = true ]]; then
@@ -69,7 +69,6 @@ docker-compose exec conjur-master.mycompany.local bash -c "
 # Setup the standby
 docker-compose exec conjur-standby.mycompany.local bash -c "
   evoke unpack seed /opt/conjur/backup/standby-seed.tar
-  evoke configure standby
 "
 if [[ $MASTER_KEY = true ]]; then
   docker-compose exec conjur-standby.mycompany.local bash -c "
