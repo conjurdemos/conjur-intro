@@ -11,6 +11,8 @@ Miscellaneous utilities that make it easier to make, manage, and run demos
 - [Generate Signed Certificates](tools/simple-certificates/)
 
 
+## Instructions
+
 ### `./start`
 `start` provides a dead simple mechanism for starting a Conjur Appliance.
 
@@ -25,6 +27,26 @@ The start command pulls down the latest version of the V5 appliance and CLI, and
 Once started, logs are streamed to the console.
 
 `ctr-c` stops the appliance, and cleans up the environment.
+
+#### Start Flags
+
+The `start` script accepts the following flags:
+```
+SYNOPSIS
+    start [global options]
+
+GLOBAL OPTIONS
+    --help                                    - Show this message
+
+    --skip-pull                               - Does not pull a fresh Conjur master before starting
+
+    --tag <appliance-tag>                     - Starts a Conjur Appliance of the version specified
+```
+
+To run a particular version of the Appliance:
+```
+$ ./start --tag 5.2.0
+```
 
 ### `./cli`
 `cli` is a proxy script, sending all subsequent arguments to a Conjur CLI container. This provides a simple mechanism for loading policy and interacting with Conjur.
