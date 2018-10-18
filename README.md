@@ -45,3 +45,17 @@ $ ./cli conjur policy load root policy/hosts.yml
 $ ./cli conjur variable values add production/myapp/database/username foo-bar
 $ ./cli conjur variable value production/myapp/database/username
 ```
+
+#### Validating Packages
+This project can also be used to verify PRs, by installing the branch specific package (created by Jenkins).  To begin, download the `.deb` package.  After starting Conjur, packages can be installed with:
+
+```
+# Start Conjur
+$ ./start
+```
+Next in a new tab:
+
+```
+$ ./install ~/Downloads/conjur-ui_2.10.9.1-e389f20_amd64.deb
+```
+The install script will install the package into the running Conjur appliance and restart the Conjur service.
