@@ -1,4 +1,6 @@
 # Top-level policy file
+- !group team_leads
+- !group security_ops
 
 # Define "staging" namespace, owned by the "team_leads"
 - !policy
