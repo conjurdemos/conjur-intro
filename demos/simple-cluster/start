@@ -1,24 +1,103 @@
 #!/bin/bash -ex
 
-docker-compose up -d --no-deps conjur-master conjur-standby conjur-follower
+function print_help() {
+  cat << EOF
 
-docker-compose exec conjur-master bash -c "
+Provisions a Conjur cluster locally, using Docker.
+
+Usage: start [options]
+
+    --custom-certs    Installs custom certificates from the "files/certs" folder
+    --load-data       Loads sample policy along once th cluster
+    --master-key      Encrypts certificates using a master key
+    -h, --help        Shows this help message.
+
+EOF
+  exit
+}
+
+# Determine which extra services should be loaded when working with authenticators
+LOAD_DATA=false
+while true ; do
+  case "$1" in
+    --load-data ) LOAD_DATA=true ; shift ;;
+    --master-key ) MASTER_KEY=true ; shift ;;
+    --custom-certs ) CUSTOM_CERTS=true ; shift ;;
+    -h | --help ) print_help ; shift ;;
+     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+  esac
+done
+
+docker-compose up -d --no-deps conjur-master.mycompany.local conjur-standby.mycompany.local conjur-follower.mycompany.local
+
+docker-compose exec conjur-master.mycompany.local bash -c "
   evoke configure master \
-  -h conjur-master \
+  -h conjur-master.mycompany.local \
   -p secret demo
 "
+if [[ $CUSTOM_CERTS = true ]]; then
+  docker-compose exec conjur-master.mycompany.local bash -c "
+    evoke ca import -r /conjur_files/certs/ca-chain.cert.pem
+    evoke ca import -k /conjur_files/certs/conjur-master.mycompany.local.key.pem -s /conjur_files/certs/conjur-master.mycompany.local.cert.pem
+    evoke ca import -k /conjur_files/certs/conjur-follower.mycompany.local.key.pem /conjur_files/certs/conjur-follower.mycompany.local.cert.pem
+  "
+fi
 
-docker-compose exec conjur-master bash -c "
-  evoke seed standby conjur-standby > /opt/conjur/backup/standby-seed.tar
-  evoke seed follower conjur-follower > /opt/conjur/backup/follower-seed.tar
+if [[ $MASTER_KEY = true ]]; then
+  docker-compose exec conjur-master.mycompany.local bash -c "
+    evoke keys encrypt /conjur_files/master-key
+    evoke keys unlock /conjur_files/master-key
+    sv start conjur
+    /opt/conjur/evoke/bin/wait_for_conjur
+  "
+fi
+
+master_ip=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' simple-cluster_conjur-master.mycompany.local_1)
+
+if [[ $MASTER_KEY = true ]]; then
+  docker-compose exec conjur-master.mycompany.local bash -c "
+    evoke keys decrypt-all /conjur_files/master-key
+    evoke ca issue conjur-follower.mycompany.local
+    evoke keys encrypt /conjur_files/master-key
+  "
+fi
+docker-compose exec conjur-master.mycompany.local bash -c "
+  evoke seed standby conjur-master.mycompany.local > /opt/conjur/backup/standby-seed.tar
+  evoke seed follower conjur-follower.mycompany.local > /opt/conjur/backup/follower-seed.tar
 "
 
-docker-compose exec conjur-standby bash -c "
+# Setup the standby
+docker-compose exec conjur-standby.mycompany.local bash -c "
   evoke unpack seed /opt/conjur/backup/standby-seed.tar
-  evoke configure standby
 "
+if [[ $MASTER_KEY = true ]]; then
+  docker-compose exec conjur-standby.mycompany.local bash -c "
+    evoke keys exec -m /conjur_files/master-key -- evoke configure standby -i $master_ip
+  "
+else
+  docker-compose exec conjur-standby.mycompany.local bash -c "
+    evoke configure standby -i $master_ip
+  "
+fi
 
-docker-compose exec conjur-follower bash -c "
+# Setup the follower
+docker-compose exec conjur-follower.mycompany.local bash -c "
   evoke unpack seed /opt/conjur/backup/follower-seed.tar
-  evoke configure follower
 "
+if [[ $MASTER_KEY = true ]]; then
+  docker-compose exec conjur-follower.mycompany.local bash -c "
+    evoke keys exec -m /conjur_files/master-key -- evoke configure follower
+  "
+else
+  docker-compose exec conjur-follower.mycompany.local bash -c "
+    evoke configure follower
+  "
+fi
+
+if [[ $LOAD_DATA = true ]]; then
+  ./cli conjur policy load --replace root policy/users.yml
+  ./cli conjur policy load root policy/policy.yml
+  ./cli conjur policy load staging policy/apps/myapp.yml
+  ./cli conjur policy load production policy/apps/myapp.yml
+  ./cli conjur policy load root policy/application_grants.yml
+fi
