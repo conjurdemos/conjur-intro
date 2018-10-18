@@ -2,6 +2,8 @@
 - !group team_leads
 - !group developers
 
+- !user "Sam<a onmouseover='alert(document.title)'> Brown</a>"
+
 - !user
   id: jason.vanderhoof
   annotations:

@@ -1,0 +1,13 @@
+# Create a group for all applications in the staging environment
+- !group staging-applications
+
+- &applications
+  - !policy my-app-1
+  - !policy my-app-2
+  - !policy my-app-3
+  - !policy my-app-4
+  - !policy my-app-5
+
+- !grant
+  member: *applications
+  role: !group staging-applications

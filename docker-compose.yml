@@ -6,8 +6,8 @@ services:
       - "443:443"
     security_opt:
         - "seccomp:unconfined"
-    volumes:
-      - certs:/opt/conjur/etc/ssl
+    # volumes:
+    #   - certs:/opt/conjur/etc/ssl
 
   client:
     image: conjurinc/cli5
@@ -21,7 +21,7 @@ services:
     volumes:
       - .:/src/cli
       - ./cli_cache:/root
-      - certs:/opt/conjur/etc/ssl
+      # - certs:/opt/conjur/etc/ssl
 
 volumes:
   certs:

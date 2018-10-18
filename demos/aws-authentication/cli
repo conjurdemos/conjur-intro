@@ -1,6 +1,7 @@
 #!/bin/bash -e
 
-host="https://ec2-34-224-2-198.compute-1.amazonaws.com"
+host="https://ec2-54-166-128-130.compute-1.amazonaws.com"
+# host="https://ec2-34-229-66-195.compute-1.amazonaws.com"
 
 cmd="$@"
 docker run \

@@ -1,0 +1,5 @@
+# Provide any member of the group "staging/staging-applications" permission to authenticate use
+# the Conjur Open Shift authenticator (authn-k8s)
+- !grant
+  member: !group staging/staging-applications
+  role: !group conjur/authn-k8s/staging-subcluster-1/clients

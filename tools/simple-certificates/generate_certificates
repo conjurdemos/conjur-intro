@@ -2,13 +2,14 @@
 
 function ssl_proxy {
   local cmd="$@"
-  docker run -it -v "$(pwd):/src" -v "$(pwd)/configs:/configs" -w "/src/$path" -e "SAN=$san" jordi/caroot bash -c "
+  docker run --rm -it -v "$(pwd):/src" -v "$(pwd)/configs:/configs" -w "/src/$path" -e "SAN=$san" jordi/caroot bash -c "
     $cmd
   "
 }
 
+# conjur-master.mycompany.local
 domain='mycompany.local'
-nodes=( 'master-1' 'master-2' 'master-3' 'follower-1' 'follower-2' )
+nodes=( 'conjur-master' 'conjur-follower')
 altname='DNS:master.mycompany.local'
 
 certificate_password='secret'

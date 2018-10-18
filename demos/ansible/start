@@ -1,0 +1,5 @@
+#!/bin/bash -ex
+
+docker-compose up
+
+# docker-compose exec conjur-master-1 bash -c ""

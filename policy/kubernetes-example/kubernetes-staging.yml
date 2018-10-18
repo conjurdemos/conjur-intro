@@ -1,0 +1,38 @@
+- !policy
+  id: conjur/authn-k8s/staging-subcluster-1
+  # In the id, conjur/authn-k8s is required.
+  # Subsequent components in the id identify the service id
+  #  for the Kubernetes authenticator service.
+  # It is the SERVICE_ID variable set during deployment.
+
+  body:
+    - !webservice
+      annotations:
+        description: Authentication service for the "subcluster-1" cluster.
+
+    - !policy
+      id: ca                 # ca policy - do not change
+      body:
+      - !variable
+        id: cert
+        annotations:
+          description: CA cert for Kubernetes Pods.
+
+      - !variable
+        id: key
+        annotations:
+          description: CA key for Kubernetes Pods.
+
+    - !group
+      id: clients
+      annotations:
+        description:
+          Members of this group can use the subcluster-1
+          authentication service. This group typically has one
+          member, which is a layer containing the enrolled
+          applications.
+
+    - !permit
+      resource: !webservice
+      privilege: [ read, authenticate ]
+      role: !group clients
