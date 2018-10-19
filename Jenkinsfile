@@ -18,8 +18,9 @@ pipeline {
 
     stage('Validate Simple HA Cluster') {
       steps {
+        sh 'cd demos/simple-cluster && ./cli rm -rf /root/*'
         sh 'cd demos/simple-cluster && ./start --load-data'
-        sh 'cd demos/simple-cluster && chown jenkins:jenkins -R cli_cache'
+        sh 'cd demos/simple-cluster && ./cli rm -rf /root/*'
         sh 'cd demos/simple-cluster && ./stop'
       }
     }
