@@ -30,13 +30,13 @@ done
 
 docker-compose up -d --no-deps conjur-master.mycompany.local conjur-standby.mycompany.local conjur-follower.mycompany.local
 
-docker-compose exec conjur-master.mycompany.local bash -c "
+docker-compose exec -T conjur-master.mycompany.local bash -c "
   evoke configure master \
   -h conjur-master.mycompany.local \
   -p secret demo
 "
 if [[ $CUSTOM_CERTS = true ]]; then
-  docker-compose exec conjur-master.mycompany.local bash -c "
+  docker-compose exec -T conjur-master.mycompany.local bash -c "
     evoke ca import -r /conjur_files/certs/ca-chain.cert.pem
     evoke ca import -k /conjur_files/certs/conjur-master.mycompany.local.key.pem -s /conjur_files/certs/conjur-master.mycompany.local.cert.pem
     evoke ca import -k /conjur_files/certs/conjur-follower.mycompany.local.key.pem /conjur_files/certs/conjur-follower.mycompany.local.cert.pem
@@ -44,7 +44,7 @@ if [[ $CUSTOM_CERTS = true ]]; then
 fi
 
 if [[ $MASTER_KEY = true ]]; then
-  docker-compose exec conjur-master.mycompany.local bash -c "
+  docker-compose exec -T conjur-master.mycompany.local bash -c "
     evoke keys encrypt /conjur_files/master-key
     evoke keys unlock /conjur_files/master-key
     sv start conjur
@@ -55,41 +55,41 @@ fi
 master_ip=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' simple-cluster_conjur-master.mycompany.local_1)
 
 if [[ $MASTER_KEY = true ]]; then
-  docker-compose exec conjur-master.mycompany.local bash -c "
+  docker-compose exec -T conjur-master.mycompany.local bash -c "
     evoke keys decrypt-all /conjur_files/master-key
     evoke ca issue conjur-follower.mycompany.local
     evoke keys encrypt /conjur_files/master-key
   "
 fi
-docker-compose exec conjur-master.mycompany.local bash -c "
+docker-compose exec -T conjur-master.mycompany.local bash -c "
   evoke seed standby conjur-master.mycompany.local > /opt/conjur/backup/standby-seed.tar
   evoke seed follower conjur-follower.mycompany.local > /opt/conjur/backup/follower-seed.tar
 "
 
 # Setup the standby
-docker-compose exec conjur-standby.mycompany.local bash -c "
+docker-compose exec -T conjur-standby.mycompany.local bash -c "
   evoke unpack seed /opt/conjur/backup/standby-seed.tar
 "
 if [[ $MASTER_KEY = true ]]; then
-  docker-compose exec conjur-standby.mycompany.local bash -c "
+  docker-compose exec -T conjur-standby.mycompany.local bash -c "
     evoke keys exec -m /conjur_files/master-key -- evoke configure standby -i $master_ip
   "
 else
-  docker-compose exec conjur-standby.mycompany.local bash -c "
+  docker-compose exec -T conjur-standby.mycompany.local bash -c "
     evoke configure standby -i $master_ip
   "
 fi
 
 # Setup the follower
-docker-compose exec conjur-follower.mycompany.local bash -c "
+docker-compose exec -T conjur-follower.mycompany.local bash -c "
   evoke unpack seed /opt/conjur/backup/follower-seed.tar
 "
 if [[ $MASTER_KEY = true ]]; then
-  docker-compose exec conjur-follower.mycompany.local bash -c "
+  docker-compose exec -T conjur-follower.mycompany.local bash -c "
     evoke keys exec -m /conjur_files/master-key -- evoke configure follower
   "
 else
-  docker-compose exec conjur-follower.mycompany.local bash -c "
+  docker-compose exec -T conjur-follower.mycompany.local bash -c "
     evoke configure follower
   "
 fi
