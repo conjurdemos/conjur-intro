@@ -8,8 +8,8 @@ function ssl_proxy {
 }
 
 domain='mycompany.local'
-nodes=( 'master-1' 'master-2' 'master-3' 'follower-1' 'follower-2' )
-altname='DNS:master.mycompany.local'
+nodes=( 'conjur-master-1' 'conjur-master-2' 'conjur-master-3' 'conjur-master-4')
+altname='DNS:conjur-master-1.mycompany.local,DNS:conjur-master-2.mycompany.local,DNS:conjur-master-3.mycompany.local,DNS:conjur-master-4.mycompany.local'
 
 certificate_password='secret'
 
