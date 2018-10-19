@@ -1,0 +1,12 @@
+#!/bin/bash -ex
+
+./cli conjur policy load root policy/modular/root.yml
+./cli conjur policy load --replace staging policy/modular/apps/applications.yml
+./cli conjur policy load staging/my-app-1 policy/modular/apps/generic-application.yml
+./cli conjur policy load staging/my-app-1 policy/modular/services/pg-database.yml
+
+./cli conjur variable values add staging/my-app-1/postgres-database/url https://foo-bar.mydatabase.com
+./cli conjur variable values add staging/my-app-1/postgres-database/username my-app-user
+./cli conjur variable values add staging/my-app-1/postgres-database/password super-secret-password
+./cli conjur variable values add staging/my-app-1/postgres-database/port 5432
+./cli conjur policy load staging/my-app-1 policy/modular/entitlements/postgres-database.yml

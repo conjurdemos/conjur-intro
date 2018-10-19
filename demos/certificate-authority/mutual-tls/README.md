@@ -1,3 +1,4 @@
+<!-- gitleaks:allow - contains example API keys in tutorial output -->
 # Mutual TLS with Conjur
 
 This example demonstrates using Conjur as certificate authority (CA) to configure

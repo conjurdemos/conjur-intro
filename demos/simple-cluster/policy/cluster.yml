@@ -1,0 +1,12 @@
+- !policy
+  id: cluster/conjur
+  body:
+    - !layer
+    - &hosts
+      - !host conjur-master-1.mycompany.local
+      - !host conjur-master-2.mycompany.local
+      - !host conjur-master-3.mycompany.local
+      - !host conjur-master-4.mycompany.local
+    - !grant
+      role: !layer
+      member: *hosts
