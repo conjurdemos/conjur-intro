@@ -20,10 +20,11 @@ $ docker-compose exec conjur-master-1 sv stop conjur
 
 Then view progress with:
 ```
-$ docker-compose logs -f conjur-master-2 conjur-master-3 
+$ docker-compose logs -f
 ```
 Look for the standby which has `entering state promote` in it's log file. That will be the new master.
 
 Once the failover occurs, it will be available as:
 - if `conjur-master-2`, on port `444` on [localhost](https://localhost:444/ui)
 - if `conjur-master-3`, on port `445` on [localhost](https://localhost:445/ui)
+- if `conjur-master-4`, on port `445` on [localhost](https://localhost:446/ui)
