@@ -27,4 +27,4 @@ Look for the standby which has `entering state promote` in it's log file. That w
 Once the failover occurs, it will be available as:
 - if `conjur-master-2`, on port `444` on [localhost](https://localhost:444/ui)
 - if `conjur-master-3`, on port `445` on [localhost](https://localhost:445/ui)
-- if `conjur-master-4`, on port `445` on [localhost](https://localhost:446/ui)
+- if `conjur-master-4`, on port `446` on [localhost](https://localhost:446/ui)
