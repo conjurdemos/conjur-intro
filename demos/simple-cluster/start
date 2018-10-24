@@ -57,12 +57,22 @@ if [[ $CUSTOM_CERTS = true ]]; then
     evoke ca import -k /conjur_files/certs/conjur-master-2.mycompany.local.key.pem /conjur_files/certs/conjur-master-2.mycompany.local.cert.pem
     evoke ca import -k /conjur_files/certs/conjur-follower.mycompany.local.key.pem /conjur_files/certs/conjur-follower.mycompany.local.cert.pem
   "
+  if [[ $AUTO_FAILOVER = true ]]; then
+
+    docker-compose exec conjur-master-1.mycompany.local bash -c "
+      evoke ca import -k /conjur_files/certs/conjur-master-3.mycompany.local.key.pem /conjur_files/certs/conjur-master-3.mycompany.local.cert.pem
+      evoke ca import -k /conjur_files/certs/conjur-master-4.mycompany.local.key.pem /conjur_files/certs/conjur-master-4.mycompany.local.cert.pem
+    "
+  fi
 fi
 if [[ $AUTO_FAILOVER = true ]]; then
-  docker-compose exec conjur-master-1.mycompany.local bash -c "
-    evoke ca import -k /conjur_files/certs/conjur-master-3.mycompany.local.key.pem /conjur_files/certs/conjur-master-3.mycompany.local.cert.pem
-    evoke ca import -k /conjur_files/certs/conjur-master-4.mycompany.local.key.pem /conjur_files/certs/conjur-master-4.mycompany.local.cert.pem
-  "
+  if [[ $CUSTOM_CERTS = false ]]; then
+    docker-compose exec conjur-master-1.mycompany.local bash -c "
+      evoke ca issue conjur-master-2.mycompany.local
+      evoke ca issue conjur-master-3.mycompany.local
+      evoke ca issue conjur-master-4.mycompany.local
+    "
+  fi
 fi
 
 if [[ $MASTER_KEY = true ]]; then
