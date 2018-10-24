@@ -19,7 +19,7 @@ function proxy_command {
   cmd="$@"
   docker-compose run --rm -w /src/cli --entrypoint /bin/bash client -c "
     if [ ! -e /root/conjur-demo.pem ]; then
-      conjur init -u https://conjur-master-1 -a demo
+      yes 'yes' | conjur init -u https://conjur-master-1 -a demo
     fi
     conjur authn login -u admin -p secret
     eval exec \"$cmd\"
