@@ -3,5 +3,5 @@
   body:
   - !layer
 
-  # - !host-factory
-  #   layer: [ !layer ]
+  - !host-factory
+    layer: [ !layer ]

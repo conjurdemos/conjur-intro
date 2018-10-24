@@ -1,0 +1,4 @@
+# Grant the application layer permission to retrieve postgres credentials
+- !grant
+  member: !layer application
+  role: !group postgres-database/secrets-users
