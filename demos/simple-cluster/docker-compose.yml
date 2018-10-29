@@ -1,7 +1,7 @@
 version: "3"
 services:
   conjur-master-1.mycompany.local:
-    image: registry2.itci.conjur.net/conjur-appliance:5.0-stable
+    image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
     ports:
       - "443:443"
     expose:
@@ -17,7 +17,7 @@ services:
       - ./files:/conjur_files
 
   conjur-master-2.mycompany.local:
-    image: registry2.itci.conjur.net/conjur-appliance:5.0-stable
+    image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
     ports:
       - "444:443"
     expose:
@@ -30,7 +30,7 @@ services:
       - ./files:/conjur_files
 
   conjur-master-3.mycompany.local:
-    image: registry2.itci.conjur.net/conjur-appliance:5.0-stable
+    image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
     ports:
       - "445:443"
     expose:
@@ -44,7 +44,7 @@ services:
       - ./files:/conjur_files
 
   conjur-master-4.mycompany.local:
-    image: registry2.itci.conjur.net/conjur-appliance:5.0-stable
+    image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
     ports:
       - "446:443"
     expose:
@@ -68,7 +68,7 @@ services:
   #     - ./files:/conjur_files
 
   conjur-follower.mycompany.local:
-    image: registry2.itci.conjur.net/conjur-appliance:5.0-stable
+    image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
     ports:
       - "447:443"
     expose:
@@ -79,7 +79,7 @@ services:
       - backups:/opt/conjur/backup/
       - ./files:/conjur_files
 
-  master-client:
+  client:
     image: cyberark/conjur-cli:5
     working_dir:  -w /src/cli
     environment:
