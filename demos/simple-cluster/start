@@ -7,17 +7,20 @@ Provisions a Conjur cluster locally, using Docker.
 
 Usage: start [options]
 
-    --auto-failover   Configures the cluster for auto-failover
-    --custom-certs    Installs custom certificates from the "files/certs" folder
-    --load-data       Loads sample policy along once th cluster
-    --master-key      Encrypts certificates using a master key
-    -h, --help        Shows this help message.
+    --auto-failover     Configures the cluster for auto-failover
+    --custom-certs      Installs custom certificates from the "files/certs" folder
+    -h, --help          Shows this help message.
+    --load-data         Loads sample policy along once th cluster
+    --master-key        Encrypts certificates using a master key
+    --tag <conjur-tag>  Starts a cluster with a particular appliance (defaults to 5.0-stable)
 
 EOF
   exit
 }
 
 # Determine which extra services should be loaded when working with authenticators
+# export VERSION=5.2.2-20181029194559-7305fae
+TAG=5.0-stable
 LOAD_DATA=false
 while true ; do
   case "$1" in
@@ -25,10 +28,13 @@ while true ; do
     --load-data ) LOAD_DATA=true ; shift ;;
     --master-key ) MASTER_KEY=true ; shift ;;
     --custom-certs ) CUSTOM_CERTS=true ; shift ;;
+    --tag ) shift ; TAG=$1 ; shift ;;
     -h | --help ) print_help ; shift ;;
      * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
   esac
 done
+
+export VERSION=$TAG
 
 if [[ $AUTO_FAILOVER = true ]]; then
   docker-compose up -d --no-deps conjur-master-1.mycompany.local conjur-master-2.mycompany.local conjur-master-3.mycompany.local conjur-master-4.mycompany.local conjur-follower.mycompany.local

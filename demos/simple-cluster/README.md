@@ -1,13 +1,13 @@
-# Simple Cluster Demo
+# Cluster Demo
 
-This script configures a high availability Conjur cluster with a master, follower and standby. This script does not configure the cluster to be an auto-failover cluster. 
+This script configures a high availability Conjur cluster with a master, follower and standby.
 
 Optionally, clusters can be configured with any or all of the following:
 
 - Sample data
 - Master Key encryption
 - Custom third party certificates
-
+- Particular Conjur version
 
 ### Requirements
 
@@ -29,10 +29,12 @@ Provisions a Conjur cluster locally, using Docker.
 
 Usage: start [options]
 
-    --custom-certs    Installs custom certificates from the "files/certs" folder
-    --load-data       Loads sample policy along once th cluster
-    --master-key      Encrypts certificates using a master key
-    -h, --help        Shows this help message.
+    --auto-failover     Configures the cluster for auto-failover
+    --custom-certs      Installs custom certificates from the "files/certs" folder
+    -h, --help          Shows this help message.
+    --load-data         Loads sample policy along once th cluster
+    --master-key        Encrypts certificates using a master key
+    --tag <conjur-tag>  Starts a cluster with a particular appliance (defaults to 5.0-stable)
 
 ```
 
@@ -61,6 +63,13 @@ $ ./start --custom-certs
 To load a configured cluster with sample data:
 ```
 $ ./start --load-data
+```
+
+#### Run a cluster with a particular Conjur version
+To run a particular version of Conjur, pass the image tag in with the `--tag` flag:
+
+```
+$ ./start --tag 5.2.2-20181029194559-7305fae
 ```
 
 #### Master Key Encryption, Custom Certificates
