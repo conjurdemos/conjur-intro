@@ -69,6 +69,8 @@ services:
 
   conjur-follower.mycompany.local:
     image: registry2.itci.conjur.net/conjur-appliance:5.0-stable
+    ports:
+      - "447:443"
     expose:
       - "443"
     security_opt:
@@ -77,8 +79,7 @@ services:
       - backups:/opt/conjur/backup/
       - ./files:/conjur_files
 
-
-  client:
+  master-client:
     image: cyberark/conjur-cli:5
     working_dir:  -w /src/cli
     environment:
@@ -87,7 +88,18 @@ services:
       CONJUR_AUTHN_LOGIN: admin
     volumes:
       - .:/src/cli
-      - ./cli_cache:/root
+      - ./cli_cache/master:/root
+
+  follower-client:
+    image: cyberark/conjur-cli:5
+    working_dir:  -w /src/cli
+    environment:
+      CONJUR_APPLIANCE_URL: https://conjur-follower.mycompany.local:447
+      CONJUR_ACCOUNT: demo
+      CONJUR_AUTHN_LOGIN: admin
+    volumes:
+      - .:/src/cli
+      - ./cli_cache/follower:/root
 
 volumes:
   backups:

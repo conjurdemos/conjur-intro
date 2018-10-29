@@ -41,6 +41,7 @@ docker-compose exec conjur-master-1.mycompany.local bash -c "
   -h conjur-master-1.mycompany.local \
   -p secret demo
 "
+
 if [[ $AUTO_FAILOVER = true ]]; then
   ./cli conjur policy load --replace root policy/root.yml
   ./cli conjur policy load conjur policy/cluster.yml
@@ -58,21 +59,19 @@ if [[ $CUSTOM_CERTS = true ]]; then
     evoke ca import -k /conjur_files/certs/conjur-follower.mycompany.local.key.pem /conjur_files/certs/conjur-follower.mycompany.local.cert.pem
   "
   if [[ $AUTO_FAILOVER = true ]]; then
-
     docker-compose exec conjur-master-1.mycompany.local bash -c "
       evoke ca import -k /conjur_files/certs/conjur-master-3.mycompany.local.key.pem /conjur_files/certs/conjur-master-3.mycompany.local.cert.pem
       evoke ca import -k /conjur_files/certs/conjur-master-4.mycompany.local.key.pem /conjur_files/certs/conjur-master-4.mycompany.local.cert.pem
     "
   fi
 fi
-if [[ $AUTO_FAILOVER = true ]]; then
-  if [[ $CUSTOM_CERTS = false ]]; then
-    docker-compose exec conjur-master-1.mycompany.local bash -c "
-      evoke ca issue conjur-master-2.mycompany.local
-      evoke ca issue conjur-master-3.mycompany.local
-      evoke ca issue conjur-master-4.mycompany.local
-    "
-  fi
+
+if [[ $AUTO_FAILOVER = true && $CUSTOM_CERTS = false ]]; then
+  docker-compose exec conjur-master-1.mycompany.local bash -c "
+    evoke ca issue conjur-master-2.mycompany.local
+    evoke ca issue conjur-master-3.mycompany.local
+    evoke ca issue conjur-master-4.mycompany.local
+  "
 fi
 
 if [[ $MASTER_KEY = true ]]; then
@@ -83,8 +82,6 @@ if [[ $MASTER_KEY = true ]]; then
     /opt/conjur/evoke/bin/wait_for_conjur
   "
 fi
-
-# master_ip=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' simple-cluster_conjur-master-1.mycompany.local_1)
 
 if [[ $MASTER_KEY = true ]]; then
   docker-compose exec conjur-master-1.mycompany.local bash -c "
