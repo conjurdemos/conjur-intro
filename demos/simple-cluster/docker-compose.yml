@@ -94,7 +94,7 @@ services:
     image: cyberark/conjur-cli:5
     working_dir:  -w /src/cli
     environment:
-      CONJUR_APPLIANCE_URL: https://conjur-follower.mycompany.local:447
+      CONJUR_APPLIANCE_URL: https://conjur-follower.mycompany.local
       CONJUR_ACCOUNT: demo
       CONJUR_AUTHN_LOGIN: admin
     volumes:
