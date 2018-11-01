@@ -5,12 +5,11 @@ Creates certificates to mimic the PKI certificates a customer might find in thei
 This script will generate:
 - Root key/certificate
 - Intermediate key/certificate, signed by Root
-- Conjur Node certificates, all signed by the Intermediate:
+- Conjur Node certificates, all signed by the Intermediate, and including `conjur-master.mycompany.local` as an altname:
     - `master-1.mycompany.local`
     - `master-2.mycompany.local`
     - `master-3.mycompany.local`
-    - `follower-1.mycompany.local`
-    - `follower-2.mycompany.local`
+    - `master-4.mycompany.local`
 
 ### Generate
 To create these certificates, navigate to this directory and run:
@@ -26,24 +25,33 @@ You can now use the following certificates to configure a Conjur cluster:
 - `certificates/nodes/follower-1.mycompany.local/follower-1.mycompany.local.key.pem` - Follower 1 key
 - `certificates/nodes/follower-2.mycompany.local/follower-2.mycompany.local.cert.pem` - Follower 2 cert
 - `certificates/nodes/follower-2.mycompany.local/follower-2.mycompany.local.key.pem` - Follower 2 key
+- `certificates/nodes/follower-3.mycompany.local/follower-3.mycompany.local.cert.pem` - Follower 2 cert
+- `certificates/nodes/follower-3.mycompany.local/follower-3.mycompany.local.key.pem` - Follower 2 key
+- `certificates/nodes/follower-4.mycompany.local/follower-4.mycompany.local.cert.pem` - Follower 2 cert
+- `certificates/nodes/follower-4.mycompany.local/follower-4.mycompany.local.key.pem` - Follower 2 key
 
 ### Customizing
 The domain can be customized by changing the following lines in `generate_certificates`:
 ```
+# desired domain name
 domain='mycompany.local'
-nodes=( 'master-1' 'master-2' 'master-3' 'follower-1' 'follower-2' )
-altname='DNS:master.mycompany.local'
+
+# sub-domain of your cluster load balancer
+master_cluster='conjur-master'
+
+# names of each node in the master cluster
+master_nodes=( 'conjur-master-1' 'conjur-master-2' 'conjur-master-3' 'conjur-master-4' $master_cluster)
 ```
 
 Updating to the following:
 ```
 domain='cyberark.local'
-nodes=( 'master' 'follower1' 'follower2' )
-altname='DNS:master.cyberark.local'
+master_cluster='foo-bar'
+master_nodes=( 'master' 'standby1' 'standby2' )
 ```
 will produce signed certificates for the following domains:
 - `master.cyberark.local`
-- `follower1.cyberark.local`
-- `follower2.cyberark.local`
+- `standby1.cyberark.local`
+- `standby2.cyberark.local`
 
-including the Altname: `master.cyberark.local`
+with the Altname: `foo-bar.cyberark.local`
