@@ -7,6 +7,7 @@ services:
     expose:
       - "443"
       - "5432"
+      - "1999"
     security_opt:
         - "seccomp:unconfined"
     volumes:
@@ -15,6 +16,8 @@ services:
 
   conjur-follower.mycompany.local:
     image: registry2.itci.conjur.net/conjur-appliance:5.0-stable
+    ports:
+      - "444:443"
     expose:
       - "443"
     security_opt:
@@ -25,9 +28,12 @@ services:
 
   conjur-standby.mycompany.local:
     image: registry2.itci.conjur.net/conjur-appliance:5.0-stable
+    ports:
+      - "445:443"
     expose:
       - "443"
       - "5432"
+      - "1999"
     security_opt:
         - "seccomp:unconfined"
     volumes:
