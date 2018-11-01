@@ -8,6 +8,8 @@ services:
       - "443"
       - "5432"
       - "1999"
+    environment:
+      RESTCLIENT_LOG: stdout
     security_opt:
         - "seccomp:unconfined"
     volumes:
