@@ -84,7 +84,7 @@ services:
   conjur-follower-1.mycompany.local:
     image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
     ports:
-      - "447:443"
+      - "448:443"
     expose:
       - "443"
     security_opt:
@@ -143,7 +143,7 @@ services:
     image: cyberark/conjur-cli:5
     working_dir:  -w /src/cli
     environment:
-      CONJUR_APPLIANCE_URL: https://conjur-follower.mycompany.local
+      CONJUR_APPLIANCE_URL: https://conjur-follower.mycompany.local:448
       CONJUR_ACCOUNT: demo
       CONJUR_AUTHN_LOGIN: admin
     volumes:
