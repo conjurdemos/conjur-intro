@@ -51,10 +51,6 @@ docker-compose exec conjur-master-1.mycompany.local bash -c "
 if [[ $AUTO_FAILOVER = true ]]; then
   ./cli conjur policy load --replace root policy/root.yml
   ./cli conjur policy load conjur policy/cluster.yml
-
-  docker-compose exec conjur-master-1.mycompany.local bash -c "
-    evoke cluster enroll -n conjur-master-1.mycompany.local conjur
-  "
 fi
 
 if [[ $CUSTOM_CERTS = true ]]; then
@@ -153,14 +149,18 @@ if [[ $AUTO_FAILOVER = true ]]; then
   docker-compose exec conjur-master-1.mycompany.local bash -c "
     evoke replication sync
   "
+
+  docker-compose exec conjur-master-1.mycompany.local bash -c "
+    evoke cluster enroll -n conjur-master-1.mycompany.local conjur
+  "
   docker-compose exec conjur-master-2.mycompany.local bash -c "
-    evoke cluster enroll -n conjur-master-2.mycompany.local conjur
+    evoke cluster enroll -n conjur-master-2.mycompany.local -m conjur-master-1.mycompany.local conjur
   "
   docker-compose exec conjur-master-3.mycompany.local bash -c "
-    evoke cluster enroll -n conjur-master-3.mycompany.local conjur
+    evoke cluster enroll -n conjur-master-3.mycompany.local -m conjur-master-1.mycompany.local conjur
   "
   docker-compose exec conjur-master-4.mycompany.local bash -c "
-    evoke cluster enroll -n conjur-master-4.mycompany.local conjur
+    evoke cluster enroll -n conjur-master-4.mycompany.local -m conjur-master-1.mycompany.local conjur
   "
 fi
 
