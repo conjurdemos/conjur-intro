@@ -21,7 +21,10 @@ EOF
 # Determine which extra services should be loaded when working with authenticators
 # export VERSION=5.2.2-20181029194559-7305fae
 TAG=5.0-stable
+AUTO_FAILOVER=false
 LOAD_DATA=false
+MASTER_KEY=false
+CUSTOM_CERTS=false
 while true ; do
   case "$1" in
     --auto-failover ) AUTO_FAILOVER=true ; shift ;;
@@ -37,9 +40,15 @@ done
 export VERSION=$TAG
 
 if [[ $AUTO_FAILOVER = true ]]; then
-  docker-compose up -d --no-deps conjur-master-1.mycompany.local conjur-master-2.mycompany.local conjur-master-3.mycompany.local conjur-master-4.mycompany.local conjur-follower.mycompany.local
+  docker-compose up -d --no-deps conjur-master-1.mycompany.local \
+                                  conjur-master-2.mycompany.local \
+                                  conjur-master-3.mycompany.local \
+                                  conjur-master-4.mycompany.local \
+                                  conjur-follower.mycompany.local
 else
-  docker-compose up -d --no-deps conjur-master-1.mycompany.local conjur-master-2.mycompany.local conjur-follower.mycompany.local
+  docker-compose up -d --no-deps conjur-master-1.mycompany.local \
+                                  conjur-master-2.mycompany.local \
+                                  conjur-follower.mycompany.local
 fi
 
 docker-compose exec conjur-master-1.mycompany.local bash -c "
@@ -76,6 +85,12 @@ if [[ $AUTO_FAILOVER = true && $CUSTOM_CERTS = false ]]; then
   "
 fi
 
+if [[ $CUSTOM_CERTS = false ]]; then
+  docker-compose exec conjur-master-1.mycompany.local bash -c "
+    evoke ca issue conjur-follower.mycompany.local
+  "
+fi
+
 if [[ $MASTER_KEY = true ]]; then
   docker-compose exec conjur-master-1.mycompany.local bash -c "
     evoke keys encrypt /conjur_files/master-key
@@ -85,13 +100,6 @@ if [[ $MASTER_KEY = true ]]; then
   "
 fi
 
-if [[ $MASTER_KEY = true ]]; then
-  docker-compose exec conjur-master-1.mycompany.local bash -c "
-    evoke keys decrypt-all /conjur_files/master-key
-    evoke ca issue conjur-follower.mycompany.local
-    evoke keys encrypt /conjur_files/master-key
-  "
-fi
 docker-compose exec conjur-master-1.mycompany.local bash -c "
   evoke seed standby conjur-master-2.mycompany.local conjur-master-1.mycompany.local > /opt/conjur/backup/standby-seed-2.tar
   evoke seed follower conjur-follower.mycompany.local > /opt/conjur/backup/follower-seed.tar
@@ -178,6 +186,7 @@ else
   "
 fi
 
+rm -rf cli_cache
 if [[ $LOAD_DATA = true ]]; then
   ./cli conjur policy load root policy/users.yml
   ./cli conjur policy load root policy/policy.yml
