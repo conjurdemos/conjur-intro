@@ -44,11 +44,11 @@ if [[ $AUTO_FAILOVER = true ]]; then
                                   conjur-master-2.mycompany.local \
                                   conjur-master-3.mycompany.local \
                                   conjur-master-4.mycompany.local \
-                                  conjur-follower.mycompany.local
+                                  conjur-follower-1.mycompany.local
 else
   docker-compose up -d --no-deps conjur-master-1.mycompany.local \
                                   conjur-master-2.mycompany.local \
-                                  conjur-follower.mycompany.local
+                                  conjur-follower-1.mycompany.local
 fi
 
 docker-compose exec conjur-master-1.mycompany.local bash -c "
@@ -93,7 +93,7 @@ fi
 
 if [[ $CUSTOM_CERTS = false ]]; then
   docker-compose exec conjur-master-1.mycompany.local bash -c "
-    evoke ca issue conjur-follower.mycompany.local
+    evoke ca issue conjur-follower-1.mycompany.local
   "
 fi
 
@@ -104,8 +104,6 @@ if [[ $MASTER_KEY = true ]]; then
     sv start conjur
     /opt/conjur/evoke/bin/wait_for_conjur
   "
-
-
 fi
 
 docker-compose exec conjur-master-1.mycompany.local bash -c "
