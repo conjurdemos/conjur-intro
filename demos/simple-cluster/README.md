@@ -1,6 +1,6 @@
 # Cluster Demo
 
-This script configures a high availability Conjur cluster with a master, follower and standby.
+This script configures a high availability Conjur cluster with a master, follower and standby(s).  The master cluster is load balanced for auto-failover.
 
 Optionally, clusters can be configured with any or all of the following:
 
