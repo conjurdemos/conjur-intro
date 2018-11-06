@@ -1,9 +1,22 @@
 version: "3"
 services:
+  conjur-master.mycompany.local:
+    image: haproxy:1.8-alpine
+    ports:
+      - "443:443"
+      - "7000:7000"
+    expose:
+      - "443"
+      - "5432"
+      - "1999"
+      - "7000"
+    volumes:
+      - ./files/haproxy:/usr/local/etc/haproxy
+
   conjur-master-1.mycompany.local:
     image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
     ports:
-      - "443:443"
+      - "444:443"
     expose:
       - "443"
       - "5432"
@@ -19,10 +32,11 @@ services:
   conjur-master-2.mycompany.local:
     image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
     ports:
-      - "444:443"
+      - "445:443"
     expose:
       - "443"
       - "5432"
+      - "1999"
     security_opt:
         - "seccomp:unconfined"
     volumes:
@@ -32,7 +46,7 @@ services:
   conjur-master-3.mycompany.local:
     image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
     ports:
-      - "445:443"
+      - "446:443"
     expose:
       - "443"
       - "5432"
@@ -46,31 +60,21 @@ services:
   conjur-master-4.mycompany.local:
     image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
     ports:
-      - "446:443"
+      - "447:443"
     expose:
       - "443"
       - "5432"
+      - "1999"
     security_opt:
         - "seccomp:unconfined"
     volumes:
       - backups:/opt/conjur/backup/
       - ./files:/conjur_files
 
-  # conjur-standby.mycompany.local:
-  #   image: registry2.itci.conjur.net/conjur-appliance:5.0-stable
-  #   expose:
-  #     - "443"
-  #     - "5432"
-  #   security_opt:
-  #       - "seccomp:unconfined"
-  #   volumes:
-  #     - backups:/opt/conjur/backup/
-  #     - ./files:/conjur_files
-
-  conjur-follower.mycompany.local:
+  conjur-follower-1.mycompany.local:
     image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
     ports:
-      - "447:443"
+      - "448:443"
     expose:
       - "443"
     security_opt:
@@ -94,7 +98,7 @@ services:
     image: cyberark/conjur-cli:5
     working_dir:  -w /src/cli
     environment:
-      CONJUR_APPLIANCE_URL: https://conjur-follower.mycompany.local
+      CONJUR_APPLIANCE_URL: https://conjur-follower.mycompany.local:448
       CONJUR_ACCOUNT: demo
       CONJUR_AUTHN_LOGIN: admin
     volumes:

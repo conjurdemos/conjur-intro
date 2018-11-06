@@ -1,5 +1,7 @@
 #!/bin/bash -e
 
+export VERSION=5.0-stable
+
 function print_help() {
   cat << EOF
 NAME
