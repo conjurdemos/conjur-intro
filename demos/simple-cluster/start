@@ -44,6 +44,7 @@ if [[ $AUTO_FAILOVER = true ]]; then
                                   conjur-master-2.mycompany.local \
                                   conjur-master-3.mycompany.local \
                                   conjur-master-4.mycompany.local \
+                                  conjur-master.mycompany.local \
                                   conjur-follower-1.mycompany.local
 else
   docker-compose up -d --no-deps conjur-master-1.mycompany.local \
@@ -76,12 +77,12 @@ if [[ $CUSTOM_CERTS = true ]]; then
     "
   fi
 fi
-if [[ $AUTO_FAILOVER = true ]]; then
-  docker-compose exec conjur-master-1.mycompany.local bash -c "
-    evoke ca import -k /conjur_files/certs/conjur-master-3.mycompany.local.key.pem /conjur_files/certs/conjur-master-3.mycompany.local.cert.pem
-    evoke ca import -k /conjur_files/certs/conjur-master-4.mycompany.local.key.pem /conjur_files/certs/conjur-master-4.mycompany.local.cert.pem
-  "
-fi
+# if [[ $AUTO_FAILOVER = true ]]; then
+#   docker-compose exec conjur-master-1.mycompany.local bash -c "
+#     evoke ca import -k /conjur_files/certs/conjur-master-3.mycompany.local.key.pem /conjur_files/certs/conjur-master-3.mycompany.local.cert.pem
+#     evoke ca import -k /conjur_files/certs/conjur-master-4.mycompany.local.key.pem /conjur_files/certs/conjur-master-4.mycompany.local.cert.pem
+#   "
+# fi
 
 if [[ $AUTO_FAILOVER = true && $CUSTOM_CERTS = false ]]; then
   docker-compose exec conjur-master-1.mycompany.local bash -c "

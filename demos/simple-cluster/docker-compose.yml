@@ -1,7 +1,7 @@
 version: "3"
 services:
   conjur-master.mycompany.local:
-    image: haproxy:1.8
+    image: haproxy:1.8-alpine
     ports:
       - "443:443"
       - "7000:7000"
@@ -9,6 +9,7 @@ services:
       - "443"
       - "5432"
       - "1999"
+      - "7000"
     volumes:
       - ./files/haproxy:/usr/local/etc/haproxy
 
