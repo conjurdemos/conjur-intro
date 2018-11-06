@@ -1,0 +1,3 @@
+dn: olcDatabase={1}mdb,cn=config
+add: olcRequires
+olcRequires: authc
