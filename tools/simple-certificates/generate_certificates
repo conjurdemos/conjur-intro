@@ -7,12 +7,9 @@ function ssl_proxy {
   "
 }
 
-# desired domain name
 domain='mycompany.local'
-# sub-domain of your cluster load balancer
-master_cluster='conjur-master'
-# names of each node in the master cluster
-master_nodes=( 'conjur-master-1' 'conjur-master-2' 'conjur-master-3' 'conjur-master-4' $master_cluster)
+nodes=( 'conjur-master-1' 'conjur-master-2' 'conjur-master-3' 'conjur-master-4')
+altname='DNS:conjur-master-1.mycompany.local,DNS:conjur-master-2.mycompany.local,DNS:conjur-master-3.mycompany.local,DNS:conjur-master-4.mycompany.local'
 
 certificate_password='secret'
 
@@ -90,7 +87,7 @@ if [ ! -f $path/certs/intermediate.cert.pem ]; then
   ssl_proxy chmod 444 /src/certificates/intermediate/certs/ca-chain.cert.pem
 fi
 
-for i in "${master_nodes[@]}"
+for i in "${nodes[@]}"
 do
   fqdn="$i.$domain"
   folder="certificates/nodes/$fqdn"
@@ -104,7 +101,7 @@ do
     chmod 400 $folder/$fqdn.key.pem
 
     # Generate CSR
-    san="DNS:$master_cluster.$domain"
+    san="DNS:$fqdn,$altname"
 
     ssl_proxy openssl req -config /configs/intermediate-openssl.cnf \
         -subj \"/C=US/ST=Massachusetts/L=Newton/O=CyberArk/OU=Conjur/CN=$fqdn\" \
