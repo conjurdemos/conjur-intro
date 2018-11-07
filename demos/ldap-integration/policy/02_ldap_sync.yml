@@ -11,7 +11,7 @@
   annotations:
     ldap-sync/base_dn: dc=example,dc=org
     ldap-sync/bind_dn: cn=admin,dc=example,dc=org
-    ldap-sync/connect_type: plain
+    ldap-sync/connect_type: tls
     ldap-sync/host: ldap-server
     ldap-sync/port: 389
     ldap-sync/group_attribute_mapping/name: cn
@@ -26,4 +26,8 @@
     
 - !variable
   id: bind-password/default
+  owner: !host
+
+- !variable
+  id: tls-cert/default
   owner: !host

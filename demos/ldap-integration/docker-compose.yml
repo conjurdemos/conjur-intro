@@ -1,7 +1,7 @@
 version: "3"
 services:
   conjur-master.mycompany.local:
-    image: registry2.itci.conjur.net/conjur-appliance:5.0-stable
+    image: registry2.itci.conjur.net/conjur-appliance:secure-ldap-sync
     ports:
       - "443:443"
     security_opt:
@@ -13,7 +13,7 @@ services:
       - ldap-server
 
   conjur-follower.mycompany.local:
-    image: registry2.itci.conjur.net/conjur-appliance:5.0-stable
+    image: registry2.itci.conjur.net/conjur-appliance:secure-ldap-sync
     ports:
       - "444:443"
     security_opt:
@@ -38,9 +38,11 @@ services:
 
   ldap-server:
     image: osixia/openldap
+    hostname: ldap-server
     command: --copy-service --loglevel debug
     environment:
       LDAP_ADMIN_PASSWORD: ldapsecret
+      LDAP_TLS_VERIFY_CLIENT: try
 
     volumes:
       - ./files/ldap:/opt/ldap
