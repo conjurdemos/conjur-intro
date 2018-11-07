@@ -3,3 +3,4 @@ cli_cache/*
 *.tar
 
 tools/simple-certificates/certificates/*
+.DS_Store
