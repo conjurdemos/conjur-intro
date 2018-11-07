@@ -61,7 +61,13 @@ docker-compose exec ldap-server bash -c "
 
 # Load policy for LDAP sync
 ./cli conjur policy load conjur/ldap-sync policy/02_ldap_sync.yml
+
+# Store the LDAP bind password
 ./cli conjur variable values add conjur/ldap-sync/bind-password/default $LDAP_ADMIN_PASSWORD
+
+# Store the LDAP CA chain
+docker-compose exec -T ldap-server bash -c "cat /container/run/service/slapd/assets/certs/ca.crt" > certs/ca.crt
+cat certs/ca.crt | ./cli conjur variable values add conjur/ldap-sync/tls-cert/default
 
 # Generate sync policy
 ./cli conjur ldap-sync policy show | tail -n +2 > ./policy/ldap-sync-default.yml
