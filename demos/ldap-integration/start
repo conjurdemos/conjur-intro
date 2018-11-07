@@ -34,6 +34,12 @@ docker-compose exec conjur-master.mycompany.local bash -c "
   evoke seed follower conjur-follower.mycompany.local > /opt/conjur/backup/follower-seed.tar
 "
 
+# Enable LDAP sync service
+docker-compose exec conjur-master.mycompany.local bash -c "
+  rm /etc/service/conjur/ldap-sync/down
+  sv start conjur/ldap-sync
+"
+
 # Setup the follower
 docker-compose exec conjur-follower.mycompany.local bash -c "
   evoke unpack seed /opt/conjur/backup/follower-seed.tar
@@ -42,11 +48,24 @@ docker-compose exec conjur-follower.mycompany.local bash -c "
   evoke configure follower
 "
 
+# Load the LDAP users and groups into OpenLDAP
+LDAP_ADMIN_PASSWORD=ldapsecret
+docker-compose exec ldap-server bash -c "
+  ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f /opt/ldap/disable_anon_frontend.ldif
+  ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f /opt/ldap//disable_anon_backend.ldif
+  ldapadd -x -D cn=admin,dc=example,dc=org -w $LDAP_ADMIN_PASSWORD -f /opt/ldap/test-ldap_users.ldif
+  ldapadd -x -D cn=admin,dc=example,dc=org -w $LDAP_ADMIN_PASSWORD -f /opt/ldap//test-ldap_groups.ldif
+  "
 
-# if [[ $LOAD_DATA = true ]]; then
-#   ./cli conjur policy load --replace root policy/users.yml
-#   ./cli conjur policy load root policy/policy.yml
-#   ./cli conjur policy load staging policy/apps/myapp.yml
-#   ./cli conjur policy load production policy/apps/myapp.yml
-#   ./cli conjur policy load root policy/application_grants.yml
-# fi
+./cli conjur policy load --replace root policy/01_root.yml
+
+# Load policy for LDAP sync
+./cli conjur policy load conjur/ldap-sync policy/02_ldap_sync.yml
+./cli conjur variable values add conjur/ldap-sync/bind-password/default $LDAP_ADMIN_PASSWORD
+
+# Generate sync policy
+./cli conjur ldap-sync policy show | tail -n +2 > ./policy/ldap-sync-default.yml
+./cli conjur policy load root policy/ldap-sync-default.yml
+
+# Load policy for authn LDAP
+./cli conjur policy load conjur/authn-ldap policy/03_authn_ldap.yml

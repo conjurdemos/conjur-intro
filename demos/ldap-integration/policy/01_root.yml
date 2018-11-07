@@ -1,0 +1,2 @@
+- !policy conjur/ldap-sync
+- !policy conjur/authn-ldap
