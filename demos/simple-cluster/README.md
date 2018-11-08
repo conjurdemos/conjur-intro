@@ -82,3 +82,20 @@ $ ./start --master-key --custom-certs --load-data
 ### Logging into your Cluster
 Navigate to [localhost](https://localhost) and login with the username: `admin`
 and the password: `secret`.
+
+## Trigger Failover
+A failover can be triggered using the `failover` script.  This script stops the current master, causing a failover to occur. The former master is then rebuilt and re-added to the cluster.
+
+**Note** This script can only be run once.
+
+#### Failover an Encrypted Node
+To failover a master node that's been configured with Master Key encryption:
+```
+$ ./failover --master-key
+```
+
+#### Failover an Unencrypted Node
+To failover a master node that has not been encrypted with a master key:
+```
+$ ./failover
+```

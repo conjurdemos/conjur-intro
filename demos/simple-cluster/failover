@@ -1,0 +1,70 @@
+#!/bin/bash -ex
+
+function print_help() {
+  cat << EOF
+
+Cause the current master to failover, then reprovision the former master as a
+standby.
+
+Usage: start [options]
+
+    -h, --help          Shows this help message.
+    --master-key        Encrypts certificates using a master key
+    --tag <conjur-tag>  Starts a cluster with a particular appliance (defaults to 5.0-stable)
+
+EOF
+  exit
+}
+
+TAG=5.0-stable
+MASTER_KEY=false
+while true ; do
+  case "$1" in
+    --master-key ) MASTER_KEY=true ; shift ;;
+    --tag ) shift ; TAG=$1 ; shift ;;
+    -h | --help ) print_help ; shift ;;
+     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+  esac
+done
+
+export VERSION=$TAG
+
+docker-compose exec conjur-master-1.mycompany.local sv stop conjur
+echo 'Failover has been triggered'
+
+# sleep 60
+
+echo 'Bring the failed master back into the cluster'
+
+# reset old master (bring up a fresh appliance container)
+docker-compose stop conjur-master-1.mycompany.local
+yes 'y' | docker-compose rm conjur-master-1.mycompany.local
+docker-compose up -d --no-deps conjur-master-1.mycompany.local
+
+# Generate seed file for new standby
+docker-compose exec conjur-master-2.mycompany.local bash -c "
+  evoke seed standby conjur-master-1.mycompany.local conjur-master-2.mycompany.local > /opt/conjur/backup/standby-seed-1.tar
+"
+
+# provision old master as a standby
+docker-compose exec conjur-master-1.mycompany.local bash -c "
+  evoke unpack seed /opt/conjur/backup/standby-seed-1.tar
+"
+if [[ $MASTER_KEY = true ]]; then
+  docker-compose exec conjur-master-1.mycompany.local bash -c "
+    evoke keys exec -m /conjur_files/master-key -- evoke configure standby
+  "
+else
+  docker-compose exec conjur-master-1.mycompany.local bash -c "
+    evoke configure standby
+  "
+fi
+
+# bring the new standby into cluster
+docker-compose exec conjur-master-2.mycompany.local bash -c "
+  evoke cluster member add conjur-master-1.mycompany.local
+"
+
+docker-compose exec conjur-master-1.mycompany.local bash -c "
+  evoke cluster enroll -n conjur-master-1.mycompany.local --reenroll conjur
+"
