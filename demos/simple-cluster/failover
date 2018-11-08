@@ -32,7 +32,7 @@ export VERSION=$TAG
 docker-compose exec conjur-master-1.mycompany.local sv stop conjur
 echo 'Failover has been triggered'
 
-# sleep 60
+sleep 60
 
 echo 'Bring the failed master back into the cluster'
 

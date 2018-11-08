@@ -99,3 +99,5 @@ To failover a master node that has not been encrypted with a master key:
 ```
 $ ./failover
 ```
+
+After a failover event occurs, the cluster master is available on port `444`: https://localhost:444.
