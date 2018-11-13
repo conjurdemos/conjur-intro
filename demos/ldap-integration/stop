@@ -1,0 +1,7 @@
+#!/bin/bash -ex
+
+docker-compose down -v
+
+rm -rf cli_cache
+rm -f ./policy/ldap-sync*.yml
+rm -f ./certs/*

@@ -1,0 +1,33 @@
+- !host
+- !webservice
+  owner: !host
+- !group
+  owner: !host
+
+- !resource
+  id: default
+  owner: !host
+  kind: configuration
+  annotations:
+    ldap-sync/base_dn: dc=example,dc=org
+    ldap-sync/bind_dn: cn=admin,dc=example,dc=org
+    ldap-sync/connect_type: tls
+    ldap-sync/host: ldap-server
+    ldap-sync/port: 389
+    ldap-sync/group_attribute_mapping/name: cn
+    ldap-sync/user_attribute_mapping/name: cn
+    ldap-sync/group_attribute_mapping/gid: gidNumber
+    ldap-sync/user_attribute_mapping/uid: uidNumber
+    ldap-sync/group_filter: (objectClass=posixGroup)
+    ldap-sync/user_filter: (objectClass=posixAccount)
+    ldap-sync/import_gid_numbers: true
+    ldap-sync/import_public_keys: false
+    ldap-sync/import_uid_numbers: true
+    
+- !variable
+  id: bind-password/default
+  owner: !host
+
+- !variable
+  id: tls-cert/default
+  owner: !host
