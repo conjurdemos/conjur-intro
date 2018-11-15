@@ -117,3 +117,21 @@ uidNumber: 10
 gidNumber: 10010
 homeDirectory: /Users/krbtgt
 memberOf: cn=Quality_Assurance,dc=example,dc=org
+
+dn: uid=alice,dc=example,dc=org
+cn: Alice
+sn: Smith
+uid: alice
+objectClass: person
+objectClass: uidObject
+objectClass: top
+userPassword: alice
+
+dn: uid=charles,dc=example,dc=org
+cn: Charles
+sn: Berkeley
+uid: charles
+objectClass: person
+objectClass: uidObject
+objectClass: top
+userPassword: charles

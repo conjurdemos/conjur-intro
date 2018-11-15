@@ -2,6 +2,9 @@ version: "3"
 services:
   conjur-master.mycompany.local:
     image: registry2.itci.conjur.net/conjur-appliance:secure-ldap-sync
+    environment: 
+      CONJUR_AUTHENTICATORS: "authn-ldap/ldap-server,authn"
+      CONJUR_AUTHN_URL: http://localhost/authn-ldap/ldap-server
     ports:
       - "443:443"
     security_opt:
@@ -14,6 +17,9 @@ services:
 
   conjur-follower.mycompany.local:
     image: registry2.itci.conjur.net/conjur-appliance:secure-ldap-sync
+    environment: 
+      CONJUR_AUTHENTICATORS: "authn-ldap/ldap-server,authn"
+      CONJUR_AUTHN_URL: http://localhost/authn-ldap/ldap-server
     ports:
       - "444:443"
     security_opt:
@@ -35,7 +41,6 @@ services:
       - .:/src/cli
       - ./cli_cache:/root
     
-
   ldap-server:
     image: osixia/openldap
     hostname: ldap-server
@@ -46,7 +51,6 @@ services:
 
     volumes:
       - ./files/ldap:/opt/ldap
-
 
 volumes:
   backups:

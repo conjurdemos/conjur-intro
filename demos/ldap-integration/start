@@ -75,3 +75,8 @@ cat certs/ca.crt | ./cli conjur variable values add conjur/ldap-sync/tls-cert/de
 
 # Load policy for authn LDAP
 ./cli conjur policy load conjur/authn-ldap policy/03_authn_ldap.yml
+./cli conjur policy load root policy/04_authn_ldap_entitlements.yml
+
+# Store the LDAP bind password and CA cert chain
+./cli conjur variable values add conjur/authn-ldap/ldap-server/bind-password $LDAP_ADMIN_PASSWORD
+cat certs/ca.crt | ./cli conjur variable values add conjur/authn-ldap/ldap-server/tls-cert

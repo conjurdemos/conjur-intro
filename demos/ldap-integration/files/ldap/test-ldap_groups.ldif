@@ -84,3 +84,5 @@ memberUid: nil
 memberUid: winupdate
 memberUid: Administrator
 memberUid: krbtgt
+memberUid: alice
+memberUid: charles
