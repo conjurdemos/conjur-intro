@@ -15,11 +15,11 @@
     ldap-sync/host: ldap-server
     ldap-sync/port: 389
     ldap-sync/group_attribute_mapping/name: cn
-    ldap-sync/user_attribute_mapping/name: cn
+    ldap-sync/user_attribute_mapping/name: uid
     ldap-sync/group_attribute_mapping/gid: gidNumber
     ldap-sync/user_attribute_mapping/uid: uidNumber
     ldap-sync/group_filter: (objectClass=posixGroup)
-    ldap-sync/user_filter: (objectClass=posixAccount)
+    ldap-sync/user_filter: (objectClass=person)
     ldap-sync/import_gid_numbers: true
     ldap-sync/import_public_keys: false
     ldap-sync/import_uid_numbers: true

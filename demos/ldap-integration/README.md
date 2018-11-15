@@ -36,5 +36,5 @@ $ ./start
 ```
 
 ### Logging into your Cluster
-Navigate to [localhost](https://localhost) and login with the username: `admin`
-and the password: `secret`.
+Navigate to [localhost](https://localhost) and login with the LDAP username: `alice`
+and the password: `alice`.
