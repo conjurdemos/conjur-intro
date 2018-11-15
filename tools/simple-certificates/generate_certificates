@@ -1,125 +1,275 @@
 #!/bin/bash -e
 
+DOMAIN_NAME='mycompany.local'
+NODES=( 'conjur-master-1'
+        'conjur-master-2'
+        'conjur-master-3'
+        'conjur-master-4' )
+ALT_NAME='DNS:conjur-master-1.mycompany.local,DNS:conjur-master-2.mycompany.local,DNS:conjur-master-3.mycompany.local,DNS:conjur-master-4.mycompany.local'
+
+CERT_PASSWORD='secret'
+
+IMAGE_TAG='conjurinc-certgen'
+
+REQUIRED_DIRS=( 'certs'
+                'crl'
+                'csr'
+                'newcerts'
+                'private' )
+
+RSA_KEY_LENGTH=4096
+
+BASE_PATH='certificates'
+BASE_ROOT_CERT_PATH="${BASE_PATH}/root"
+BASE_NODE_CERT_PATH="${BASE_PATH}/nodes"
+
+CURRENT_DIR="$(pwd)"
+
+if [[ "$#" -lt 1 ]]; then
+  echo "Usage: $0 <number_of_intermediate_CAs>"
+  exit 1
+fi
+
+INTERMEDIATE_CERT_DEPTH="${1}"
+echo "Trying to generate certs with ${INTERMEDIATE_CERT_DEPTH} intermediate CAs"
+
+echo "**************************************************"
+echo "Building our SSL docker image..."
+docker build -t "${IMAGE_TAG}" .
+
+san=""
+signer_name=""
+
 function ssl_proxy {
+  local work_dir="$1"
+  shift
+
   local cmd="$@"
-  docker run -it -v "$(pwd):/src" -v "$(pwd)/configs:/configs" -w "/src/$path" -e "SAN=$san" jordi/caroot bash -c "
+
+  if [ "${DEBUG}" == "true" ]; then
+    set -x
+  fi
+
+  docker run -it \
+             --rm \
+             -v "${CURRENT_DIR}:/src" \
+             -v "${CURRENT_DIR}/configs:/configs" \
+             -w "/src/${work_dir}" \
+             -e "SAN=${san}" \
+             -e "SIGNER_NAME=${signer_name}" \
+             "${IMAGE_TAG}" bash -c "
     $cmd
   "
+
+  if [ "${DEBUG}" == "true" ]; then
+    set +x
+  fi
+
 }
 
-domain='mycompany.local'
-nodes=( 'conjur-master-1' 'conjur-master-2' 'conjur-master-3' 'conjur-master-4')
-altname='DNS:conjur-master-1.mycompany.local,DNS:conjur-master-2.mycompany.local,DNS:conjur-master-3.mycompany.local,DNS:conjur-master-4.mycompany.local'
+signer_name="root"
+if [ ! -f "${BASE_ROOT_CERT_PATH}/certs/root.cert.pem" ]; then
+  echo "**************************************************"
+  echo "CA cert not found. Regenerating CA..."
 
-certificate_password='secret'
+  echo "Performing some housekeeping for CA..."
+  for ca_dir in ${REQUIRED_DIRS[@]}; do
+    ca_dir_path="${BASE_ROOT_CERT_PATH}/${ca_dir}"
+    mkdir -p "${ca_dir_path}"
+  done
 
-path='certificates/root'
-if [ ! -f $path/certs/ca.cert.pem ]; then
-  mkdir -p $path/certs $path/crl $path/newcerts $path/private
-  chmod 700 $path/private
-  touch $path/index.txt
-  echo 1000 > $path/serial
+  chmod 700 "${BASE_ROOT_CERT_PATH}/private"
+  touch "${BASE_ROOT_CERT_PATH}/index.txt"
+  echo 1000 > "${BASE_ROOT_CERT_PATH}/serial"
 
-  # Root Key
-  ssl_proxy openssl genrsa -aes256 -passout pass:$certificate_password -out private/ca.key.pem 4096
-  ssl_proxy chmod 400 private/ca.key.pem
+  echo "Generating root CA RSA key..."
+  ssl_proxy "${BASE_ROOT_CERT_PATH}" \
+    openssl genrsa -aes256 \
+                   -passout "pass:$CERT_PASSWORD" \
+                   -out "private/root.key.pem" \
+                   "${RSA_KEY_LENGTH}"
+  ssl_proxy "${BASE_ROOT_CERT_PATH}" chmod 400 "private/root.key.pem"
 
-  # Root Certificate
-  ssl_proxy openssl req -config /configs/root-openssl.cnf \
-    -passout pass:$certificate_password \
-    -passin pass:$certificate_password \
-    -subj \"/C=US/ST=Massachusetts/L=Newton/O=CyberArk/OU=Conjur/CN=Root CA\" \
-    -key private/ca.key.pem \
-    -new -x509 -days 7300 -sha256 -extensions v3_ca \
-    -out certs/ca.cert.pem
+  echo "Generating root CA certificate from the RSA key..."
+  ssl_proxy "${BASE_ROOT_CERT_PATH}" \
+    openssl req -config "/configs/openssl.cnf" \
+      -passout "pass:$CERT_PASSWORD" \
+      -passin "pass:$CERT_PASSWORD" \
+      -subj "\"/C=US/ST=Massachusetts/O=CyberArk/OU=Conjur/CN=Root CA\"" \
+      -key "private/root.key.pem" \
+      -new -x509 -days 7300 -sha256 -extensions v3_ca \
+      -out "certs/root.cert.pem"
 
-  ssl_proxy chmod 444 certs/ca.cert.pem
+  ssl_proxy "${BASE_ROOT_CERT_PATH}" chmod 444 "certs/root.cert.pem"
 
-  ssl_proxy openssl x509 -noout -text -in certs/ca.cert.pem
-fi
-
-path='certificates/intermediate'
-if [ ! -f $path/certs/intermediate.cert.pem ]; then
-
-  # Generate Intermediate pair
-  mkdir -p $path/certs $path/crl $path/csr $path/newcerts $path/private
-  chmod 700 $path/private
-  touch $path/index.txt
-  echo 1000 > $path/serial
-  echo 1000 > $path/crlnumber
-
-  # Intermediate Key
-  ssl_proxy openssl genrsa -aes256 \
-      -passout pass:$certificate_password \
-      -out private/intermediate.key.pem 4096
-  ssl_proxy chmod 400 private/intermediate.key.pem
-
-  # Intermediate Certificate
-  ssl_proxy openssl req -config /configs/intermediate-openssl.cnf -new -sha256 \
-      -passout pass:$certificate_password \
-      -passin pass:$certificate_password \
-      -subj \"/C=US/ST=Massachusetts/L=Newton/O=CyberArk/OU=Conjur/CN=Intermediate CA\" \
-      -key private/intermediate.key.pem \
-      -out csr/intermediate.csr.pem
-
-  # Sign Intermediate with Root
-  ssl_proxy openssl ca -config /configs/root-openssl.cnf -extensions v3_intermediate_ca \
-        -days 3650 -notext -md sha256 -batch \
-        -passin pass:$certificate_password \
-        -in csr/intermediate.csr.pem \
-        -out certs/intermediate.cert.pem
-
-  ssl_proxy chmod 444 certs/intermediate.cert.pem
-
-  # View Certificate
-  ssl_proxy openssl x509 -noout -text \
-        -in certs/intermediate.cert.pem
-
-
-  # Validate Intermediate certificate
-  ssl_proxy openssl verify -CAfile /src/certificates/root/certs/ca.cert.pem \
-        /src/certificates/intermediate/certs/intermediate.cert.pem
-
-  # Create Certificate Chain for Intermediate (with Root)
-  ssl_proxy 'cat /src/certificates/intermediate/certs/intermediate.cert.pem \
-        /src/certificates/root/certs/ca.cert.pem > /src/certificates/intermediate/certs/ca-chain.cert.pem'
-
-  ssl_proxy chmod 444 /src/certificates/intermediate/certs/ca-chain.cert.pem
-fi
-
-for i in "${nodes[@]}"
-do
-  fqdn="$i.$domain"
-  folder="certificates/nodes/$fqdn"
-
-  if [ ! -f $folder/$fqdn.cert.pem ]; then
-    echo $fqdn
-    mkdir -p $folder
-
-    # Generate private key
-    ssl_proxy openssl genrsa -out /src/$folder/$fqdn.key.pem 2048
-    chmod 400 $folder/$fqdn.key.pem
-
-    # Generate CSR
-    san="DNS:$fqdn,$altname"
-
-    ssl_proxy openssl req -config /configs/intermediate-openssl.cnf \
-        -subj \"/C=US/ST=Massachusetts/L=Newton/O=CyberArk/OU=Conjur/CN=$fqdn\" \
-        -extensions san_env \
-        -key /src/$folder/$fqdn.key.pem \
-        -new -sha256 -out /src/$folder/$fqdn.csr.pem
-
-    # Sign CSR with Intermediate certificate
-    ssl_proxy openssl ca -config /configs/intermediate-openssl.cnf \
-        -extensions server_cert -days 375 -notext -md sha256 -batch \
-        -passin pass:$certificate_password \
-        -extensions san_env \
-        -in /src/$folder/$fqdn.csr.pem \
-        -out /src/$folder/$fqdn.cert.pem
-    chmod 444 $folder/$fqdn.cert.pem
-
-    # View Certificate
-    ssl_proxy openssl x509 -noout -text \
-          -in /src/$folder/$fqdn.cert.pem
+  if [ "${DEBUG}" == "true" ]; then
+    ssl_proxy "${BASE_ROOT_CERT_PATH}" openssl x509 -noout -text -in "certs/root.cert.pem"
   fi
+fi
+
+echo "**************************************************"
+
+for intermediate_cert_index in $(seq 1 ${INTERMEDIATE_CERT_DEPTH}); do
+  intermediate_cert_name="intermediate_${intermediate_cert_index}"
+  intermediate_cert_cn="Intermediate CA ${intermediate_cert_index}"
+  intermediate_cert_file="${intermediate_cert_name}.cert.pem"
+  intermediate_key_file="${intermediate_cert_name}.key.pem"
+  intermediate_csr_file="${intermediate_cert_name}.csr.pem"
+
+  intermediate_ca_path="${BASE_PATH}/${intermediate_cert_name}"
+
+  if [[ ! -f "${CURRENT_DIR}/${intermediate_ca_path}" ]]; then
+    echo "Performing some housekeeping for intermediate CA..."
+    for ca_dir in ${REQUIRED_DIRS[@]}; do
+      ca_dir_path="${intermediate_ca_path}/${ca_dir}"
+      mkdir -p "${ca_dir_path}"
+    done
+
+    chmod 700 "${intermediate_ca_path}/private"
+    touch "${intermediate_ca_path}/index.txt"
+    echo 1000 > "${intermediate_ca_path}/crlnumber"
+    echo 1000 > "${intermediate_ca_path}/serial"
+  fi
+
+  echo "Checking intermediate cert number ${intermediate_cert_index}..."
+  if [ ! -f "${intermediate_ca_path}/certs/${intermediate_cert_file}" ]; then
+    echo "Intermediate cert '${intermediate_cert_name}' not found. Regenerating..."
+
+    echo "Generating intermediate RSA key (${intermediate_cert_name})..."
+    ssl_proxy "${intermediate_ca_path}" \
+      openssl genrsa -aes256 \
+        -passout "pass:${CERT_PASSWORD}" \
+        -out "private/${intermediate_key_file}" \
+        "${RSA_KEY_LENGTH}"
+    ssl_proxy "${intermediate_ca_path}" chmod 400 "private/${intermediate_key_file}"
+
+    echo "Generating intermediate CSR (${intermediate_cert_name}) from the RSA key..."
+    signer_name="${intermediate_cert_name}"
+    ssl_proxy "${intermediate_ca_path}" \
+      openssl req -config "/configs/openssl.cnf" \
+        -new -sha256 \
+        -passout "pass:${CERT_PASSWORD}" \
+        -passin "pass:${CERT_PASSWORD}" \
+        -subj "\"/C=US/ST=Massachusetts/L=Newton/O=CyberArk/OU=Conjur/CN=${intermediate_cert_cn}\"" \
+        -key "private/${intermediate_key_file}" \
+        -out "csr/${intermediate_csr_file}"
+
+    skip_cert_chain="false"
+    signer_name="intermediate_$(( intermediate_cert_index - 1 ))"
+    if [[ "${intermediate_cert_index}" == "1" ]]; then
+      echo "First intermediate cert detected. Signing with root key."
+      skip_cert_chain="true"
+      signer_name="root"
+    fi
+
+    echo "Using signer cert '${signer_name}'"
+
+    echo "Creating a parent CA-signed intermediate cert (${intermediate_cert_name}) from the CSR..."
+    ssl_proxy "${intermediate_ca_path}" \
+      openssl ca -config "/configs/openssl.cnf" \
+        -extensions v3_intermediate_ca \
+        -days 3650 -notext -md sha256 -batch \
+        -passin "pass:${CERT_PASSWORD}" \
+        -in "csr/${intermediate_csr_file}" \
+        -out "certs/${intermediate_cert_file}"
+
+    ssl_proxy "${intermediate_ca_path}" chmod 444 "certs/${intermediate_cert_file}"
+
+    if [ "${DEBUG}" == "true" ]; then
+      ssl_proxy "${intermediate_ca_path}" openssl x509 -noout -text \
+        -in "certs/${intermediate_cert_file}"
+    fi
+
+    echo "Building cert chain list for verification..."
+    untrusted_certs_params=""
+    if [ "${skip_cert_chain}" != "true" ]; then
+      untrusted_certs_file="${BASE_PATH}/intermediate_${intermediate_cert_index}/rootless-ca-chain.cert.pem"
+      for cert_chain_index in $( seq 1 $((${intermediate_cert_index} - 1)) ); do
+        cert_path="${CURRENT_DIR}/${BASE_PATH}/intermediate_${cert_chain_index}/certs/intermediate_${cert_chain_index}.cert.pem"
+        cat "${cert_path}" >> "${CURRENT_DIR}/${untrusted_certs_file}"
+      done
+      untrusted_certs_params="-untrusted /src/${untrusted_certs_file}"
+    fi
+
+    echo "Validating that the generated cert (${intermediate_cert_name}) is signed with the right CA key..."
+    ssl_proxy "${intermediate_ca_path}" \
+      openssl verify -CAfile "/src/certificates/root/certs/root.cert.pem" \
+        ${untrusted_certs_params} \
+        "/src/${intermediate_ca_path}/certs/${intermediate_cert_file}"
+  fi
+done
+
+echo "Building the complete cert chain..."
+cert_chain_files=""
+for intermediate_cert_index in $(seq ${INTERMEDIATE_CERT_DEPTH} 1); do
+  intermediate_cert_name="intermediate_${intermediate_cert_index}"
+  intermediate_cert_file="${intermediate_cert_name}.cert.pem"
+
+  cert_chain_files+=" ${CURRENT_DIR}/certificates/${intermediate_cert_name}/certs/${intermediate_cert_file}"
+done
+cert_chain_files+=" ${CURRENT_DIR}/certificates/root/certs/root.cert.pem"
+
+echo "Creating the complete cert chain file..."
+if [ "${DEBUG}" == "true" ]; then
+  echo "Cert chain:${cert_chain_files}"
+fi
+cat ${cert_chain_files} > "${CURRENT_DIR}/certificates/ca-chain.cert.pem"
+
+
+echo "**************************************************"
+echo "Generating node certificates..."
+
+for node_name in "${NODES[@]}"; do
+  node_fqdn="${node_name}.${DOMAIN_NAME}"
+  node_cert_folder="${BASE_NODE_CERT_PATH}/${node_fqdn}"
+  node_cert_file="${node_cert_folder}/${node_fqdn}.cert.pem"
+  node_key_file="${node_cert_folder}/${node_fqdn}.key.pem"
+  node_csr_file="${node_cert_folder}/${node_fqdn}.csr.pem"
+
+  echo "Checking '${node_fqdn}' cert..."
+  if [ ! -f "$node_cert_folder/$node_fqdn.cert.pem" ]; then
+    echo "Node '$node_fqdn' cert missing. Regenerating..."
+    mkdir -p "${CURRENT_DIR}/$node_cert_folder"
+
+    echo "Generating node RSA keypair..."
+    ssl_proxy "." openssl genrsa -out "/src/${node_key_file}" "${RSA_KEY_LENGTH}"
+
+    echo "Creating the leaf CSR from RSA key..."
+    san="DNS:${node_fqdn},${ALT_NAME}"
+    signer_name="intermediate_${INTERMEDIATE_CERT_DEPTH}"
+    ssl_proxy "." openssl req -config "/configs/openssl.cnf" \
+        -subj "\"/C=US/ST=Massachusetts/L=Newton/O=CyberArk/OU=Conjur/CN=${node_fqdn}\"" \
+        -extensions san_env \
+        -key "/src/${node_key_file}" \
+        -new -sha256 -out "/src/${node_csr_file}"
+
+    echo "Signing leaf node with the intermediate cert..."
+    ssl_proxy "." openssl ca -config "/configs/openssl.cnf" \
+        -extensions server_cert -days 365 -notext -md sha256 -batch \
+        -passin "pass:${CERT_PASSWORD}" \
+        -extensions san_env \
+        -in "/src/${node_csr_file}" \
+        -out "/src/${node_cert_file}"
+    chmod 444 "${CURRENT_DIR}/${node_cert_file}"
+
+    if [ "${DEBUG}" == "true" ]; then
+      ssl_proxy "." \
+        openssl x509 -noout -text -in "/src/${node_cert_file}"
+    fi
+
+    chmod 400 "${CURRENT_DIR}/${node_key_file}"
+  fi
+done
+
+# Some of this code is repetitive but it allows for easier visibility
+# that all the certs are properly validated at the end of the run
+echo "**************************************************"
+echo "Validating that the generated node certs are properly signed:"
+for node_name in "${NODES[@]}"; do
+  node_fqdn="${node_name}.${DOMAIN_NAME}"
+  node_cert_folder="${BASE_NODE_CERT_PATH}/${node_fqdn}"
+  node_cert_file="${node_cert_folder}/${node_fqdn}.cert.pem"
+  ssl_proxy "." \
+    openssl verify -CAfile "/src/certificates/ca-chain.cert.pem" \
+      "${node_cert_file}"
 done
