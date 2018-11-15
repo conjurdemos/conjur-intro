@@ -4,3 +4,6 @@ cli_cache/*
 
 tools/simple-certificates/certificates/*
 .DS_Store
+
+# Editor files
+*.sw[po]
