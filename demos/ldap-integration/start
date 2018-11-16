@@ -67,7 +67,7 @@ docker-compose exec ldap-server bash -c "
 
 # Store the LDAP CA chain
 docker-compose exec -T ldap-server bash -c "cat /container/run/service/slapd/assets/certs/ca.crt" > certs/ca.crt
-cat certs/ca.crt | ./cli conjur variable values add conjur/ldap-sync/tls-cert/default
+cat certs/ca.crt | ./cli conjur variable values add conjur/ldap-sync/tls-ca-cert/default
 
 # Generate sync policy
 ./cli conjur ldap-sync policy show | tail -n +2 > ./policy/ldap-sync-default.yml
@@ -79,4 +79,4 @@ cat certs/ca.crt | ./cli conjur variable values add conjur/ldap-sync/tls-cert/de
 
 # Store the LDAP bind password and CA cert chain
 ./cli conjur variable values add conjur/authn-ldap/ldap-server/bind-password $LDAP_ADMIN_PASSWORD
-cat certs/ca.crt | ./cli conjur variable values add conjur/authn-ldap/ldap-server/tls-cert
+cat certs/ca.crt | ./cli conjur variable values add conjur/authn-ldap/ldap-server/tls-ca-cert
