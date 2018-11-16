@@ -29,5 +29,5 @@
   owner: !host
 
 - !variable
-  id: tls-cert/default
+  id: tls-ca-cert/default
   owner: !host
