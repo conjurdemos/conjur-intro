@@ -23,7 +23,7 @@
     ldap-sync/import_gid_numbers: true
     ldap-sync/import_public_keys: false
     ldap-sync/import_uid_numbers: true
-    
+
 - !variable
   id: bind-password/default
   owner: !host
