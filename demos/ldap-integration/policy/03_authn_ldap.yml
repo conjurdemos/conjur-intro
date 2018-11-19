@@ -7,9 +7,9 @@
     annotations:
       ldap-authn/base_dn: dc=example,dc=org
       ldap-authn/bind_dn: cn=admin,dc=example,dc=org
-      ldap-authn/connect_type: ssl
+      ldap-authn/connect_type: tls
       ldap-authn/host: ldap-server
-      ldap-authn/port: 636
+      ldap-authn/port: 389
       ldap-authn/filter_template: (&(objectClass=person)(uid=%s))
 
   - !group clients
