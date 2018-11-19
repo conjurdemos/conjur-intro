@@ -40,7 +40,7 @@ services:
     volumes:
       - .:/src/cli
       - ./cli_cache:/root
-    
+
   ldap-server:
     image: osixia/openldap
     hostname: ldap-server
@@ -48,7 +48,9 @@ services:
     environment:
       LDAP_ADMIN_PASSWORD: ldapsecret
       LDAP_TLS_VERIFY_CLIENT: try
-
+    ports:
+      - "389:389"
+      - "636:636"
     volumes:
       - ./files/ldap:/opt/ldap
 
