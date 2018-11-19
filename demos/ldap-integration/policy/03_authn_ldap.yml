@@ -1,7 +1,16 @@
 - !policy
   id: ldap-server
   body:
+  - !host
   - !webservice
+    owner: !host
+    annotations:
+      ldap-authn/base_dn: dc=example,dc=org
+      ldap-authn/bind_dn: cn=admin,dc=example,dc=org
+      ldap-authn/connect_type: tls
+      ldap-authn/host: ldap-server
+      ldap-authn/port: 389
+      ldap-authn/filter_template: (&(objectClass=person)(uid=%s))
 
   - !group clients
 
@@ -9,3 +18,11 @@
     role: !group clients
     privilege: [ read, authenticate ]
     resource: !webservice
+
+  - !variable
+    id: bind-password
+    owner: !host
+
+  - !variable
+    id: tls-ca-cert
+    owner: !host
