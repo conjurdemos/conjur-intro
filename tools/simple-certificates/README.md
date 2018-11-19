@@ -3,19 +3,20 @@
 Creates certificates to mimic the PKI certificates a customer might find in their own environment.
 
 This script will generate:
-- Root key/certificate
-- Intermediate key/certificate, signed by Root
+- Root CA key/certificate
+- Any intermediate CA key(s)/certificate(s), signed by the previous CA in the chain
 - Conjur Node certificates, all signed by the Intermediate:
     - `master-1.mycompany.local`
     - `master-2.mycompany.local`
     - `master-3.mycompany.local`
     - `follower-1.mycompany.local`
     - `follower-2.mycompany.local`
+  - You may override these leaf certificates with parameters from the CLI.
 
 ### Generate
 To create these certificates, navigate to this directory and run:
 ```
-$ ./generate_certificates
+$ ./generate_certificates <number_of_intermediate_CAs> [node_name...]
 ```
 
 You can now use the following certificates to configure a Conjur cluster:
@@ -28,22 +29,36 @@ You can now use the following certificates to configure a Conjur cluster:
 - `certificates/nodes/follower-2.mycompany.local/follower-2.mycompany.local.key.pem` - Follower 2 key
 
 ### Customizing
+
+#### Nodes
+
+Nodes can be changed with addition of the server names to the CLI args:
+```
+$ ./generate_certificates 2 foo bar baz
+```
+
+This example will create the following certs:
+- Root CA
+- Intermediate CA Certs
+  - Intermediate 1
+  - Intermediate 2
+- Leaf nodes
+  - foo.mycompany.local
+  - bar.mycompany.local
+  - baz.mycompany.local
+
+#### Domain name
+
 The domain can be customized by changing the following lines in `generate_certificates`:
 ```
-domain='mycompany.local'
-nodes=( 'master-1' 'master-2' 'master-3' 'follower-1' 'follower-2' )
-altname='DNS:master.mycompany.local'
+DOMAIN_NAME='mycompany.local'
 ```
 
 Updating to the following:
 ```
-domain='cyberark.local'
-nodes=( 'master' 'follower1' 'follower2' )
-altname='DNS:master.cyberark.local'
+DOMAIN='cyberark.local'
 ```
-will produce signed certificates for the following domains:
+will produce signed certificates similar to these for the following domains:
 - `master.cyberark.local`
 - `follower1.cyberark.local`
 - `follower2.cyberark.local`
-
-including the Altname: `master.cyberark.local`

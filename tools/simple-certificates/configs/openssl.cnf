@@ -1,13 +1,9 @@
-# OpenSSL intermediate CA configuration file.
-# Copy to `/root/ca/intermediate/openssl.cnf`.
-
 [ ca ]
-# `man ca`
 default_ca = CA_default
 
 [ CA_default ]
 # Directory and file locations.
-dir               = /src/certificates/intermediate
+dir               = /src/certificates/${ENV::SIGNER_NAME}
 certs             = $dir/certs
 crl_dir           = $dir/crl
 new_certs_dir     = $dir/newcerts
@@ -16,12 +12,12 @@ serial            = $dir/serial
 RANDFILE          = $dir/private/.rand
 
 # The root key and root certificate.
-private_key       = $dir/private/intermediate.key.pem
-certificate       = $dir/certs/intermediate.cert.pem
+private_key       = $dir/private/${ENV::SIGNER_NAME}.key.pem
+certificate       = $dir/certs/${ENV::SIGNER_NAME}.cert.pem
 
 # For certificate revocation lists.
 crlnumber         = $dir/crlnumber
-crl               = $dir/crl/intermediate.crl.pem
+crl               = $dir/crl/${ENV::SIGNER_NAME}.crl.pem
 crl_extensions    = crl_ext
 default_crl_days  = 30
 
@@ -30,15 +26,14 @@ default_md        = sha256
 
 name_opt          = ca_default
 cert_opt          = ca_default
-default_days      = 375
+default_days      = 365
 preserve          = no
-policy            = policy_loose
+policy            = policy_strict
 
 [ policy_strict ]
-# The root CA should only sign intermediate certificates that match.
-# See the POLICY FORMAT section of `man ca`.
 countryName             = match
 stateOrProvinceName     = match
+localityName            = optional
 organizationName        = match
 organizationalUnitName  = optional
 commonName              = supplied
@@ -57,7 +52,7 @@ emailAddress            = optional
 
 [ req ]
 # Options for the `req` tool (`man req`).
-default_bits        = 2048
+default_bits        = 4096
 distinguished_name  = req_distinguished_name
 string_mask         = utf8only
 
@@ -78,32 +73,33 @@ commonName                      = Common Name
 emailAddress                    = Email Address
 
 # Optionally, specify some defaults.
-countryName_default             = GB
-stateOrProvinceName_default     = England
-localityName_default            =
-0.organizationName_default      = Alice Ltd
-organizationalUnitName_default  =
+countryName_default             = US
+stateOrProvinceName_default     = Massachusetts
+localityName_default            = Newton
+0.organizationName_default      = CyberArk
+organizationalUnitName_default  = Conjur
 emailAddress_default            =
 
 [ v3_ca ]
 # Extensions for a typical CA (`man x509v3_config`).
 subjectKeyIdentifier = hash
 authorityKeyIdentifier = keyid:always,issuer
-basicConstraints = critical, CA:true
+basicConstraints = critical, CA:TRUE
 keyUsage = critical, digitalSignature, cRLSign, keyCertSign
 
 [ v3_intermediate_ca ]
 # Extensions for a typical intermediate CA (`man x509v3_config`).
 subjectKeyIdentifier = hash
 authorityKeyIdentifier = keyid:always,issuer
-basicConstraints = critical, CA:true, pathlen:0
+# We do not support generating chains longer than 20 intermediate CA
+basicConstraints = critical, CA:TRUE, pathlen:20
 keyUsage = critical, digitalSignature, cRLSign, keyCertSign
 
 [ usr_cert ]
 # Extensions for client certificates (`man x509v3_config`).
 basicConstraints = CA:FALSE
 nsCertType = client, email
-nsComment = "OpenSSL Generated Client Certificate"
+nsComment = "OpenSSL Generated Leaf Client Certificate"
 subjectKeyIdentifier = hash
 authorityKeyIdentifier = keyid,issuer
 keyUsage = critical, nonRepudiation, digitalSignature, keyEncipherment
@@ -113,7 +109,7 @@ extendedKeyUsage = clientAuth, emailProtection
 # Extensions for server certificates (`man x509v3_config`).
 basicConstraints = CA:FALSE
 nsCertType = server
-nsComment = "OpenSSL Generated Server Certificate"
+nsComment = "OpenSSL Generated Leaf Server Certificate"
 subjectKeyIdentifier = hash
 authorityKeyIdentifier = keyid,issuer:always
 keyUsage = critical, digitalSignature, keyEncipherment
