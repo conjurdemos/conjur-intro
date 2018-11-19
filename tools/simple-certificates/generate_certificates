@@ -1,11 +1,12 @@
 #!/bin/bash -e
 
 DOMAIN_NAME='mycompany.local'
-NODES=( 'conjur-master-1'
-        'conjur-master-2'
-        'conjur-master-3'
-        'conjur-master-4' )
-ALT_NAME='DNS:conjur-master-1.mycompany.local,DNS:conjur-master-2.mycompany.local,DNS:conjur-master-3.mycompany.local,DNS:conjur-master-4.mycompany.local'
+
+DEFAULT_NODES=( 'conjur-master-1'
+                'conjur-master-2'
+                'conjur-master-3'
+                'follower-1'
+                'follower-2' )
 
 CERT_PASSWORD='secret'
 
@@ -26,16 +27,33 @@ BASE_NODE_CERT_PATH="${BASE_PATH}/nodes"
 CURRENT_DIR="$(pwd)"
 
 if [[ "$#" -lt 1 ]]; then
-  echo "Usage: $0 <number_of_intermediate_CAs>"
+  echo "Usage: $0 <number_of_intermediate_CAs> [node_name...]"
   exit 1
 fi
 
+# Grab the cert depth level from CLI args
 INTERMEDIATE_CERT_DEPTH="${1}"
+shift
 echo "Trying to generate certs with ${INTERMEDIATE_CERT_DEPTH} intermediate CAs"
+
+# Grab the node neames from CLI args if they were specified
+leaf_nodes="${DEFAULT_NODES[@]}"
+if [[ "$#" -gt 0 ]]; then
+  leaf_nodes="$@"
+fi
+echo "Leaf nodes: $leaf_nodes"
 
 echo "**************************************************"
 echo "Building our SSL docker image..."
 docker build -t "${IMAGE_TAG}" .
+
+alt_names=""
+for node_name in ${leaf_nodes}; do
+  alt_names+="DNS:${node_name}.${DOMAIN_NAME},"
+done
+
+# Trim last character (comma)
+alt_names="${alt_names%?}"
 
 san=""
 signer_name=""
@@ -219,7 +237,7 @@ cat ${cert_chain_files} > "${CURRENT_DIR}/certificates/ca-chain.cert.pem"
 echo "**************************************************"
 echo "Generating node certificates..."
 
-for node_name in "${NODES[@]}"; do
+for node_name in ${leaf_nodes}; do
   node_fqdn="${node_name}.${DOMAIN_NAME}"
   node_cert_folder="${BASE_NODE_CERT_PATH}/${node_fqdn}"
   node_cert_file="${node_cert_folder}/${node_fqdn}.cert.pem"
@@ -235,7 +253,7 @@ for node_name in "${NODES[@]}"; do
     ssl_proxy "." openssl genrsa -out "/src/${node_key_file}" "${RSA_KEY_LENGTH}"
 
     echo "Creating the leaf CSR from RSA key..."
-    san="DNS:${node_fqdn},${ALT_NAME}"
+    san="DNS:${node_name},${alt_names}"
     signer_name="intermediate_${INTERMEDIATE_CERT_DEPTH}"
     ssl_proxy "." openssl req -config "/configs/openssl.cnf" \
         -subj "\"/C=US/ST=Massachusetts/L=Newton/O=CyberArk/OU=Conjur/CN=${node_fqdn}\"" \
@@ -264,8 +282,8 @@ done
 # Some of this code is repetitive but it allows for easier visibility
 # that all the certs are properly validated at the end of the run
 echo "**************************************************"
-echo "Validating that the generated node certs are properly signed:"
-for node_name in "${NODES[@]}"; do
+echo "Validating that the generated node certs are properly signed..."
+for node_name in ${leaf_nodes}; do
   node_fqdn="${node_name}.${DOMAIN_NAME}"
   node_cert_folder="${BASE_NODE_CERT_PATH}/${node_fqdn}"
   node_cert_file="${node_cert_folder}/${node_fqdn}.cert.pem"
