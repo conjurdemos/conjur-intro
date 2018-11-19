@@ -47,12 +47,16 @@ services:
     command: --copy-service --loglevel debug
     environment:
       LDAP_ADMIN_PASSWORD: ldapsecret
+      LDAP_TLS: "true"
+      LDAP_TLS_CA_CRT_FILENAME: "ca-chain.crt"
+      LDAP_TLS_ENFORCE: "true"
       LDAP_TLS_VERIFY_CLIENT: try
     ports:
       - "389:389"
       - "636:636"
     volumes:
       - ./files/ldap:/opt/ldap
+      - ./certs:/container/service/slapd/assets/certs
 
 volumes:
   backups:
