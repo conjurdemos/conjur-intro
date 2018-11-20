@@ -68,8 +68,7 @@ function ssl_proxy {
     set -x
   fi
 
-  docker run -it \
-             --rm \
+  docker run --rm \
              -v "${CURRENT_DIR}:/src" \
              -v "${CURRENT_DIR}/configs:/configs" \
              -w "/src/${work_dir}" \
