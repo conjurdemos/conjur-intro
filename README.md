@@ -6,6 +6,7 @@ Miscellaneous utilities that make it easier to make, manage, and run demos
 - [Simple Cluster](demos/simple-cluster/README.md)
 - [Certificate Authority](demos/certificate-authority/README.md)
 - [Auto-Failover Cluster](demos/auto-failover/README.md)
+- [LDAP Sync and Authentication](demos/ldap-integration/README.md)
 
 ## Tools
 - [Generate Signed Certificates](tools/simple-certificates/)
