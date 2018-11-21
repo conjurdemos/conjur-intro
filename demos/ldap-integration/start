@@ -28,7 +28,8 @@ docker-compose exec conjur-master.mycompany.local bash -c "
   -p secret demo
 "
 
-master_ip=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ldap-integration_conjur-master.mycompany.local_1)
+master_container="$(docker ps -q --filter "name=ldap-integration_conjur-master.mycompany.local_1")"
+master_ip=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $master_container)
 
 docker-compose exec conjur-master.mycompany.local bash -c "
   evoke seed follower conjur-follower.mycompany.local > /opt/conjur/backup/follower-seed.tar
