@@ -16,6 +16,8 @@
         description: Stripe API key
     - !variable "foo bar"
 
+    - !variable "{ []: {[]:[]} }"
+
   - !layer
 
   - !host-factory
