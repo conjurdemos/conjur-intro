@@ -2,9 +2,6 @@ version: "3"
 services:
   conjur-master.mycompany.local:
     image: registry2.itci.conjur.net/conjur-appliance:5.0-stable
-    environment:
-      CONJUR_AUTHENTICATORS: "authn-ldap/ldap-server,authn"
-      CONJUR_AUTHN_URL: http://localhost/authn-ldap/ldap-server
     ports:
       - "443:443"
     security_opt:
