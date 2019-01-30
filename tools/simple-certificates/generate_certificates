@@ -36,12 +36,25 @@ INTERMEDIATE_CERT_DEPTH="${1}"
 shift
 echo "Trying to generate certs with ${INTERMEDIATE_CERT_DEPTH} intermediate CAs"
 
-# Grab the node neames from CLI args if they were specified
+# Grab the node names from CLI args if they were specified
 leaf_nodes="${DEFAULT_NODES[@]}"
 if [[ "$#" -gt 0 ]]; then
   leaf_nodes="$@"
 fi
 echo "Leaf nodes: $leaf_nodes"
+
+first_leaf_node="${leaf_nodes[0]}"
+if [[ "${first_leaf_node}" != "${first_leaf_node%%.*}" ]]; then
+  DOMAIN_NAME="${first_leaf_node#*.}"
+  echo "Domain name detected: ${DOMAIN_NAME}"
+
+  new_leaf_nodes=""
+  for leaf_node in "${leaf_nodes}"; do
+    new_leaf_nodes+=" ${leaf_nodes%%.*}"
+  done
+  leaf_nodes="${new_leaf_nodes}"
+  echo "Leaf nodes: $leaf_nodes"
+fi
 
 echo "**************************************************"
 echo "Building our SSL docker image..."
@@ -254,9 +267,11 @@ for node_name in ${leaf_nodes}; do
 
     echo "Creating the leaf CSR from RSA key..."
     san="DNS:${node_name},${alt_names}"
+    # CN cannot be >64chars. https://github.com/certbot/certbot/issues/1915#issuecomment-165262834
+    node_cn="${node_fqdn%%.*}"
     signer_name="intermediate_${INTERMEDIATE_CERT_DEPTH}"
     ssl_proxy "." openssl req -config "/configs/openssl.cnf" \
-        -subj "\"/C=US/ST=Massachusetts/L=Newton/O=CyberArk/OU=Conjur/CN=${node_fqdn}\"" \
+        -subj "\"/C=US/ST=Massachusetts/L=Newton/O=CyberArk/OU=Conjur/CN=${node_cn}\"" \
         -extensions san_env \
         -key "/src/${node_key_file}" \
         -new -sha256 -out "/src/${node_csr_file}"
