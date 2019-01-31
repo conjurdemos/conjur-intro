@@ -1,0 +1,8 @@
+version: "3"
+services:
+  cli:
+    image: cyberark/conjur-cli:5
+    entrypoint: bash
+    volumes:
+      - ./tmp/cli:/root
+      - ./tmp/conjur:/data
