@@ -1,0 +1,13 @@
+#!/bin/bash -eu
+
+export LB_DNS_DEFAULT=$(terraform output conjur_master_lb_public)
+export LB_DNS="${LB_DNS:-${LB_DNS_DEFAULT}}"
+
+export MASTER_1_PRIVATE=$(terraform output -json conjur_master_nodes_private | jq -r '.value[0]')
+export MASTER_1_PUBLIC=$(terraform output -json conjur_master_nodes_public | jq -r '.value[0]')
+
+export MASTER_2_PRIVATE=$(terraform output -json conjur_master_nodes_private | jq -r '.value[1]')
+export MASTER_2_PUBLIC=$(terraform output -json conjur_master_nodes_public | jq -r '.value[1]')
+
+export MASTER_3_PRIVATE=$(terraform output -json conjur_master_nodes_private | jq -r '.value[2]')
+export MASTER_3_PUBLIC=$(terraform output -json conjur_master_nodes_public | jq -r '.value[2]')
