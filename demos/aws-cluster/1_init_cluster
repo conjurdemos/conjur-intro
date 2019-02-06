@@ -2,8 +2,8 @@
 
 : ${SSH_KEY_FILE?"Need to set SSH_KEY_FILE"}
 
-source bin/aws_context
-source bin/conjur_context
+source bin/lib/aws_context
+source bin/lib/conjur_context
 
 SEED_DIR="./tmp/conjur/seeds"
 
@@ -138,22 +138,6 @@ function enable_sync_replication() {
 EOF
 }
 
-function wait_for_master() {
-  echo "Waiting for master cluster..."
-  # Wait for 10 successful connections in a row
-  COUNTER=0
-  while [  $COUNTER -lt 10 ]; do
-      if [ -z "$(curl -k --silent --head https://$LB_DNS/health | grep "Conjur-Health: OK")" ]; then
-        sleep 5
-        COUNTER=0
-      else
-        let COUNTER=COUNTER+1
-      fi
-      sleep 1
-      echo "Successful Health Checks: $COUNTER"
-  done
-}
-
 configure_master
 
 create_standby_seed $MASTER_2_PRIVATE "master-2-seed.tar"
@@ -164,14 +148,14 @@ configure_standby $MASTER_3_PUBLIC "master-3-seed.tar"
 
 enable_sync_replication
 
-wait_for_master
+./bin/util/wait_for_master
 
 load_cluster_policy
 enroll_master
 enroll_standby $MASTER_2_PUBLIC $MASTER_2_PRIVATE
 enroll_standby $MASTER_3_PUBLIC $MASTER_3_PRIVATE
 
-wait_for_master
+./bin/util/wait_for_master
 
 cat << EOF
 

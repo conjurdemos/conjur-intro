@@ -1,0 +1,4 @@
+#!/bin/bash -eu
+
+terraform destroy -auto-approve -target=aws_instance.conjur_master_node
+terraform apply -auto-approve -target=aws_instance.conjur_master_node

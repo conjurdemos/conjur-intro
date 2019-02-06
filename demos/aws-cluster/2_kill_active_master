@@ -1,0 +1,15 @@
+#!/bin/bash -eu
+
+# Provides ACTIVE_MASTER_NUM
+source bin/lib/active_master
+
+# Kill the master
+bin/util/kill_node $ACTIVE_MASTER_NUM
+
+mkdir -p ./tmp/script
+echo $ACTIVE_MASTER_NUM > ./tmp/script/last_master_killed
+
+echo "Waiting for auto-failover..."
+
+# Wait for the cluster to recover
+./bin/util/wait_for_master

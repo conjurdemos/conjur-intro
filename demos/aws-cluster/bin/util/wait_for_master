@@ -1,0 +1,17 @@
+#!/bin/bash -eu
+
+source bin/lib/aws_context
+
+echo "Waiting for master cluster..."
+# Wait for 10 successful connections in a row
+COUNTER=0
+while [  $COUNTER -lt 10 ]; do
+    if [ -z "$(curl -k --silent --head https://$LB_DNS/health | grep "Conjur-Health: OK")" ]; then
+      sleep 5
+      COUNTER=0
+    else
+      let COUNTER=COUNTER+1
+    fi
+    sleep 1
+    echo "Successful Health Checks: $COUNTER"
+done
