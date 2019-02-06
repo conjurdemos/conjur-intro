@@ -1,0 +1,7 @@
+#!/bin/bash -eu
+
+source bin/lib/aws_context
+
+watch -n 2 \
+  curl -k --silent --head --fail \
+    https://$LB_DNS/health

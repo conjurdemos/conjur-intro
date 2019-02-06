@@ -78,6 +78,9 @@ To initially install the cluster:
     > TBD, for now the cluster will use self-generated certificates
 
 3. Initialize the Conjur Cluster
+    > This script requires you to first set the environment variable `SSH_KEY_FILE`.
+    > The value of this variable should be the path to the SSH private key to connect
+    > to the EC2 nodes. e.g. `/user/conjur/.ssh/id_rsa`
     ```sh-session
     $ ./1_init_cluster
     ...
@@ -94,26 +97,38 @@ This demo environment allows to walk through 3 HA management scenarios with Conj
 ### Auto-Failover
 
 1. Kill the Master Node
-    > TBD
-
-2. Observe Autofailover status
-    > TBD
+    > **NOTE:** This script ends when the auto-failover to a new active node is complete.
+    ```sh-session
+    $ ./2_kill_active_master
+    Killing node 1 (ec2-3-93-33-221.compute-1.amazonaws.com)...
+    Waiting for auto-failover...
+    Waiting for master cluster...
+    Successful Health Checks: 0
+    ...
+    Successful Health Checks: 8
+    Successful Health Checks: 9
+    Successful Health Checks: 10
+    ```
 
 ### Failed Node Re-Enrollment
 
 1. Clean State on Failed Instance
-    > TBD
-
-2. Re-create Conjur Appliance on Instance
-    > TBD
-
-3. Provision the New Appliance as a Standby
-    > TBD
-
-4. Re-Enroll the Standby into the Cluster
-    > TBD
+   ```sh-session
+   $ ./3_reenroll_failed_master
+   Recreating Conjur appliance container on failed host...
+   ...
+   Configuring new appliance as standby...
+   ...
+   Enrolling the new standby into the existing master cluster...
+   ...
+   Waiting for master cluster...
+   ...
+   Successful Health Checks: 10
+   ```
 
 ### Reboot Entire Cluster
+
+> **NOTE:** This was previously done entirely manually using the AWS EC2 Console
 
 1. Stop All Instances
     > TBD
@@ -130,4 +145,63 @@ This demo environment allows to walk through 3 HA management scenarios with Conj
     ```sh-session
     $ ./100_cleanup_aws
     ...
+    ```
+
+## Utility Tools
+
+There are a few additional scripts available in `bin/util` to make inspecting
+the system state easier.
+
+- **follow_node_logs**
+    Connects to a master node and streams the Conjur logs from the appliance on that node.
+    ```sh-session
+    $ bin/util/follow_node_logs {node_id} # Where `node_id` is `1`, `2`, or `3`
+    ```
+
+- **kill_node**
+    Connects to a master node and kills the Conjur appliance running on it
+    ```sh-session
+    $ bin/util/kill_node {node_id} # Where `node_id` is `1`, `2`, or `3`
+    ```
+
+- **recreate_cluster**
+    Destroys and recreates all of the EC2 instances running the Conjur cluster
+    > **NOTE:** This is a destructive operation and requires rebuilding the Conjur cluster from scratch
+    ```sh-session
+    $ bin/util/recreate_cluster
+    ```
+
+- **reenroll_node**
+    Rebuilds an appliance node as a standby and enrolls it into the Conjur master cluster
+    ```sh-session
+    $ bin/util/reenroll_node {standby_node_id} {master_node_id} # Where `node_id` is `1`, `2`, or `3`
+    ```
+
+- **refresh_aws_state**
+    Refreshes the local state of the AWS resources
+    > **NOTE:** This allows the scripts to operate correctly after making changes (e.g. restarting)
+    > in the AWS web consol
+    $ bin/util/refresh_aws_state
+    ```
+
+- **ssh_node**
+    Connects to a master node and begins a shell session on it
+    ```sh-session
+    $ bin/util/ssh_node {node_id} # Where `node_id` is `1`, `2`, or `3`
+    ```
+
+- **wait_for_master**
+    Blocks the current shell session until the Conjur cluster is healthy
+    ```sh-session
+    $ bin/util/wait_for_master
+    ```
+- **watch_cluster_health**
+    Reports the health status of the Conjur cluster through the load balancer
+    ```sh-session
+    $ bin/util/watch_cluster_health
+    ```
+- **watch_node_health**
+    Reports the health status for a particular node of the Conjur cluster
+    ```sh-session
+    $ bin/util/watch_node_health # Where `node_id` is `1`, `2`, or `3`
     ```
