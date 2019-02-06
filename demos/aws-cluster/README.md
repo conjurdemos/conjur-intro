@@ -84,6 +84,12 @@ To initially install the cluster:
     ```sh-session
     $ ./1_init_cluster
     ...
+    Waiting for master cluster...
+    Successful Health Checks: 0
+    ...
+    Successful Health Checks: 8
+    Successful Health Checks: 9
+    Successful Health Checks: 10
     ```
 
 4. Deploy a Follower in AWS
