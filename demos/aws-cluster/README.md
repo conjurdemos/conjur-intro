@@ -187,6 +187,7 @@ the system state easier.
     Refreshes the local state of the AWS resources
     > **NOTE:** This allows the scripts to operate correctly after making changes (e.g. restarting)
     > in the AWS web consol
+    ```
     $ bin/util/refresh_aws_state
     ```
 
