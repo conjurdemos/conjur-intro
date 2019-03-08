@@ -92,8 +92,11 @@ To initially install the cluster:
     Successful Health Checks: 10
     ```
 
-4. Deploy a Follower in AWS
-    > TBD
+4. (Optional) Deploy Followers in AWS
+    To also configure followers with the cluster, run the command:
+    ```
+    $ ./1.1_init_followers
+    ```
 
 
 ## HA Scenarios

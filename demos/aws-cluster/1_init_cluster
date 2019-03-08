@@ -17,6 +17,9 @@ function configure_master() {
       --master-altnames "$LB_DNS,$MASTER_2_PRIVATE,$MASTER_3_PRIVATE" \
       -p "$CONJUR_ADMIN_PASSWORD" \
       "$CONJUR_ACCOUNT"
+
+    docker exec conjur-appliance \
+      evoke ca issue --force $LB_FOLLOWER_DNS
 EOF
 }
 
