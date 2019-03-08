@@ -1,0 +1,64 @@
+#!/bin/bash -eux
+
+: ${SSH_KEY_FILE?"Need to set SSH_KEY_FILE"}
+
+source bin/lib/aws_context
+source bin/lib/conjur_context
+
+SEED_DIR="./tmp/conjur/seeds"
+
+function create_follower_seed() {
+  local filename=$1
+
+  mkdir -p $SEED_DIR
+
+  # Create Follower Seed
+  ssh -i "$SSH_KEY_FILE" \
+    -o "StrictHostKeyChecking no" \
+    core@$MASTER_1_PUBLIC /bin/bash << EOF
+    docker exec conjur-appliance bash -c " \
+      evoke seed follower "$LB_FOLLOWER_DNS" "$LB_DNS" > "/opt/conjur/backup/$filename"
+    "
+EOF
+
+  # Copy seed to host
+  scp -i "$SSH_KEY_FILE" \
+    -o "StrictHostKeyChecking no" \
+    "core@$MASTER_1_PUBLIC:/opt/conjur/backup/$filename" \
+    "$SEED_DIR/$filename"
+}
+
+function configure_follower() {
+  local follower_public=$1
+  local filename=$2
+
+  # Copy seed
+  scp -i "$SSH_KEY_FILE" \
+    -o "StrictHostKeyChecking no" \
+    "$SEED_DIR/$filename" \
+    "core@$follower_public:~/$filename"
+    
+  # Configure node
+  ssh -i "$SSH_KEY_FILE" \
+    -o "StrictHostKeyChecking no" \
+    core@$follower_public /bin/bash << EOF
+    sudo mv "\$HOME/$filename" "/opt/conjur/backup/$filename"
+    
+    docker exec conjur-appliance \
+      evoke unpack seed "/opt/conjur/backup/$filename"
+
+    docker exec conjur-appliance \
+      evoke configure follower
+EOF
+}
+
+function configure_followers() {
+  for follower in $FOLLOWERS_PUBLIC; do 
+    echo "Configuring follower on '$follower'..."
+    configure_follower "$follower" "follower-seed.tar"
+  done
+}
+
+create_follower_seed "follower-seed.tar"
+
+configure_followers
