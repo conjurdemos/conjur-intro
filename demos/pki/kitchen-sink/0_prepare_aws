@@ -1,0 +1,15 @@
+#!/bin/bash -eu
+
+function main {
+  # Create AWS Resources
+  terraform init
+  terraform plan
+  terraform apply
+
+  # Prepare AWS Management SSH Key
+  rm -f tmp/id_aws
+  terraform output ssh_key > tmp/id_aws
+  chmod 400 tmp/id_aws
+}
+
+main

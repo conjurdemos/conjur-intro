@@ -1,0 +1,22 @@
+#!/bin/bash -eux
+
+export CONJUR_ACCOUNT=${CONJUR_ACCOUNT:-conjur}
+
+function main {
+	# rm -rf tmp
+	mkdir -p tmp
+
+	if [ ! -f tmp/data_key ]; then
+		echo "Generating data key..."
+		openssl rand -base64 32 > tmp/data_key
+	fi
+
+	export CONJUR_DATA_KEY="$(cat tmp/data_key)"
+
+	echo "Starting Conjur..."
+	docker-compose up -d conjur
+	docker-compose exec conjur conjurctl wait
+	docker-compose exec conjur conjurctl account create $CONJUR_ACCOUNT || true
+}
+
+main

@@ -1,0 +1,21 @@
+- !policy
+  id: pg-petstore/ca
+  body:
+    - !variable private-key
+    - !variable cert-chain
+
+    # To grant signing entitlement for intermediate CA
+    - !host
+
+    - !webservice
+      annotations:
+        ca/private-key: conjur/pg-petstore/ca/private-key
+        ca/certificate-chain: conjur/pg-petstore/ca/cert-chain
+        ca/max_ttl: P1Y
+
+    - !group clients
+
+    - !permit
+      role: !group clients
+      privilege: [ sign ]
+      resource: !webservice

@@ -1,0 +1,4 @@
+- !policy servers
+- !policy apps
+- !policy databases
+- !policy conjur

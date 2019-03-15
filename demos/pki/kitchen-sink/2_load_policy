@@ -1,0 +1,36 @@
+#!/bin/bash -eux
+
+export CONJUR_ACCOUNT=${CONJUR_ACCOUNT:-conjur}
+
+function main {
+  local api_key=$(docker-compose exec -T conjur conjurctl \
+      role retrieve-key $CONJUR_ACCOUNT:user:admin | tr -d '\r')
+
+  docker-compose run --rm --no-deps --entrypoint bash client -c """
+    # Login to CLI
+    conjur init -u http://conjur -a $CONJUR_ACCOUNT --force=true
+    conjur authn login -u admin -p $api_key
+
+    # Load root policy structure
+    conjur policy load root /data/policy/root.yml
+
+    # Load roles
+    conjur policy load root /data/policy/users.yml
+    conjur policy load servers /data/policy/servers.yml
+    conjur policy load apps /data/policy/apps.yml
+    conjur policy load databases /data/policy/databases.yml
+    
+    # Load certificate authorities
+    conjur policy load conjur /data/policy/certificate_authorities/intermediate.yml
+    conjur policy load conjur /data/policy/certificate_authorities/ssh_hosts.yml
+    conjur policy load conjur /data/policy/certificate_authorities/ssh_users.yml
+    conjur policy load conjur /data/policy/certificate_authorities/ssl_servers.yml
+    conjur policy load conjur /data/policy/certificate_authorities/pg_petstore.yml
+
+
+    # Load entitlements
+    conjur policy load root /data/policy/entitlements.yml  
+  """
+}
+
+main

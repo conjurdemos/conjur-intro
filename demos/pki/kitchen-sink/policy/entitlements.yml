@@ -1,0 +1,29 @@
+- !grant
+  role: !group conjur/intermediate/ca/clients
+  members:
+    - !host conjur/ssl-servers/ca
+    - !host conjur/ssh-hosts/ca
+    - !host conjur/ssh-users/ca
+    - !host conjur/pg-petstore/ca
+
+- !grant
+  role: !group conjur/ssl-servers/ca/clients
+  members:
+    - !host servers/web
+    - !host servers/db
+
+- !grant
+  role: !group conjur/ssh-hosts/ca/clients
+  members:
+    - !host servers/web
+    - !host servers/db
+
+- !grant
+  role: !group conjur/ssh-users/ca/clients
+  members:
+    - !user alice
+
+- !grant
+  role: !group conjur/pg-petstore/ca/clients
+  members:
+    - !host apps/petstore

@@ -1,0 +1,23 @@
+- !policy
+  id: intermediate/ca
+  body:
+    - !variable private-key
+    - !variable cert-chain
+
+    - !webservice
+      annotations:
+        ca/private-key: conjur/intermediate/ca/private-key
+        ca/certificate-chain: conjur/intermediate/ca/cert-chain
+        ca/max_ttl: P1Y
+
+    - !group clients
+    - !permit
+      role: !group clients
+      privilege: [ sign ]
+      resource: !webservice
+
+    - !group ca-clients
+    - !permit
+      role: !group ca-clients
+      privilege: [ sign-ca ]
+      resource: !webservice

@@ -1,0 +1,5 @@
+#!/bin/bash -eu
+
+ssh -i "alice/id_rsa" \
+  -o "IdentitiesOnly=true" \
+  alice@$(terraform output web_dns)

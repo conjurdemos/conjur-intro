@@ -1,0 +1,41 @@
+version: "3"
+services:
+  conjur:
+    image: registry2.itci.conjur.net/cyberark/conjur:1.3.6-138b850
+    environment:
+      CONJUR_DATA_KEY:
+      DATABASE_URL: postgres://postgres@db/postgres
+      CONJUR_ADMIN_PASSWORD:
+      CONJUR_ACCOUNT:
+    volumes:
+      - "~/projects/cyberark/conjur/app:/opt/conjur-server/app"
+    links:
+      - db
+    ports:
+    - "80:80"
+    command: server
+
+  db:
+    image: postgres:9.4
+    volumes:
+      - ./tmp/db:/var/lib/postgresql/data
+
+  client:
+    image: cyberark/conjur-cli:5
+    environment:
+      CONJUR_APPLIANCE_URL: http://conjur
+      CONJUR_ACCOUNT:
+    links:
+      - conjur
+    volumes:
+      - ./tmp/cli:/root
+      - ./:/data
+
+  client_anon:
+    image: cyberark/conjur-cli:5
+    environment:
+      CONJUR_APPLIANCE_URL: http://conjur
+      CONJUR_ACCOUNT:
+    links:
+      - conjur
+

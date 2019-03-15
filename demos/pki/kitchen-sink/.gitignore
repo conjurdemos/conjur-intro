@@ -1,0 +1,7 @@
+.terraform/
+tmp/
+cas/
+terraform.tfstate
+terraform.tfstate.backup
+terraform.tfvars
+alice/

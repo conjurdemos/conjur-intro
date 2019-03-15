@@ -1,0 +1,42 @@
+#!/bin/bash -eux
+
+WEB_SERVER_DNS=$(terraform output web_dns)
+
+function main {
+  install_ssh_user_ca
+}
+
+function install_ssh_user_ca {
+   # TODO: Add host certificate CA to remove "StrictHostKeyChecking no" option
+
+  # Copy CA certificate
+  scp -i tmp/id_aws \
+    -o "StrictHostKeyChecking no" \
+    -o "IdentitiesOnly=true" \
+    cas/ssh_users/ca_ssh_users.pub ubuntu@$WEB_SERVER_DNS:~
+
+
+  # Configure SSH User CA on host
+  ssh -i tmp/id_aws \
+    -o "StrictHostKeyChecking no" \
+    -o "IdentitiesOnly=true" \
+    ubuntu@$WEB_SERVER_DNS /bin/bash << EOF
+
+    # Add user for 'alice'
+    sudo adduser --disabled-password --gecos "" alice
+
+    # Add 'TrustedUserCAKeys' file
+    sudo cp ~/ca_ssh_users.pub /etc/ssh/
+    sudo sh -c """
+      grep -q '^TrustedUserCAKeys' /etc/ssh/sshd_config && \
+        sed -i 's~^TrustedUserCAKeys.*~TrustedUserCAKeys /etc/ssh/ca_ssh_users.pub~' /etc/ssh/sshd_config || \
+        echo 'TrustedUserCAKeys /etc/ssh/ca_ssh_users.pub' >> /etc/ssh/sshd_config
+    """
+
+    # Restart sshd
+    sudo service sshd restart
+EOF
+
+}
+
+main

@@ -1,0 +1,234 @@
+#!/bin/bash -eu
+
+export CONJUR_ACCOUNT=${CONJUR_ACCOUNT:-conjur}
+
+function main {
+  # rm -rf cas
+
+  #create_root_ca
+  #create_intermediate_ca
+
+  #create_ssl_servers_ca
+
+  #create_ssh_hosts_ca
+  create_ssh_users_ca
+
+  #create_petstore_db_clients_ca
+}
+
+function create_root_ca {
+  local cert_dir="cas/root"
+
+  rm -rf $cert_dir
+  mkdir -p $cert_dir
+
+  echo "Creating Root Certificate Authority"
+
+  # Generate a root CA key
+  openssl genrsa -aes256 \
+          -out $cert_dir/root.key 4096 
+  chmod 400 $cert_dir/root.key
+
+  # Generate a root CA certificate
+  openssl req -new -x509 -sha256 -days 730 \
+          -config openssl.conf \
+          -subj "/C=US/ST=./L=./O=./CN=Conjur Root CA" \
+          -extensions v3_ca \
+          -key $cert_dir/root.key \
+          -out $cert_dir/root.crt
+
+  chmod 444 $cert_dir/root.crt
+}
+
+function create_intermediate_ca {
+  echo "Creating Intermediate Certificate Authority"
+
+  local cert_dir="cas/intermediate"
+  local root_dir="cas/root"
+
+  rm -rf $cert_dir
+  mkdir -p $cert_dir
+
+  # Generate an intermediate CA key
+  openssl genrsa \
+        -out $cert_dir/intermediate.key 4096
+
+  chmod 400 $cert_dir/intermediate.key
+
+  # Generate a CSR for the intermediate certificate
+  openssl req -new -sha256 \
+        -subj "/C=US/ST=./L=./O=./CN=Conjur Intermediate CA" \
+        -key $cert_dir/intermediate.key \
+        -out $cert_dir/intermediate.csr
+
+  # Sign the intermediate CA with the root cert
+  openssl x509 -req -days 1000 \
+        -extfile openssl.conf \
+        -in $cert_dir/intermediate.csr \
+        -extensions v3_intermediate_ca \
+        -CA $root_dir/root.crt \
+        -CAkey $root_dir/root.key \
+        -CAcreateserial \
+        -out $cert_dir/intermediate.crt
+
+  chmod 444 $cert_dir/intermediate.crt
+
+  # Create certificate chain
+  cat $cert_dir/intermediate.crt \
+      $root_dir/root.crt > $cert_dir/ca-chain.crt
+  chmod 444 $cert_dir/ca-chain.crt
+
+  # Load into conjur
+  docker-compose run --no-deps --entrypoint bash client -c """
+  echo \"$(< $cert_dir/intermediate.key)\" | conjur variable values add conjur/intermediate/ca/private-key 
+  echo \"$(< $cert_dir/ca-chain.crt)\" | conjur variable values add conjur/intermediate/ca/cert-chain
+  """
+}
+
+function create_ssl_servers_ca {
+  echo "Creating Server SSL Certificate Authority"
+  
+  local cert_dir="cas/ssl_servers"
+
+  rm -rf $cert_dir
+  mkdir -p $cert_dir
+
+  # Generate an certificate key
+  openssl genrsa \
+        -out $cert_dir/ssl_servers.key 4096
+  chmod 400 $cert_dir/ssl_servers.key
+
+  # Generate a CSR for the intermediate certificate
+  openssl req -new -sha256 \
+      -subj "/C=US/ST=./L=./O=./CN=Conjur Server CA" \
+      -key $cert_dir/ssl_servers.key \
+      -out $cert_dir/ssl_servers.csr
+
+  # Sign certificate with Intermediate CA
+  curl -s -X POST \
+    -H "$(header_for conjur/ssl-servers/ca)" \
+    -H "Accept: text/plain" \
+    -d "ttl=P1D" \
+    -d "ca=true" \
+    --data-urlencode "csr@$cert_dir/ssl_servers.csr" \
+    http://localhost/ca/conjur/intermediate/sign > $cert_dir/ssl_servers.crt
+
+  # TODO: Fetch intermediate chain from conjur, and create new chain for this CA
+
+  # Store certificate values in Conjur
+  docker-compose run --no-deps --entrypoint bash client -c """
+  echo \"$(< $cert_dir/ssl_servers.key)\" | conjur variable values add conjur/ssl-servers/ca/private-key 
+  echo \"$(< $cert_dir/ssl_servers.crt)\" | conjur variable values add conjur/ssl-servers/ca/cert-chain
+  """
+}
+
+function create_ssh_hosts_ca {
+  echo "Creating SSH Hosts Certificate Authority"
+
+  local cert_dir="cas/ssh_hosts"
+
+  rm -rf $cert_dir
+  mkdir -p $cert_dir
+
+  # Create signing key
+  ssh-keygen -t rsa -m pem -f $cert_dir/ca_ssh_hosts
+
+  # Self-sign key
+  ssh-keygen -s $cert_dir/ca_ssh_hosts \
+    -I ssh_hosts_ca \
+    -n ssh_hosts_ca \
+    -V -1w:+54w5d \
+    $cert_dir/ca_ssh_hosts.pub
+
+  # TODO: Ideally I would be able to sign my SSH certificate using the private key of an x509 CA, no?
+
+  # Store key values in Conjur
+  docker-compose run --no-deps --entrypoint bash client -c """
+  echo \"$(< $cert_dir/ca_ssh_hosts)\" | conjur variable values add conjur/ssh-hosts/ca/private-key
+  echo \"$(< $cert_dir/ca_ssh_hosts.pub)\" | conjur variable values add conjur/ssh-hosts/ca/public-key
+  """
+}
+
+function create_ssh_users_ca {
+  echo "Creating SSH Users Certificate Authority"
+  
+  local cert_dir="cas/ssh_users"
+
+  rm -rf $cert_dir
+  mkdir -p $cert_dir
+
+  # Create signing key
+  ssh-keygen -t rsa -m pem -f $cert_dir/ca_ssh_users
+
+  # Self-sign key
+  ssh-keygen -s $cert_dir/ca_ssh_users \
+    -I ssh_users_ca \
+    -n ssh_users_ca \
+    -V -1w:+54w5d \
+    $cert_dir/ca_ssh_users.pub
+
+  # TODO: Ideally I would be able to sign my SSH certificate using the private key of an x509 CA, no?
+
+  # Store key values in Conjur
+  docker-compose run --no-deps --entrypoint bash client -c """
+  echo \"$(< $cert_dir/ca_ssh_users)\" | conjur variable values add conjur/ssh-users/ca/private-key
+  echo \"$(< $cert_dir/ca_ssh_users.pub)\" | conjur variable values add conjur/ssh-users/ca/public-key
+  """
+}
+
+function create_petstore_db_clients_ca {
+  echo "Creating Petstore Database Clients Certificate Authority"
+  
+  local cert_dir="cas/pg_petstore"
+
+  rm -rf $cert_dir
+  mkdir -p $cert_dir
+
+  # Generate an certificate key
+  openssl genrsa \
+        -out $cert_dir/pg_petstore.key 4096
+  chmod 400 $cert_dir/pg_petstore.key
+
+  # Generate a CSR for the intermediate certificate
+  openssl req -new -sha256 \
+      -subj "/C=US/ST=./L=./O=./CN=Petstore Database Client CA" \
+      -key $cert_dir/pg_petstore.key \
+      -out $cert_dir/pg_petstore.csr
+
+  # Sign certificate with Intermediate CA
+  curl -s -X POST \
+    -H "$(header_for conjur/pg-petstore/ca)" \
+    -H "Accept: text/plain" \
+    -d "ttl=P1D" \
+    -d "ca=true" \
+    --data-urlencode "csr@$cert_dir/pg_petstore.csr" \
+    http://localhost/ca/conjur/intermediate/sign > $cert_dir/pg_petstore.crt
+
+  # TODO: Fetch intermediate chain from conjur, and create new chain for this CA
+
+  # Store certificate values in Conjur
+  docker-compose run --no-deps --entrypoint bash client -c """
+  echo \"$(< $cert_dir/pg_petstore.key)\" | conjur variable values add conjur/pg-petstore/ca/private-key 
+  echo \"$(< $cert_dir/pg_petstore.crt)\" | conjur variable values add conjur/pg-petstore/ca/cert-chain
+  """
+}
+
+function api_key_for {
+  local role="$1"
+  docker-compose run -T --rm --no-deps client host rotate_api_key -h "$role"
+}
+
+function header_for {
+  local role="$1"
+
+  local api_key=$(api_key_for $role)
+
+  docker-compose run -T --rm --no-deps \
+    -e CONJUR_AUTHN_LOGIN="host/$role" \
+    -e CONJUR_AUTHN_API_KEY="$api_key" \
+    -e CONJUR_APPLIANCE_URL="http://conjur" \
+    -e CONJUR_ACCOUNT="$CONJUR_ACCOUNT" \
+    client_anon authn authenticate --header
+}
+
+main

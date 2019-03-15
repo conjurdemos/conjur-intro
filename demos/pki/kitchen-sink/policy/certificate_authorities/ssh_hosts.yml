@@ -1,0 +1,22 @@
+- !policy
+  id: ssh-hosts/ca
+  body:
+    - !variable private-key
+    - !variable public-key
+
+    # To grant signing entitlement for intermediate CA
+    - !host
+
+    - !webservice
+      annotations:
+        ca/private-key: conjur/ssh-hosts/ca/private-key
+        ca/certificate-chain: conjur/ssh-hosts/ca/public-key
+        ca/max_ttl: P1D
+        ca/kind: ssh
+
+    - !group clients
+
+    - !permit
+      role: !group clients
+      privilege: [ sign ]
+      resource: !webservice

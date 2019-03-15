@@ -1,0 +1,61 @@
+#!/bin/bash -eu
+
+export CONJUR_ACCOUNT=${CONJUR_ACCOUNT:-conjur}
+
+USERNAME=alice
+ID_DIRECTORY=$USERNAME
+
+function main {
+  create_ssh_id
+
+  sign_ssh_id
+
+  # verify_connection_to_web_server
+  # verify_connection_to_db_server
+}
+
+function create_ssh_id {
+  echo "Generating SSH Private Key..."
+  rm -rf $ID_DIRECTORY
+  mkdir -p $ID_DIRECTORY
+
+  ssh-keygen -t rsa -m pem -f "$ID_DIRECTORY/id_rsa"
+  chmod 400 "$ID_DIRECTORY/id_rsa"
+  chmod 400 "$ID_DIRECTORY/id_rsa.pub"
+
+  ssh-keygen -f "$ID_DIRECTORY/id_rsa.pub" -e -m pem > "$ID_DIRECTORY/id_rsa.pub.pem"
+  chmod 400 "$ID_DIRECTORY/id_rsa.pub.pem"
+}
+
+function sign_ssh_id {
+  echo "Requesting Key Signature by SSH Users CA..."
+  curl -v -X POST \
+    -H "$(header_for alice)" \
+    -H "Accept: text/plain" \
+    -d "ttl=P1D" \
+    -d "principals=alice" \
+    --data-urlencode "public_key@$ID_DIRECTORY/id_rsa.pub.pem" \
+    http://localhost/ca/conjur/ssh-users/sign > "$ID_DIRECTORY/id_rsa-cert.pub"
+
+  chmod 400 "$ID_DIRECTORY/id_rsa-cert.pub"
+}
+
+function api_key_for {
+  local role="$1"
+  docker-compose run -T --rm --no-deps client user rotate_api_key -u "$role"
+}
+
+function header_for {
+  local role="$1"
+
+  local api_key=$(api_key_for $role)
+
+  docker-compose run -T --rm --no-deps \
+    -e CONJUR_AUTHN_LOGIN="$role" \
+    -e CONJUR_AUTHN_API_KEY="$api_key" \
+    -e CONJUR_APPLIANCE_URL="http://conjur" \
+    -e CONJUR_ACCOUNT="$CONJUR_ACCOUNT" \
+    client_anon authn authenticate --header
+}
+
+main
