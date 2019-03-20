@@ -1,5 +1,5 @@
 - !policy
-  id: pg-petstore/ca
+  id: ca/pg-petstore
   body:
     - !variable private-key
     - !variable cert-chain
@@ -9,9 +9,9 @@
 
     - !webservice
       annotations:
-        ca/private-key: conjur/pg-petstore/ca/private-key
-        ca/certificate-chain: conjur/pg-petstore/ca/cert-chain
-        ca/max_ttl: P1Y
+        ca/private-key: conjur/ca/pg-petstore/private-key
+        ca/certificate-chain: conjur/ca/pg-petstore/cert-chain
+        ca/max-ttl: P1D
 
     - !group clients
 

@@ -1,5 +1,5 @@
 - !policy
-  id: ssh-users/ca
+  id: ca/ssh-users
   body:
     - !variable private-key
     - !variable public-key
@@ -9,10 +9,9 @@
 
     - !webservice
       annotations:
-        ca/private-key: conjur/ssh-users/ca/private-key
-        ca/certificate-chain: conjur/ssh-users/ca/public-key
-        ca/max_ttl: P1D
-        ca/kind: ssh
+        ca/private-key: conjur/ca/ssh-users/private-key
+        ca/certificate-chain: conjur/ca/ssh-users/public-key
+        ca/max-ttl: P1D
 
     - !group clients
 

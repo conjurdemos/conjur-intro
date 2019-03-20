@@ -80,8 +80,8 @@ function create_intermediate_ca {
 
   # Load into conjur
   docker-compose run --no-deps --entrypoint bash client -c """
-  echo \"$(< $cert_dir/intermediate.key)\" | conjur variable values add conjur/intermediate/ca/private-key 
-  echo \"$(< $cert_dir/ca-chain.crt)\" | conjur variable values add conjur/intermediate/ca/cert-chain
+  echo \"$(< $cert_dir/intermediate.key)\" | conjur variable values add conjur/ca/intermediate/private-key 
+  echo \"$(< $cert_dir/ca-chain.crt)\" | conjur variable values add conjur/ca/intermediate/cert-chain
   """
 }
 
@@ -117,8 +117,8 @@ function create_ssl_servers_ca {
 
   # Store certificate values in Conjur
   docker-compose run --no-deps --entrypoint bash client -c """
-  echo \"$(< $cert_dir/ssl_servers.key)\" | conjur variable values add conjur/ssl-servers/ca/private-key 
-  echo \"$(< $cert_dir/ssl_servers.crt)\" | conjur variable values add conjur/ssl-servers/ca/cert-chain
+  echo \"$(< $cert_dir/ssl_servers.key)\" | conjur variable values add conjur/ca/ssl-servers/private-key 
+  echo \"$(< $cert_dir/ssl_servers.crt)\" | conjur variable values add conjur/ca/ssl-servers/cert-chain
   """
 }
 
@@ -144,8 +144,8 @@ function create_ssh_hosts_ca {
 
   # Store key values in Conjur
   docker-compose run --no-deps --entrypoint bash client -c """
-  echo \"$(< $cert_dir/ca_ssh_hosts)\" | conjur variable values add conjur/ssh-hosts/ca/private-key
-  echo \"$(< $cert_dir/ca_ssh_hosts.pub)\" | conjur variable values add conjur/ssh-hosts/ca/public-key
+  echo \"$(< $cert_dir/ca_ssh_hosts)\" | conjur variable values add conjur/ca/ssh-hosts/private-key
+  echo \"$(< $cert_dir/ca_ssh_hosts.pub)\" | conjur variable values add conjur/ca/ssh-hosts/public-key
   """
 }
 
@@ -171,8 +171,8 @@ function create_ssh_users_ca {
 
   # Store key values in Conjur
   docker-compose run --no-deps --entrypoint bash client -c """
-  echo \"$(< $cert_dir/ca_ssh_users)\" | conjur variable values add conjur/ssh-users/ca/private-key
-  echo \"$(< $cert_dir/ca_ssh_users.pub)\" | conjur variable values add conjur/ssh-users/ca/public-key
+  echo \"$(< $cert_dir/ca_ssh_users)\" | conjur variable values add conjur/ca/ssh-users/private-key
+  echo \"$(< $cert_dir/ca_ssh_users.pub)\" | conjur variable values add conjur/ca/ssh-users/public-key
   """
 }
 
@@ -208,8 +208,8 @@ function create_petstore_db_clients_ca {
 
   # Store certificate values in Conjur
   docker-compose run --no-deps --entrypoint bash client -c """
-  echo \"$(< $cert_dir/pg_petstore.key)\" | conjur variable values add conjur/pg-petstore/ca/private-key 
-  echo \"$(< $cert_dir/pg_petstore.crt)\" | conjur variable values add conjur/pg-petstore/ca/cert-chain
+  echo \"$(< $cert_dir/pg_petstore.key)\" | conjur variable values add conjur/ca/pg-petstore/private-key 
+  echo \"$(< $cert_dir/pg_petstore.crt)\" | conjur variable values add conjur/ca/pg-petstore/cert-chain
   """
 }
 

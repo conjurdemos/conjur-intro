@@ -12,23 +12,25 @@ function install_ssh_user_ca {
   # Copy CA certificate
   scp -i tmp/id_aws \
     -o "StrictHostKeyChecking no" \
-    cas/ssh_users/id_ssh_users-cert.pub ubuntu@$DB_SERVER_DNS:~
+    -o "IdentitiesOnly=true" \
+    cas/ssh_users/ca_ssh_users.pub ubuntu@$DB_SERVER_DNS:~
 
 
   # Configure SSH User CA on host
   ssh -i tmp/id_aws \
     -o "StrictHostKeyChecking no" \
+    -o "IdentitiesOnly=true" \
     ubuntu@$DB_SERVER_DNS /bin/bash << EOF
 
     # Add user for 'alice'
     sudo adduser --disabled-password --gecos "" alice
 
     # Add 'TrustedUserCAKeys' file
-    sudo cp ~/id_ssh_users-cert.pub /etc/ssh/
+    sudo cp ~/ca_ssh_users.pub /etc/ssh/
     sudo sh -c """
       grep -q '^TrustedUserCAKeys' /etc/ssh/sshd_config && \
-        sed -i 's~^TrustedUserCAKeys.*~TrustedUserCAKeys /etc/ssh/id_ssh_users-cert.pub~' /etc/ssh/sshd_config || \
-        echo 'TrustedUserCAKeys /etc/ssh/id_ssh_users-cert.pub' >> /etc/ssh/sshd_config
+        sed -i 's~^TrustedUserCAKeys.*~TrustedUserCAKeys /etc/ssh/ca_ssh_users.pub~' /etc/ssh/sshd_config || \
+        echo 'TrustedUserCAKeys /etc/ssh/ca_ssh_users.pub' >> /etc/ssh/sshd_config
     """
 
     # Restart sshd

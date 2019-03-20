@@ -1,5 +1,5 @@
 - !policy
-  id: ssl-servers/ca
+  id: ca/ssl-servers
   body:
     - !variable private-key
     - !variable cert-chain
@@ -9,9 +9,9 @@
 
     - !webservice
       annotations:
-        ca/private-key: conjur/ssl-servers/ca/private-key
-        ca/certificate-chain: conjur/ssl-servers/ca/cert-chain
-        ca/max_ttl: P1Y
+        ca/private-key: conjur/ca/ssl-servers/private-key
+        ca/certificate-chain: conjur/ca/ssl-servers/cert-chain
+        ca/max-ttl: P1Y
 
     - !group clients
 

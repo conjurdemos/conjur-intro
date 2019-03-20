@@ -1,14 +1,14 @@
 - !policy
-  id: intermediate/ca
+  id: ca/intermediate
   body:
     - !variable private-key
     - !variable cert-chain
 
     - !webservice
       annotations:
-        ca/private-key: conjur/intermediate/ca/private-key
-        ca/certificate-chain: conjur/intermediate/ca/cert-chain
-        ca/max_ttl: P1Y
+        ca/private-key: conjur/ca/intermediate/private-key
+        ca/certificate-chain: conjur/ca/intermediate/cert-chain
+        ca/max-ttl: P1Y
 
     - !group clients
     - !permit

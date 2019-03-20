@@ -1,5 +1,5 @@
 - !policy
-  id: ssh-hosts/ca
+  id: ca/ssh-hosts
   body:
     - !variable private-key
     - !variable public-key
@@ -9,10 +9,9 @@
 
     - !webservice
       annotations:
-        ca/private-key: conjur/ssh-hosts/ca/private-key
-        ca/certificate-chain: conjur/ssh-hosts/ca/public-key
-        ca/max_ttl: P1D
-        ca/kind: ssh
+        ca/private-key: conjur/ca/ssh-hosts/private-key
+        ca/certificate-chain: conjur/ca/ssh-hosts/public-key
+        ca/max-ttl: P1M
 
     - !group clients
 
