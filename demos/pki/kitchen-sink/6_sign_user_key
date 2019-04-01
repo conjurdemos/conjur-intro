@@ -35,7 +35,7 @@ function sign_ssh_id {
     -d "ttl=P1D" \
     -d "principals=alice" \
     --data-urlencode "public_key@$ID_DIRECTORY/id_rsa.pub" \
-    http://localhost/ca/conjur/ssh-users/sign/ssh > "$ID_DIRECTORY/id_rsa-cert.pub"
+    http://localhost/ca/conjur/ssh-users/certificates?kind=ssh > "$ID_DIRECTORY/id_rsa-cert.pub"
 
   chmod 400 "$ID_DIRECTORY/id_rsa-cert.pub"
 }
