@@ -37,16 +37,23 @@ SYNOPSIS
     start [global options]
 
 GLOBAL OPTIONS
-    --help                                    - Show this message
+    -h, --help                          - Show this message
 
-    --skip-pull                               - Does not pull a fresh Conjur master before starting
+    --skip-pull                         - Does not pull a fresh Conjur master before starting
 
-    --tag <appliance-tag>                     - Starts a Conjur Appliance of the version specified
+    -t, --tag <appliance-tag>           - Starts a Conjur Appliance of the version specified
+
+    --with-config                       - Configures the Appliance using the `config/conjur.json` file
 ```
 
 To run a particular version of the Appliance:
 ```
 $ ./start --tag 5.2.0
+```
+
+To start Conjur with the configuration file found in `./config/conjur.json`:
+```
+$ ./start --with-config
 ```
 
 ### `./cli`
