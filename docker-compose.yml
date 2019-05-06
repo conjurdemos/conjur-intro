@@ -6,6 +6,8 @@ services:
       - "443:443"
     security_opt:
         - "seccomp:unconfined"
+    volumes:
+      - ./config:/opt/config
 
   client:
     image: cyberark/conjur-cli:5

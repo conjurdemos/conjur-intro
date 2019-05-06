@@ -14,13 +14,15 @@ NAME
 
 SYNOPSIS
     start [global options]
-    
+
 GLOBAL OPTIONS
-    --help                                    - Show this message
+    -h, --help                          - Show this message
 
-    --skip-pull                               - Does not pull a fresh Conjur master before starting
+    --skip-pull                         - Does not pull a fresh Conjur master before starting
 
-    --tag <appliance-tag>                     - Starts a Conjur Appliance of the version specified
+    -t, --tag <appliance-tag>           - Starts a Conjur Appliance of the version specified
+
+    --with-config                       - Configures the Appliance using the `config/conjur.json` file
 
 EOF
 exit
@@ -28,17 +30,18 @@ exit
 
 PULL_ARGS="--pull"
 TAG="5.0-stable"
+CONFIG=""
 while true ; do
   case "$1" in
     --skip-pull ) PULL_ARGS="" ; shift ;;
     -h | --help ) print_help ; shift ;;
-    --tag ) shift ; TAG="$1" ; shift ;;
+    -t | --tag ) shift ; TAG="$1" ; shift ;;
+    --with-config ) CONFIG="-j /opt/config/conjur.json" ; shift ;;
      * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
   esac
 done
 
 trap finish EXIT
-
 
 export IMAGE_TAG=$TAG
 
@@ -50,7 +53,7 @@ fi
 docker-compose up -d --no-deps conjur
 
 docker-compose exec conjur bash -c "
-  evoke configure master -h conjur-master.local -p secret demo
+  evoke configure master $CONFIG -h conjur-master.local -p secret demo
 "
 
 docker-compose logs -f conjur
