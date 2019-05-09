@@ -1,0 +1,33 @@
+version: '3'
+services:
+  puppet:
+    image: puppet/puppetserver-standalone
+    volumes:
+      - ./master/modules:/etc/puppetlabs/code/environments/production/modules
+      - ./master/manifests:/etc/puppetlabs/code/environments/production/manifests
+
+  agent:
+    image: puppet/puppet-agent-ubuntu
+    command: agent --verbose --no-daemonize --summarize --runinterval 10s
+    depends_on:
+      - puppet
+
+  # Conjur database
+  database:
+    image: postgres:9.4
+
+  conjur:
+    image: cyberark/conjur
+    command: server
+    environment:
+      DATABASE_URL: postgres://postgres@database/postgres
+      CONJUR_DATA_KEY:
+    depends_on: [ database ]
+    ports:
+      - "8080:80"
+
+  cli:
+    image: cyberark/conjur-cli:5
+    volumes:
+      - ./cli:/root
+      - ./policy:/policy

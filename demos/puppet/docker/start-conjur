@@ -1,0 +1,12 @@
+#!/bin/bash -eu
+
+if [ ! -f data_key ]; then
+	echo "Generating data key"
+	openssl rand -base64 32 > data_key
+fi
+
+export CONJUR_DATA_KEY="$(cat data_key)"
+
+docker-compose up -d conjur database
+
+docker-compose exec conjur conjurctl account create conjur

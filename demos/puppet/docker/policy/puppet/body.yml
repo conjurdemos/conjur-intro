@@ -1,0 +1,7 @@
+---
+- !layer agents
+
+- !host-factory
+  layers: [ !layer agents ]
+  annotations:
+      puppet: true
