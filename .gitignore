@@ -7,3 +7,4 @@ tools/simple-certificates/certificates/*
 
 # Editor files
 *.sw[po]
+vm/.vagrant
