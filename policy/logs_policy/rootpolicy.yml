@@ -1,0 +1,19 @@
+---
+- !policy conjur/cluster
+
+- !group conjur-root-admins
+
+- !permit
+  role: !group conjur-root-admins
+  privileges: [ create, update, read ]
+  resources:
+    - !policy root
+
+- !policy
+   id: awskeys
+   owner: !group conjur-root-admins
+
+- !policy
+   id: dashdev
+   owner: !group conjur-root-admins
+

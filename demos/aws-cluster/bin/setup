@@ -1,0 +1,19 @@
+#!/bin/bash -eux
+
+# docker build -t terraform .
+
+mkdir -p ./tmp/terraform
+
+docker run --rm -it -v $(pwd):/app --entrypoint /bin/bash terraform
+docker run --rm -it -v $(pwd):/app terraform plan -out=./tmp/terraform/conjur-ha.plan
+# docker run --rm -it -v $(pwd):/app terraform init
+
+# # Generate the terraform execution plan
+# terraform plan -out=./tmp/terraform/conjur-ha.plan
+#
+# # Execute the plan to create the AWS resources
+# terraform apply ./tmp/terraform/conjur-ha.plan
+
+
+
+docker run -i --workdir /src -v "$(pwd):/src" hashicorp/terraform:light --help
