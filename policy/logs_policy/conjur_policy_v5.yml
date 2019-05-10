@@ -1,0 +1,102 @@
+# conjur_policy.yml
+---
+
+- !host conjurhost
+
+- !layer conjurlayer
+
+- !grant
+  role: !host conjurhost
+  member: !layer conjurlayer
+
+- &mongo-variables
+  - !variable mongo/host
+  - !variable mongo/port
+  - !variable mongo/username
+  - !variable mongo/password
+
+- !permit
+  resource: *mongo-variables
+  privileges: [ read, execute ]
+  roles: !layer conjurlayer
+
+- &rabbitmq-variables
+  - !variable rabbitmq/host
+  - !variable rabbitmq/port
+  - !variable rabbitmq/user
+  - !variable rabbitmq/password
+
+- !permit
+  resource: *rabbitmq-variables
+  privileges: [ read, execute ]
+  roles: !layer conjurlayer
+
+- !variable redis/host
+
+- !permit
+  resource: !variable redis/host
+  privileges: [ read, execute ]
+  roles: !layer conjurlayer
+
+- !variable aws/masterkeyid
+
+- !permit
+  resource: !variable aws/masterkeyid
+  privileges: [ read, execute ]
+  roles: !layer conjurlayer
+
+- &jwt-variables
+  - !variable jwt/remoteurl 
+  - !variable jwt/password
+
+- !permit
+  resource: *jwt-variables
+  privileges: [ read, execute ]
+  roles: !layer conjurlayer
+
+- &notification-variables
+  - !variable notification/invitecodebaseurl
+  - !variable notification/invitesendpoint/url
+  - !variable notification/awssns/accesskey
+  - !variable notification/awssns/secretkey
+  - !variable notification/awssns/platform
+  - !variable notification/awssns/com.insulet.dash.display
+  - !variable notification/awssns/com.insulet.dash.view
+  - !variable notification/snaplogic/url
+  - !variable notification/snaplogic/authorizationtoken
+  - !variable notification/notificationservicebaseurl
+
+- !permit
+  resource: *notification-variables
+  privileges: [ read, execute ]
+  roles: !layer conjurlayer 
+
+- &display-variables
+  - !variable display/dataservicebaseurl
+  - !variable display/authenticationserviceapikey
+  - !variable display/authenticationservicebaseurl
+
+- !permit
+  resource: *display-variables
+  privileges: [ read, execute ]
+  roles: !layer conjurlayer
+
+- &view-variables
+  - !variable view/authenticationserviceapikey
+  - !variable view/dataservicebaseurl
+  - !variable view/mfgservicebaseurl
+  - !variable view/authenticationservicebaseurl 
+
+- !permit
+    resource: *view-variables
+    privileges: [ read, execute ]
+    roles: !layer conjurlayer
+
+- &support-variables
+  - !variable support/mfgserviceurl
+  - !variable support/dataserviceurl
+ 
+- !permit
+    resource: *support-variables
+    privileges: [ read, execute ]
+    roles: !layer conjurlayer

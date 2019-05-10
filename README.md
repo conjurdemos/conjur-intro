@@ -3,7 +3,7 @@ Miscellaneous utilities that make it easier to make, manage, and run demos
 
 ## Demos
 
-- [Simple Cluster](demos/simple-cluster/README.md)
+- [Conjur Cluster](demos/cluster/README.md)
 - [Certificate Authority](demos/certificate-authority/README.md)
 - [Auto-Failover Cluster](demos/auto-failover/README.md)
 - [LDAP Sync and Authentication](demos/ldap-integration/README.md)

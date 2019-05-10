@@ -1,0 +1,15 @@
+2019-03-08T20:18:50.327+00:00 17a899849b53 conjur-possum: I, [2019-03-08T20:18:49.728719 #5562]  INFO -- : Started GET "/authn/Insulet/login" for 127.0.0.1 at 2019-03-08 20:18:49 +0000
+2019-03-08T20:18:50.327+00:00 17a899849b53 conjur-possum: I, [2019-03-08T20:18:49.729531 #5562]  INFO -- : Processing by AuthenticateController#login as */*
+2019-03-08T20:18:50.327+00:00 17a899849b53 conjur-possum: I, [2019-03-08T20:18:49.729578 #5562]  INFO -- :   Parameters: {"authenticator"=>"authn", "account"=>"Insulet"}
+2019-03-08T20:18:50.327+00:00 17a899849b53 conjur-possum: I, [2019-03-08T20:18:49.733456 #5562]  INFO -- : Completed 500 Internal Server Error in 4ms
+2019-03-08T20:18:50.327+00:00 17a899849b53 conjur-possum: F, [2019-03-08T20:18:49.737204 #5562] FATAL -- :
+2019-03-08T20:18:50.327+00:00 17a899849b53 conjur-possum: NoMethodError (undefined method `id' for nil:NilClass):
+2019-03-08T20:18:50.327+00:00 17a899849b53 conjur-possum:   app/domain/authentication/strategy.rb:235:in `new_login'
+2019-03-08T20:18:50.327+00:00 17a899849b53 conjur-possum:   app/domain/authentication/strategy.rb:84:in `login'
+2019-03-08T20:18:50.327+00:00 17a899849b53 conjur-possum:   app/controllers/concerns/basic_authenticator.rb:30:in `authenticator_login'
+2019-03-08T20:18:50.327+00:00 17a899849b53 conjur-possum:   app/controllers/concerns/basic_authenticator.rb:14:in `block in perform_basic_authn'
+2019-03-08T20:18:50.327+00:00 17a899849b53 conjur-possum:   app/controllers/concerns/basic_authenticator.rb:13:in `perform_basic_authn'
+2019-03-08T20:18:50.327+00:00 17a899849b53 conjur-possum:   app/controllers/authenticate_controller.rb:22:in `login'
+2019-03-08T20:18:50.327+00:00 17a899849b53 conjur-possum:   app/controllers/application_controller.rb:42:in `block in run_with_transaction'
+2019-03-08T20:18:50.327+00:00 17a899849b53 conjur-possum:   app/controllers/application_controller.rb:41:in `run_with_transaction'
+2019-03-08T20:18:50.327+00:00 17a899849b53 conjur-possum:   lib/rack/remember_uuid.rb:12:in `call'
