@@ -1,0 +1,9 @@
+- !host my-host
+- !group my-group
+- !user fred
+
+- !grant
+  members:
+    - !host my-host
+    - !user fred
+  role: !group my-group
