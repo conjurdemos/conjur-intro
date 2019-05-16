@@ -4,7 +4,7 @@ function message() {
     printf '\e[1;34m%-6s\e[m\n\n' "$1"
   }
 
-PUPPET_AGENT_PUBLIC_DNS=$(terraform output puppet_agent_win_2008R2_public_dns)
+PUPPET_AGENT_PUBLIC_DNS=$(terraform output puppet_agent_win_core_public_dns)
 PUPPET_MASTER_HOST=$(terraform output puppet_master_public_dns)
 PUPPET_MASTER_PRIVATE_IP=$(terraform output puppet_master_private_ip)
 
@@ -16,7 +16,7 @@ cat <<EOF
 -------------------------------------------------------
 
 \$puppetMasterPrivateIp = "${PUPPET_MASTER_PRIVATE_IP}"
-\$agentNodeName = "agent-win-2008R2.puppet"
+\$agentNodeName = "agent-win-core.puppet"
 
 # Modify hosts file
 \$hostsPath = "\$env:windir\\System32\\drivers\\etc\\hosts"
@@ -42,5 +42,5 @@ message "3) Signing agent certificate..."
 ssh -i ~/.ssh/micahlee.pem \
     -o "StrictHostKeyChecking no" \
     "ec2-user@${PUPPET_MASTER_HOST}" /bin/bash << EOF
-  sudo /opt/puppetlabs/bin/puppet cert sign agent-win-2008R2.puppet
+  sudo /opt/puppetlabs/bin/puppet cert sign agent-win-core.puppet
 EOF

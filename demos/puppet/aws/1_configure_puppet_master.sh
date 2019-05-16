@@ -48,7 +48,6 @@ ssh -i ~/.ssh/micahlee.pem \
 
   sudo yum -y install puppetserver
 
-
   sudo /opt/puppetlabs/bin/puppet config set dns_alt_names "master.puppet,puppet" --section master
 
   sudo /opt/puppetlabs/bin/puppet config set certname "master.puppet" --section main
@@ -58,6 +57,8 @@ ssh -i ~/.ssh/micahlee.pem \
 
   sudo systemctl start puppetserver
   sudo systemctl enable puppetserver
+
+  sudo /opt/puppetlabs/bin/puppet module install puppet/windowsfeature
 EOF
 
 ssh -i ~/.ssh/micahlee.pem \

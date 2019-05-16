@@ -34,14 +34,14 @@ resource "aws_security_group" "puppet_master_node" {
 
 resource "aws_instance" "pupper_master_node" {
   ami                     = "${var.puppet_master_base_ami_id}"
-  instance_type           =  "t2.large"
+  instance_type           =  "t2.medium"
   availability_zone       = "${var.availability_zone}"
   subnet_id               = "${data.aws_subnet.subnet.id}"
   key_name                = "${var.key_name}"
   vpc_security_group_ids  = ["${aws_security_group.puppet_master_node.id}"]
 
   tags = {
-    Name                  = "${var.resource_prefix}conjur-master"
+    Name                  = "${var.resource_prefix}puppet-master"
   }
 }
 

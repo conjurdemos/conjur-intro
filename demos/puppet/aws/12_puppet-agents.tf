@@ -97,6 +97,19 @@ resource "aws_instance" "puppet_agent_win_2008R2_node" {
   }
 }
 
+resource "aws_instance" "puppet_agent_win_core_node" {
+  ami                     = "${var.puppet_agent_win_core_base_ami_id}"
+  instance_type           =  "t2.medium"
+  availability_zone       = "${var.availability_zone}"
+  subnet_id               = "${data.aws_subnet.subnet.id}"
+  key_name                = "${var.key_name}"
+  vpc_security_group_ids  = ["${aws_security_group.puppet_agent_node.id}"]
+
+  tags = {
+    Name                  = "${var.resource_prefix}puppet-agent-win-core"
+  }
+}
+
 #############################################
 # Outputs
 #############################################
@@ -131,4 +144,20 @@ output "puppet_agent_win_2008R2_private_dns" {
 
 output "puppet_agent_win_2008R2_private_ip" {
   value = "${aws_instance.puppet_agent_win_2008R2_node.private_ip}"
+}
+
+output "puppet_agent_win_core_public_dns" {
+  value = "${aws_instance.puppet_agent_win_core_node.public_dns}"
+}
+
+output "puppet_agent_win_core_public_ip" {
+  value = "${aws_instance.puppet_agent_win_core_node.public_ip}"
+}
+
+output "puppet_agent_win_core_private_dns" {
+  value = "${aws_instance.puppet_agent_win_core_node.private_dns}"
+}
+
+output "puppet_agent_win_core_private_ip" {
+  value = "${aws_instance.puppet_agent_win_core_node.private_ip}"
 }
