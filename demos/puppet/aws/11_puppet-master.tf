@@ -49,10 +49,18 @@ resource "aws_instance" "pupper_master_node" {
 # Outputs
 #############################################
 
-output "puppet_master_public" {
+output "puppet_master_public_dns" {
   value = "${aws_instance.pupper_master_node.public_dns}"
 }
 
-output "puppet_master_private" {
+output "puppet_master_public_ip" {
+  value = "${aws_instance.pupper_master_node.public_ip}"
+}
+
+output "puppet_master_private_dns" {
   value = "${aws_instance.pupper_master_node.private_dns}"
+}
+
+output "puppet_master_private_ip" {
+  value = "${aws_instance.pupper_master_node.private_ip}"
 }

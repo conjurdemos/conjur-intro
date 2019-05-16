@@ -1,0 +1,7 @@
+#!/bin/bash -eu
+
+PUPPET_MASTER_HOST=$(terraform output puppet_master_public_dns)
+
+ssh -i ~/.ssh/micahlee.pem \
+    -o "StrictHostKeyChecking no" \
+    "ec2-user@${PUPPET_MASTER_HOST}" 

@@ -79,10 +79,18 @@ resource "aws_instance" "puppet_agent_linux_node" {
 # Outputs
 #############################################
 
-output "puppet_agent_linux_public" {
+output "puppet_agent_linux_public_dns" {
   value = "${aws_instance.puppet_agent_linux_node.public_dns}"
 }
 
-output "puppet_agent_linux_private" {
+output "puppet_agent_linux_public_ip" {
+  value = "${aws_instance.puppet_agent_linux_node.public_ip}"
+}
+
+output "puppet_agent_linux_private_dns" {
   value = "${aws_instance.puppet_agent_linux_node.private_dns}"
+}
+
+output "puppet_agent_linux_private_ip" {
+  value = "${aws_instance.puppet_agent_linux_node.private_ip}"
 }
