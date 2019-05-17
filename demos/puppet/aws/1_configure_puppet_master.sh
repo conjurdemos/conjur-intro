@@ -61,6 +61,8 @@ ssh -i "${SSH_KEY_FILE}" \
   sudo systemctl enable puppetserver
 
   sudo /opt/puppetlabs/bin/puppet module install puppet/windowsfeature
+  sudo /opt/puppetlabs/bin/puppet module install cyberark-conjur
+
 EOF
 
 ssh -i "${SSH_KEY_FILE}" \
