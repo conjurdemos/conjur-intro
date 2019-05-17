@@ -146,6 +146,11 @@ output "puppet_agent_win_2008R2_private_ip" {
   value = "${aws_instance.puppet_agent_win_2008R2_node.private_ip}"
 }
 
+output "puppet_agent_win_2008R2_aws_id" {
+  value = "${aws_instance.puppet_agent_win_2008R2_node.id}"
+}
+
+
 output "puppet_agent_win_core_public_dns" {
   value = "${aws_instance.puppet_agent_win_core_node.public_dns}"
 }
@@ -161,3 +166,8 @@ output "puppet_agent_win_core_private_dns" {
 output "puppet_agent_win_core_private_ip" {
   value = "${aws_instance.puppet_agent_win_core_node.private_ip}"
 }
+
+output "puppet_agent_win_core_aws_id" {
+  value = "${aws_instance.puppet_agent_win_core_node.id}"
+}
+

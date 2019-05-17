@@ -2,6 +2,8 @@
 
 # Reference: https://www.howtoforge.com/tutorial/centos-puppet-master-and-agent/
 
+: ${SSH_KEY_FILE?"Need to set SSH_KEY_FILE"}
+
 PUPPET_MASTER_HOST=$(terraform output puppet_master_public_dns)
 
 PUPPET_MASTER_PRIVATE_DNS=$(terraform output puppet_master_private_dns)
@@ -10,7 +12,7 @@ PUPPET_AGENT_LINUX_PRIVATE_DNS=$(terraform output puppet_agent_linux_private_dns
 PUPPET_MASTER_PRIVATE_IP=$(terraform output puppet_master_private_ip)
 PUPPET_AGENT_LINUX_PRIVATE_IP=$(terraform output puppet_agent_linux_private_ip)
 
-ssh -i ~/.ssh/micahlee.pem \
+ssh -i "${SSH_KEY_FILE}" \
     -o "StrictHostKeyChecking no" \
     "ec2-user@${PUPPET_MASTER_HOST}" /bin/bash << EOF
 
@@ -61,7 +63,7 @@ ssh -i ~/.ssh/micahlee.pem \
   sudo /opt/puppetlabs/bin/puppet module install puppet/windowsfeature
 EOF
 
-ssh -i ~/.ssh/micahlee.pem \
+ssh -i "${SSH_KEY_FILE}" \
     -o "StrictHostKeyChecking no" \
     "ec2-user@${PUPPET_MASTER_HOST}" /bin/bash << EOF
   sudo /opt/puppetlabs/bin/puppet config set runinterval "30" --section main
