@@ -1,20 +1,6 @@
 #!/bin/bash -eu
 
-: ${SSH_KEY_FILE?"Need to set SSH_KEY_FILE"}
-
 CONJUR_MASTER_PUBLIC_DNS=$(terraform output conjur_master_public)
-
-mkdir -p ./conjur
-openssl rand -base64 16 > ./conjur/admin_password
-
-ssh -i "${SSH_KEY_FILE}" \
-  -o "StrictHostKeyChecking no" \
-  core@${CONJUR_MASTER_PUBLIC_DNS} /bin/bash << SSH
-  docker exec conjur-appliance evoke configure master \
-    -h ${CONJUR_MASTER_PUBLIC_DNS} \
-    -p $(<./conjur/admin_password) \
-    puppet
-SSH 
 
 # Load PCF policy
 docker run --rm -v "$(pwd):/data" --entrypoint /bin/bash cyberark/conjur-cli:5 -c "
@@ -39,4 +25,9 @@ docker run --rm -v "$(pwd):/data" --entrypoint /bin/bash cyberark/conjur-cli:5 -
 
   # Extract Cert Chain
   cp /root/conjur-puppet.pem /data/conjur/conjur.pem
-  "
+"
+
+# Store config where puppet can use it
+echo "https://$(terraform output conjur_master_public)" > ./puppet/modules/conjur_config/files/appliance_url
+cp ./conjur/conjur.pem ./puppet/modules/conjur_config/files/
+cat ./conjur/host_factory_token | jq -r '.[0].token' > ./puppet/modules/conjur_config/files/host_factory_token

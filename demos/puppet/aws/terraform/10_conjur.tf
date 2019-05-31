@@ -49,6 +49,13 @@ resource "aws_security_group" "conjur_master_node" {
   }
 }
 
+data "template_file" "install_conjur_master" {
+  template = "${file("${path.module}/files/conjur/install_master.tpl")}"
+  vars = {
+    admin_password = "${file("${path.module}/files/conjur/admin_password")}"
+  }
+}
+
 # Instances
 resource "aws_instance" "conjur_master_node" {
   ami                     = "${var.conjur_ami_id}"
@@ -60,6 +67,24 @@ resource "aws_instance" "conjur_master_node" {
 
   tags = {
     Name                  = "${var.resource_prefix}conjur-master"
+  }
+
+  connection {
+    type        = "ssh"
+    user        = "core"
+    private_key = "${file("~/.ssh/micahlee.pem")}"
+  }
+
+  provisioner "file" {
+    content     = "${data.template_file.install_conjur_master.rendered}"
+    destination = "~/install_conjur.sh"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "chmod +x ~/install_conjur.sh",
+      "sudo ~/install_conjur.sh"      
+    ]
   }
 }
 

@@ -32,7 +32,7 @@ resource "aws_security_group" "puppet_master_node" {
   }
 }
 
-resource "aws_instance" "pupper_master_node" {
+resource "aws_instance" "puppet_master_node" {
   ami                     = "${var.puppet_master_base_ami_id}"
   instance_type           =  "t2.medium"
   availability_zone       = "${var.availability_zone}"
@@ -43,6 +43,24 @@ resource "aws_instance" "pupper_master_node" {
   tags = {
     Name                  = "${var.resource_prefix}puppet-master"
   }
+
+  connection {
+    type        = "ssh"
+    user        = "ec2-user"
+    private_key = "${file("~/.ssh/micahlee.pem")}"
+  }
+
+  provisioner "file" {
+    content     = "${file("${path.module}/files/puppet/install_master.tpl")}"
+    destination = "~/install_puppet.sh"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "chmod +x ~/install_puppet.sh",
+      "sudo ~/install_puppet.sh"      
+    ]
+  }
 }
 
 #############################################
@@ -50,17 +68,17 @@ resource "aws_instance" "pupper_master_node" {
 #############################################
 
 output "puppet_master_public_dns" {
-  value = "${aws_instance.pupper_master_node.public_dns}"
+  value = "${aws_instance.puppet_master_node.public_dns}"
 }
 
 output "puppet_master_public_ip" {
-  value = "${aws_instance.pupper_master_node.public_ip}"
+  value = "${aws_instance.puppet_master_node.public_ip}"
 }
 
 output "puppet_master_private_dns" {
-  value = "${aws_instance.pupper_master_node.private_dns}"
+  value = "${aws_instance.puppet_master_node.private_dns}"
 }
 
 output "puppet_master_private_ip" {
-  value = "${aws_instance.pupper_master_node.private_ip}"
+  value = "${aws_instance.puppet_master_node.private_ip}"
 }

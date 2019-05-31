@@ -11,9 +11,16 @@ scp -i "${SSH_KEY_FILE}" \
     ./puppet/manifests \
     "ec2-user@${PUPPET_MASTER_HOST}:~"
 
+scp -i "${SSH_KEY_FILE}" \
+    -o "StrictHostKeyChecking no" \
+    -r \
+    ./puppet/modules \
+    "ec2-user@${PUPPET_MASTER_HOST}:~"
+
 # Login and copy the files to the puppet directories
 ssh -i "${SSH_KEY_FILE}" \
     -o "StrictHostKeyChecking no" \
     "ec2-user@${PUPPET_MASTER_HOST}" /bin/bash << EOF
-  sudo cp -R /home/ec2-user/manifests /etc/puppetlabs/code/environments/production
+  sudo cp -Rv /home/ec2-user/manifests /etc/puppetlabs/code/environments/production
+  sudo cp -Rv /home/ec2-user/modules /etc/puppetlabs/code/environments/production
 EOF
