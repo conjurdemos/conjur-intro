@@ -62,7 +62,7 @@ resource "aws_instance" "conjur_master_node" {
   instance_type           =  "t2.large"
   availability_zone       = "${var.availability_zone}"
   subnet_id               = "${data.aws_subnet.subnet.id}"
-  key_name                = "${var.key_name}"
+  key_name                = "${aws_key_pair.generated_key.key_name}"
   vpc_security_group_ids  = ["${aws_security_group.conjur_master_node.id}"]
 
   tags = {
@@ -72,7 +72,7 @@ resource "aws_instance" "conjur_master_node" {
   connection {
     type        = "ssh"
     user        = "core"
-    private_key = "${file("~/.ssh/micahlee.pem")}"
+    private_key = "${tls_private_key.ssh_access_key.private_key_pem}"
   }
 
   provisioner "file" {

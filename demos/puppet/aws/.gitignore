@@ -2,3 +2,6 @@
 *.tfvars
 *.tfstate*
 conjur/
+id_rsa
+puppet/modules/conjur_config/files/*
+!puppet/modules/conjur_config/files/.gitkeep

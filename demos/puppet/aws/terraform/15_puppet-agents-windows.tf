@@ -36,7 +36,7 @@ resource "aws_instance" "puppet_agent_win_nodes" {
   instance_type           =  "t2.medium"
   availability_zone       = "${var.availability_zone}"
   subnet_id               = "${data.aws_subnet.subnet.id}"
-  key_name                = "${var.key_name}"
+  key_name                = "${aws_key_pair.generated_key.key_name}"
   vpc_security_group_ids  = ["${aws_security_group.puppet_agent_node.id}"]
 
   get_password_data       = true
@@ -49,7 +49,7 @@ resource "aws_instance" "puppet_agent_win_nodes" {
   connection {
     type      = "winrm"
     port      = 5985
-    password  = "${rsadecrypt(self.password_data, file("~/.ssh/micahlee.pem"))}"
+    password  = "${rsadecrypt(self.password_data, tls_private_key.ssh_access_key.private_key_pem)}"
     https     = false
     insecure  = true
   }

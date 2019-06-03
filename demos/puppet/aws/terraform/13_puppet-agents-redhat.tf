@@ -18,7 +18,7 @@ resource "aws_instance" "puppet_agent_linux_node" {
   instance_type           =  "t2.medium"
   availability_zone       = "${var.availability_zone}"
   subnet_id               = "${data.aws_subnet.subnet.id}"
-  key_name                = "${var.key_name}"
+  key_name                = "${aws_key_pair.generated_key.key_name}"
   vpc_security_group_ids  = ["${aws_security_group.puppet_agent_node.id}"]
 
   tags = {
@@ -28,7 +28,7 @@ resource "aws_instance" "puppet_agent_linux_node" {
   connection {
     type        = "ssh"
     user        = "ec2-user"
-    private_key = "${file("~/.ssh/micahlee.pem")}"
+    private_key = "${tls_private_key.ssh_access_key.private_key_pem}"
   }
 
   provisioner "file" {

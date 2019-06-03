@@ -1,9 +1,7 @@
 #!/bin/bash -eu
 
-: ${SSH_KEY_FILE?"Need to set SSH_KEY_FILE"}
-
 PUPPET_AGENT_LINUX_HOST=$(terraform output puppet_agent_linux_public_dns)
 
-ssh -i "${SSH_KEY_FILE}" \
+ssh -i "./id_rsa" \
     -o "StrictHostKeyChecking no" \
     "ec2-user@${PUPPET_AGENT_LINUX_HOST}" 
