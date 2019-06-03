@@ -2,8 +2,8 @@
 variable "puppet_agent_win_nodes" {
   default = [
     "agent-win-2008r2.puppet"
-    #,"agent-win-2019.puppet"
-    #,"agent-win-core.puppet"
+    ,"agent-win-2019.puppet"
+    ,"agent-win-core.puppet"
   ]
 }
 

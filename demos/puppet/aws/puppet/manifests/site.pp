@@ -47,7 +47,20 @@ node 'agent-win-core.puppet' {
 
   file { 'C:\\inetpub\wwwroot\index.html':
     ensure => file,
-    content => "Hello from Conjur Puppet for Windows Server Core Agent! Secret is '${secret.unwrap}'"
+    content => "Hello from Conjur Puppet for Windows Server 2019 Core Agent! Secret is '${secret.unwrap}'"
+  }
+
+}
+
+node 'agent-win-2019.puppet' {
+
+  windowsfeature { ['Web-Server','Web-WebServer']:
+    ensure => present,
+  }
+
+  file { 'C:\\inetpub\wwwroot\index.html':
+    ensure => file,
+    content => "Hello from Conjur Puppet for Windows Server 2019 Agent! Secret is '${secret.unwrap}'"
   }
 
 }
