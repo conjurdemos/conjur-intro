@@ -11,6 +11,10 @@ variable "resource_prefix" {
   default = ""
 }
 
+variable "conjur_ee_ami_id" {
+  type = "string"
+}
+
 variable "vpc_id" {
   type = "string"
 }

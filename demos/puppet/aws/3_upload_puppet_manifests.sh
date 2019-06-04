@@ -1,6 +1,6 @@
 #!/bin/bash -eu
 
-PUPPET_MASTER_HOST=$(terraform output puppet_master_public_dns)
+PUPPET_MASTER_HOST=$(terraform output puppet_master_public)
 
 # Stage the files on the server (we can't write directly to the puppet directory)
 scp -i "./id_rsa" \

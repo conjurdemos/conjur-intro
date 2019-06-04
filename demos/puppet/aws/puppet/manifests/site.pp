@@ -9,7 +9,7 @@ class { 'conjur':
     $secret = conjur::secret('my-secret')
 
 
-node 'agent-linux.puppet' {
+node 'agent-redhat.puppet' {
     
 
      package { 'httpd':

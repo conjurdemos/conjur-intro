@@ -47,7 +47,7 @@ resource "aws_security_group" "conjur_master" {
 data "template_file" "install_conjur_master_script" {
   template = "${file("${path.module}/templates/install_master.sh.tpl")}"
   vars = {
-    admin_password = "${var.admin_password}"
+    admin_password = "${var.admin_password != "" ? var.admin_password : random_string.admin_password.result}"
   }
 }
 
@@ -57,7 +57,7 @@ resource "aws_instance" "conjur_master" {
   instance_type           =  "t2.large"
   availability_zone       = "${var.availability_zone}"
   subnet_id               = "${data.aws_subnet.subnet.id}"
-  key_name                = "${ssh_key_name}"
+  key_name                = "${var.ssh_key_name}"
   vpc_security_group_ids  = ["${aws_security_group.conjur_master.id}"]
 
   tags = {

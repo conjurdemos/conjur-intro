@@ -1,5 +1,13 @@
-variable "conjur_ee_ami_id" {
-  type = "string"
+variable "node_names" {
+  default = [
+    "puppet-agent-redhat"
+  ]
+}
+
+variable "ami_ids" {
+  default = [
+    "ami-0de53d8956e8dcf80"
+  ]
 }
 
 variable "resource_prefix" {
@@ -15,11 +23,6 @@ variable "availability_zone" {
   default = "us-east-1a"
 }
 
-variable "admin_password" {
-  type = "string"
-  default = ""
-}
-
 variable "ssh_key_name" {
   type = "string"
 }
@@ -28,14 +31,12 @@ variable "ssh_key_pem" {
   type = "string"
 }
 
-#############################################
-# Generated Data
-#############################################
+variable "security_group_id" {
+  type = "string"
+}
 
-# Password for Conjur Admin user
-resource "random_string" "admin_password" {
-  length = 16
-  special = true
+variable "puppet_master_ip" {
+  type = "string"
 }
 
 #############################################

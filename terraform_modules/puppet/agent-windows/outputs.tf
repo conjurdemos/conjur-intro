@@ -1,0 +1,3 @@
+output "public_dns" {
+  value = "${aws_instance.puppet_agent_win_nodes.*.public_dns}"
+}

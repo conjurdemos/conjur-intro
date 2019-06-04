@@ -15,57 +15,19 @@ variable "puppet_agent_win_amis" {
   ]
 }
 
-data "template_file" "windows_install_puppet" {
-  count    = "${length(var.puppet_agent_win_nodes)}"
+module "puppet_agents_win" {
+  source = "../../../../terraform_modules/puppet/agent-windows"
 
-  template = "${file("${path.module}/files/windows/install_puppet.tpl")}"
-  vars = {
-    puppet_master_private_ip = "${aws_instance.puppet_master_node.private_ip}"
-    node_name = "${element(var.puppet_agent_win_nodes, count.index)}"
-  }
-}
-
-data "local_file" "windows_userdata" {
-    filename = "${path.module}/files/windows/user_data.txt"
-}
-
-resource "aws_instance" "puppet_agent_win_nodes" {
-  count    = "${length(var.puppet_agent_win_nodes)}"
-
-  ami                     = "${element(var.puppet_agent_win_amis, count.index)}"
-  instance_type           =  "t2.medium"
-  availability_zone       = "${var.availability_zone}"
-  subnet_id               = "${data.aws_subnet.subnet.id}"
-  key_name                = "${aws_key_pair.generated_key.key_name}"
-  vpc_security_group_ids  = ["${aws_security_group.puppet_agent_node.id}"]
-
-  get_password_data       = true
-  user_data               = "${data.local_file.windows_userdata.content}"
-
-  tags = {
-    Name                  = "${var.resource_prefix}${element(var.puppet_agent_win_nodes, count.index)}"
-  }
-
-  connection {
-    type      = "winrm"
-    port      = 5985
-    password  = "${rsadecrypt(self.password_data, tls_private_key.ssh_access_key.private_key_pem)}"
-    https     = false
-    insecure  = true
-  }
-
-  provisioner "file" {
-    content     = "${element(data.template_file.windows_install_puppet.*.rendered, count.index)}"
-    destination = "C:\\temp\\install_puppet.ps1"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "powershell -ExecutionPolicy Unrestricted -File C:\\temp\\install_puppet.ps1"
-    ]
-  }
+  ami_ids = ["${var.puppet_agent_win_amis}"]
+  node_names = ["${var.puppet_agent_win_nodes}"]
+  puppet_master_ip = "${module.puppet_master.private_ip}"
+  vpc_id = "${var.vpc_id}"
+  security_group_id = "${aws_security_group.puppet_agent_node.id}"
+  resource_prefix = "${var.resource_prefix}"
+  ssh_key_name = "${aws_key_pair.generated_key.key_name}"
+  ssh_key_pem = "${tls_private_key.ssh_access_key.private_key_pem}"
 }
 
 output "puppet_agent_win_public_dns" {
-  value = "${aws_instance.puppet_agent_win_nodes.*.public_dns}"
+  value = "${module.puppet_agents_win.public_dns}"
 }

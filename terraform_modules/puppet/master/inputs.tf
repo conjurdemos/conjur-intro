@@ -1,5 +1,6 @@
-variable "conjur_ee_ami_id" {
-  type = "string"
+variable "ami_id" {
+  type = "string",
+  default = "ami-0de53d8956e8dcf80"
 }
 
 variable "resource_prefix" {
@@ -15,27 +16,12 @@ variable "availability_zone" {
   default = "us-east-1a"
 }
 
-variable "admin_password" {
-  type = "string"
-  default = ""
-}
-
 variable "ssh_key_name" {
   type = "string"
 }
 
 variable "ssh_key_pem" {
   type = "string"
-}
-
-#############################################
-# Generated Data
-#############################################
-
-# Password for Conjur Admin user
-resource "random_string" "admin_password" {
-  length = 16
-  special = true
 }
 
 #############################################
