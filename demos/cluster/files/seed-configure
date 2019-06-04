@@ -1,0 +1,30 @@
+#!/bin/bash -e
+
+# "./hf-configure <account> <master-url> <hf-token> <hostname>"
+
+account=$1
+master_url=$2
+hf_token=$3
+hostname=$4
+
+# Install `jq` to simplify JSON parsing
+apt-get update && apt-get install -y jq
+
+# Enroll the host using the provided Host Factory Token
+response=$(curl -k -X POST --data-urlencode "id=conjur/cluster/conjur/$hostname" \
+     --header "Authorization: Token token=\"$hf_token\"" \
+     $master_url/host_factories/hosts)
+
+# Extract the returned API key for future authentication
+api_key=$(echo $response | jq -r '.api_key')
+# echo "api_key: $api_key"
+
+# Using the API key and hostname, authenticate for a temporary authentication token
+encoded_host=$(echo "host/conjur/cluster/conjur/$hostname" | sed 's#/#%2f#g')
+response=$(curl -k -X POST -d "$api_key" $master_url/authn/$account/$encoded_host/authenticate)
+token=$(echo -n "$response" | base64 | tr -d '\r\n')
+# echo "token: $token"
+
+# Configure the standby using a standby seed from the Seed service
+curl -k -X POST -H "Authorization: Token token=\"$token\"" -d '' "$master_url/configuration/$account/seed/standby" | evoke unpack seed -
+evoke configure standby

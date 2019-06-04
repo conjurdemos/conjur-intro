@@ -1,5 +1,8 @@
 #!/bin/bash -ex
 
+account='demo'
+
+
 function print_help() {
   cat << EOF
 
@@ -16,6 +19,27 @@ Usage: start [options]
 
 EOF
   exit
+}
+
+function master_cluster_hf_token() {
+  local output=$(./cli conjur hostfactory tokens create --duration-minutes=30 conjur/cluster/conjur)
+  echo $output | sed 1d | jq -r '.[0].token'
+  # local master_uri='https://localhost'
+  # local host_factory="$account:host_factory:conjur/cluster/conjur"
+  #
+  # local api_key=$(curl -k --user admin:secret $master_uri/authn/$account/login)
+  #
+  # local response=$(curl -k -X POST -d "$api_key" $master_uri/authn/$account/admin/authenticate)
+  #
+  # local token=$(echo -n "$response" | base64 | tr -d '\r\n')
+  #
+  # local hf_token=$(curl -k -X POST -H "Authorization: Token token=\"$token\"" \
+  #     --data-urlencode "host_factory=$host_factory" \
+  #     --data-urlencode "expiration=2019-08-04T22:27:20+00:00" \
+  #     "$master_uri/host_factory_tokens" \
+  #     | jq -r '.[0].token')
+  #
+  # echo $hf_token
 }
 
 # Determine which extra services should be loaded when working with authenticators
@@ -54,13 +78,14 @@ fi
 docker-compose exec conjur-master-1.mycompany.local bash -c "
   evoke configure master \
   -h conjur-master-1.mycompany.local \
-  -p secret demo
+  -p secret $account
 "
 
 if [[ $AUTO_FAILOVER = true ]]; then
   ./cli conjur policy load --replace root policy/root.yml
   ./cli conjur policy load conjur policy/cluster.yml
 fi
+# exit
 
 if [[ $CUSTOM_CERTS = true ]]; then
   docker-compose exec conjur-master-1.mycompany.local bash -c "
@@ -100,59 +125,76 @@ if [[ $MASTER_KEY = true ]]; then
   "
 fi
 
-docker-compose exec conjur-master-1.mycompany.local bash -c "
-  evoke seed standby conjur-master-2.mycompany.local conjur-master-1.mycompany.local > /opt/conjur/backup/standby-seed-2.tar
-  evoke seed follower conjur-follower.mycompany.local > /opt/conjur/backup/follower-seed.tar
-"
-if [[ $AUTO_FAILOVER = true ]]; then
-  docker-compose exec conjur-master-1.mycompany.local bash -c "
-    evoke seed standby conjur-master-3.mycompany.local conjur-master-1.mycompany.local > /opt/conjur/backup/standby-seed-3.tar
-    evoke seed standby conjur-master-4.mycompany.local conjur-master-1.mycompany.local > /opt/conjur/backup/standby-seed-4.tar
-  "
-fi
+# docker-compose exec conjur-master-1.mycompany.local bash -c "
+#   evoke seed standby conjur-master-2.mycompany.local conjur-master-1.mycompany.local > /opt/conjur/backup/standby-seed-2.tar
+#   evoke seed follower conjur-follower.mycompany.local > /opt/conjur/backup/follower-seed.tar
+# "
+# if [[ $AUTO_FAILOVER = true ]]; then
+#   docker-compose exec conjur-master-1.mycompany.local bash -c "
+#     evoke seed standby conjur-master-3.mycompany.local conjur-master-1.mycompany.local > /opt/conjur/backup/standby-seed-3.tar
+#     evoke seed standby conjur-master-4.mycompany.local conjur-master-1.mycompany.local > /opt/conjur/backup/standby-seed-4.tar
+#   "
+# fi
 
 # Setup the standby
-docker-compose exec conjur-master-2.mycompany.local bash -c "
-  evoke unpack seed /opt/conjur/backup/standby-seed-2.tar
+hf_token=$(master_cluster_hf_token)
+
+hostname='conjur-master-2.mycompany.local'
+docker-compose exec -e hf_token=$hf_token -e hostname="conjur/$hostname" $hostname bash -c "
+  /conjur_files/seed-configure demo https://conjur-master-1.mycompany.local $hf_token $hostname
 "
-if [[ $MASTER_KEY = true ]]; then
-  docker-compose exec conjur-master-2.mycompany.local bash -c "
-    evoke keys exec -m /conjur_files/master-key -- evoke configure standby
-  "
-else
-  docker-compose exec conjur-master-2.mycompany.local bash -c "
-    evoke configure standby
-  "
-fi
+
+# docker-compose exec conjur-master-2.mycompany.local bash -c "
+#   evoke unpack seed /opt/conjur/backup/standby-seed-2.tar
+# "
+# if [[ $MASTER_KEY = true ]]; then
+#   docker-compose exec conjur-master-2.mycompany.local bash -c "
+#     evoke keys exec -m /conjur_files/master-key -- evoke configure standby
+#   "
+# else
+#   docker-compose exec conjur-master-2.mycompany.local bash -c "
+#     evoke configure standby
+#   "
+# fi
 
 if [[ $AUTO_FAILOVER = true ]]; then
-  # Setup the standby
-  docker-compose exec conjur-master-3.mycompany.local bash -c "
-    evoke unpack seed /opt/conjur/backup/standby-seed-3.tar
+  # Setup the standby 3
+  hostname='conjur-master-3.mycompany.local'
+  docker-compose exec -e hf_token=$hf_token -e hostname="conjur/$hostname" $hostname bash -c "
+    /conjur_files/seed-configure demo https://conjur-master-1.mycompany.local $hf_token $hostname
   "
-  if [[ $MASTER_KEY = true ]]; then
-    docker-compose exec conjur-master-3.mycompany.local bash -c "
-      evoke keys exec -m /conjur_files/master-key -- evoke configure standby
-    "
-  else
-    docker-compose exec conjur-master-3.mycompany.local bash -c "
-      evoke configure standby
-    "
-  fi
 
-  # Setup the standby
-  docker-compose exec conjur-master-4.mycompany.local bash -c "
-    evoke unpack seed /opt/conjur/backup/standby-seed-4.tar
+  # docker-compose exec conjur-master-3.mycompany.local bash -c "
+  #   evoke unpack seed /opt/conjur/backup/standby-seed-3.tar
+  # "
+  # if [[ $MASTER_KEY = true ]]; then
+  #   docker-compose exec conjur-master-3.mycompany.local bash -c "
+  #     evoke keys exec -m /conjur_files/master-key -- evoke configure standby
+  #   "
+  # else
+  #   docker-compose exec conjur-master-3.mycompany.local bash -c "
+  #     evoke configure standby
+  #   "
+  # fi
+
+  # Setup the standby 4
+  hostname='conjur-master-4.mycompany.local'
+  docker-compose exec -e hf_token=$hf_token -e hostname="conjur/$hostname" $hostname bash -c "
+    /conjur_files/seed-configure demo https://conjur-master-1.mycompany.local $hf_token $hostname
   "
-  if [[ $MASTER_KEY = true ]]; then
-    docker-compose exec conjur-master-4.mycompany.local bash -c "
-      evoke keys exec -m /conjur_files/master-key -- evoke configure standby
-    "
-  else
-    docker-compose exec conjur-master-4.mycompany.local bash -c "
-      evoke configure standby
-    "
-  fi
+
+  # docker-compose exec conjur-master-4.mycompany.local bash -c "
+  #   evoke unpack seed /opt/conjur/backup/standby-seed-4.tar
+  # "
+  # if [[ $MASTER_KEY = true ]]; then
+  #   docker-compose exec conjur-master-4.mycompany.local bash -c "
+  #     evoke keys exec -m /conjur_files/master-key -- evoke configure standby
+  #   "
+  # else
+  #   docker-compose exec conjur-master-4.mycompany.local bash -c "
+  #     evoke configure standby
+  #   "
+  # fi
 
   docker-compose exec conjur-master-1.mycompany.local bash -c "
     evoke replication sync

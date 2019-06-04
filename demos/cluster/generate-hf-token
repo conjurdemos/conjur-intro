@@ -1,0 +1,21 @@
+#!/bin/bash -e
+
+account='demo'
+master_url='https://localhost'
+admin_pass='secret'
+
+host_factory="$account:host_factory:conjur/cluster/conjur"
+
+api_key=$(curl -k --user admin:$admin_pass $master_url/authn/$account/login)
+
+response=$(curl -k -X POST -d "$api_key" $master_url/authn/$account/admin/authenticate)
+
+token=$(echo -n "$response" | base64 | tr -d '\r\n')
+
+hf_token=$(curl -k -X POST -H "Authorization: Token token=\"$token\"" \
+    --data-urlencode "host_factory=$host_factory" \
+    --data-urlencode "expiration=2019-08-04T22:27:20+00:00" \
+    "$master_url/host_factory_tokens" \
+    | jq -r '.[0].token')
+
+echo $hf_token

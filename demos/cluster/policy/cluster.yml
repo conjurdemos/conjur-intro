@@ -1,12 +1,22 @@
+# Create a Cluster service
 - !policy
   id: cluster/conjur
   body:
     - !layer
-    - &hosts
-      - !host conjur-master-1.mycompany.local
-      - !host conjur-master-2.mycompany.local
-      - !host conjur-master-3.mycompany.local
-      - !host conjur-master-4.mycompany.local
+    - !host-factory
+      layer: [ !layer ]
+
+    # Enroll the initial master automatically into the cluster
+    - !host conjur-master-1.mycompany.local
     - !grant
       role: !layer
-      member: *hosts
+      member: !host conjur-master-1.mycompany.local
+
+# Create a Seed Service
+- !webservice seed-generation
+
+# Enable the seed service for hosts in the cluster layer
+- !permit
+  role: !layer cluster/conjur
+  resource: !webservice seed-generation
+  privileges: [ "execute" ]
