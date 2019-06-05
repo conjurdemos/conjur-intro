@@ -1,7 +1,3 @@
-variable "conjur_ee_ami_id" {
-  type = "string"
-}
-
 variable "resource_prefix" {
   type = "string"
   default = ""
@@ -45,4 +41,15 @@ resource "random_string" "admin_password" {
 data "aws_subnet" "subnet" {
   vpc_id            = "${var.vpc_id}"
   availability_zone = "${var.availability_zone}"
+}
+
+data "aws_ami" "conjur_ee_ami" {
+  most_recent      = true
+  name_regex       = "^conjur-10.9-\\d+"
+  owners           = ["601277729239"]
+
+  filter {
+    name   = "name"
+    values = ["conjur-10.9-*"]
+  }
 }

@@ -53,7 +53,7 @@ data "template_file" "install_conjur_master_script" {
 
 # Instances
 resource "aws_instance" "conjur_master" {
-  ami                     = "${var.conjur_ee_ami_id}"
+  ami                     = "${data.aws_ami.conjur_ee_ami.id}"
   instance_type           =  "t2.large"
   availability_zone       = "${var.availability_zone}"
   subnet_id               = "${data.aws_subnet.subnet.id}"
