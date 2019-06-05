@@ -32,6 +32,6 @@ yum -y install puppet-agent
 /opt/puppetlabs/bin/puppet config set certname "${node_name}" --section main
 /opt/puppetlabs/bin/puppet config set server "master.puppet" --section main
 /opt/puppetlabs/bin/puppet config set environment "production" --section main
-/opt/puppetlabs/bin/puppet config set runinterval "30" --section main
+/opt/puppetlabs/bin/puppet config set runinterval "${run_interval}" --section main
 
 /opt/puppetlabs/bin/puppet resource service puppet ensure=running enable=true

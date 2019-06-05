@@ -5,6 +5,7 @@ data "template_file" "redhat_install_puppet" {
   vars = {
     puppet_master_private_ip = "${var.puppet_master_ip}"
     node_name = "${element(var.node_names, count.index)}"
+    run_interval = "${var.run_interval}"
   }
 }
 

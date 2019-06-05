@@ -39,6 +39,11 @@ variable "puppet_master_ip" {
   type = "string"
 }
 
+variable "run_interval" {
+  type = "string"
+  default = "30"
+}
+
 #############################################
 # State Information from AWS
 #############################################

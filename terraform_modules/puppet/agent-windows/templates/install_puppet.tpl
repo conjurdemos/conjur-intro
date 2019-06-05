@@ -29,7 +29,7 @@ while (!(Test-Path "C:\ProgramData\PuppetLabs\puppet\etc\puppet.conf")) { Start-
 Write-Output "Update Run Interval"
 $runInterval = @" 
 [agent]
-  runinterval = 30
+  runinterval = ${run_interval}
 "@ 
 
 Add-Content -Path "C:\ProgramData\PuppetLabs\puppet\etc\puppet.conf" -Value $runInterval
