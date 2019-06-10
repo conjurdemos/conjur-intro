@@ -31,7 +31,7 @@ variable "ssh_key_pem" {
 # Password for Conjur Admin user
 resource "random_string" "admin_password" {
   length = 16
-  special = true
+  special = false
 }
 
 #############################################
