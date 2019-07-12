@@ -1,0 +1,9 @@
+- !layer
+- &hosts
+  - !host conjur-master-1.mycompany.com
+  - !host conjur-master-2.mycompany.com
+  - !host conjur-master-3.mycompany.com
+  - !host conjur-master-4.mycompany.com
+- !grant
+  role: !layer
+  member: *hosts
