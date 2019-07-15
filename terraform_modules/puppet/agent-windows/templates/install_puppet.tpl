@@ -8,7 +8,7 @@ $puppetMasterPrivateIp + "`t`tmaster.puppet" | Out-File -encoding ASCII -append 
 
 # Download Puppet Agent
 Write-Output "Download Puppet"
-$puppetAgentPackage = "https://downloads.puppetlabs.com/windows/puppet5/puppet-agent-x64-latest.msi"
+$puppetAgentPackage = "https://downloads.puppetlabs.com/windows/puppet6/puppet-agent-x64-latest.msi"
 $output = "puppet-agent-x64-latest.msi"
 Invoke-WebRequest -Uri $puppetAgentPackage -OutFile $output
 

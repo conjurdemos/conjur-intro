@@ -14,7 +14,7 @@ systemctl enable ntpd
 sed -i "s/^SELINUX.*/SELINUX=disabled/" /etc/sysconfig/selinux
 
 # Install Puppet Master
-rpm -Uvh https://yum.puppetlabs.com/puppet5/puppet5-release-el-7.noarch.rpm
+rpm -Uvh https://yum.puppet.com/puppet6-release-el-7.noarch.rpm
 yum -y install puppetserver
 
 /opt/puppetlabs/bin/puppet config set dns_alt_names "master.puppet,puppet" --section master
