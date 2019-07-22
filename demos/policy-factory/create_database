@@ -1,0 +1,12 @@
+#!/bin/bash -eu
+
+auth_header=$(docker-compose run --rm -T client authn authenticate -H) 
+
+echo "Generate a database in Conjur policy..."
+
+echo -n "Enter database name and press [ENTER]: "
+read name
+
+
+curl -kv -X POST -H "$auth_header" \
+     "https://localhost:5443/policy_factories/demo/database/instance?name=${name}"

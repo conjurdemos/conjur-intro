@@ -1,0 +1,55 @@
+---
+- !policy certificates
+- !policy-factory
+  id: certificate
+  base: !policy certificates
+  template: |
+    - !policy
+      id: <%=params[:name]%>
+      body:
+
+      - &secrets
+        - !variable
+          id: ssl-private-key
+          provisioner: rsa-private-key
+          annotations:
+            rsa-private-key-format: pem
+
+        - !variable
+          id: ssl-certificate
+          annotations:
+            provision/provisioner: x509-certificate
+            provision/x509/private-key-var: ssl-private-key
+            provision/x509/ca-private-key-var: /ops/ca/web-server/private-key
+            provision/x509/ca-certificate-var: /ops/ca/web-server/certificate
+            provision/x509/certificate-template: |
+              CN: ${role.identifier}
+              SANS:
+                - "DNS:${role.identifier}.mycompany.net"
+            
+            rotation/rotator: x509-certificate # will re-use provision annotations
+            rotation/ttl: P1D
+
+      # Permit requestor to read their own secrets
+      - !permit
+        role: !host <%=role.identifer%>
+        resources: *secrets
+        privileges: [ read, execute ]
+      
+
+- !group certificate-requestors
+- !permit
+  role: !group certificate-requestors
+  resource: !policy-factory certificate
+  privileges: [ read, execute ]
+
+- !policy instances
+- !layer instances
+
+- !host-factory
+  id: instances
+  layers: [ !layer instances ]
+
+- !grant
+  role: !group certificate-requestors
+  member: !layer instances

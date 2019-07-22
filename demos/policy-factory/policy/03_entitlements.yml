@@ -1,0 +1,3 @@
+- !grant
+  role: !group database/managers
+  member: !user alice

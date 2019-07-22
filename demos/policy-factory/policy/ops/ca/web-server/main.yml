@@ -1,0 +1,16 @@
+# Secret Declarations
+- &secrets
+  - !variable private-key
+  - !variable certificate
+
+# User & Manager Groups
+- !group secrets-users
+- !group secrets-managers
+- !permit
+  role: !group secrets-users
+  privileges: [ read, execute ]
+  resources: *secrets
+- !permit
+  role: !group secrets-managers
+  privileges: [ read, execute, update ]
+  resources: *secrets

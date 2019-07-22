@@ -1,0 +1,33 @@
+---
+- !policy instances
+- !policy-factory
+  id: instance
+  base: !policy instances
+  template: |
+    - !policy
+      id: <%=params[:name]%>
+      body:
+        # Secret Declarations
+        - &secrets
+          - !variable hostname
+          - !variable port
+          - !variable username
+          - !variable password
+        
+        # User & Manager Groups
+        - !group secrets-users
+        - !group secrets-managers
+        - !permit
+          role: !group secrets-users
+          privileges: [ read, execute ]
+          resources: *secrets
+        - !permit
+          role: !group secrets-managers
+          privileges: [ read, execute, update ]
+          resources: *secrets
+
+- !group managers
+- !permit
+  role: !group managers
+  resource: !policy-factory instance
+  privileges: [ read, execute ]
