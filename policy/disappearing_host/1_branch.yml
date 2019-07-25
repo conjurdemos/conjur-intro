@@ -1,0 +1,6 @@
+- !layer
+  id: branch-layer
+
+- !host-factory
+  id: hf-branch
+  layer: !layer branch-layer

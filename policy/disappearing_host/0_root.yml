@@ -1,0 +1,13 @@
+- !group
+  id: branch-owner
+
+- !policy
+  id: branch-app
+  owner: !group branch-owner
+
+- !host
+  id: branch-host
+
+- !grant
+  role: !group branch-owner
+  member: !host branch-host
