@@ -24,6 +24,7 @@ docker-compose up -d --no-deps conjur-master.mycompany.local conjur-follower.myc
 
 docker-compose exec conjur-master.mycompany.local bash -c "
   evoke configure master \
+  --accept-eula \
   -h conjur-master.mycompany.local \
   -p secret demo
 "
