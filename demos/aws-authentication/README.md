@@ -76,7 +76,7 @@ IAM Role
 
   $ sudo docker load --input /src/conjur-v5-rc1.tar
   $ sudo docker run --name conjur -d --restart=always --security-opt seccomp:unconfined -p "443:443" -e "CONJUR_AUTHENTICATORS=authn-iam/staging" registry.tld/conjur-appliance:5.0.0-rc1
-  sudo docker exec conjur evoke configure master -h ec2-34-224-2-198.compute-1.amazonaws.com -p secret demo
+  sudo docker exec conjur evoke configure master --accept-eula -h ec2-34-224-2-198.compute-1.amazonaws.com -p secret demo
   ```
 
 * Load Policy (locally, after setting the `host` variable in the `./cli` file)
