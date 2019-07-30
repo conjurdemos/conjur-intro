@@ -13,6 +13,7 @@ function configure_master() {
     core@$MASTER_1_PUBLIC /bin/bash << EOF
     docker exec conjur-appliance \
       evoke configure master \
+      \$(docker exec conjur-appliance evoke configure master --help | grep -q accept-eula && echo "--accept-eula") \
       -h "$MASTER_1_PRIVATE" \
       --master-altnames "$LB_DNS,$MASTER_2_PRIVATE,$MASTER_3_PRIVATE" \
       -p "$CONJUR_ADMIN_PASSWORD" \
