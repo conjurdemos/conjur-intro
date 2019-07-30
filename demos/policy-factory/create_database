@@ -7,6 +7,23 @@ echo "Generate a database in Conjur policy..."
 echo -n "Enter database name and press [ENTER]: "
 read name
 
+echo -n "Enter database hostname and press [ENTER]: "
+read hostname
 
-curl -kv -X POST -H "$auth_header" \
-     "https://localhost:5443/policy_factories/demo/database/instance?name=${name}"
+echo -n "Enter database port and press [ENTER]: "
+read port
+
+echo -n "Enter database username and press [ENTER]: "
+read username
+
+echo -n "Enter database password and press [ENTER]: "
+read -s password
+
+response=$(curl -k -X POST -H "$auth_header" \
+     -F "hostname=$hostname" \
+     -F "port=$port" \
+     -F "username=$username" \
+     -F "password=$password" \
+     "https://localhost:5443/policy_factories/demo/database/instance?name=${name}")
+
+echo $response | jq -r .policy_text

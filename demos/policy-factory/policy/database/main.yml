@@ -3,16 +3,38 @@
 - !policy-factory
   id: instance
   base: !policy instances
+  annotations:
+    ui/input/param/name: string
+    ui/input/context/hostname: string
+    ui/input/context/port: string
+    ui/input/context/username: string
+    ui/input/context/password: password
   template: |
     - !policy
       id: <%=params[:name]%>
       body:
         # Secret Declarations
         - &secrets
-          - !variable hostname
-          - !variable port
-          - !variable username
-          - !variable password
+          - !variable
+            id: hostname
+            annotations:
+              provision/provisioner: context
+              provision/context/parameter: hostname
+          - !variable
+            id: port
+            annotations:
+              provision/provisioner: context
+              provision/context/parameter: port
+          - !variable
+            id: username
+            annotations:
+              provision/provisioner: context
+              provision/context/parameter: username
+          - !variable
+            id: password
+            annotations:
+              provision/provisioner: context
+              provision/context/parameter: password
         
         # User & Manager Groups
         - !group secrets-users
