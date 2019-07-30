@@ -81,7 +81,7 @@ resource "aws_security_group" "lb" {
 resource "aws_elb" "lb" {
   name = "${var.resource_prefix}conjur-ha-lb"
 
-  subnets             = ["${data.aws_subnet.subnet.*.id}"]
+  subnets             = "${data.aws_subnet.subnet.*.id}"
   security_groups     = ["${aws_security_group.lb.id}"]
 
   # API and UI
@@ -125,7 +125,7 @@ resource "aws_elb" "lb" {
 resource "aws_elb" "follower_lb" {
   name = "${var.resource_prefix}conjur-ha-follower-lb"
 
-  subnets             = ["${data.aws_subnet.subnet.*.id}"]
+  subnets             = "${data.aws_subnet.subnet.*.id}"
   security_groups     = ["${aws_security_group.lb.id}"]
 
   # API and UI
@@ -212,7 +212,7 @@ resource "aws_instance" "conjur_master_node" {
 }
 
 resource "aws_elb_attachment" "lb_nodes" {
-  count     = "${aws_instance.conjur_master_node.count}"
+  count     = "${length(aws_instance.conjur_master_node)}"
   elb      = "${aws_elb.lb.id}"
   instance = "${element(aws_instance.conjur_master_node.*.id, count.index)}"
 }
@@ -266,7 +266,7 @@ resource "aws_instance" "conjur_follower_node" {
 }
 
 resource "aws_elb_attachment" "follower_lb_nodes" {
-  count     = "${aws_instance.conjur_follower_node.count}"
+  count     = "${length(aws_instance.conjur_follower_node)}"
   elb      = "${aws_elb.follower_lb.id}"
   instance = "${element(aws_instance.conjur_follower_node.*.id, count.index)}"
 }
