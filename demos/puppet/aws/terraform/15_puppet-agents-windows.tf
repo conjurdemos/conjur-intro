@@ -9,17 +9,17 @@ variable "puppet_agent_win_nodes" {
 
 variable "puppet_agent_win_amis" {
   default = [
-     "ami-0ed62a915794ca035" # Windows 2008R2
-    ,"ami-0204606704df03e7e" # Windows 2019
-    ,"ami-0b0155d73993a98fb" # Windows 2019 Core
+     "ami-062d3fb9f5d18af75" # Windows 2008R2
+    ,"ami-09ef280df1a6a5330" # Windows 2019
+    #,"ami-04f46af0096c1d8b9" # Windows 2019 Core
   ]
 }
 
 module "puppet_agents_win" {
   source = "../../../../terraform_modules/puppet/agent-windows"
 
-  ami_ids = ["${var.puppet_agent_win_amis}"]
-  node_names = ["${var.puppet_agent_win_nodes}"]
+  ami_ids = "${var.puppet_agent_win_amis}"
+  node_names = "${var.puppet_agent_win_nodes}"
   puppet_master_ip = "${module.puppet_master.private_ip}"
   vpc_id = "${var.vpc_id}"
   security_group_id = "${aws_security_group.puppet_agent_node.id}"

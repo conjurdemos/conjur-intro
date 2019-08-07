@@ -16,6 +16,6 @@ output "conjur_master_private" {
 }
 
 output "conjur_master_password" {
-  value = "${module.conjur_master.admin_password}",
+  value = "${module.conjur_master.admin_password}"
   sensitive = true
 }

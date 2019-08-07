@@ -1,10 +1,10 @@
 variable "resource_prefix" {
-  type = "string"
+  type    = string
   default = ""
 }
 
 variable "vpc_id" {
-  type = "string"
+  type = string
 }
 
 variable "availability_zone" {
@@ -12,16 +12,16 @@ variable "availability_zone" {
 }
 
 variable "admin_password" {
-  type = "string"
+  type    = string
   default = ""
 }
 
 variable "ssh_key_name" {
-  type = "string"
+  type = string
 }
 
 variable "ssh_key_pem" {
-  type = "string"
+  type = string
 }
 
 #############################################
@@ -30,7 +30,7 @@ variable "ssh_key_pem" {
 
 # Password for Conjur Admin user
 resource "random_string" "admin_password" {
-  length = 16
+  length  = 16
   special = false
 }
 
@@ -39,17 +39,18 @@ resource "random_string" "admin_password" {
 #############################################
 
 data "aws_subnet" "subnet" {
-  vpc_id            = "${var.vpc_id}"
-  availability_zone = "${var.availability_zone}"
+  vpc_id            = var.vpc_id
+  availability_zone = var.availability_zone
 }
 
 data "aws_ami" "conjur_ee_ami" {
-  most_recent      = true
-  name_regex       = "^conjur-10.9-\\d+"
-  owners           = ["601277729239"]
+  most_recent = true
+  name_regex  = "^conjur-10.9-\\d+"
+  owners      = ["601277729239"]
 
   filter {
     name   = "name"
     values = ["conjur-10.9-*"]
   }
 }
+

@@ -1,22 +1,22 @@
 variable "node_names" {
   default = [
-    "puppet-agent-redhat"
+    "puppet-agent-redhat",
   ]
 }
 
 variable "ami_ids" {
   default = [
-    "ami-0de53d8956e8dcf80"
+    "ami-0de53d8956e8dcf80",
   ]
 }
 
 variable "resource_prefix" {
-  type = "string"
+  type    = string
   default = ""
 }
 
 variable "vpc_id" {
-  type = "string"
+  type = string
 }
 
 variable "availability_zone" {
@@ -24,23 +24,23 @@ variable "availability_zone" {
 }
 
 variable "ssh_key_name" {
-  type = "string"
+  type = string
 }
 
 variable "ssh_key_pem" {
-  type = "string"
+  type = string
 }
 
 variable "security_group_id" {
-  type = "string"
+  type = string
 }
 
 variable "puppet_master_ip" {
-  type = "string"
+  type = string
 }
 
 variable "run_interval" {
-  type = "string"
+  type    = string
   default = "30"
 }
 
@@ -49,6 +49,7 @@ variable "run_interval" {
 #############################################
 
 data "aws_subnet" "subnet" {
-  vpc_id            = "${var.vpc_id}"
-  availability_zone = "${var.availability_zone}"
+  vpc_id            = var.vpc_id
+  availability_zone = var.availability_zone
 }
+

@@ -14,8 +14,8 @@ variable "puppet_agent_redhat_amis" {
 module "puppet_agents_redhat" {
   source = "../../../../terraform_modules/puppet/agent-redhat"
 
-  ami_ids = ["${var.puppet_agent_redhat_amis}"]
-  node_names = ["${var.puppet_agent_redhat_nodes}"]
+  ami_ids = "${var.puppet_agent_redhat_amis}"
+  node_names = "${var.puppet_agent_redhat_nodes}"
   puppet_master_ip = "${module.puppet_master.private_ip}"
   vpc_id = "${var.vpc_id}"
   security_group_id = "${aws_security_group.puppet_agent_node.id}"

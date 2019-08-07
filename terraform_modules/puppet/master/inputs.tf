@@ -1,15 +1,15 @@
 variable "ami_id" {
-  type = "string",
+  type    = string
   default = "ami-0de53d8956e8dcf80"
 }
 
 variable "resource_prefix" {
-  type = "string"
+  type    = string
   default = ""
 }
 
 variable "vpc_id" {
-  type = "string"
+  type = string
 }
 
 variable "availability_zone" {
@@ -17,11 +17,11 @@ variable "availability_zone" {
 }
 
 variable "ssh_key_name" {
-  type = "string"
+  type = string
 }
 
 variable "ssh_key_pem" {
-  type = "string"
+  type = string
 }
 
 #############################################
@@ -29,6 +29,7 @@ variable "ssh_key_pem" {
 #############################################
 
 data "aws_subnet" "subnet" {
-  vpc_id            = "${var.vpc_id}"
-  availability_zone = "${var.availability_zone}"
+  vpc_id            = var.vpc_id
+  availability_zone = var.availability_zone
 }
+
