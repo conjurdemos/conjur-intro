@@ -45,7 +45,7 @@ services:
       - "80"
 
   database:
-    image: postgres:9.3
+    image: postgres:9.4
 
   cli:
     image: cyberark/conjur-cli:5
