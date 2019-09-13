@@ -88,3 +88,7 @@ Next in a new tab:
 $ ./install ~/Downloads/conjur-ui_2.10.9.1-e389f20_amd64.deb
 ```
 The install script will install the package into the running Conjur appliance and restart the Conjur service.
+
+## License
+
+This repository is licensed under Apache License 2.0 - see [`LICENSE`](LICENSE) for more details.
