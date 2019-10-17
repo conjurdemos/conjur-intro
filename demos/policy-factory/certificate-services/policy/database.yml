@@ -1,0 +1,65 @@
+- !host
+
+- !variable
+  id: private-key
+  owner: !host
+  annotations:
+    provision/provisioner: rsa
+    provision/rsa/length: 2048
+
+- !variable
+  id: certificate
+  owner: !host
+  annotations:
+    provision/provisioner: x509-certificate
+    provision/x509-certificate/subject/cn: database-clients-ca
+    provision/x509-certificate/subject/c: US
+    provision/x509-certificate/basic-constraints/ca: true
+    provision/x509-certificate/basic-constraints/pathlen: 0
+    provision/x509-certificate/basic-constraints/critical: true
+    provision/x509-certificate/key-usage/critical: true
+    provision/x509-certificate/key-usage/key-cert-sign: true
+    provision/x509-certificate/key-usage/crl-sign: true
+    provision/x509-certificate/private-key/variable: database/private-key
+    provision/x509-certificate/issuer/private-key/variable: database/private-key # Self-signed CA
+    provision/x509-certificate/issuer/certificate/self: true
+    provision/x509-certificate/ttl: P1Y
+
+- !policy
+  id: clients
+  body:
+    - !layer
+
+    - !policy-factory
+      base: !policy
+      template:
+        - !policy
+          id: "<%=role.identifier%>"
+          owner: !host /<%=role.identifier%>
+          body:
+            - !variable
+              id: private-key
+              annotations:
+                provision/provisioner: rsa
+                provision/rsa/length: 2048
+
+            - !variable
+              id: certificate
+              owner: !host /<%=role.identifier%>
+              annotations:
+                provision/provisioner: x509-certificate
+                provision/x509-certificate/subject/cn: <%=role.identifier%>
+                provision/x509-certificate/subject/c: US
+                provision/x509-certificate/basic-constraints/ca: false
+                provision/x509-certificate/basic-constraints/critical: true
+                provision/x509-certificate/key-usage/critical: true
+                provision/x509-certificate/key-usage/digital-signature: true
+                provision/x509-certificate/private-key/variable: database/clients/<%=role.identifier%>/private-key
+                provision/x509-certificate/issuer/private-key/variable: database/private-key
+                provision/x509-certificate/issuer/certificate/variable: database/certificate
+                provision/x509-certificate/ttl: P1D
+
+    - !permit
+      role: !layer
+      resource: !policy-factory
+      privileges: [ read, execute ]

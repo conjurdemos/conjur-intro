@@ -1,0 +1,4 @@
+
+- !grant
+  role: !layer ca/servers/clients
+  member: !host database

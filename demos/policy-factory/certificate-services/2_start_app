@@ -1,0 +1,72 @@
+#!/bin/bash -eu
+
+main() {
+  execute_policy_factory
+  store_app_private_key
+  store_app_certificate
+  store_server_ca_chain
+
+  launch_cli
+}
+
+execute_policy_factory() {
+  # Use policy factory to generate client certificate for database using Conjur,
+  # saving the values in variables
+  local response=$(curl -k -s -X POST -H "Authorization: Token token=\"$(access_token)\"" \
+                  https://localhost:5443/policy_factories/demo/database/clients)
+
+  local policy_text="$(echo $response | jq -r .policy_text)"
+  local load_result="$(echo $response | jq .response)"
+
+  echo "Loaded the policy:"
+  echo "------------------"
+  echo "$policy_text"
+  echo
+  echo "With result:"
+  echo "------------"
+  echo "$load_result"
+  echo
+}
+
+store_app_private_key() {
+  # Retrieve private key
+  private_key=$(curl -ks -H "Authorization: Token token=\"$(access_token)\"" \
+                https://localhost:5443/secrets/demo/variable/database/clients/web/private-key)
+
+  echo "Writing private key to 'app/.postgresql/postgresql.key'"
+  echo "$private_key" > ./app/.postgresql/postgresql.key
+  chmod 0600 ./app/.postgresql/postgresql.key
+}
+
+store_app_certificate() {
+  # Retrieve certificate
+  certificate=$(curl -ks -H "Authorization: Token token=\"$(access_token)\"" \
+                https://localhost:5443/secrets/demo/variable/database/clients/web/certificate)
+
+  echo "Writing certificate to 'app/.postgresql/postgresql.crt'"
+  echo "$certificate" > ./app/.postgresql/postgresql.crt
+}
+
+store_server_ca_chain() {
+  echo "Writing server certificate chain to 'app/.postgresql/root.crt'"
+  ./cli conjur variable value ca/servers/certificate | tail -n +2 > ./app/.postgresql/root.crt
+  ./cli conjur variable value ca/certificate | tail -n +2 >> ./app/.postgresql/root.crt
+}
+
+launch_cli() {
+  docker-compose run --rm db-client bash
+}
+
+access_token() {
+  raw_token=$(curl -ks -d $(app_api_key) \
+              https://localhost:5443/authn/demo/host%2Fweb/authenticate)
+
+  echo -n $raw_token | base64 | tr -d '\r\n'
+}
+
+app_api_key() {
+  app_api_key=$(docker-compose run --rm -T client host rotate_api_key -h web)
+  echo $app_api_key
+}
+
+main "$@"

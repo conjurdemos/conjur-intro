@@ -1,0 +1,23 @@
+- !variable
+  id: private-key
+  annotations:
+    provision/provisioner: rsa
+    provision/rsa/length: 2048
+
+- !variable
+  id: certificate
+  annotations:
+    provision/provisioner: x509-certificate
+    provision/x509-certificate/subject/cn: conjur-master-ca
+    provision/x509-certificate/subject/c: US
+    provision/x509-certificate/basic-constraints/ca: true
+    provision/x509-certificate/basic-constraints/critical: true
+    provision/x509-certificate/key-usage/critical: true
+    provision/x509-certificate/key-usage/key-cert-sign: true
+    provision/x509-certificate/key-usage/crl-sign: true
+    provision/x509-certificate/private-key/variable: ca/private-key
+    provision/x509-certificate/issuer/private-key/variable: ca/private-key # Self-signed CA
+    provision/x509-certificate/issuer/certificate/self: true
+    provision/x509-certificate/ttl: P1Y
+
+- !policy servers

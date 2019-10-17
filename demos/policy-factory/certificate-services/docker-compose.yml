@@ -1,0 +1,36 @@
+version: '3'
+services:
+  conjur-master:
+    image: registry.tld/conjur-appliance:policy-factory
+    ports:
+      - 5443:443
+    security_opt:
+          - "seccomp:unconfined"
+
+  client:
+    image: cyberark/conjur-cli:5
+    working_dir: /src
+    environment:
+      CONJUR_APPLIANCE_URL: https://conjur-master
+      CONJUR_ACCOUNT: demo
+      CONJUR_AUTHN_LOGIN: admin
+    volumes:
+      - .:/src
+      - ./tmp/cache/client:/root
+
+  app-db:
+    image: postgres
+    environment: 
+      CLIENTS_CA_CERT:
+      SERVER_CERT:
+      SERVER_KEY:
+    volumes:
+      - ./database/initdb.d:/docker-entrypoint-initdb.d
+      - ./tmp/app-db:/var/lib/postgresql/data
+
+  db-client:
+    build:
+      dockerfile: Dockerfile.pg_client
+      context: .
+    volumes:
+      - ./app/.postgresql:/root/.postgresql

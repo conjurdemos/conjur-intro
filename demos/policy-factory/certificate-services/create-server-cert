@@ -1,0 +1,10 @@
+#!/bin/bash -eu
+
+
+auth_header=$(docker-compose run --rm -T client authn authenticate -H) 
+
+response=$(curl -k -X POST -H "$auth_header" \
+     "https://localhost:5443/policy_factories/demo/ca/servers")
+
+echo $response
+echo $response | jq -r .policy_text

@@ -1,0 +1,55 @@
+#!/bin/bash -eu
+
+main() {
+  execute_policy_factory
+  start_database
+}
+
+execute_policy_factory() {
+  # Use policy factory to generate server certificate for database using Conjur,
+  # saving the values in variables
+  local response="$(curl -k -s -X POST -H "Authorization: Token token=\"$(access_token)\"" \
+      https://localhost:5443/policy_factories/demo/ca/servers)"
+
+  local policy_text="$(echo $response | jq -r .policy_text)"
+  local load_result="$(echo $response | jq .response)"
+
+  echo "Loaded the policy:"
+  echo "------------------"
+  echo "$policy_text"
+  echo
+  echo "With result:"
+  echo "------------"
+  echo "$load_result"
+  echo
+}
+
+start_database() {
+  export CONJUR_APPLIANCE_URL=https://localhost:5443
+  export CONJUR_SSL_CERTIFICATE="$(conjur_ssl_cert)"
+  export CONJUR_ACCOUNT=demo
+  export CONJUR_AUTHN_LOGIN=host/database
+  export CONJUR_AUTHN_API_KEY="$(api_key)"
+
+  echo "Starting database server, providing certificates with Summon..."
+  summon --provider summon-conjur -f database/secrets.yml docker-compose up -d app-db
+}
+
+access_token() {
+  raw_token=$(curl -ks -d "$(api_key)" \
+              https://localhost:5443/authn/demo/host%2Fdatabase/authenticate)
+
+  echo -n $raw_token | base64 | tr -d '\r\n'
+}
+
+api_key() {
+  docker-compose run --rm -T client host rotate_api_key -h database
+}
+
+conjur_ssl_cert() {
+  openssl s_client -showcerts -servername conjur-master \
+      -connect localhost:5443 < /dev/null 2> /dev/null \
+      | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p'
+}
+
+main "$@"

@@ -1,0 +1,60 @@
+#!/bin/bash -e
+
+source ./config
+
+function main() {
+  while true ; do
+    case "$1" in
+      -h | --help ) print_help ; shift ;;
+      * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+    esac
+  done
+
+  start_demo
+}
+
+
+function print_help() {
+  cat << EOF
+
+Provisions a Conjur cluster locally, using Docker.
+
+Usage: start [options]
+
+    -h, --help        Shows this help message.
+
+EOF
+  exit
+}
+
+function start_demo() {
+  configure_master
+  load_demo_policy
+}
+
+function configure_master() {
+  docker-compose pull
+  
+  docker-compose up  -d --no-deps conjur-master
+
+  docker-compose exec conjur-master bash -c "
+    evoke configure master \
+    --accept-eula \
+    -h conjur-master \
+    -p "${CONJUR_ADMIN_PASSWORD}" "${CONJUR_ACCOUNT}"
+  "
+}
+
+function load_demo_policy() {
+  ./cli conjur policy load --replace root policy/root.yml
+
+  ./cli conjur policy load --replace ca policy/ca.yml
+  ./cli conjur policy load --replace ca/servers policy/ca/servers.yml
+
+  ./cli conjur policy load --replace database policy/database.yml
+  ./cli conjur policy load root policy/database-entitlements.yml
+
+  ./cli conjur policy load root policy/app.yml
+}
+
+main

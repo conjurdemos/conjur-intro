@@ -1,0 +1,11 @@
+- !host web
+
+- !permit
+  role: !host web
+  resource: !policy-factory ca/servers
+  privileges: [ read, execute ]
+
+- !permit
+  role: !host web
+  resource: !policy-factory database/clients
+  privileges: [ read, execute ]

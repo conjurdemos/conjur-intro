@@ -1,0 +1,67 @@
+- !variable
+  id: private-key
+  annotations:
+    provision/provisioner: rsa
+    provision/rsa/length: 2048
+
+- !variable
+  id: certificate
+  annotations:
+    provision/provisioner: x509-certificate
+    provision/x509-certificate/subject/cn: conjur-master-ca
+    provision/x509-certificate/subject/c: US
+    provision/x509-certificate/basic-constraints/ca: true
+    provision/x509-certificate/basic-constraints/pathlen: 0
+    provision/x509-certificate/basic-constraints/critical: true
+    provision/x509-certificate/key-usage/critical: true
+    provision/x509-certificate/key-usage/key-cert-sign: true
+    provision/x509-certificate/key-usage/crl-sign: true
+    provision/x509-certificate/private-key/variable: ca/servers/private-key
+    provision/x509-certificate/issuer/private-key/variable: ca/private-key
+    provision/x509-certificate/issuer/certificate/variable: ca/certificate
+    provision/x509-certificate/ttl: P1Y
+
+- !policy
+  id: clients
+  body:
+    - !layer
+
+- !policy-factory
+  base: !policy clients
+  template:
+    - !policy
+      id: "<%=role.identifier%>"
+      body:
+        - !variable
+          id: private-key
+          owner: !host /<%=role.identifier%>
+          annotations:
+            provision/provisioner: rsa
+            provision/rsa/length: 2048
+
+        - !variable
+          id: certificate
+          owner: !host /<%=role.identifier%>
+          annotations:
+            provision/provisioner: x509-certificate
+            provision/x509-certificate/subject/cn: <%=role.identifier%>
+            provision/x509-certificate/subject/c: US
+            provision/x509-certificate/basic-constraints/ca: true
+            provision/x509-certificate/basic-constraints/pathlen: 0
+            provision/x509-certificate/basic-constraints/critical: true
+            provision/x509-certificate/key-usage/critical: true
+            provision/x509-certificate/key-usage/key-encipherment: true
+            provision/x509-certificate/private-key/variable: ca/servers/clients/<%=role.identifier%>/private-key
+            provision/x509-certificate/issuer/private-key/variable: ca/servers/private-key
+            provision/x509-certificate/issuer/certificate/variable: ca/servers/certificate
+            provision/x509-certificate/ttl: P30D
+
+- !permit
+  role: !layer clients
+  resource: !policy-factory
+  privileges: [ read, execute ]
+
+- !permit
+  role: !layer clients
+  resource: !variable certificate
+  privileges: [ read, execute ]
