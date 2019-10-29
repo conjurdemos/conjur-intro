@@ -81,7 +81,7 @@ services:
 
   client:
     image: cyberark/conjur-cli:5
-    working_dir:  -w /src/cli
+    working_dir:  /src/cli
     environment:
       CONJUR_APPLIANCE_URL: https://conjur-master-1.mycompany.local
       CONJUR_ACCOUNT: demo
@@ -89,10 +89,12 @@ services:
     volumes:
       - .:/src/cli
       - ./cli_cache/master:/root
+    entrypoint: sleep
+    command: infinity
 
   follower-client:
     image: cyberark/conjur-cli:5
-    working_dir:  -w /src/cli
+    working_dir:  /src/cli
     environment:
       CONJUR_APPLIANCE_URL: https://conjur-follower.mycompany.local
       CONJUR_ACCOUNT: demo
@@ -100,6 +102,8 @@ services:
     volumes:
       - .:/src/cli
       - ./cli_cache/follower:/root
+    entrypoint: sleep
+    command: infinity
 
 volumes:
   backups:
