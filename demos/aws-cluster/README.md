@@ -19,8 +19,7 @@ The LB forwards three TCP ports to the active master cluster node:
 - 5432: Follower data replication from the Master
 - 1999: Follower audit log forward to the Master
 
-The LB considers a health node one that returns a `200-339` status code
-from its `/health` endpoint.
+The LB is configured to expect a `200` HTTP response status code from a node's `/health` endpoint to be considered healthy. Standbys return a `502` status code, and will be considered unhealthy by the load balancer, preventing traffic from being directed to them.
 
 ### EC2 Master Instances
 
