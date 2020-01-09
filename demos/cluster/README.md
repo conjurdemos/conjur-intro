@@ -23,7 +23,7 @@ To run this demo, you'll need the following installed:
 To view all options available, run the following:
 
 ```
-$ ./start --help
+$ bin/start --help
 
 Provisions a Conjur cluster locally, using Docker.
 
@@ -42,43 +42,55 @@ Usage: start [options]
 
 To stand up a simple cluster, without Master Key encryption, custom certificates, or sample data, run:
 ```
-$ ./start
+$ bin/start
+```
+
+#### Auto-Failover Cluster
+To configure an Auto-Failover cluster, run:
+```
+$ bin/start --auto-failover
 ```
 
 #### Master Key Encryption
 To configure a cluster with encrypted certificates using a master key:
 
 ```
-$ ./start --master-key
+$ bin/start --master-key
 ```
 
 #### Custom Certificates
 To configure a cluster using custom certificates:
 
 ```
-$ ./start --custom-certs
+$ bin/start --custom-certs
 ```
 
 #### Sample Data
 To load a configured cluster with sample data:
 ```
-$ ./start --load-data
+$ bin/start --load-data
 ```
 
 #### Run a cluster with a particular Conjur version
 To run a particular version of Conjur, pass the image tag in with the `--tag` flag:
 
 ```
-$ ./start --tag 5.2.2-20181029194559-7305fae
+$ bin/start --tag 5.2.2-20181029194559-7305fae
 ```
 
 #### Master Key Encryption, Custom Certificates
 Flags can be combined to provide combinations of these actions. Below is an example of how to configure a cluster with custom certificates, encrypted with a master key, and load sample data into the cluster:
 
 ```
-$ ./start --master-key --custom-certs --load-data
+$ bin/start --master-key --custom-certs --load-data
 ```
 
 ### Logging into your Cluster
 Navigate to [localhost](https://localhost) and login with the username: `admin`
 and the password: `secret`.
+
+### Cleanup
+To shutdown and cleanup your cluster after your done working, run:
+```
+$ bin/stop
+```
