@@ -1,0 +1,31 @@
+version: "3"
+services:
+  original-conjur:
+    image: registry2.itci.conjur.net/conjur-appliance:${ORIGINAL_VERSION}
+    ports:
+      - "444:443"
+    expose:
+      - "443"
+      - "5432"
+      - "1999"
+    environment:
+      RESTCLIENT_LOG: stdout
+    security_opt:
+        - "seccomp:unconfined"
+    volumes:
+      - backups:/opt/conjur/backup/
+
+  upgrade-conjur:
+    image: registry2.itci.conjur.net/conjur-appliance:${UPGRADE_VERSION}
+    ports:
+      - "443:443"
+    expose:
+      - "443"
+      - "5432"
+    security_opt:
+        - "seccomp:unconfined"
+    volumes:
+      - backups:/opt/conjur/backup/
+
+volumes:
+  backups:

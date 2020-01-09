@@ -1,0 +1,92 @@
+#!/bin/bash -ex
+
+function finish {
+  echo 'cleanup'
+  # docker-compose down -v
+  # rm -rf cli_cache
+}
+
+run_curl() {
+  docker run --rm curlimages/curl:7.68.0 "$@"
+}
+
+function push_policy() {
+  api_key=$(run_curl -k --user admin:secret https://localhost/authn/demo/login)
+  response=$(run_curl -k -X POST -d "$api_key" https://localhost/authn/demo/admin/authenticate)
+  token=$(echo -n $response | base64 | tr -d '\r\n')
+  run_curl -k -H "Authorization: Token token=\"$token\"" \
+     -X PUT -d "$(< policy/users.yml)" \
+     https://localhost/policies/demo/policy/root
+}
+
+function print_help() {
+  cat << EOF
+NAME
+    Performs an upgrade from one version of DAP to another.
+
+
+SYNOPSIS
+    upgrade [global options]
+
+GLOBAL OPTIONS
+    -h, --help                         - Show this message
+
+    -f, --from <dap version>           - DAP version to upgrade from
+
+    -t, --to <dap version>             - DAP version to upgrade from
+
+EOF
+exit
+}
+
+DAP_FROM=""
+DAP_TO=""
+while true ; do
+  case "$1" in
+    -h | --help ) print_help ; shift ;;
+    -f | --from ) shift ; DAP_FROM="$1" ; shift ;;
+    -t | --to ) shift ; DAP_TO="$1" ; shift ;;
+     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+  esac
+done
+
+trap finish EXIT
+
+export ORIGINAL_VERSION="$DAP_FROM"
+export UPGRADE_VERSION="$DAP_TO"
+
+docker pull registry2.itci.conjur.net/conjur-appliance:$ORIGINAL_VERSION
+docker pull registry2.itci.conjur.net/conjur-appliance:$UPGRADE_VERSION
+
+docker-compose up -d --no-deps original-conjur upgrade-conjur
+
+
+docker-compose exec original-conjur bash -c "
+  evoke configure master --accept-eula -h conjur-master.local -p secret demo
+"
+
+# Import User Policy
+push_policy
+
+# -- Perform Upgrade --
+
+# Generate a seed for the new master
+docker-compose exec original-conjur bash -c "
+  evoke seed standby conjur-master-2.local original-conjur > /opt/conjur/backup/standby-seed-2.tar
+"
+
+# Setup the new master
+docker-compose exec upgrade-conjur bash -c "
+  evoke unpack seed /opt/conjur/backup/standby-seed-2.tar
+  evoke configure upgradable
+"
+
+docker-compose stop original-conjur
+
+docker-compose exec upgrade-conjur bash -c "
+  evoke configure upgrade
+"
+
+echo "Conjur has been upgraded at: https://localhost"
+
+docker-compose logs -f upgrade-conjur
