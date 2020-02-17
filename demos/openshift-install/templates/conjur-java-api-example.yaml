@@ -1,0 +1,98 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ DEPLOYMENT_NAME }}
+  labels:
+    app: {{ DEPLOYMENT_NAME }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ DEPLOYMENT_NAME }}
+  template:
+    metadata:
+      name: {{ DEPLOYMENT_NAME }}
+      labels:
+        app: {{ DEPLOYMENT_NAME }}
+    spec:
+      serviceAccountName: default
+      containers:
+      - image: cyberark/conjur-kubernetes-authenticator:latest
+        imagePullPolicy: IfNotPresent
+        name: authenticator
+        env:
+          - name: CONJUR_VERSION
+            value: "5"
+          - name: CONTAINER_MODE
+            value: sidecar
+          - name: MY_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: MY_POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: MY_POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: CONJUR_AUTHN_URL
+            value: https://conjur-oss.{{ PROJECT_NAME }}.svc.cluster.local/authn-k8s/{{ AUTHENTICATOR }}
+          - name: CONJUR_APPLIANCE_URL
+            value: https://conjur-oss.{{ PROJECT_NAME }}.svc.cluster.local
+          - name: CONJUR_ACCOUNT
+            value: {{ ACCOUNT_NAME }}
+          - name: CONJUR_AUTHN_LOGIN
+            value: "host/conjur/authn-k8s/{{ AUTHENTICATOR }}/apps/{{ PROJECT_NAME }}/*/*"
+          - name: CONJUR_SSL_CERTIFICATE
+            valueFrom:
+              configMapKeyRef:
+                name: conjur-cert
+                key: ssl-certificate
+        volumeMounts:
+          - mountPath: /run/conjur
+            name: conjur-access-token
+      - name: my-conjur-java-client
+        image: docker-registry.default.svc:5000/{{ PROJECT_NAME }}/conjur-java-client:latest
+        imagePullPolicy: Always
+        env:
+          - name: CONJUR_AUTHN_URL
+            value: https://conjur-oss.{{ PROJECT_NAME }}.svc.cluster.local/authn-k8s/{{ AUTHENTICATOR }}
+          - name: CONJUR_APPLIANCE_URL
+            value: https://conjur-oss.{{ PROJECT_NAME }}.svc.cluster.local
+          - name: CONJUR_ACCOUNT
+            value: {{ ACCOUNT_NAME }}
+          - name: CONJUR_AUTHN_TOKEN_FILE
+            value: /run/conjur/access-token
+          - name: CONJUR_SSL_CERTIFICATE
+            valueFrom:
+              configMapKeyRef:
+                name: conjur-cert
+                key: ssl-certificate
+        volumeMounts:
+          - mountPath: /run/conjur
+            name: conjur-access-token
+      initContainers:
+        - name: pem-to-truststore
+          image: registry.access.redhat.com/redhat-sso-7/sso71-openshift:1.1-16
+          env:
+            - name: CONJUR_SSL_CERTIFICATE
+              valueFrom:
+                configMapKeyRef:
+                  name: conjur-cert-java
+                  key: ssl-certificate
+            - name: truststore_jks
+              value: /run/conjur/truststore.jks
+            - name: password
+              value: changeit
+          command: ['/bin/bash']
+          args: ['-c', "echo \"$CONJUR_SSL_CERTIFICATE\" > conjur-cert.pem && openssl x509 -outform der -in conjur-cert.pem -out conjur-cert.crt && echo \"Creating TrustStore file in /run/conjur/truststore.jks\" && keytool -import -noprompt -keystore $truststore_jks -file conjur-cert.crt -storepass changeit -alias ca "]
+          volumeMounts:
+          - mountPath: /run/conjur
+            name: conjur-access-token
+      volumes:
+        - name: conjur-access-token
+          emptyDir:
+            medium: Memory

@@ -1,0 +1,16 @@
+version: '2'
+services:
+  
+  database:
+    image: postgres:9.4
+    container_name: postgres_database
+
+  conjur:
+    image: cyberark/conjur
+    container_name: conjur_server
+    command: server
+    environment:
+      DATABASE_URL: postgres://postgres@database/postgres
+      CONJUR_DATA_KEY:
+    depends_on: [ database ]
+
