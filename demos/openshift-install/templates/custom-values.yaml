@@ -1,0 +1,15 @@
+authenticators: "authn-k8s/{{ AUTHENTICATOR }},authn"
+dataKey: "{{ DATA_KEY }}"
+account: "{{ ACCOUNT_NAME }}"
+
+image:
+  repository: "cyberark/conjur"
+  tag: "latest"
+  pullPolicy: Always
+
+ssl:
+  hostname: custom.domainname.com
+
+postgres:
+  persistentVolume:
+    create: false
