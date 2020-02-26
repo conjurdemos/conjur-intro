@@ -21,7 +21,7 @@ function proxy_command {
     if [ ! -e /root/conjur-demo.pem ]; then
       yes 'yes' | conjur init -u https://conjur-master-1.mycompany.local -a demo
     fi
-    conjur authn login -u admin -p secret
+    conjur authn login -u admin -p 'SEcret12!!!!'
     eval exec \"$cmd\"
   "
 }
