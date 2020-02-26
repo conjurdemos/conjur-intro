@@ -55,7 +55,7 @@ docker-compose exec conjur-master-1.mycompany.local bash -c "
   evoke configure master \
   --accept-eula \
   -h conjur-master-1.mycompany.local \
-  -p secret demo
+  -p 'SEcret12!!!!' demo
 "
 
 if [[ $AUTO_FAILOVER = true ]]; then

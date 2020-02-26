@@ -87,7 +87,7 @@ $ bin/start --master-key --custom-certs --load-data
 
 ### Logging into your Cluster
 Navigate to [localhost](https://localhost) and login with the username: `admin`
-and the password: `secret`.
+and the password: `SEcret12!!!!`.
 
 ### Cleanup
 To shutdown and cleanup your cluster after your done working, run:
