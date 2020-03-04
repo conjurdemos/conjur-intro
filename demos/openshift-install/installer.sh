@@ -31,7 +31,7 @@ function validate {
 function install {
 
   oc login $OPENSHIFT_URL
-  oc adm prune images
+  #oc adm prune images
   echo "Creating project $PROJECT_NAME"
   
   oc new-project $PROJECT_NAME
@@ -52,6 +52,7 @@ function install {
   rm -rf custom-values.yaml.tmp
   ##cat custom-values.yaml
   echo "Installing conjur-oss"
+  oc adm policy add-scc-to-user anyuid "system:serviceaccount:$PROJECT_NAME:default" &> /dev/null
   helm install conjur-oss -f custom-values.yaml https://github.com/cyberark/conjur-oss-helm-chart/releases/download/v1.3.8/conjur-oss-1.3.8.tgz &> /dev/null
   echo "Installation done"
   oc adm policy add-scc-to-user anyuid "system:serviceaccount:$PROJECT_NAME:default" &> /dev/null
