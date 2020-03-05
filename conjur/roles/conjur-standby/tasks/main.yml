@@ -1,0 +1,43 @@
+---
+- name: Check configuration state
+  register: raw_node_state
+  shell: docker exec {{ conjur_config.host_fqdn }} /bin/sh -c "evoke role"
+
+- set_fact:
+    config_state: "{{ raw_node_state.stdout }}"
+
+- debug:
+    msg: "node state: {{ config_state }}"
+
+- name: Enroll Standby into layer
+  when: config_state == 'blank'
+  uri:
+    method: POST
+    url: https://localhost:{{ hostvars[conjur_config.master_fqdn]['conjur_port'] }}/host_factories/hosts
+    # url: http://localhost:443/authn/{{ conjur_config.account }}/host_factories/hosts
+    headers:
+      Authorization: Token token="{{ standby_host_factory_token }}"
+    body: "id=conjur/cluster/master-cluster/{{ conjur_config.host_fqdn }}"
+    validate_certs: no
+    status_code: 201
+  register: enrollment_response
+
+- set_fact:
+    escaped_hostname: "host%2Fconjur%2Fcluster%2Fmaster-cluster%2F{{ conjur_config.host_fqdn }}"
+
+- name: Authenticate through API and retrieve auth token
+  when: config_state == 'blank'
+  uri:
+    method: POST
+    url: https://localhost:{{ hostvars[conjur_config.master_fqdn]['conjur_port'] }}/authn/{{ conjur_config.account }}/{{ escaped_hostname }}/authenticate
+    # url: http://localhost:443/authn/{{ conjur_config.account }}/admin/authenticate
+    body: "{{ enrollment_response.json.api_key }}"
+    validate_certs: no
+    return_content: yes
+  register: raw_auth_token
+
+- name: "Configure Standby"
+  when: config_state == 'blank'
+  shell: |
+        curl -k -X POST -H 'Authorization: Token token="{{ raw_auth_token.content | b64encode | trim }}"' -d '' https://localhost:{{ hostvars[conjur_config.master_fqdn]['conjur_port'] }}/configuration/{{ conjur_config.account }}/seed/standby | docker exec -it {{ conjur_config.host_fqdn }} evoke unpack seed -
+        docker exec {{ conjur_config.host_fqdn }} evoke configure standby
