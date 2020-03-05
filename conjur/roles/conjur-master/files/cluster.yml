@@ -1,0 +1,30 @@
+# Create a Cluster service
+- !policy
+  id: cluster/master-cluster
+  body:
+    - !layer
+    - !host-factory
+      layer: [ !layer ]
+
+# Create seed service
+- !webservice seed-generation
+
+# Enable the seed service for hosts in the cluster layer
+- !permit
+  role: !layer cluster/master-cluster
+  resource: !webservice seed-generation
+  privileges: [ "execute" ]
+
+# Create a follower layer
+- !policy
+  id: followers
+  body:
+    - !layer
+    - !host-factory
+      layer: [ !layer ]
+      
+# Enable the seed service for hosts in the followers layer
+- !permit
+  role: !layer followers
+  resource: !webservice seed-generation
+  privileges: [ "execute" ]

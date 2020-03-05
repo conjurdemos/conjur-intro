@@ -1,0 +1,113 @@
+---
+# tasks file for conjur
+- name: Check configuration state
+  register: raw_node_state
+  shell: docker exec {{ conjur_config.host_fqdn }} /bin/sh -c "evoke role"
+
+- set_fact:
+    config_state: "{{ raw_node_state.stdout }}"
+
+- debug:
+    msg: "node state: {{ config_state }}"
+
+- name: "Configure a Conjur master"
+  when: config_state == 'blank'
+  shell: |
+      if [[ $(docker exec {{ conjur_config.host_fqdn }} /bin/sh -c "evoke role") == 'blank' ]]; then
+        docker exec {{ conjur_config.host_fqdn }} /bin/sh -c "evoke configure master -h {{ conjur_config.master_cluster_fqdn }} -p {{ conjur_config.admin_password }} {{ conjur_config.account }}"
+      fi
+
+## TODO: How can we determine if this certificate is present?
+- name: Create master altname certificate
+  shell: |
+    # Sketchy, hacky failure prevention
+    docker exec {{ conjur_config.host_fqdn }} /bin/sh -c "evoke ca issue {{ conjur_config.host_fqdn }}" | true
+
+## TODO: How can we determine if this certificate is present?
+- name: Add Standby altnames
+  loop: "{{ standby_nodes }}"
+  shell: |
+    # Sketchy, hacky failure prevention
+    docker exec {{ conjur_config.host_fqdn }} /bin/sh -c "evoke ca issue {{ item }}" | true
+
+- name: Authenticate through API and retrieve API key
+  uri:
+    method: GET
+    url: https://localhost:{{ hostvars[conjur_config.host_fqdn]['conjur_port'] }}/authn/{{ conjur_config.account }}/login
+    # url: "http://localhost/authn/{{ conjur_config.account }}/login"
+    user: "admin"
+    password: "secret"
+    force_basic_auth: yes
+    validate_certs: no
+    return_content: yes
+  register: api_key
+
+- name: Authenticate through API and retrieve auth token
+  uri:
+    method: POST
+    url: https://localhost:{{ hostvars[conjur_config.host_fqdn]['conjur_port'] }}/authn/{{ conjur_config.account }}/admin/authenticate
+    # url: http://localhost:443/authn/{{ conjur_config.account }}/admin/authenticate
+    body: "{{ api_key['content'] }}"
+    validate_certs: no
+    return_content: yes
+  register: raw_auth_token
+
+- name: Set Conjur namespace
+  uri:
+    method: PUT
+    url: https://localhost:{{ hostvars[conjur_config.host_fqdn]['conjur_port'] }}/policies/{{ conjur_config.account }}/policy/root
+    # url: http://localhost:443/authn/{{ conjur_config.account }}/policies/{{ conjur_config.account }}/policy/root
+    headers:
+      Authorization: Token token="{{ raw_auth_token.content | b64encode | trim }}"
+    body: "{{ lookup('file','root.yml') }}"
+    status_code: 201
+    validate_certs: no
+
+- name: Set a cluster namespace
+  uri:
+    method: PUT
+    url: https://localhost:{{ hostvars[conjur_config.host_fqdn]['conjur_port'] }}/policies/{{ conjur_config.account }}/policy/conjur
+    # url: http://localhost:443/authn/{{ conjur_config.account }}/policies/{{ conjur_config.account }}/policy/conjur
+    headers:
+      Authorization: Token token="{{ raw_auth_token.content | b64encode | trim }}"
+    body: "{{ lookup('file','cluster.yml') }}"
+    status_code: 201
+    validate_certs: no
+
+# Dirty hack for generating future time in correct ISO 8601 format
+- name: Calculate future time
+  shell: |
+    docker exec {{ conjur_config.host_fqdn }} /bin/sh -c "date -d \"+5 min\" +%FT%H:%M:%SZ"
+  register: raw_timestamp
+
+- name: Create Host Factory Token
+  uri:
+    method: POST
+    url: https://localhost:{{ hostvars[conjur_config.host_fqdn]['conjur_port'] }}/host_factory_tokens
+    # url: http://localhost:443/authn/{{ conjur_config.account }}/host_factory_tokens
+    headers:
+      Authorization: Token token="{{ raw_auth_token.content | b64encode | trim }}"
+    body: "expiration={{ raw_timestamp.stdout }}&\
+      host_factory={{ conjur_config.account }}:host_factory:conjur%2fcluster%2fmaster-cluster"
+    validate_certs: no
+  register: hf_token_response
+
+- set_fact:
+    standby_host_factory_token: "{{ hf_token_response.json[0].token }}"
+
+- name: Enroll master into cluster layer
+  when: conjur_config.cluster_name
+  uri:
+    method: POST
+    url: https://localhost:{{ hostvars[conjur_config.host_fqdn]['conjur_port'] }}/host_factories/hosts
+    # url: http://localhost:443/authn/{{ conjur_config.account }}/host_factories/hosts
+    headers:
+      Authorization: Token token="{{ standby_host_factory_token }}"
+    body: "id=conjur/cluster/master-cluster/{{ conjur_config.host_fqdn }}"
+    validate_certs: no
+    status_code: 201
+
+- name: Enroll into auto-failover cluster
+  when: conjur_config.cluster_name
+  shell: |
+    docker exec {{ conjur_config.host_fqdn }} /bin/sh -c "evoke cluster enroll -n {{ conjur_config.host_fqdn }} master-cluster | true"

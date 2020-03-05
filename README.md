@@ -14,15 +14,15 @@ Tools and scripts  utilities that make it easier to make, manage, and run demos
 ## Instructions
 
 ### `./start`
-`start` provides a dead simple mechanism for starting a Conjur Appliance.
+`start` provides a dead simple mechanism for starting a DAP Appliance.
 
 Start a V5 appliance master with:
 ```sh
 $ ./start
 ```
-The start command pulls down the latest version of the V5 appliance and CLI, and configures Conjur with the following:
-* Account: `test`
-* Admin password: `secret`
+The start command pulls down the latest version of the V5 appliance and CLI, and configures DAP with the following:
+* Account: `demo`
+* Admin password: `MySecretP@ss1`
 
 Once started, logs are streamed to the console.
 
