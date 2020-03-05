@@ -7,7 +7,7 @@ services:
     security_opt:
         - "seccomp:./seccomp.json"
     volumes:
-      - ./config:/opt/config
+      - ./config:/opt/config:Z
 
   client:
     image: cyberark/conjur-cli:5
