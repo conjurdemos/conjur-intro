@@ -24,6 +24,12 @@ OpenShift -     oc v3.11.0+0cbc58b
                 kubernetes v1.11.0+d4cacc0  
                 features: Basic-Auth  
 
+## Important Note:
+The commands below can run in either an interactive mode as well as in a command line mode.
+Interactive mode means that each parameter that was not filled in the command line will be asked to be provided interactively.  
+In interactive mode, some of these parameters have default values defined.
+If the user does not provide an input, the default value is taken.  
+
 ## Commands
 
 1. Building the Java Client:
@@ -32,29 +38,8 @@ OpenShift -     oc v3.11.0+0cbc58b
 $ cd <home-dir>/conjur-intro/demos/java-api-client
 $ ./build.sh
 ```
-  
-2. Installing Conjur and Conjur CLI in OpenShift:
 
-```bash
-$ cd <home-dir>/conjur-intro/demos/openshift-install  
-$ ./installer.sh [--with-config] --ocp-url <ocp-url:port> --project-name <project-name> --account-name <account-name> --authenticator <authenticator>
-```
-
-| Flag | Meaning |
-| ---- | ------- |
-|`--with-config` | Configures the Conjur instance with initial policies |
-|`--ocp-url` | Sets the OpenShift cluster in which Conjur would be installed |
-|`--project-name` | Sets the OpenShift project in which Conjur be installed|
-|`--account-name` | Sets the Conjur account that would be created|
-|`--authenticator` | Sets the authenticator name that would be created|
-
-3. Verify that all pods are up and running by:
-
-```bash
-$ oc get pods
-```
-
-4. Installing and running java client opn Open Shift:
+2. Installing and running ia demo Java client in OpenShift:
 
 ```bash
 $ ./java-client-installer.sh --ocp-url <ocp-url:port> --docker-url <openshift-docker-registry-url> --project-name <project-name> --account-name <account-name> --authenticator <authenticator>
@@ -68,16 +53,42 @@ $ ./java-client-installer.sh --ocp-url <ocp-url:port> --docker-url <openshift-do
 |`--account-name` | Sets the Conjur account that would be used by the demo Java client (should have the same value as above) |
 |`--authenticator` | Sets the authenticator name that would be used by the demo Java client (should have the same value as above) |
 
-5. Verify that all pods are up and running by:
+3. Verify that all pods are up and running by:
 
 ```bash
 $ oc get pods
 ```
 
-6. Checking output of Java client container on pod #4:
+4. Checking output of the demo Java client container in pod #4:
 
 ```bash
 $ oc logs <pod-name> -c my-conjur-java-client  
 ```
 
-It should show that the secret was retrieved properly.
+  It should show that the secret was retrieved properly.
+
+## Remark:
+There is an option to run installer.sh script to install Conjur + Conjur CLI and (optionally) load configuration to it.  
+Commands for it are:  
+
+1. Installing Conjur and Conjur CLI in OpenShift:
+
+```bash
+$ cd <home-dir>/conjur-intro/demos/openshift-install
+$ ./installer.sh --ocp-url <ocp-url:port> --project-name <project-name> --account-name <account-name> --authenticator <authenticator>
+```
+
+| Flag | Meaning |
+| ---- | ------- |
+|`--ocp-url` | Sets the OpenShift cluster in which Conjur would be installed |
+|`--project-name` | Sets the OpenShift project in which Conjur be installed|
+|`--account-name` | Sets the Conjur account that would be created|
+|`--authenticator` | Sets the authenticator name that would be created|
+
+2. Verify that all pods are up and running by:
+
+```bash
+$ oc get pods
+```
+
+
