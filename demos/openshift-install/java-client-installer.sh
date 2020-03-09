@@ -158,4 +158,4 @@ rm -rf conjur-java-api-example.yaml
 
 echo "Installation done"
 
-
+oc logs $CONJUR_JAVA_API_POD -c my-conjur-java-client
