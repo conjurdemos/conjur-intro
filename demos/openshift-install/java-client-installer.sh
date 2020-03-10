@@ -5,8 +5,8 @@ set -e
 
 OPENSHIFT_URL=
 PROJECT_NAME=
-ACCOUNT_NAME=myaccount
-AUTHENTICATOR=myauthenticator
+ACCOUNT_NAME=
+AUTHENTICATOR=
 DEPLOYMENT_NAME=conjur-java-api-example
 
 function validate_app {
@@ -28,6 +28,33 @@ function validate {
   validate_app openssl
   validate_app keytool
 }
+
+function prepare_input {
+
+  local PARAM_VALUE=$1
+  local PARAM_NAME=$2
+  local DEFAULT_VALUE=$3
+
+  if [ "$PARAM_VALUE" == "" ]; then
+    if [ -n "$DEFAULT_VALUE" ]; then
+      read -p "Please specify the $PARAM_NAME [$DEFAULT_VALUE]:" PARAM_VALUE
+    else
+      read -p "Please specify the $PARAM_NAME:" PARAM_VALUE
+    fi
+    if [ "$PARAM_VALUE" == "" ]; then
+      if [ -n "$DEFAULT_VALUE" ]; then
+        PARAM_VALUE=$DEFAULT_VALUE
+      else
+        echo "Missing value in $PARAM_NAME - exiting"
+        exit 1
+      fi
+    fi
+  fi
+
+  echo "$PARAM_VALUE"
+
+}
+
 
 function install {
 
@@ -98,17 +125,15 @@ while [ "$1" != "" ]; do
   shift
 done
 
-if [ "$OPENSHIFT_URL" == "" ]; then
-  echo "Missing value in --ocp-url - exiting"
-  exit 1
-fi
-
-if [ "$PROJECT_NAME" == "" ]; then
-  echo "Missing value in --project-name - exiting"
-  exit 1
-fi
-
 validate
+
+OPENSHIFT_URL=$(prepare_input "$OPENSHIFT_URL" "OpenShift URL")
+DOCKER_URL=$(prepare_input "$DOCKER_URL" "OpenShift Docker registry URL")
+PROJECT_NAME=$(prepare_input "$PROJECT_NAME" "project name")
+ACCOUNT_NAME=$(prepare_input "$ACCOUNT_NAME" "account name" "default")
+AUTHENTICATOR=$(prepare_input "$AUTHENTICATOR" "authenticator")
+
+./installer.sh --ocp-url "$OPENSHIFT_URL" --project-name "$PROJECT_NAME" --account-name "$ACCOUNT_NAME" --authenticator "$AUTHENTICATOR"
 
 install
 
@@ -133,4 +158,4 @@ rm -rf conjur-java-api-example.yaml
 
 echo "Installation done"
 
-
+oc logs $CONJUR_JAVA_API_POD -c my-conjur-java-client

@@ -1,0 +1,29 @@
+version: "3"
+services:
+  pet-store:
+    image: jvanderhoof/test-app:0.0.1
+    environment:
+      DB_URL: postgres://postgres@pg/postgres
+      DB_USERNAME: postgres
+      DB_PASSWORD: secret
+    volumes:
+      - ./secrets.yml:/secrets/secrets.yml
+  pg:
+    image: postgres:9.4
+    environment:
+      POSTGRES_PASSWORD: secret
+
+
+
+  # client:
+  #   image: conjurinc/cli5
+  #   working_dir:  -w /src/cli
+  #   environment:
+  #     CONJUR_APPLIANCE_URL: https://conjur
+  #     CONJUR_ACCOUNT: demo
+  #     CONJUR_AUTHN_LOGIN: admin
+  #   links:
+  #     - conjur:conjur
+  #   volumes:
+  #     - .:/src/cli
+  #     - ./cli_cache:/root

@@ -9,6 +9,7 @@ Usage: start [options]
 
     --auto-failover            Configures the cluster for auto-failover
     --custom-certs             Installs custom certificates from the "files/certs" folder
+    --disaster-recovery        Configures the cluster with a single Disaster Recovery node (only if the cluster is Auto-Failover)
     -h, --help                 Shows this help message.
     --load-data                Loads sample policy along once th cluster
     --master-key               Encrypts certificates using a master key
@@ -25,12 +26,14 @@ AUTO_FAILOVER=false
 LOAD_DATA=false
 MASTER_KEY=false
 CUSTOM_CERTS=false
+DISASTER_RECOVERY=false
 while true ; do
   case "$1" in
     --auto-failover ) AUTO_FAILOVER=true ; shift ;;
+    --custom-certs ) CUSTOM_CERTS=true ; shift ;;
+    --disaster-recovery ) DISASTER_RECOVERY=true ; shift ;;
     --load-data ) LOAD_DATA=true ; shift ;;
     --master-key ) MASTER_KEY=true ; shift ;;
-    --custom-certs ) CUSTOM_CERTS=true ; shift ;;
     -t | --tag ) shift ; TAG=$1 ; shift ;;
     -h | --help ) print_help ; shift ;;
      * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
@@ -55,7 +58,7 @@ docker-compose exec conjur-master-1.mycompany.local bash -c "
   evoke configure master \
   --accept-eula \
   -h conjur-master-1.mycompany.local \
-  -p secret demo
+  -p MySecretP@ss1 demo
 "
 
 if [[ $AUTO_FAILOVER = true ]]; then
@@ -112,7 +115,7 @@ if [[ $AUTO_FAILOVER = true ]]; then
   "
 fi
 
-# Setup the standby
+# Setup standby 1
 docker-compose exec conjur-master-2.mycompany.local bash -c "
   evoke unpack seed /opt/conjur/backup/standby-seed-2.tar
 "
@@ -127,7 +130,7 @@ else
 fi
 
 if [[ $AUTO_FAILOVER = true ]]; then
-  # Setup the standby
+  # Setup the standby 2
   docker-compose exec conjur-master-3.mycompany.local bash -c "
     evoke unpack seed /opt/conjur/backup/standby-seed-3.tar
   "
@@ -141,7 +144,7 @@ if [[ $AUTO_FAILOVER = true ]]; then
     "
   fi
 
-  # Setup the standby
+  # Setup the standby 3
   docker-compose exec conjur-master-4.mycompany.local bash -c "
     evoke unpack seed /opt/conjur/backup/standby-seed-4.tar
   "
@@ -156,8 +159,14 @@ if [[ $AUTO_FAILOVER = true ]]; then
   fi
 
   docker-compose exec conjur-master-1.mycompany.local bash -c "
-    evoke replication sync
+    evoke replication sync start
   "
+
+  if [[ $DISASTER_RECOVERY = true ]]; then
+    docker-compose exec conjur-master-4.mycompany.local bash -c "
+      evoke replication sync disable
+    "
+  fi
 
   docker-compose exec conjur-master-1.mycompany.local bash -c "
     evoke cluster enroll -n conjur-master-1.mycompany.local conjur
@@ -168,9 +177,11 @@ if [[ $AUTO_FAILOVER = true ]]; then
   docker-compose exec conjur-master-3.mycompany.local bash -c "
     evoke cluster enroll -n conjur-master-3.mycompany.local -m conjur-master-1.mycompany.local conjur
   "
-  docker-compose exec conjur-master-4.mycompany.local bash -c "
-    evoke cluster enroll -n conjur-master-4.mycompany.local -m conjur-master-1.mycompany.local conjur
-  "
+  if [[ $DISASTER_RECOVERY = false ]]; then
+    docker-compose exec conjur-master-4.mycompany.local bash -c "
+      evoke cluster enroll -n conjur-master-4.mycompany.local -m conjur-master-1.mycompany.local conjur
+    "
+  fi
 fi
 
 # Setup the follower

@@ -5,8 +5,8 @@ set -e
 
 OPENSHIFT_URL=
 PROJECT_NAME=
-ACCOUNT_NAME=myaccount
-AUTHENTICATOR=myauthenticator
+ACCOUNT_NAME=
+AUTHENTICATOR=
 
 function validate_app {
   APPNAME=$1
@@ -16,6 +16,32 @@ function validate_app {
     echo "Please install $APPNAME"
     exit 1
   fi
+}
+
+function prepare_input {
+  
+  local PARAM_VALUE=$1
+  local PARAM_NAME=$2
+  local DEFAULT_VALUE=$3
+
+  if [ "$PARAM_VALUE" == "" ]; then
+    if [ -n "$DEFAULT_VALUE" ]; then
+      read -p "Please specify the $PARAM_NAME [$DEFAULT_VALUE]:" PARAM_VALUE
+    else
+      read -p "Please specify the $PARAM_NAME:" PARAM_VALUE
+    fi
+    if [ "$PARAM_VALUE" == "" ]; then
+      if [ -n "$DEFAULT_VALUE" ]; then
+        PARAM_VALUE=$DEFAULT_VALUE
+      else
+        echo "Missing value in $PARAM_NAME - exiting"
+        exit 1
+      fi
+    fi
+  fi
+
+  echo "$PARAM_VALUE"
+
 }
 
 function validate {
@@ -31,7 +57,7 @@ function validate {
 function install {
 
   oc login $OPENSHIFT_URL
-  oc adm prune images
+  #oc adm prune images
   echo "Creating project $PROJECT_NAME"
   
   oc new-project $PROJECT_NAME
@@ -52,6 +78,7 @@ function install {
   rm -rf custom-values.yaml.tmp
   ##cat custom-values.yaml
   echo "Installing conjur-oss"
+  oc adm policy add-scc-to-user anyuid "system:serviceaccount:$PROJECT_NAME:default" &> /dev/null
   helm install conjur-oss -f custom-values.yaml https://github.com/cyberark/conjur-oss-helm-chart/releases/download/v1.3.8/conjur-oss-1.3.8.tgz &> /dev/null
   echo "Installation done"
   oc adm policy add-scc-to-user anyuid "system:serviceaccount:$PROJECT_NAME:default" &> /dev/null
@@ -139,18 +166,14 @@ usage()
 
       -h, --help                      Shows this help message
       --ocp-url <url>                 OpenShift URL (mandatory)
-      --with-config                   Basic configuration should be added
       --project-name <project>        OpenShift project name (mandatory)
       --account-name <account>        Conjur account name (mandatory)
       --authenticator <authenticator> Conjur authenticator (mandatory)
 EOF
 }
 
-DO_CONFIG=0
 while [ "$1" != "" ]; do
   case $1 in 
-    --with-config )	DO_CONFIG=1
-                        ;;
     --ocp-url )	        shift
                         OPENSHIFT_URL=$1
                         ;;
@@ -172,23 +195,16 @@ while [ "$1" != "" ]; do
   shift
 done
 
-if [ "$OPENSHIFT_URL" == "" ]; then
-  echo "Missing value in --ocp-url - exiting"
-  exit 1
-fi
-
-if [ "$PROJECT_NAME" == "" ]; then
-  echo "Missing value in --project-name - exiting"
-  exit 1
-fi
-
 validate
+
+OPENSHIFT_URL=$(prepare_input "$OPENSHIFT_URL" "OpenShift URL")
+PROJECT_NAME=$(prepare_input "$PROJECT_NAME" "project name")
+ACCOUNT_NAME=$(prepare_input "$ACCOUNT_NAME" "account name" "default")
+AUTHENTICATOR=$(prepare_input "$AUTHENTICATOR" "authenticator")
 
 install
 
-if [ "$DO_CONFIG" == "1" ]; then
-  config
-fi
+config
 
 #rm -rf conjur-cert.crt
 #rm -rf conjur-cert.pem

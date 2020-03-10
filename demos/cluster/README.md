@@ -1,12 +1,13 @@
 # Cluster Demo
 
-This script configures a high availability Conjur cluster with a master, follower and standby(s).  The master cluster is load balanced for auto-failover.
+This script configures a high availability DAP cluster with a master, follower and standby(s).  The master cluster is load balanced for auto-failover.
 
 Optionally, clusters can be configured with any or all of the following:
 
 - Sample data
 - Master Key encryption
 - Custom third party certificates
+- Disaster Recovery
 - Particular Conjur version
 
 ### Requirements
@@ -29,12 +30,13 @@ Provisions a Conjur cluster locally, using Docker.
 
 Usage: start [options]
 
-    --auto-failover     Configures the cluster for auto-failover
-    --custom-certs      Installs custom certificates from the "files/certs" folder
-    -h, --help          Shows this help message.
-    --load-data         Loads sample policy along once th cluster
-    --master-key        Encrypts certificates using a master key
-    --tag <conjur-tag>  Starts a cluster with a particular appliance (defaults to 5.0-stable)
+    --auto-failover       Configures the cluster for auto-failover
+    --custom-certs        Installs custom certificates from the "files/certs" folder
+    --disaster-recovery   Configures the cluster with a single Disaster Recovery node (only if the cluster is Auto-Failover)
+    -h, --help            Shows this help message.
+    --load-data           Loads sample policy along once th cluster
+    --master-key          Encrypts certificates using a master key
+    --tag <conjur-tag>    Starts a cluster with a particular appliance (defaults to 5.0-stable)
 
 ```
 
@@ -87,7 +89,7 @@ $ bin/start --master-key --custom-certs --load-data
 
 ### Logging into your Cluster
 Navigate to [localhost](https://localhost) and login with the username: `admin`
-and the password: `secret`.
+and the password: `MySecretP@ss1`.
 
 ### Cleanup
 To shutdown and cleanup your cluster after your done working, run:
