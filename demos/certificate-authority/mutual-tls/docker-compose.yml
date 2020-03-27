@@ -30,7 +30,7 @@ services:
   ca:
     build: ./ca
     volumes: 
-      - ./ca:/root
+      - ./ca:/tmp/ca
 
   conjur:
     image: cyberark/conjur
