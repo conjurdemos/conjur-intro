@@ -5,6 +5,8 @@ cli_cache/*
 tools/simple-certificates/certificates/*
 .DS_Store
 
+logs/*
+
 # Editor files
 *.sw[po]
 vm/.vagrant

@@ -4,10 +4,12 @@ services:
     image: registry2.itci.conjur.net/conjur-appliance:${IMAGE_TAG}
     ports:
       - "443:443"
+      - "80:444"
     security_opt:
         - "seccomp:./seccomp.json"
     volumes:
       - ./config:/opt/config:Z
+      - ./logs:/var/log/conjur:z
 
   client:
     image: cyberark/conjur-cli:5
