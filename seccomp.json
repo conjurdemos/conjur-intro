@@ -1,5 +1,5 @@
 {
-    "description": "Default Docker seccomp profile, plus keyctl calls (required by Conjur)",
+    "description": "Default Docker seccomp profile, plus keyctl calls (required by Dynamic Access Provider)",
 	"comment": "Run with `docker run --security seccomp:path/to/seccomp.json` to use it.",
 	"defaultAction": "SCMP_ACT_ERRNO",
 	"architectures": [
