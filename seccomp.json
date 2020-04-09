@@ -1,4 +1,4 @@
-{ 
+{
     "description": "Default Docker seccomp profile, plus keyctl calls (required by Conjur)",
 	"comment": "Run with `docker run --security seccomp:path/to/seccomp.json` to use it.",
 	"defaultAction": "SCMP_ACT_ERRNO",
@@ -21,6 +21,12 @@
 			"name": "access",
 			"action": "SCMP_ACT_ALLOW",
 			"args": []
+		},
+    {
+			"name": "add_key",
+			"action": "SCMP_ACT_ALLOW",
+			"args": [],
+			"comment": "required by Dynamic Access Provider (DAP)"
 		},
 		{
 			"name": "alarm",
@@ -606,7 +612,7 @@
 			"name": "keyctl",
 			"action": "SCMP_ACT_ALLOW",
 			"args": [],
-			"comment": "required by Conjur appliance"
+      "comment": "required by Dynamic Access Provider (DAP)"
 		},
 		{
 			"name": "kill",
@@ -1007,6 +1013,12 @@
 			"name": "renameat2",
 			"action": "SCMP_ACT_ALLOW",
 			"args": []
+		},
+    {
+			"name": "request_key",
+			"action": "SCMP_ACT_ALLOW",
+			"args": [],
+      "comment": "required by Dynamic Access Provider (DAP)"
 		},
 		{
 			"name": "restart_syscall",
