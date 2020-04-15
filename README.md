@@ -71,8 +71,10 @@ $ ./cli conjur policy load root policy/hosts.yml
 
 #### Setting/Retrieving a Variable
 ```
-$ ./cli conjur variable values add production/myapp/database/username foo-bar
-$ ./cli conjur variable value production/myapp/database/username
+./cli conjur variable values add production/myapp/database/username my-username
+./cli conjur variable values add production/myapp/database/password my-password
+./cli conjur variable values add production/myapp/database/url https://my-database.mycompany.com
+./cli conjur variable values add production/myapp/database/port 5432
 ```
 
 #### Validating Packages
