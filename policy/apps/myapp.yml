@@ -3,6 +3,14 @@
   body:
   - &variables
     - !variable
+      id: database/url
+      annotations:
+        description: Database URL
+    - !variable
+      id: database/port
+      annotations:
+        description: Database port
+    - !variable
       id: database/username
       annotations:
         description: Application database username
@@ -10,14 +18,6 @@
       id: database/password
       annotations:
         description: Application database password
-    - !variable
-      id: stripe/private_key
-      annotations:
-        description: Stripe API key
-    - !variable "foo bar"
-
-    - !variable "{ []: {[]:[]} }"
-
   - !layer
 
   - !host-factory
