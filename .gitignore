@@ -10,3 +10,7 @@ logs/*
 # Editor files
 *.sw[po]
 vm/.vagrant
+
+# Jmeter results
+performance_test/jmeter_reports/
+performance_test/*.csv
