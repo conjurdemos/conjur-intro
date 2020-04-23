@@ -91,6 +91,13 @@ $ ./install ~/Downloads/conjur-ui_2.10.9.1-e389f20_amd64.deb
 ```
 The install script will install the package into the running Conjur appliance and restart the Conjur service.
 
+## Performance Tests
+```
+# Start tests
+$ ./performance_test/start.sh
+```
+More information can be found [here](./performance_test/README.md#jmeter-performance-test)
+
 ## Contributing
 
 We welcome contributions of all kinds to this repository. For instructions on
