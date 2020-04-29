@@ -1,0 +1,31 @@
+version: "3"
+services:
+  conjur:
+    image: registry2.itci.conjur.net/conjur-appliance:${IMAGE_TAG}
+    ports:
+      - "443:443"
+      - "80:444"
+    security_opt:
+        - "seccomp:../seccomp.json"
+    volumes:
+      - ./config:/opt/config:Z
+      - ./logs:/var/log/conjur:z
+
+  client:
+    image: cyberark/conjur-cli:5
+    working_dir:  -w /src/cli
+    environment:
+      CONJUR_APPLIANCE_URL: https://conjur
+      CONJUR_ACCOUNT: demo
+      CONJUR_AUTHN_LOGIN: admin
+    links:
+      - conjur:conjur
+    volumes:
+      - ..:/src/cli
+      - ../cli_cache:/root
+  
+  jenkins:
+    image: jenkins/jenkins
+    ports:
+      - "8080:8080"
+      - "50000:50000"

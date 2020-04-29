@@ -20,9 +20,6 @@
         description: Application database password
   - !layer
 
-  - !host-factory
-    layer: [ !layer ]
-
   - !group secrets-users
   - !group secrets-managers
 
