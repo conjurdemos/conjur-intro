@@ -3,7 +3,7 @@ FROM alpine:3.10
 
 MAINTAINER Just van den Broecke<just@justobjects.nl>
 
-ARG JMETER_VERSION="5.2.1"
+ENV JMETER_VERSION="5.2.1"
 ENV JMETER_HOME /opt/apache-jmeter-${JMETER_VERSION}
 ENV	JMETER_BIN	${JMETER_HOME}/bin
 ENV	JMETER_DOWNLOAD_URL  https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-${JMETER_VERSION}.tgz
@@ -31,9 +31,6 @@ RUN    apk update \
 # Set global PATH such that "jmeter" command is found
 ENV PATH $PATH:$JMETER_BIN
 
-# Entrypoint has same signature as "jmeter" command
-COPY entrypoint.sh /
-
 WORKDIR	${JMETER_HOME}
 
-ENTRYPOINT ["/entrypoint.sh"]
+RUN mkdir /opt/jmeter_data

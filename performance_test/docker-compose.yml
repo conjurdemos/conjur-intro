@@ -1,32 +1,20 @@
 version: "3"
 services:
-  conjur:
-    image: registry2.itci.conjur.net/conjur-appliance:${IMAGE_TAG}
+  dap:
+    image: registry2.itci.conjur.net/conjur-appliance:${DAP_VERSION}
     ports:
       - "443:443"
-      - "80:444"
     security_opt:
         - "seccomp:../seccomp.json"
     volumes:
       - ../config:/opt/config:Z
       - ../logs:/var/log/conjur:z
 
-  client:
-    image: cyberark/conjur-cli:5
-    working_dir:  -w /src/cli
-    environment:
-      CONJUR_APPLIANCE_URL: https://conjur
-      CONJUR_ACCOUNT: demo
-      CONJUR_AUTHN_LOGIN: admin
-    links:
-      - conjur:conjur
-    volumes:
-      - .:/src/cli
-      - ./cli_cache:/root
-
   jmeter:
-    network_mode: host
-    image: jmeter:${JMETER_VERSION}
+    build:
+      context: .
     volumes:
-      - ./jmeter/DAP_Performance_Test.jmx:/DAP_Performance_Test.jmx
-
+      - ./jmeter:/opt/jmeter_data
+    command: jmeter -Jkey=null -n -t /opt/jmeter_data/DAP_Performance_Test.jmx -l /opt/jmeter_data/jmeter_reports/${DAP_VERSION}/DAP_Performance_Results.csv -e -o /opt/jmeter_data/jmeter_reports/${DAP_VERSION}
+    depends_on:
+      - dap

@@ -12,5 +12,4 @@ logs/*
 vm/.vagrant
 
 # Jmeter results
-performance_test/jmeter_reports/
-performance_test/*.csv
+performance_test/jmeter/jmeter_reports/*

@@ -1,0 +1,84 @@
+#!/bin/bash -ex
+
+function finish {
+  docker-compose down -v
+}
+
+function configure_dap_instance {
+  local config
+  config="$1"
+
+  docker-compose up -d --no-deps dap
+  docker-compose exec dap bash -c "
+    evoke configure master $config -h conjur-master.local -p MySecretP@ss1 --accept-eula demo
+  "
+}
+
+function print_help() {
+  cat << EOF
+NAME
+    Starts and configures a Conjur Appliance. Once Conjur is configured, the
+    appliance logs are streamed.
+
+
+SYNOPSIS
+    start [global options]
+
+GLOBAL OPTIONS
+    -h, --help                          - Show this message
+
+    --skip-pull                         - Does not pull a fresh Conjur master before starting
+
+    -t, --tag <dap-version>             - Runs load test against the specified DAP Appliance tag
+
+    --with-config                       - Configures the Appliance using the `config/conjur.json` file
+
+EOF
+exit
+}
+
+function cleanup {
+  local folder
+  folder="$1"
+  rm -rf jmeter/jmeter_reports/$folder/*
+}
+
+function run_jmeter_test {
+  docker-compose up --no-deps jmeter
+}
+
+function open_results_in_browser {
+  local version
+  version="$1"
+  open jmeter/jmeter_reports/$version/index.html
+}
+
+function main {
+  cleanup
+  configure_dap_instance $CONFIG
+  run_jmeter_test $DAP_TAG
+  open_results_in_browser $DAP_TAG
+}
+
+PULL_ARGS="--pull"
+DAP_TAG="5.0-stable"
+CONFIG=""
+while true ; do
+  case "$1" in
+    --skip-pull ) PULL_ARGS="" ; shift ;;
+    -h | --help ) print_help ; shift ;;
+    -t | --tag ) shift ; DAP_TAG="$1" ; shift ;;
+    --with-config ) CONFIG="-j /opt/config/conjur.json" ; shift ;;
+     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+  esac
+done
+
+trap finish EXIT
+
+export DAP_VERSION=$DAP_TAG
+
+if [ "$PULL_ARGS" == "--pull" ]; then
+  docker pull registry2.itci.conjur.net/conjur-appliance:$DAP_VERSION
+fi
+
+main

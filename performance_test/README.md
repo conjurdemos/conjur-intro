@@ -1,14 +1,36 @@
 # Jmeter Performance Test
 
 ## How to run
-1. `start.sh`
+- To run the performance test on the latest DAP version:
 
-The script will exit upon completion of the jmeter tests and output the results.
+    ```sh
+    $ bin/run
+    ```
+
+- To run the performance test against a particular DAP release:
+
+    ```sh
+    $ bin/run --tag 11.3
+    ```
+
+- To view all possible commands:
+
+    ```sh
+    $ bin/run --help
+    ```
+
+The script will:
+1. Start and configure a DAP master.
+1. Using JMeter, run the performance test specified in `jmeter/DAP_Performance_Test.jmx`.
+1. Upon test completion, shut down all containers and open the results in a browser.
+
+The script will exit upon completion of the JMeter tests, outputting the results in the `jmeter/jmeter_reports` folder
+
 
 ## Results
-There will be two sets of results:
-1. `./jmeter_reports/index.html` contains a nice page with aggregrate reports
-2. `./DAP_Performance_Results.csv` is a more in depth report, containing information regarding each individual jmeter request.
+After run a test, the test results are available in `jmeter/jmeter_reports/<dap-version>`.  The folder will include two files that may be of use:
+1. `index.html` contains a nice page with aggregrate reports
+2. `DAP_Performance_Results.csv` is a more in depth report, containing information regarding each individual jmeter request.
 
 
 ## Current Test
@@ -34,4 +56,4 @@ There will be two sets of results:
 
 
 ## Contributing
-Download [Jmeter](http://jmeter.apache.org/download_jmeter.cgi) and edit the `.jmx` file 
+Download [Jmeter](http://jmeter.apache.org/download_jmeter.cgi) and edit the `.jmx` file
