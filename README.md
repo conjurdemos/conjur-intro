@@ -10,6 +10,7 @@ Tools and scripts  utilities that make it easier to make, manage, and run demos
 
 ## Tools
 - [Generate Signed Certificates](tools/simple-certificates/)
+- [JMeter Performance Tests](tools/performance-tests/)
 
 ## Instructions
 

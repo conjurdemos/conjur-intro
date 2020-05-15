@@ -11,5 +11,6 @@ logs/*
 *.sw[po]
 vm/.vagrant
 
-# Jmeter results
-performance_test/jmeter/jmeter_reports/*
+# JMeter results
+tools/performance-tests/jmeter/jmeter_reports/*
+tools/performance-tests/jmeter/jmeter.log
