@@ -1,0 +1,20 @@
+version: "3"
+services:
+  dap:
+    image: registry2.itci.conjur.net/conjur-appliance:${DAP_VERSION}
+    ports:
+      - "443:443"
+    security_opt:
+        - "seccomp:../seccomp.json"
+    volumes:
+      - ../config:/opt/config:Z
+      - ../logs:/var/log/conjur:z
+
+  jmeter:
+    build:
+      context: .
+    volumes:
+      - ./jmeter:/opt/jmeter_data
+    command: jmeter -Jkey=null -n -t /opt/jmeter_data/DAP_Performance_Test.jmx -l /opt/jmeter_data/jmeter_reports/${DAP_VERSION}/DAP_Performance_Results.csv -e -o /opt/jmeter_data/jmeter_reports/${DAP_VERSION}
+    depends_on:
+      - dap
