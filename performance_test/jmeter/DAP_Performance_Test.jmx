@@ -15,7 +15,7 @@
         <collectionProp name="Arguments.arguments">
           <elementProp name="host" elementType="Argument">
             <stringProp name="Argument.name">host</stringProp>
-            <stringProp name="Argument.value">localhost</stringProp>
+            <stringProp name="Argument.value">conjur</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
             <stringProp name="Argument.desc">Change this value to jmeter.apache.org</stringProp>
           </elementProp>
@@ -31,7 +31,7 @@
           </elementProp>
           <elementProp name="server" elementType="Argument">
             <stringProp name="Argument.name">server</stringProp>
-            <stringProp name="Argument.value">localhost</stringProp>
+            <stringProp name="Argument.value">dap</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
           <elementProp name="conjurAccount" elementType="Argument">
@@ -802,7 +802,7 @@ vars.put(&quot;token&quot;, Base64.encodeBase64String(prev.getResponseDataAsStri
             <stringProp name="filename"></stringProp>
             <stringProp name="cacheKey">true</stringProp>
             <stringProp name="script">int loopSafeIterations = ${safecount} / ${threadCount};
- 
+
 vars.put(&quot;loopSafeIterations&quot;, loopSafeIterations.toString());</stringProp>
           </JSR223PostProcessor>
           <hashTree/>
@@ -1005,7 +1005,7 @@ vars.put(&quot;token&quot;, Base64.encodeBase64String(prev.getResponseDataAsStri
             <stringProp name="filename"></stringProp>
             <stringProp name="cacheKey">true</stringProp>
             <stringProp name="script">int loopSafeIterations = ${safecount} / ${threadCount};
- 
+
 vars.put(&quot;loopSafeIterations&quot;, loopSafeIterations.toString());</stringProp>
           </JSR223PostProcessor>
           <hashTree/>
@@ -1208,7 +1208,7 @@ vars.put(&quot;token&quot;, Base64.encodeBase64String(prev.getResponseDataAsStri
             <stringProp name="filename"></stringProp>
             <stringProp name="cacheKey">true</stringProp>
             <stringProp name="script">int loopSafeIterations = ${safecount} / ${threadCount};
- 
+
 vars.put(&quot;loopSafeIterations&quot;, loopSafeIterations.toString());</stringProp>
           </JSR223PostProcessor>
           <hashTree/>
@@ -1411,7 +1411,7 @@ vars.put(&quot;token&quot;, Base64.encodeBase64String(prev.getResponseDataAsStri
             <stringProp name="filename"></stringProp>
             <stringProp name="cacheKey">true</stringProp>
             <stringProp name="script">int loopSafeIterations = ${safecount} / ${threadCount};
- 
+
 vars.put(&quot;loopSafeIterations&quot;, loopSafeIterations.toString());</stringProp>
           </JSR223PostProcessor>
           <hashTree/>
@@ -1614,7 +1614,7 @@ vars.put(&quot;token&quot;, Base64.encodeBase64String(prev.getResponseDataAsStri
             <stringProp name="filename"></stringProp>
             <stringProp name="cacheKey">true</stringProp>
             <stringProp name="script">int loopSafeIterations = ${safecount} / ${threadCount};
- 
+
 vars.put(&quot;loopSafeIterations&quot;, loopSafeIterations.toString());</stringProp>
           </JSR223PostProcessor>
           <hashTree/>
@@ -1817,7 +1817,7 @@ vars.put(&quot;token&quot;, Base64.encodeBase64String(prev.getResponseDataAsStri
             <stringProp name="filename"></stringProp>
             <stringProp name="cacheKey">true</stringProp>
             <stringProp name="script">int loopSafeIterations = ${safecount} / ${threadCount};
- 
+
 vars.put(&quot;loopSafeIterations&quot;, loopSafeIterations.toString());</stringProp>
           </JSR223PostProcessor>
           <hashTree/>
@@ -2020,7 +2020,7 @@ vars.put(&quot;token&quot;, Base64.encodeBase64String(prev.getResponseDataAsStri
             <stringProp name="filename"></stringProp>
             <stringProp name="cacheKey">true</stringProp>
             <stringProp name="script">int loopSafeIterations = ${safecount} / ${threadCount};
- 
+
 vars.put(&quot;loopSafeIterations&quot;, loopSafeIterations.toString());</stringProp>
           </JSR223PostProcessor>
           <hashTree/>
@@ -2223,7 +2223,7 @@ vars.put(&quot;token&quot;, Base64.encodeBase64String(prev.getResponseDataAsStri
             <stringProp name="filename"></stringProp>
             <stringProp name="cacheKey">true</stringProp>
             <stringProp name="script">int loopSafeIterations = ${safecount} / ${threadCount};
- 
+
 vars.put(&quot;loopSafeIterations&quot;, loopSafeIterations.toString());</stringProp>
           </JSR223PostProcessor>
           <hashTree/>
