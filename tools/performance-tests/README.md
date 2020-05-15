@@ -32,7 +32,6 @@ After run a test, the test results are available in `jmeter/jmeter_reports/<dap-
 1. `index.html` contains a nice page with aggregrate reports
 2. `DAP_Performance_Results.csv` is a more in depth report, containing information regarding each individual jmeter request.
 
-
 ## Current Test
 1. Authenticate as the admin user
 2. Load the following policies (from conjurdemos/dap-intro):
@@ -56,4 +55,15 @@ After run a test, the test results are available in `jmeter/jmeter_reports/<dap-
 
 
 ## Contributing
+Install JMeter on OSX:
+1. Install JMeter using Brew:
+    ```sh
+    $ brew install jmeter
+    ```
+2. Open the file using the JMeter:
+    ```sh
+    $ jmeter -t DAP_Performance_Test.jmx
+    ```
+
+Optionally, you install JMeter manually:
 Download [Jmeter](http://jmeter.apache.org/download_jmeter.cgi) and edit the `.jmx` file
