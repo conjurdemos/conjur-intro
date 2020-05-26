@@ -125,11 +125,11 @@ docker-compose exec conjur-master-2.mycompany.local bash -c "
 "
 if [[ $MASTER_KEY = true ]]; then
   docker-compose exec conjur-master-2.mycompany.local bash -c "
-    evoke keys exec -m /conjur_files/master-key -- evoke configure standby
+    evoke keys exec -m /conjur_files/master-key -- evoke configure standby --master-address conjur-master-1.mycompany.local
   "
 else
   docker-compose exec conjur-master-2.mycompany.local bash -c "
-    evoke configure standby
+    evoke configure standby --master-address conjur-master-1.mycompany.local
   "
 fi
 
@@ -140,11 +140,11 @@ if [[ $AUTO_FAILOVER = true ]]; then
   "
   if [[ $MASTER_KEY = true ]]; then
     docker-compose exec conjur-master-3.mycompany.local bash -c "
-      evoke keys exec -m /conjur_files/master-key -- evoke configure standby
+      evoke keys exec -m /conjur_files/master-key -- evoke configure standby --master-address conjur-master-1.mycompany.local
     "
   else
     docker-compose exec conjur-master-3.mycompany.local bash -c "
-      evoke configure standby
+      evoke configure standby --master-address conjur-master-1.mycompany.local
     "
   fi
 
@@ -154,11 +154,11 @@ if [[ $AUTO_FAILOVER = true ]]; then
   "
   if [[ $MASTER_KEY = true ]]; then
     docker-compose exec conjur-master-4.mycompany.local bash -c "
-      evoke keys exec -m /conjur_files/master-key -- evoke configure standby
+      evoke keys exec -m /conjur_files/master-key -- evoke configure standby --master-address conjur-master-1.mycompany.local
     "
   else
     docker-compose exec conjur-master-4.mycompany.local bash -c "
-      evoke configure standby
+      evoke configure standby --master-address conjur-master-1.mycompany.local
     "
   fi
 
