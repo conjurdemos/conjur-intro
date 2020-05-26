@@ -1,0 +1,6 @@
+V	30000724190515Z		1000	unknown	/C=US/ST=Massachusetts/L=Newton/O=CyberArk/OU=Conjur/CN=conjur-master-1.mycompany.local
+V	30000724190520Z		1001	unknown	/C=US/ST=Massachusetts/L=Newton/O=CyberArk/OU=Conjur/CN=conjur-master-2.mycompany.local
+V	30000724190524Z		1002	unknown	/C=US/ST=Massachusetts/L=Newton/O=CyberArk/OU=Conjur/CN=conjur-master-3.mycompany.local
+V	30000724190528Z		1003	unknown	/C=US/ST=Massachusetts/L=Newton/O=CyberArk/OU=Conjur/CN=conjur-master-4.mycompany.local
+V	30000724190531Z		1004	unknown	/C=US/ST=Massachusetts/L=Newton/O=CyberArk/OU=Conjur/CN=follower-1.mycompany.local
+V	30000724190535Z		1005	unknown	/C=US/ST=Massachusetts/L=Newton/O=CyberArk/OU=Conjur/CN=follower-2.mycompany.local

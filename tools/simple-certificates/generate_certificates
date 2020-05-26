@@ -5,6 +5,7 @@ DOMAIN_NAME='mycompany.local'
 DEFAULT_NODES=( 'conjur-master-1'
                 'conjur-master-2'
                 'conjur-master-3'
+                'conjur-master-4'
                 'follower-1'
                 'follower-2' )
 
@@ -109,7 +110,7 @@ if [ ! -f "${BASE_ROOT_CERT_PATH}/certs/root.cert.pem" ]; then
     mkdir -p "${ca_dir_path}"
   done
 
-  chmod 700 "${BASE_ROOT_CERT_PATH}/private"
+  #chmod 700 "${BASE_ROOT_CERT_PATH}/private"
   touch "${BASE_ROOT_CERT_PATH}/index.txt"
   echo 1000 > "${BASE_ROOT_CERT_PATH}/serial"
 
@@ -128,7 +129,7 @@ if [ ! -f "${BASE_ROOT_CERT_PATH}/certs/root.cert.pem" ]; then
       -passin "pass:$CERT_PASSWORD" \
       -subj "\"/C=US/ST=Massachusetts/O=CyberArk/OU=Conjur/CN=Root CA\"" \
       -key "private/root.key.pem" \
-      -new -x509 -days 7300 -sha256 -extensions v3_ca \
+      -new -x509 -days 358000 -sha256 -extensions v3_ca \
       -out "certs/root.cert.pem"
 
   ssl_proxy "${BASE_ROOT_CERT_PATH}" chmod 444 "certs/root.cert.pem"
@@ -156,7 +157,7 @@ for intermediate_cert_index in $(seq 1 ${INTERMEDIATE_CERT_DEPTH}); do
       mkdir -p "${ca_dir_path}"
     done
 
-    chmod 700 "${intermediate_ca_path}/private"
+    #chmod 700 "${intermediate_ca_path}/private"
     touch "${intermediate_ca_path}/index.txt"
     echo 1000 > "${intermediate_ca_path}/crlnumber"
     echo 1000 > "${intermediate_ca_path}/serial"
@@ -199,7 +200,7 @@ for intermediate_cert_index in $(seq 1 ${INTERMEDIATE_CERT_DEPTH}); do
     ssl_proxy "${intermediate_ca_path}" \
       openssl ca -config "/configs/openssl.cnf" \
         -extensions v3_intermediate_ca \
-        -days 3650 -notext -md sha256 -batch \
+        -days 368000 -notext -md sha256 -batch \
         -passin "pass:${CERT_PASSWORD}" \
         -in "csr/${intermediate_csr_file}" \
         -out "certs/${intermediate_cert_file}"
@@ -268,29 +269,28 @@ for node_name in ${leaf_nodes}; do
     echo "Creating the leaf CSR from RSA key..."
     san="DNS:${node_name},${alt_names}"
     # CN cannot be >64chars. https://github.com/certbot/certbot/issues/1915#issuecomment-165262834
-    node_cn="${node_fqdn%%.*}"
     signer_name="intermediate_${INTERMEDIATE_CERT_DEPTH}"
     ssl_proxy "." openssl req -config "/configs/openssl.cnf" \
-        -subj "\"/C=US/ST=Massachusetts/L=Newton/O=CyberArk/OU=Conjur/CN=${node_cn}\"" \
+        -subj "\"/C=US/ST=Massachusetts/L=Newton/O=CyberArk/OU=Conjur/CN=${node_fqdn}\"" \
         -extensions san_env \
         -key "/src/${node_key_file}" \
         -new -sha256 -out "/src/${node_csr_file}"
 
     echo "Signing leaf node with the intermediate cert..."
     ssl_proxy "." openssl ca -config "/configs/openssl.cnf" \
-        -extensions server_cert -days 365 -notext -md sha256 -batch \
+        -extensions server_cert -days 358000 -notext -md sha256 -batch \
         -passin "pass:${CERT_PASSWORD}" \
         -extensions san_env \
         -in "/src/${node_csr_file}" \
         -out "/src/${node_cert_file}"
-    chmod 444 "${CURRENT_DIR}/${node_cert_file}"
+    #chmod 444 "${CURRENT_DIR}/${node_cert_file}"
 
     if [ "${DEBUG}" == "true" ]; then
       ssl_proxy "." \
         openssl x509 -noout -text -in "/src/${node_cert_file}"
     fi
 
-    chmod 400 "${CURRENT_DIR}/${node_key_file}"
+    #chmod 400 "${CURRENT_DIR}/${node_key_file}"
   fi
 done
 

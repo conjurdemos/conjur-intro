@@ -1,0 +1,1 @@
+V	30271210190510Z		1000	unknown	/C=US/ST=Massachusetts/L=Newton/O=CyberArk/OU=Conjur/CN=Intermediate CA 1
