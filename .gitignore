@@ -10,7 +10,12 @@ logs/*
 # Editor files
 *.sw[po]
 vm/.vagrant
+.idea/*
 
 # JMeter results
 tools/performance-tests/jmeter/jmeter_reports/*
 tools/performance-tests/jmeter/jmeter.log
+
+# Builds
+target/
+*.jar

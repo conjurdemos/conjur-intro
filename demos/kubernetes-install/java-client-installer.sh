@@ -1,9 +1,8 @@
 #!/bin/bash
 
-#set -x
+set -x
 set -e
 
-OPENSHIFT_URL=
 PROJECT_NAME=
 ACCOUNT_NAME=
 AUTHENTICATOR=
@@ -21,7 +20,7 @@ function validate_app {
 
 function validate {
   validate_app helm
-  validate_app oc
+  validate_app kubectl
   validate_app docker
   validate_app docker-compose
   validate_app awk
@@ -59,40 +58,33 @@ function prepare_input {
 function install {
 
   echo "entering project $PROJECT_NAME"
-  oc project $PROJECT_NAME
-
+  # kubens $PROJECT_NAME
+  kubectl config set-context $(kubectl config current-context) --namespace=$PROJECT_NAME
   echo "Pods originally running:"
-  oc get pods
+  kubectl get pods
 
-  TOKEN=$( oc whoami -t )
-	
-  echo "Pushing java client docker image to openshift"
-  docker tag conjur-java-client:latest $DOCKER_URL/$PROJECT_NAME/conjur-java-client:latest
-  docker login $DOCKER_URL -u _ -p $TOKEN
-  docker push $DOCKER_URL/$PROJECT_NAME/conjur-java-client:latest
+  echo "Tagging java client docker image"
+  docker tag conjur-java-client:latest $PROJECT_NAME/conjur-java-client:latest
 
-  oc get is
-	
-  echo "Running Conjur Java Client in OpenShift"
+  echo "Running Conjur Java Client in  Kubernetes"
   cat templates/conjur-java-api-example.yaml | sed s/'{{ AUTHENTICATOR }}'/$AUTHENTICATOR/g | sed s/'{{ ACCOUNT_NAME }}'/$ACCOUNT_NAME/g | sed s/'{{ DEPLOYMENT_NAME }}'/$DEPLOYMENT_NAME/g | sed s/'{{ PROJECT_NAME }}'/$PROJECT_NAME/g > conjur-java-api-example.yaml
-  oc create -f conjur-java-api-example.yaml
+  kubectl create -f conjur-java-api-example.yaml
 
 }
 
 usage()
 {
-    echo "usage: installer [[[--ocp-url url ] [--docker-url url ] [--project-name project] [--account-name account] [--authenticator authenticator]] | [-h]]"
+    echo "usage: installer [--project-name project] [--account-name account] [--authenticator authenticator]] | [-h]]"
 
 cat << EOF
 
-    Installs Conjur with Conjut CLI on OpenShift
+    Installs Conjur with Conjut CLI on  Kubernetes
 
     Usage: installer.sh [options]
 
       -h, --help                      Shows this help message
-      --ocp-url <url>                 OpenShift URL (mandatory)
-      --docker-url <url>              Docker URL (mandatory)
-      --project-name <project>        OpenShift project name (mandatory)
+      -- kube-url <url>                  Kubernetes URL (mandatory)
+      --project-name <project>         Kubernetes project name (mandatory)
       --account-name <account>        Conjur account name (mandatory)
       --authenticator <authenticator> Conjur authenticator (mandatory)
 EOF
@@ -100,13 +92,7 @@ EOF
 
 DO_CONFIG=0
 while [ "$1" != "" ]; do
-  case $1 in 
-    --ocp-url )	shift
-                OPENSHIFT_URL=$1
-                ;;
-    --docker-url ) shift
-                   DOCKER_URL=$1
-                   ;;
+  case $1 in
     --project-name ) shift
                      PROJECT_NAME=$1
                      ;;
@@ -127,24 +113,21 @@ done
 
 validate
 
-OPENSHIFT_URL=$(prepare_input "$OPENSHIFT_URL" "OpenShift URL")
-DOCKER_URL=$(prepare_input "$DOCKER_URL" "OpenShift Docker registry URL")
 PROJECT_NAME=$(prepare_input "$PROJECT_NAME" "project name")
 ACCOUNT_NAME=$(prepare_input "$ACCOUNT_NAME" "account name" "default")
 AUTHENTICATOR=$(prepare_input "$AUTHENTICATOR" "authenticator")
 
-./installer.sh --ocp-url "$OPENSHIFT_URL" --project-name "$PROJECT_NAME" --account-name "$ACCOUNT_NAME" --authenticator "$AUTHENTICATOR"
+./installer.sh --project-name "$PROJECT_NAME" --account-name "$ACCOUNT_NAME" --authenticator "$AUTHENTICATOR"
 
 install
 
-CONJUR_JAVA_API_POD_LINE=$( oc get pods | grep conjur-java-api-example | (head -n1 && tail -n1) )
+CONJUR_JAVA_API_POD_LINE=$( kubectl get pods | grep conjur-java-api-example | (head -n1 && tail -n1) )
 
 CONJUR_JAVA_API_POD=$( echo "$CONJUR_JAVA_API_POD_LINE" | awk '{print $1}' )
 
 for i in {1..50}
 do
-  CONTAINERS_STATUS=$(  oc get pods | grep conjur-java-api-example | (head -n1 && tail -n1) | awk '{print $2}' )
-
+  CONTAINERS_STATUS=$(  kubectl get pods | grep conjur-java-api-example | (head -n1 && tail -n1) | awk '{print $2}' )
   if [ "$CONTAINERS_STATUS" == "2/2" ]; then
     break
   fi
@@ -152,10 +135,11 @@ do
   sleep 2
 done
 
-oc get pods
+kubectl get pods
 
 rm -rf conjur-java-api-example.yaml
 
 echo "Installation done"
 
-oc logs $CONJUR_JAVA_API_POD -c my-conjur-java-client
+sleep 10
+kubectl logs $CONJUR_JAVA_API_POD -c my-conjur-java-client

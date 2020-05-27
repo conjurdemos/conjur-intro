@@ -63,9 +63,9 @@ echo "Installing Conjur Java SDK JAR to Maven Repo"
 mvn install:install-file -Dfile=conjur-api-java/target/conjur-api-$VERSION-with-dependencies.jar -DgroupId=net.conjur.api -DartifactId=conjur-api -Dversion=$VERSION -Dpackaging=jar
 
 echo "Build Conjur Java Client Example"
-mvn install -Dconjur-api-version=2.1.0
+mvn install -Dconjur-api-version=2.2.1
 
-cp conjur-api-java/target/conjur-api-2.1.0-with-dependencies.jar .
+cp conjur-api-java/target/conjur-api-2.2.1-with-dependencies.jar .
 
 rm -rf conjur-api-java
 
@@ -73,4 +73,3 @@ echo "Creating docker image of Conjur Java Client Example"
 docker build -f Dockerfile -t conjur-java-client .
 
 docker images | grep conjur-java-client
-

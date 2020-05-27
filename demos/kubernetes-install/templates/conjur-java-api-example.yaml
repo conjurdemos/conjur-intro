@@ -55,8 +55,8 @@ spec:
           - mountPath: /run/conjur
             name: conjur-access-token
       - name: my-conjur-java-client
-        image: docker-registry.default.svc:5000/{{ PROJECT_NAME }}/conjur-java-client:latest
-        imagePullPolicy: Always
+        image: {{ PROJECT_NAME }}/conjur-java-client:latest
+        imagePullPolicy: never
         env:
           - name: CONJUR_AUTHN_URL
             value: https://conjur-oss.{{ PROJECT_NAME }}.svc.cluster.local/authn-k8s/{{ AUTHENTICATOR }}

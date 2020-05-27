@@ -17,13 +17,6 @@ Java SDK / JRE - openjdk version "1.8.0_232"
 macOS Catalina - Version 10.15.1 (19076)  
 OpenShift client installed on you local station  
 
-## External Prerequisites
-
-A GitHub user for GitHub environment  
-OpenShift -     oc v3.11.0+0cbc58b  
-                kubernetes v1.11.0+d4cacc0  
-                features: Basic-Auth  
-
 ## Important Note:
 The commands below can run in either an interactive mode as well as in a command line mode.
 Interactive mode means that each parameter that was not filled in the command line will be asked to be provided interactively.  
@@ -32,23 +25,30 @@ If the user does not provide an input, the default value is taken.
 
 ## Commands
 
-1. Building the Java Client:
+1. Run a local Kubernetes Cluster with Minikube
+```bash
+$ minikube start
+$ eval $(minikube docker-env)
+```
 
+2. Building the Java Client:
 ```bash
 $ cd <home-dir>/conjur-intro/demos/java-api-client
 $ ./build.sh
 ```
 
-2. Installing and running ia demo Java client in OpenShift:
-
+3. Customize bootstrap.sh with your desired parameters
 ```bash
-$ ./java-client-installer.sh --ocp-url <ocp-url:port> --docker-url <openshift-docker-registry-url> --project-name <project-name> --account-name <account-name> --authenticator <authenticator>
+$ source ./bootstrap.sh
+``` 
+
+4. Installing and running ia demo Java client in Kubernetes:
+```bash
+$ ./java-client-installer.sh --project-name "$PROJECT_NAME" --account-name "$ACCOUNT_NAME" --authenticator "$AUTHENTICATOR"
 ```
 
 | Flag | Meaning |
 | ---- | ------- |
-|`--ocp-url` | Sets the OpenShift cluster in which the demo Java client would be installed (should have the same value as above) |
-|`--docker-url` | Sets the Docker registry into which the container image of the demo Java client would be pushed |
 |`--project-name` | Sets the OpenShift project in which the demo Java client would be installed (should have the same value as above) |
 |`--account-name` | Sets the Conjur account that would be used by the demo Java client (should have the same value as above) |
 |`--authenticator` | Sets the authenticator name that would be used by the demo Java client (should have the same value as above) |
@@ -75,12 +75,11 @@ Commands for it are:
 
 ```bash
 $ cd <home-dir>/conjur-intro/demos/openshift-install
-$ ./installer.sh --ocp-url <ocp-url:port> --project-name <project-name> --account-name <account-name> --authenticator <authenticator>
+$ ./installer.sh --project-name <project-name> --account-name <account-name> --authenticator <authenticator>
 ```
 
 | Flag | Meaning |
 | ---- | ------- |
-|`--ocp-url` | Sets the OpenShift cluster in which Conjur would be installed |
 |`--project-name` | Sets the OpenShift project in which Conjur be installed|
 |`--account-name` | Sets the Conjur account that would be created|
 |`--authenticator` | Sets the authenticator name that would be created|
@@ -90,5 +89,3 @@ $ ./installer.sh --ocp-url <ocp-url:port> --project-name <project-name> --accoun
 ```bash
 $ oc get pods
 ```
-
-

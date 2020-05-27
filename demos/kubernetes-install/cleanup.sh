@@ -13,6 +13,7 @@ function validate_app {
   fi
 }
 
-validate_app oc
+validate_app kubectl
 
-oc delete project $1
+kubectl delete namespace $PROJECT_NAME
+kubectl delete pods --all
