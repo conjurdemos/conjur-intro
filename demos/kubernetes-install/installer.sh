@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#set -x
+set -x
 set -e
 
 PROJECT_NAME=
@@ -105,7 +105,7 @@ function install {
 
   for i in {1..50}
   do
-    CONTAINERS_STATUS=$(  kubectl get pods | grep conjur-oss | (head -n1 && tail -n1) | awk '{print $2}' )
+    CONTAINERS_STATUS=$(  kubectl get pods | grep conjur-cli | (head -n1 && tail -n1) | awk '{print $2}' )
 
     if [ "$CONTAINERS_STATUS" == "1/1" ]; then
       break
