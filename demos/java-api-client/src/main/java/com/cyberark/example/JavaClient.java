@@ -1,7 +1,7 @@
 package com.cyberark.example;
 
-import net.conjur.api.Conjur;
-import net.conjur.api.Token;
+import com.cyberark.conjur.api.Conjur;
+import com.cyberark.conjur.api.Token;
 
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
