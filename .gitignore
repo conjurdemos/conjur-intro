@@ -6,6 +6,7 @@ tools/simple-certificates/certificates/*
 .DS_Store
 
 logs/*
+**/logs/*
 
 # Editor files
 *.sw[po]
