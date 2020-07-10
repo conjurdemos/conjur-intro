@@ -1,25 +1,154 @@
 version: "3"
 services:
-  conjur:
-    image: registry2.itci.conjur.net/conjur-appliance:${IMAGE_TAG}
+  conjur-master.mycompany.local:
+    image: haproxy:2.1-alpine
     ports:
       - "443:443"
-      - "80:444"
-    security_opt:
-        - "seccomp:./seccomp.json"
+      - "7000:7000"
+    expose:
+      - "1999"
+      - "5432"
     volumes:
-      - ./config:/opt/config:Z
-      - ./logs:/var/log/conjur:z
+      - ./files/haproxy/master:/usr/local/etc/haproxy
+
+  conjur-master-1.mycompany.local:
+    image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
+    ports:
+      - "444:443"
+    expose:
+      - "443"
+      - "444"
+      - "1999"
+      - "5432"
+    environment:
+      RESTCLIENT_LOG: stdout
+      CONJUR_LOG_LEVEL: debug
+    security_opt:
+        - "seccomp:unconfined"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/master-1:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-master-2.mycompany.local:
+    image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
+    ports:
+      - "445:443"
+    expose:
+      - "443"
+      - "444"
+      - "1999"
+      - "5432"
+    security_opt:
+        - "seccomp:unconfined"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/master-2:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-master-3.mycompany.local:
+    image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
+    ports:
+      - "446:443"
+    expose:
+      - "443"
+      - "444"
+      - "1999"
+      - "5432"
+    security_opt:
+        - "seccomp:unconfined"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/master-3:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-master-4.mycompany.local:
+    image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
+    ports:
+      - "447:443"
+    expose:
+      - "443"
+      - "444"
+      - "1999"
+      - "5432"
+    security_opt:
+        - "seccomp:unconfined"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/master-4:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  # conjur-standby.mycompany.local:
+  #   image: registry2.itci.conjur.net/conjur-appliance:5.0-stable
+  #   expose:
+  #     - "443"
+  #     - "5432"
+  #   security_opt:
+  #       - "seccomp:unconfined"
+  #   volumes:
+  #     - seeds:/opt/cyberark/dap/seeds
+  #     - ./files:/conjur_files
+
+  conjur-follower.mycompany.local:
+    image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
+    ports:
+      - "448:443"
+    expose:
+      - "443"
+      - "444"
+    environment:
+      RESTCLIENT_LOG: stdout
+      CONJUR_LOG_LEVEL: debug
+    security_opt:
+        - "seccomp:unconfined"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
 
   client:
     image: cyberark/conjur-cli:5
-    working_dir:  -w /src/cli
+    working_dir:  /src/cli
     environment:
-      CONJUR_APPLIANCE_URL: https://conjur
+      CONJUR_APPLIANCE_URL: https://conjur-master-1.mycompany.local
       CONJUR_ACCOUNT: demo
       CONJUR_AUTHN_LOGIN: admin
-    links:
-      - conjur:conjur
     volumes:
       - .:/src/cli
-      - ./cli_cache:/root
+      - ./cli_cache/master:/root
+
+  follower-client:
+    image: cyberark/conjur-cli:5
+    working_dir:  /src/cli
+    environment:
+      CONJUR_APPLIANCE_URL: https://conjur-follower.mycompany.local
+      CONJUR_ACCOUNT: demo
+      CONJUR_AUTHN_LOGIN: admin
+    volumes:
+      - .:/src/cli
+      - ./cli_cache/follower:/root
+
+  scope:
+    image: weaveworks/scope:1.13.1
+    network_mode: "host"
+    pid: "host"
+    privileged: true
+    labels:
+      - "works.weave.role=system"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:rw"
+    command:
+      - "--probe.docker=true"
+
+volumes:
+  seeds:

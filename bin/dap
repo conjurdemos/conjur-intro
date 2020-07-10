@@ -1,0 +1,347 @@
+#!/bin/bash -e
+_admin_password="MySecretP@ss1"
+
+function _print_help() {
+  cat << EOF
+
+Provisions a DAP cluster locally using Docker, and run through some common workflows.
+
+Usage: bin/dap cluster [options]
+
+    --create-backup             Generates a backup of the Master. The backup can be found in the system/backup folder
+    --dry-run                   Displays the commands that will be run, without actually running them
+    --enable-auto-failover      Enrolls nodes into and auto-failover cluster
+    -h, --help                  Shows this help message.
+    --promote-standby           Stops the Master and promotes the first Standby as the new Master
+    --stop                      Stops all containers and cleans up cached files
+    -t, --tag <appliance-tag>   Starts a cluster with a particular appliance (defaults to 5.0-stable)
+
+EOF
+  exit
+}
+
+function _run() {
+  local _all_args=("$@")
+  local _node_name=$1
+  local _args=("${_all_args[@]:1}")
+
+  echo "Running Command (on $_node_name): '$_args'"
+
+  if [[ $DRY_RUN = false ]]; then
+    docker-compose exec $_node_name bash -c "
+      $_args
+    "
+  fi
+}
+
+function _start_instances() {
+  if [[ $DRY_RUN = false ]]; then
+    docker-compose up -d --no-deps conjur-master.mycompany.local \
+                                    conjur-master-1.mycompany.local \
+                                    conjur-master-2.mycompany.local \
+                                    conjur-master-3.mycompany.local \
+                                    conjur-follower.mycompany.local
+  fi
+}
+
+function _start_master() {
+  if [[ $DRY_RUN = false ]]; then
+    docker-compose up -d --no-deps conjur-master.mycompany.local \
+                                    conjur-master-1.mycompany.local
+  fi
+}
+
+
+function _configure_master() {
+  _cmd="evoke configure master"
+  _cmd="$_cmd --accept-eula"
+  _cmd="$_cmd --hostname conjur-master.mycompany.local"
+  _cmd="$_cmd --master-altnames conjur-master-1.mycompany.local,conjur-master-2.mycompany.local,conjur-master-3.mycompany.local"
+  _cmd="$_cmd --admin-password $_admin_password"
+  _cmd="$_cmd demo"
+
+  _run conjur-master-1.mycompany.local "$_cmd"
+}
+
+function _setup_standby() {
+  local _standby_number=$1
+
+  # Generate a Seed File
+  _run conjur-master-1.mycompany.local "evoke seed standby conjur-master-$_standby_number.mycompany.local conjur-master-1.mycompany.local > /opt/cyberark/dap/seeds/standby-seed-$_standby_number.tar"
+
+  # Unpack and Configure
+  _run conjur-master-$_standby_number.mycompany.local \
+    "evoke unpack seed /opt/cyberark/dap/seeds/standby-seed-$_standby_number.tar && evoke configure standby"
+}
+
+function _start_standby_synchronization() {
+  _run conjur-master-1.mycompany.local \
+    "evoke replication sync start"
+}
+
+function _setup_follower() {
+  # Generate Seed file
+  _run conjur-master-1.mycompany.local \
+    "evoke seed follower conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed.tar"
+
+  # Unpack and Configure
+  _run conjur-follower.mycompany.local \
+    "evoke unpack seed /opt/cyberark/dap/seeds/follower-seed.tar && evoke configure follower"
+}
+
+#
+## Failover & Promotion
+#
+function _perform_promotion() {
+  # Stop current master
+  docker-compose stop conjur-master-1.mycompany.local
+
+  # Promote Standby to Master
+  docker-compose exec conjur-master-2.mycompany.local bash -c "
+    evoke role promote
+  "
+
+  docker-compose exec conjur-master-3.mycompany.local bash -c "
+    evoke replication rebase conjur-master-2.mycompany.local
+  "
+}
+
+function _single_master() {
+  _start_master
+  _configure_master
+}
+
+function _basic_cluster() {
+  _start_instances
+  _configure_master
+ 	_setup_standby 2
+  _setup_standby 3
+  _start_standby_synchronization
+  _setup_follower
+  echo "Basic Cluster available at: 'https://localhost'"
+}
+
+function _stop() {
+  echo "stopping...."
+  docker-compose down -v
+
+  rm -rf cli_cache
+  rm -rf system/backup
+  rm -rf system/logs
+  echo "stopped"
+}
+
+function _cli() {
+  local _namespace=$1
+  local _policy=$2
+
+  echo "Loading Policy '$_policy':"
+  cat $_policy
+  echo ''
+  echo "with command: 'conjur policy load $_namespace $_policy'"
+  echo ''
+  echo ''
+
+  if [[ $DRY_RUN = false ]]; then
+    ./cli conjur policy load $_namespace $_policy
+  fi
+}
+
+function _enable_autofailover() {
+    _cli root "policy/base.yml"
+    _cli conjur/cluster policy/cluster.yml
+
+    _run conjur-master-1.mycompany.local "evoke cluster enroll --cluster-machine-name conjur-master-1.mycompany.local production"
+    _run conjur-master-2.mycompany.local "evoke cluster enroll --cluster-machine-name conjur-master-2.mycompany.local --master-name conjur-master-1.mycompany.local production"
+    _run conjur-master-3.mycompany.local "evoke cluster enroll --cluster-machine-name conjur-master-3.mycompany.local --master-name conjur-master-1.mycompany.local production"
+}
+
+function _create_backup() {
+  _run conjur-master-1.mycompany.local "evoke backup"
+}
+
+TAG=5.0-stable
+DRY_RUN=false
+CMD=""
+
+if [[ "$1" = "cluster" ]]; then
+  shift
+  CMD="_basic_cluster"
+
+  while true ; do
+    case "$1" in
+      --create-backup ) CMD='_create_backup' ; shift ;;
+      --dry-run ) DRY_RUN=true ; shift ;;
+      --enable-auto-failover ) CMD='_enable_autofailover' ; shift ;;
+      --promote-standby ) CMD='_perform_promotion' ; shift ;;
+      --stop ) _stop ; exit ;;
+      -t | --tag ) shift ; TAG=$1 ; shift ;;
+      -h | --help ) _print_help ; shift ;;
+       * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+    esac
+  done
+elif [[ "$1" = "cluster" ]]; then
+  shift
+  CMD="_single_master"
+
+  while true ; do
+    case "$1" in
+      --create-backup ) CMD='_create_backup' ; shift ;;
+      --dry-run ) DRY_RUN=true ; shift ;;
+      --stop ) _stop ; exit ;;
+      -t | --tag ) shift ; TAG=$1 ; shift ;;
+      -h | --help ) print_help ; shift ;;
+       * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+    esac
+  done
+
+else
+  echo "$1 is not a valid option"
+  exit 1
+fi
+
+export VERSION=$TAG
+
+eval $CMD
+
+# if [[ $AUTO_FAILOVER = true ]]; then
+#   ./cli conjur policy load --replace root policy/root.yml
+#   ./cli conjur policy load conjur policy/cluster.yml
+# fi
+
+# if [[ $CUSTOM_CERTS = true ]]; then
+#   docker-compose exec conjur-master-1.mycompany.local bash -c "
+#     evoke ca import -r /conjur_files/certs/ca-chain.cert.pem
+#     evoke ca import -k /conjur_files/certs/conjur-master-1.mycompany.local.key.pem -s /conjur_files/certs/conjur-master-1.mycompany.local.cert.pem
+#     evoke ca import -k /conjur_files/certs/conjur-master-2.mycompany.local.key.pem /conjur_files/certs/conjur-master-2.mycompany.local.cert.pem
+#     evoke ca import -k /conjur_files/certs/conjur-follower.mycompany.local.key.pem /conjur_files/certs/conjur-follower.mycompany.local.cert.pem
+#   "
+#   if [[ $AUTO_FAILOVER = true ]]; then
+#     docker-compose exec conjur-master-1.mycompany.local bash -c "
+#       evoke ca import -k /conjur_files/certs/conjur-master-3.mycompany.local.key.pem /conjur_files/certs/conjur-master-3.mycompany.local.cert.pem
+#       evoke ca import -k /conjur_files/certs/conjur-master-4.mycompany.local.key.pem /conjur_files/certs/conjur-master-4.mycompany.local.cert.pem
+#     "
+#   fi
+# fi
+
+# if [[ $AUTO_FAILOVER = true && $CUSTOM_CERTS = false ]]; then
+#   docker-compose exec conjur-master-1.mycompany.local bash -c "
+#     evoke ca issue conjur-master-2.mycompany.local
+#     evoke ca issue conjur-master-3.mycompany.local
+#     evoke ca issue conjur-master-4.mycompany.local
+#   "
+# fi
+
+# if [[ $CUSTOM_CERTS = false ]]; then
+#   docker-compose exec conjur-master-1.mycompany.local bash -c "
+#     evoke ca issue conjur-follower.mycompany.local
+#   "
+# fi
+
+# if [[ $MASTER_KEY = true ]]; then
+#   docker-compose exec conjur-master-1.mycompany.local bash -c "
+#     evoke keys encrypt /conjur_files/master-key
+#     evoke keys unlock /conjur_files/master-key
+#     sv start conjur
+#     /opt/conjur/evoke/bin/wait_for_conjur
+#   "
+# fi
+
+# if [[ $AUTO_FAILOVER = true ]]; then
+#   docker-compose exec conjur-master-1.mycompany.local bash -c "
+#     evoke seed standby conjur-master-3.mycompany.local conjur-master-1.mycompany.local > /opt/conjur/backup/standby-seed-3.tar
+#     evoke seed standby conjur-master-4.mycompany.local conjur-master-1.mycompany.local > /opt/conjur/backup/standby-seed-4.tar
+#   "
+# fi
+
+
+# if [[ $MASTER_KEY = true ]]; then
+#   docker-compose exec conjur-master-2.mycompany.local bash -c "
+#     evoke keys exec -m /conjur_files/master-key -- evoke configure standby
+#   "
+# else
+#   docker-compose exec conjur-master-2.mycompany.local bash -c "
+#     evoke configure standby
+#   "
+# fi
+
+# # Setup standby 1
+# docker-compose exec conjur-master-3.mycompany.local bash -c "
+#   evoke unpack seed /opt/conjur/backup/standby-seed.tar
+#   evoke configure standby
+# "
+
+# if [[ $AUTO_FAILOVER = true ]]; then
+#   # Setup the standby 2
+#   docker-compose exec conjur-master-3.mycompany.local bash -c "
+#     evoke unpack seed /opt/conjur/backup/standby-seed-3.tar
+#   "
+#   if [[ $MASTER_KEY = true ]]; then
+#     docker-compose exec conjur-master-3.mycompany.local bash -c "
+#       evoke keys exec -m /conjur_files/master-key -- evoke configure standby
+#     "
+#   else
+#     docker-compose exec conjur-master-3.mycompany.local bash -c "
+#       evoke configure standby
+#     "
+#   fi
+  #
+  # # Setup the standby 3
+  # docker-compose exec conjur-master-4.mycompany.local bash -c "
+  #   evoke unpack seed /opt/conjur/backup/standby-seed-4.tar
+  # "
+  # if [[ $MASTER_KEY = true ]]; then
+  #   docker-compose exec conjur-master-4.mycompany.local bash -c "
+  #     evoke keys exec -m /conjur_files/master-key -- evoke configure standby
+  #   "
+  # else
+  #   docker-compose exec conjur-master-4.mycompany.local bash -c "
+  #     evoke configure standby
+  #   "
+  # fi
+
+
+  # if [[ $DISASTER_RECOVERY = true ]]; then
+  #   docker-compose exec conjur-master-4.mycompany.local bash -c "
+  #     evoke replication sync disable
+  #   "
+  # fi
+
+  # docker-compose exec conjur-master-1.mycompany.local bash -c "
+  #   evoke cluster enroll -n conjur-master-1.mycompany.local conjur
+  # "
+  # docker-compose exec conjur-master-2.mycompany.local bash -c "
+  #   evoke cluster enroll -n conjur-master-2.mycompany.local -m conjur-master-1.mycompany.local conjur
+  # "
+  # docker-compose exec conjur-master-3.mycompany.local bash -c "
+  #   evoke cluster enroll -n conjur-master-3.mycompany.local -m conjur-master-1.mycompany.local conjur
+  # "
+#   if [[ $DISASTER_RECOVERY = false ]]; then
+#     docker-compose exec conjur-master-4.mycompany.local bash -c "
+#       evoke cluster enroll -n conjur-master-4.mycompany.local -m conjur-master-1.mycompany.local conjur
+#     "
+#   fi
+# fi
+
+# Setup the follower
+# docker-compose exec conjur-follower.mycompany.local bash -c "
+#   evoke unpack seed /opt/conjur/backup/follower-seed.tar
+# "
+# if [[ $MASTER_KEY = true ]]; then
+#   docker-compose exec conjur-follower.mycompany.local bash -c "
+#     evoke keys exec -m /conjur_files/master-key -- evoke configure follower
+#   "
+# else
+#   docker-compose exec conjur-follower.mycompany.local bash -c "
+#     evoke configure follower
+#   "
+# fi
+
+rm -rf cli_cache
+if [[ $LOAD_DATA = true ]]; then
+  ./cli conjur policy load root policy/users.yml
+  ./cli conjur policy load root policy/policy.yml
+  ./cli conjur policy load staging policy/apps/myapp.yml
+  ./cli conjur policy load production policy/apps/myapp.yml
+  ./cli conjur policy load root policy/application_grants.yml
+fi
