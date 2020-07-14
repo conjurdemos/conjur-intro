@@ -4,6 +4,28 @@ _admin_password="MySecretP@ss1"
 function _print_help() {
   cat << EOF
 
+A tool that provides a variety of DAP lifecycle workflows.
+
+Synopsis: bin/dap <command> [command options]
+
+Global Options:
+
+    --h, --help                 Shows this help message
+    --stop                      Stops all containers and cleans up cached files
+
+Commands: bin/dap <command>
+
+
+    cluster                     Setup and workflows for a DAP cluster
+    single                      Setup and workflows for a single DAP instance
+
+EOF
+  exit
+}
+
+function _print_cluster_help() {
+  cat << EOF
+
 Provisions a DAP cluster locally using Docker, and run through some common workflows.
 
 Usage: bin/dap cluster [options]
@@ -11,13 +33,39 @@ Usage: bin/dap cluster [options]
     --create-backup             Generates a backup of the Master. The backup can be found in the system/backup folder
     --dry-run                   Displays the commands that will be run, without actually running them
     --enable-auto-failover      Enrolls nodes into and auto-failover cluster
-    -h, --help                  Shows this help message.
+    -h, --help                  Shows this help message
     --promote-standby           Stops the Master and promotes the first Standby as the new Master
     --stop                      Stops all containers and cleans up cached files
     -t, --tag <appliance-tag>   Starts a cluster with a particular appliance (defaults to 5.0-stable)
 
 EOF
   exit
+}
+
+function _print_single_help() {
+  cat << EOF
+
+Provisions a single DAP instance locally using Docker.
+
+Usage: bin/dap single [options]
+
+    --create-backup             Generates a backup of the Master. The backup can be found in the system/backup folder
+    --dry-run                   Displays the commands that will be run, without actually running them
+    -h, --help                  Shows this help message
+    --stop                      Stops all containers and cleans up cached files
+    -t, --tag <appliance-tag>   Starts a cluster with a particular appliance (defaults to 5.0-stable)
+
+EOF
+  exit
+}
+
+
+function _set_master_multinode_proxy_config() {
+  cp files/haproxy/master/multi-node/haproxy.cfg files/haproxy/master/haproxy.cfg
+}
+
+function _set_master_multinode_proxy_config() {
+  cp files/haproxy/master/single/haproxy.cfg files/haproxy/master/haproxy.cfg
 }
 
 function _run() {
@@ -50,7 +98,6 @@ function _start_master() {
                                     conjur-master-1.mycompany.local
   fi
 }
-
 
 function _configure_master() {
   _cmd="evoke configure master"
@@ -107,11 +154,14 @@ function _perform_promotion() {
 }
 
 function _single_master() {
+  _set_master_multinode_proxy_config
   _start_master
   _configure_master
+  echo "DAP instance available at: 'https://localhost'"
 }
 
 function _basic_cluster() {
+  _set_master_multinode_proxy_config
   _start_instances
   _configure_master
  	_setup_standby 2
@@ -128,6 +178,7 @@ function _stop() {
   rm -rf cli_cache
   rm -rf system/backup
   rm -rf system/logs
+  rm files/haproxy/master/haproxy.cfg || true
   echo "stopped"
 }
 
@@ -171,33 +222,40 @@ if [[ "$1" = "cluster" ]]; then
   while true ; do
     case "$1" in
       --create-backup ) CMD='_create_backup' ; shift ;;
+      --default-cluster ) CMD='_basic_cluster' ; shift ;;
       --dry-run ) DRY_RUN=true ; shift ;;
       --enable-auto-failover ) CMD='_enable_autofailover' ; shift ;;
       --promote-standby ) CMD='_perform_promotion' ; shift ;;
       --stop ) _stop ; exit ;;
       -t | --tag ) shift ; TAG=$1 ; shift ;;
-      -h | --help ) _print_help ; shift ;;
+      -h | --help ) _print_cluster_help ; shift ;;
        * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
     esac
   done
-elif [[ "$1" = "cluster" ]]; then
+elif [[ "$1" = "single" ]]; then
   shift
   CMD="_single_master"
 
   while true ; do
     case "$1" in
+      --default ) CMD='_single_master' ; shift ;;
       --create-backup ) CMD='_create_backup' ; shift ;;
       --dry-run ) DRY_RUN=true ; shift ;;
       --stop ) _stop ; exit ;;
       -t | --tag ) shift ; TAG=$1 ; shift ;;
-      -h | --help ) print_help ; shift ;;
+      -h | --help ) _print_single_help ; shift ;;
        * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
     esac
   done
 
 else
-  echo "$1 is not a valid option"
-  exit 1
+  while true ; do
+    case "$1" in
+      -h | --help ) _print_help ; shift ;;
+      --stop ) _stop ; exit ;;
+       * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+    esac
+  done
 fi
 
 export VERSION=$TAG
