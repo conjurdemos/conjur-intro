@@ -14,50 +14,70 @@ Tools and scripts  utilities that make it easier to make, manage, and run demos
 
 ## Instructions
 
-### `./start`
-`start` provides a dead simple mechanism for starting a DAP Appliance.
+### bin/dap
+`bin/dap` provides a dead simple mechanism for starting DAP in a variety of configurations and workflows. It provides visibility into the commands required to perform various workflows.
 
-Start a V5 appliance master with:
+## Start a single DAP instance
+
+To start a single DAP instance:
+
 ```sh
-$ ./start
-```
-The start command pulls down the latest version of the V5 appliance and CLI, and configures DAP with the following:
-* Account: `demo`
-* Admin password: `MySecretP@ss1`
-
-Once started, logs are streamed to the console.
-
-`ctr-c` stops the appliance, and cleans up the environment.
-
-#### Start Flags
-
-The `start` script accepts the following flags:
-```
-SYNOPSIS
-    start [global options]
-
-GLOBAL OPTIONS
-    -h, --help                          - Show this message
-
-    --skip-pull                         - Does not pull a fresh Conjur master before starting
-
-    -t, --tag <appliance-tag>           - Starts a Conjur Appliance of the version specified
-
-    --with-config                       - Configures the Appliance using the `config/conjur.json` file
+$ bin/dap single
 ```
 
-To run a particular version of the Appliance:
+This instance runs behind an HAProxy load balancer and is available at: [https://localhost].  Login:
+
+- Account `default`
+- User: `admin`
+- Password: `MySecretP@ss1`
+
+#### Available Flags
+
+The following flags are available with the `single` argument.
+
 ```
-$ ./start --tag 5.2.0
+Usage: bin/dap single [options]
+
+    --create-backup             Generates a backup of the Master. The backup can be found in the system/backup folder
+    --dry-run                   Displays the commands that will be run, without actually running them
+    -h, --help                  Shows this help message
+    --stop                      Stops all containers and cleans up cached files
+    -t, --tag <appliance-tag>   Starts a cluster with a particular appliance (defaults to 5.0-stable)
 ```
 
-To start Conjur with the configuration file found in `./config/conjur.json`:
-```
-$ ./start --with-config
+## Start a DAP Cluster
+
+To start a basic HA DAP cluster (self-signed certificates, no Master Key encryption) and a Follower:
+
+```sh
+$ bin/dap cluster
 ```
 
-### `./cli`
-`cli` is a proxy script, sending all subsequent arguments to a Conjur CLI container. This provides a simple mechanism for loading policy and interacting with Conjur.
+This cluster runs behind an HAProxy load balancer and is available at: [https://localhost].  Login:
+
+- Account `default`
+- User: `admin`
+- Password: `MySecretP@ss1`
+
+#### Available Flags
+
+The following flags are available with the `single` argument.
+
+```
+Usage: bin/dap cluster [options]
+
+    --create-backup             Generates a backup of the Master. The backup can be found in the system/backup folder
+    --dry-run                   Displays the commands that will be run, without actually running them
+    --enable-auto-failover      Enrolls nodes into and auto-failover cluster
+    -h, --help                  Shows this help message
+    --promote-standby           Stops the Master and promotes the first Standby as the new Master
+    --stop                      Stops all containers and cleans up cached files
+    -t, --tag <appliance-tag>   Starts a cluster with a particular appliance (defaults to 5.0-stable)
+```
+
+
+### `bin/cli`
+`bin/cli` is a proxy script, sending all subsequent arguments to a Conjur CLI container. This provides a simple mechanism for loading policy and interacting with Conjur.
 
 #### Loading policy
 The policy folder contains sample policy which can be loaded with:
