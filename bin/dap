@@ -141,16 +141,17 @@ function _setup_follower() {
 #
 function _perform_promotion() {
   # Stop current master
-  docker-compose stop conjur-master-1.mycompany.local
+  if [[ $DRY_RUN = false ]]; then
+    docker-compose stop conjur-master-1.mycompany.local
+  fi
 
   # Promote Standby to Master
-  docker-compose exec conjur-master-2.mycompany.local bash -c "
-    evoke role promote
-  "
+  _run conjur-master-2.mycompany.local \
+    "evoke role promote"
 
-  docker-compose exec conjur-master-3.mycompany.local bash -c "
-    evoke replication rebase conjur-master-2.mycompany.local
-  "
+  # Repoint Standby to updated Master
+  _run conjur-master-3.mycompany.local \
+    "evoke replication rebase conjur-master-2.mycompany.local"
 }
 
 function _single_master() {
