@@ -60,11 +60,11 @@ EOF
 }
 
 
-function _set_master_multinode_proxy_config() {
+function _set_master_multi_node_proxy_config() {
   cp files/haproxy/master/multi-node/haproxy.cfg files/haproxy/master/haproxy.cfg
 }
 
-function _set_master_multinode_proxy_config() {
+function _set_master_single_node_proxy_config() {
   cp files/haproxy/master/single/haproxy.cfg files/haproxy/master/haproxy.cfg
 }
 
@@ -82,25 +82,37 @@ function _run() {
   fi
 }
 
-function _start_instances() {
+function _start_cluster() {
   if [[ $DRY_RUN = false ]]; then
+    _set_master_multi_node_proxy_config
     docker-compose up -d --no-deps conjur-master.mycompany.local \
                                     conjur-master-1.mycompany.local \
                                     conjur-master-2.mycompany.local \
                                     conjur-master-3.mycompany.local \
-                                    conjur-follower.mycompany.local
+                                    conjur-follower.mycompany.local \
+                                    conjur-follower-1.mycompany.local
   fi
 }
 
 function _start_master() {
   if [[ $DRY_RUN = false ]]; then
+    _set_master_single_node_proxy_config
     docker-compose up -d --no-deps conjur-master.mycompany.local \
                                     conjur-master-1.mycompany.local
   fi
 }
 
+function _start_master_and_follower() {
+  if [[ $DRY_RUN = false ]]; then
+    _set_master_single_node_proxy_config
+    docker-compose up -d --no-deps conjur-master.mycompany.local \
+                                    conjur-master-1.mycompany.local \
+                                    conjur-follower-1.mycompany.local
+  fi
+}
+
 function _configure_master() {
-  _cmd="evoke configure master"
+  _cmd="TRUSTED_PROXIES=123.123.1.1,123.5.1.1 evoke configure master"
   _cmd="$_cmd --accept-eula"
   _cmd="$_cmd --hostname conjur-master.mycompany.local"
   _cmd="$_cmd --master-altnames conjur-master-1.mycompany.local,conjur-master-2.mycompany.local,conjur-master-3.mycompany.local"
@@ -132,7 +144,7 @@ function _setup_follower() {
     "evoke seed follower conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed.tar"
 
   # Unpack and Configure
-  _run conjur-follower.mycompany.local \
+  _run conjur-follower-1.mycompany.local \
     "evoke unpack seed /opt/cyberark/dap/seeds/follower-seed.tar && evoke configure follower"
 }
 
@@ -155,15 +167,13 @@ function _perform_promotion() {
 }
 
 function _single_master() {
-  _set_master_multinode_proxy_config
   _start_master
   _configure_master
   echo "DAP instance available at: 'https://localhost'"
 }
 
 function _basic_cluster() {
-  _set_master_multinode_proxy_config
-  _start_instances
+  _start_cluster
   _configure_master
  	_setup_standby 2
   _setup_standby 3
@@ -171,6 +181,14 @@ function _basic_cluster() {
   _setup_follower
   echo "Basic Cluster available at: 'https://localhost'"
 }
+
+function _single_master_follower() {
+  _start_master_and_follower
+  _configure_master
+  _setup_follower
+  echo "Basic Cluster available at: 'https://localhost'"
+}
+
 
 function _stop() {
   echo "stopping...."
@@ -241,6 +259,8 @@ elif [[ "$1" = "single" ]]; then
     case "$1" in
       --default ) CMD='_single_master' ; shift ;;
       --create-backup ) CMD='_create_backup' ; shift ;;
+      --follower ) CMD='_single_master_follower' ; shift ;;
+      --restore-from-backup ) CMD='' ;;
       --dry-run ) DRY_RUN=true ; shift ;;
       --stop ) _stop ; exit ;;
       -t | --tag ) shift ; TAG=$1 ; shift ;;
