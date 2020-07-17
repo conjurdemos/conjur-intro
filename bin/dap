@@ -124,14 +124,16 @@ function _configure_master() {
   _cmd="$_cmd --admin-password $_admin_password"
   _cmd="$_cmd demo"
 
-  _run conjur-master-1.mycompany.local "$_cmd"
+  _run conjur-master-1.mycompany.local \
+    "$_cmd"
 }
 
 function _setup_standby() {
   local _standby_number=$1
 
   # Generate a Seed File
-  _run conjur-master-1.mycompany.local "evoke seed standby conjur-master-$_standby_number.mycompany.local conjur-master-1.mycompany.local > /opt/cyberark/dap/seeds/standby-seed-$_standby_number.tar"
+  _run conjur-master-1.mycompany.local \
+    "evoke seed standby conjur-master-$_standby_number.mycompany.local conjur-master-1.mycompany.local > /opt/cyberark/dap/seeds/standby-seed-$_standby_number.tar"
 
   # Unpack and Configure
   _run conjur-master-$_standby_number.mycompany.local \
