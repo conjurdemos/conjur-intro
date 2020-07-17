@@ -13,7 +13,10 @@ services:
     security_opt:
         - "seccomp:unconfined"
     volumes:
-      - backups:/opt/conjur/backup/
+      - seeds:/opt/cyberark/dap/seeds
+      - ./system/backup:/opt/cyberark/dap/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs:/var/log/conjur:Z
       - ./files:/conjur_files
 
   conjur-master-2.mycompany.local:
@@ -26,7 +29,10 @@ services:
     security_opt:
         - "seccomp:unconfined"
     volumes:
-      - backups:/opt/conjur/backup/
+      - seeds:/opt/cyberark/dap/seeds
+      - ./system/backup:/opt/cyberark/dap/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs:/var/log/conjur:Z
       - ./files:/conjur_files
 
   conjur-master-3.mycompany.local:
@@ -40,7 +46,10 @@ services:
     security_opt:
         - "seccomp:unconfined"
     volumes:
-      - backups:/opt/conjur/backup/
+      - seeds:/opt/cyberark/dap/seeds
+      - ./system/backup:/opt/cyberark/dap/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs:/var/log/conjur:Z
       - ./files:/conjur_files
 
   conjur-master-4.mycompany.local:
@@ -53,7 +62,10 @@ services:
     security_opt:
         - "seccomp:unconfined"
     volumes:
-      - backups:/opt/conjur/backup/
+      - seeds:/opt/cyberark/dap/seeds
+      - ./system/backup:/opt/cyberark/dap/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs:/var/log/conjur:Z
       - ./files:/conjur_files
 
   # conjur-standby.mycompany.local:
@@ -64,7 +76,7 @@ services:
   #   security_opt:
   #       - "seccomp:unconfined"
   #   volumes:
-  #     - backups:/opt/conjur/backup/
+  #     - seeds:/opt/cyberark/dap/seeds
   #     - ./files:/conjur_files
 
   conjur-follower.mycompany.local:
@@ -76,7 +88,10 @@ services:
     security_opt:
         - "seccomp:unconfined"
     volumes:
-      - backups:/opt/conjur/backup/
+      - seeds:/opt/cyberark/dap/seeds
+      - ./system/backup:/opt/cyberark/dap/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs:/var/log/conjur:Z
       - ./files:/conjur_files
 
   client:
@@ -102,4 +117,4 @@ services:
       - ./cli_cache/follower:/root
 
 volumes:
-  backups:
+  seeds:
