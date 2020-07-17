@@ -89,7 +89,6 @@ function _start_cluster() {
                                     conjur-master-1.mycompany.local \
                                     conjur-master-2.mycompany.local \
                                     conjur-master-3.mycompany.local \
-                                    conjur-follower.mycompany.local \
                                     conjur-follower-1.mycompany.local
   fi
 }
@@ -195,6 +194,7 @@ function _basic_cluster() {
   _setup_standby 3
   _start_standby_synchronization
   _setup_follower
+  _start_l7_load_balancer
   echo "Master Cluster available at: 'https://localhost'"
   echo "Follower available at: 'http://localhost'"
 }

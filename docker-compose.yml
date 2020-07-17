@@ -2,6 +2,9 @@ version: "3"
 services:
   conjur-master.mycompany.local:
     image: haproxy:2.1-alpine
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.10
     ports:
       - "443:443"
       - "7000:7000"
@@ -13,6 +16,9 @@ services:
 
   conjur-master-1.mycompany.local:
     image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.11
     ports:
       - "444:443"
     expose:
@@ -33,6 +39,9 @@ services:
 
   conjur-master-2.mycompany.local:
     image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.12
     ports:
       - "445:443"
     expose:
@@ -51,6 +60,9 @@ services:
 
   conjur-master-3.mycompany.local:
     image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.13
     ports:
       - "446:443"
     expose:
@@ -69,6 +81,9 @@ services:
 
   conjur-master-4.mycompany.local:
     image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.14
     ports:
       - "447:443"
     expose:
@@ -87,6 +102,9 @@ services:
 
   conjur-follower.mycompany.local:
     image: haproxy:2.1-alpine
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.15
     ports:
       - "80:80"
       - "448:443"
@@ -97,6 +115,9 @@ services:
 
   conjur-follower-1.mycompany.local:
     image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.16
     ports:
       - "449:443"
     expose:
@@ -114,6 +135,9 @@ services:
 
   client:
     image: cyberark/conjur-cli:5
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.17
     working_dir:  /src/cli
     environment:
       CONJUR_APPLIANCE_URL: https://conjur-master-1.mycompany.local
@@ -125,6 +149,9 @@ services:
 
   follower-client:
     image: cyberark/conjur-cli:5
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.18
     working_dir:  /src/cli
     environment:
       CONJUR_APPLIANCE_URL: https://conjur-follower.mycompany.local
@@ -134,18 +161,26 @@ services:
       - .:/src/cli
       - ./cli_cache/follower:/root
 
-  scope:
-    image: weaveworks/scope:1.13.1
-    network_mode: "host"
-    pid: "host"
-    privileged: true
-    labels:
-      - "works.weave.role=system"
+  api-client:
+    build:
+      context: ./artifacts/api-client
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.19
+    working_dir: /src/
     volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:rw"
-    command:
-      - "--probe.docker=true"
+      - ./artifacts/api-client/api-script:/src/bin/api
+
+
 
 volumes:
   seeds:
   follower-certs:
+
+networks:
+  dap_net:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 12.16.23.0/27
