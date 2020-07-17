@@ -21,8 +21,7 @@ services:
       - "1999"
       - "5432"
     environment:
-      RESTCLIENT_LOG: stdout
-      CONJUR_LOG_LEVEL: debug
+      TRUSTED_PROXIES: 123.123.1.1,123.5.1.1
     security_opt:
         - "seccomp:unconfined"
     volumes:
@@ -86,31 +85,28 @@ services:
       - ./system/logs/master-4:/var/log/conjur:Z
       - ./files:/conjur_files
 
-  # conjur-standby.mycompany.local:
-  #   image: registry2.itci.conjur.net/conjur-appliance:5.0-stable
-  #   expose:
-  #     - "443"
-  #     - "5432"
-  #   security_opt:
-  #       - "seccomp:unconfined"
-  #   volumes:
-  #     - seeds:/opt/cyberark/dap/seeds
-  #     - ./files:/conjur_files
-
   conjur-follower.mycompany.local:
+    image: haproxy:2.1-alpine
+    ports:
+      - "80:80"
+      - "448:443"
+      - "7001:7000"
+    volumes:
+      - follower-certs:/etc/ssl/certs
+      - ./files/haproxy/follower:/usr/local/etc/haproxy
+
+  conjur-follower-1.mycompany.local:
     image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
     ports:
-      - "448:443"
+      - "449:443"
     expose:
       - "443"
       - "444"
-    environment:
-      RESTCLIENT_LOG: stdout
-      CONJUR_LOG_LEVEL: debug
     security_opt:
         - "seccomp:unconfined"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
       - ./system/logs/follower:/var/log/conjur:Z
@@ -152,3 +148,4 @@ services:
 
 volumes:
   seeds:
+  follower-certs:

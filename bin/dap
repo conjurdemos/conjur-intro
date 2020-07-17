@@ -51,6 +51,7 @@ Usage: bin/dap single [options]
 
     --create-backup             Generates a backup of the Master. The backup can be found in the system/backup folder
     --dry-run                   Displays the commands that will be run, without actually running them
+    --with-follower             Starts a DAP follower with a Layer 7 load balance
     -h, --help                  Shows this help message
     --stop                      Stops all containers and cleans up cached files
     -t, --tag <appliance-tag>   Starts a cluster with a particular appliance (defaults to 5.0-stable)
@@ -58,7 +59,6 @@ Usage: bin/dap single [options]
 EOF
   exit
 }
-
 
 function _set_master_multi_node_proxy_config() {
   cp files/haproxy/master/multi-node/haproxy.cfg files/haproxy/master/haproxy.cfg
@@ -102,6 +102,12 @@ function _start_master() {
   fi
 }
 
+function _start_l7_load_balancer() {
+  if [[ $DRY_RUN = false ]]; then
+    docker-compose up -d --no-deps conjur-follower.mycompany.local
+  fi
+}
+
 function _start_master_and_follower() {
   if [[ $DRY_RUN = false ]]; then
     _set_master_single_node_proxy_config
@@ -112,7 +118,7 @@ function _start_master_and_follower() {
 }
 
 function _configure_master() {
-  _cmd="TRUSTED_PROXIES=123.123.1.1,123.5.1.1 evoke configure master"
+  _cmd="evoke configure master"
   _cmd="$_cmd --accept-eula"
   _cmd="$_cmd --hostname conjur-master.mycompany.local"
   _cmd="$_cmd --master-altnames conjur-master-1.mycompany.local,conjur-master-2.mycompany.local,conjur-master-3.mycompany.local"
@@ -172,6 +178,16 @@ function _single_master() {
   echo "DAP instance available at: 'https://localhost'"
 }
 
+function _single_master_follower() {
+  _start_master_and_follower
+  _configure_master
+  sleep 3 # to insure LB has time to detect availability
+  _setup_follower
+  _start_l7_load_balancer # because the LB needs the CA certificate from DAP follower via volume mount, we wait to set it up
+  echo "Master available at: 'https://localhost'"
+  echo "Follower available at: 'http://localhost'"
+}
+
 function _basic_cluster() {
   _start_cluster
   _configure_master
@@ -179,16 +195,9 @@ function _basic_cluster() {
   _setup_standby 3
   _start_standby_synchronization
   _setup_follower
-  echo "Basic Cluster available at: 'https://localhost'"
+  echo "Master Cluster available at: 'https://localhost'"
+  echo "Follower available at: 'http://localhost'"
 }
-
-function _single_master_follower() {
-  _start_master_and_follower
-  _configure_master
-  _setup_follower
-  echo "Basic Cluster available at: 'https://localhost'"
-}
-
 
 function _stop() {
   echo "stopping...."
@@ -259,7 +268,7 @@ elif [[ "$1" = "single" ]]; then
     case "$1" in
       --default ) CMD='_single_master' ; shift ;;
       --create-backup ) CMD='_create_backup' ; shift ;;
-      --follower ) CMD='_single_master_follower' ; shift ;;
+      --with-follower ) CMD='_single_master_follower' ; shift ;;
       --restore-from-backup ) CMD='' ;;
       --dry-run ) DRY_RUN=true ; shift ;;
       --stop ) _stop ; exit ;;

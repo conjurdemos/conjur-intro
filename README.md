@@ -40,6 +40,7 @@ Usage: bin/dap single [options]
 
     --create-backup             Generates a backup of the Master. The backup can be found in the system/backup folder
     --dry-run                   Displays the commands that will be run, without actually running them
+    --with-follower             Starts a DAP follower with a Layer 7 load balance
     -h, --help                  Shows this help message
     --stop                      Stops all containers and cleans up cached files
     -t, --tag <appliance-tag>   Starts a cluster with a particular appliance (defaults to 5.0-stable)
