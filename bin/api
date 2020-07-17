@@ -1,0 +1,4 @@
+#!/bin/bash -e
+
+export VERSION='5.0-stable'
+docker-compose run --no-deps --rm api-client bin/api "$@"
