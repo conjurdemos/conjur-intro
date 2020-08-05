@@ -170,6 +170,7 @@ services:
     working_dir: /src/
     volumes:
       - ./artifacts/api-client/api-script:/src/bin/api
+      - ./policy:/src/policy
 
 
 

@@ -11,12 +11,13 @@ Usage: bin/api [options]
     -h, --help                  Shows this help message
     -p, --password <password>   Sets the password (default is 'MySecretP@ss1')
     -u, --user <conjur-user>    Sets the username (default is 'admin')
+    --load-policy-and-values    Loads a default set of policies to mimic a customer experience
 
 EOF
   exit
 }
 
-function _retrieve_authentication_token {
+function retrieve_authentication_token() {
   local user="$1"
   local api_key="$2"
   local url="${3:-$follower_url}"
@@ -25,16 +26,59 @@ function _retrieve_authentication_token {
   echo "$token"
 }
 
-function _authenticate_user {
+function authenticate_user() {
   local user="$1"
   local password="$2"
   local url="${3:-$follower_url}"
   api_key="$(curl -s -k --user $user:$password "$url/authn/demo/login")"
-  token=$(_retrieve_authentication_token $user $api_key)
+  token=$(retrieve_authentication_token $user $api_key)
   echo "$token"
 }
 
+function load_policy() {
+  local namespace="$1"
+  local policy="$2"
+  local token=$(authenticate_user $USER $PASSWORD)
+  curl --header "Authorization: Token token=\"$token\"" \
+        --insecure \
+        --request POST \
+        --data "$(cat $policy)" \
+     "$master_url/policies/demo/policy/$namespace"
+}
+
+function set_variable() {
+  local variable="$1"
+  local value="$2"
+  local token=$(authenticate_user $USER $PASSWORD)
+
+  curl --header "Authorization: Token token=\"$token\"" \
+        --insecure \
+        --data "$value" \
+        "$master_url/secrets/demo/variable/$variable"
+}
+
+function load_default_policy() {
+  load_policy 'root' 'policy/modular/root.yml'
+  load_policy 'staging' 'policy/modular/apps/applications.yml'
+  load_policy 'staging/my-app-1' 'policy/modular/apps/generic-application.yml'
+  load_policy 'staging/my-app-1' 'policy/modular/services/pg-database.yml'
+  load_policy 'staging/my-app-1' 'policy/modular/pg-entitlement.yml'
+}
+
+function load_default_values() {
+  set_variable 'staging/my-app-1/postgres-database/url' 'staging.mycompany-postgres.com/my-app'
+  set_variable 'staging/my-app-1/postgres-database/port' '5432'
+  set_variable 'staging/my-app-1/postgres-database/username' 'my-app'
+  set_variable 'staging/my-app-1/postgres-database/password' 'secret-p@ssword'
+}
+
+function load_policy_and_set_variables() {
+  load_default_policy
+  load_default_values
+}
+
 follower_url='http://conjur-follower.mycompany.local'
+master_url='https://conjur-master.mycompany.local'
 USER='admin'
 PASSWORD='MySecretP@ss1'
 cmd=''
@@ -43,8 +87,9 @@ while true ; do
   case "$1" in
     -u | --user ) shift ; USER=$1 ; shift ;;
     -p | --password ) shift ; PASSWORD=$1 ; shift ;;
-    --authenticate-user ) shift ; cmd="_authenticate_user $USER $PASSWORD" ;;
+    --authenticate-user ) shift ; cmd="authenticate_user $USER $PASSWORD" ;;
     -h | --help ) _print_help ; shift ;;
+    --load-policy-and-values ) shift ; cmd="load_policy_and_set_variables" ;;
      * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
   esac
 done
