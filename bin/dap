@@ -49,12 +49,15 @@ Provisions a single DAP instance locally using Docker.
 
 Usage: bin/dap single [options]
 
-    --create-backup             Generates a backup of the Master. The backup can be found in the system/backup folder
-    --dry-run                   Displays the commands that will be run, without actually running them
-    --with-follower             Starts a DAP follower with a Layer 7 load balance
-    -h, --help                  Shows this help message
-    --stop                      Stops all containers and cleans up cached files
-    -t, --tag <appliance-tag>   Starts a cluster with a particular appliance (defaults to 5.0-stable)
+    --create-backup               Generates a backup of the Master. The backup can be found in the system/backup folder
+    --default                     Starts a single master behind a L4 load balancer (flag not required)
+    --dry-run                     Displays the commands that will be run, without actually running them
+    --from-backup                 Restores master from a previously created backup
+    -h, --help                    Shows this help message
+    --stop                        Stops all containers and cleans up cached files
+    -t, --tag <appliance-tag>     Starts a cluster with a particular appliance (defaults to 5.0-stable)
+    --upgrade-to <appliance-tag>  Upgrades master to the provided version using backup and restore
+    --with-follower               Starts a DAP follower with a Layer 7 load balance
 
 EOF
   exit
@@ -206,8 +209,8 @@ function _stop() {
   docker-compose down -v
 
   rm -rf cli_cache
-  rm -rf system/backup
-  rm -rf system/logs
+  rm -rf system/backup/
+  rm -rf system/logs/
   rm files/haproxy/master/haproxy.cfg || true
   echo "stopped"
 }
@@ -266,7 +269,17 @@ function _upgrade_via_backup_restore() {
 
 }
 
-function _upgrade_master_via_backup_restore() {
+function _restore_from_backup {
+  _start_master
+
+  # Unpack the backup with docker exec <container> evoke unpack backup -k /opt/conjur/backup/key /opt/conjur/backup/<yourbackupfile>
+  _run conjur-master-1.mycompany.local "evoke unpack backup --key /opt/conjur/backup/key /opt/conjur/backup/*.tar.xz.gpg"
+
+  # Configure the new master with docker exec <container> evoke restore master
+  _run conjur-master-1.mycompany.local "evoke restore --accept-eula"
+}
+
+function _upgrade_master_via_backup_restore {
   upgrade_to="$1"
   # Run evoke replication stop on existing standbys and followers
   _stop_replication
@@ -279,14 +292,7 @@ function _upgrade_master_via_backup_restore() {
 
   # Start a container using the new version image (this will become the new master)
   export VERSION=$upgrade_to
-  _start_master
-
-  # Unpack the backup with docker exec <container> evoke unpack backup -k /opt/conjur/backup/key /opt/conjur/backup/<yourbackupfile>
-  _run conjur-master-1.mycompany.local "evoke unpack backup --key /opt/conjur/backup/key /opt/conjur/backup/*.tar.xz.gpg"
-
-  # Configure the new master with docker exec <container> evoke restore master
-  _run conjur-master-1.mycompany.local "evoke restore --accept-eula"
-
+  _restore_from_backup
 
   # Confirm master is healthy
 }
@@ -333,9 +339,9 @@ elif [[ "$1" = "single" ]]; then
       --default ) CMD='_single_master' ; shift ;;
       --create-backup ) CMD='_create_backup' ; shift ;;
       --with-follower ) CMD='_single_master_follower' ; shift ;;
-      --restore-from-backup ) CMD='' ;;
       --dry-run ) DRY_RUN=true ; shift ;;
       --stop ) _stop ; exit ;;
+      --from-backup ) shift ; CMD "_restore_from_backup" ; shift ;;
       --upgrade-to ) shift ; CMD="_upgrade_via_backup_restore $1" ; shift ;;
       -t | --tag ) shift ; TAG=$1 ; shift ;;
       -h | --help ) _print_single_help ; shift ;;

@@ -11,6 +11,7 @@ Usage: bin/api [options]
     -h, --help                  Shows this help message
     -p, --password <password>   Sets the password (default is 'MySecretP@ss1')
     -u, --user <conjur-user>    Sets the username (default is 'admin')
+    --master                    Runs command against the master (only relevant if command is an authenticate/read action)
     --load-policy-and-values    Loads a default set of policies to mimic a customer experience
 
 EOF
@@ -20,7 +21,7 @@ EOF
 function retrieve_authentication_token() {
   local user="$1"
   local api_key="$2"
-  local url="${3:-$follower_url}"
+  local url="${3:-$URL}"
   raw_token="$(curl -s -k -X POST -d $api_key "$url/authn/demo/$user/authenticate")"
   token=$(echo -n $raw_token | base64 | tr -d '\r\n')
   echo "$token"
@@ -29,16 +30,16 @@ function retrieve_authentication_token() {
 function authenticate_user() {
   local user="$1"
   local password="$2"
-  local url="${3:-$follower_url}"
+  local url="${3:-$URL}"
   api_key="$(curl -s -k --user $user:$password "$url/authn/demo/login")"
-  token=$(retrieve_authentication_token $user $api_key)
+  token=$(retrieve_authentication_token $user $api_key $url)
   echo "$token"
 }
 
 function load_policy() {
   local namespace="$1"
   local policy="$2"
-  local token=$(authenticate_user $USER $PASSWORD)
+  local token=$(authenticate_user $USER $PASSWORD $master_url)
   curl --header "Authorization: Token token=\"$token\"" \
         --insecure \
         --request POST \
@@ -49,7 +50,7 @@ function load_policy() {
 function set_variable() {
   local variable="$1"
   local value="$2"
-  local token=$(authenticate_user $USER $PASSWORD)
+  local token=$(authenticate_user $USER $PASSWORD $master_url)
 
   curl --header "Authorization: Token token=\"$token\"" \
         --insecure \
@@ -57,7 +58,7 @@ function set_variable() {
         "$master_url/secrets/demo/variable/$variable"
 }
 
-function load_default_policy() {
+function load_default_policy {
   load_policy 'root' 'policy/modular/root.yml'
   load_policy 'staging' 'policy/modular/apps/applications.yml'
   load_policy 'staging/my-app-1' 'policy/modular/apps/generic-application.yml'
@@ -65,20 +66,21 @@ function load_default_policy() {
   load_policy 'staging/my-app-1' 'policy/modular/pg-entitlement.yml'
 }
 
-function load_default_values() {
+function load_default_values {
   set_variable 'staging/my-app-1/postgres-database/url' 'staging.mycompany-postgres.com/my-app'
   set_variable 'staging/my-app-1/postgres-database/port' '5432'
   set_variable 'staging/my-app-1/postgres-database/username' 'my-app'
   set_variable 'staging/my-app-1/postgres-database/password' 'secret-p@ssword'
 }
 
-function load_policy_and_set_variables() {
+function load_policy_and_set_variables {
   load_default_policy
   load_default_values
 }
 
 follower_url='http://conjur-follower.mycompany.local'
 master_url='https://conjur-master.mycompany.local'
+URL=$follower_url
 USER='admin'
 PASSWORD='MySecretP@ss1'
 cmd=''
@@ -90,6 +92,7 @@ while true ; do
     --authenticate-user ) shift ; cmd="authenticate_user $USER $PASSWORD" ;;
     -h | --help ) _print_help ; shift ;;
     --load-policy-and-values ) shift ; cmd="load_policy_and_set_variables" ;;
+    --master ) shift ; URL=$master_url ;;
      * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
   esac
 done
