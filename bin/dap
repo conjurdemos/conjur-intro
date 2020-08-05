@@ -182,7 +182,7 @@ function _single_master() {
 function _single_master_follower() {
   _start_master_and_follower
   _configure_master
-  sleep 3 # to insure LB has time to detect availability
+  sleep 10 # to insure LB has time to detect availability
   _setup_follower
   _start_l7_load_balancer # because the LB needs the CA certificate from DAP follower via volume mount, we wait to set it up
   echo "Master available at: 'https://localhost'"
@@ -237,13 +237,74 @@ function _enable_autofailover() {
     _run conjur-master-3.mycompany.local "evoke cluster enroll --cluster-machine-name conjur-master-3.mycompany.local --master-name conjur-master-1.mycompany.local production"
 }
 
+function _stop_replication() {
+  if [[ $(docker ps --quiet --filter "name=conjur-master-2.mycompany.local") ]]; then
+    _run conjur-master-2.mycompany.local "evoke replication stop"
+  fi
+  if [[ $(docker ps --quiet --filter "name=conjur-master-3.mycompany.local") ]]; then
+    _run conjur-master-3.mycompany.local "evoke replication stop"
+  fi
+}
+
+function _stop_and_rename() {
+  local container_name="$1"
+  local rename_to="$2"
+  docker-compose stop $container_name
+  image_id=$(docker ps --all --quiet --filter "name=$container_name")
+  docker rename $image_id $rename_to
+}
+
+function _upgrade_via_backup_restore() {
+  upgrade_to="$1"
+  _upgrade_master_via_backup_restore $upgrade_to
+
+  # redeploy standbys with the new container image and a new seed file from the master
+  # Enable sync replication
+  # If using Auto failover, enroll the master and standby nodes the cluster
+  # redeploy followers with the new container image
+  # remove old containers}
+
+}
+
+function _upgrade_master_via_backup_restore() {
+  upgrade_to="$1"
+  # Run evoke replication stop on existing standbys and followers
+  _stop_replication
+
+  # Generate a backup on the existing master using evoke backup
+  _create_backup
+
+  # Stop the existing master container with docker stop <container> and rename
+  _stop_and_rename 'conjur-master-1.mycompany.local' 'conjur-master-1.mycompany.local_backup'
+
+  # Start a container using the new version image (this will become the new master)
+  export VERSION=$upgrade_to
+  _start_master
+
+  # Unpack the backup with docker exec <container> evoke unpack backup -k /opt/conjur/backup/key /opt/conjur/backup/<yourbackupfile>
+  _run conjur-master-1.mycompany.local "evoke unpack backup --key /opt/conjur/backup/key /opt/conjur/backup/*.tar.xz.gpg"
+
+  # Configure the new master with docker exec <container> evoke restore master
+  _run conjur-master-1.mycompany.local "evoke restore --accept-eula"
+
+
+  # Confirm master is healthy
+}
+
 function _create_backup() {
-  _run conjur-master-1.mycompany.local "evoke backup"
+  _run conjur-master-1.mycompany.local \
+    "evoke backup"
+}
+
+function _add_follower_proxy() {
+  _run conjur-follower-1.mycompany.local \
+    "evoke proxy add 12.16.23.15"
 }
 
 TAG=5.0-stable
 DRY_RUN=false
 CMD=""
+to_version=""
 
 if [[ "$1" = "cluster" ]]; then
   shift
@@ -268,12 +329,14 @@ elif [[ "$1" = "single" ]]; then
 
   while true ; do
     case "$1" in
+      --add-follower-proxy ) CMD='_add_follower_proxy' ; shift ;;
       --default ) CMD='_single_master' ; shift ;;
       --create-backup ) CMD='_create_backup' ; shift ;;
       --with-follower ) CMD='_single_master_follower' ; shift ;;
       --restore-from-backup ) CMD='' ;;
       --dry-run ) DRY_RUN=true ; shift ;;
       --stop ) _stop ; exit ;;
+      --upgrade-to ) shift ; CMD="_upgrade_via_backup_restore $1" ; shift ;;
       -t | --tag ) shift ; TAG=$1 ; shift ;;
       -h | --help ) _print_single_help ; shift ;;
        * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
