@@ -53,6 +53,8 @@ Usage: bin/dap single [options]
     --default                     Starts a single master behind a L4 load balancer (flag not required)
     --dry-run                     Displays the commands that will be run, without actually running them
     --from-backup                 Restores master from a previously created backup
+    --fix-11.6-upgrade            Resolves the migration issue present when upgrading to 11.6.
+    --from-backup                 Configures a master from a backup
     -h, --help                    Shows this help message
     --stop                        Stops all containers and cleans up cached files
     -t, --tag <appliance-tag>     Starts a cluster with a particular appliance (defaults to 5.0-stable)
@@ -76,7 +78,7 @@ function _run() {
   local _node_name=$1
   local _args=("${_all_args[@]:1}")
 
-  echo "Running Command (on $_node_name): '$_args'"
+  echo "Running Command (on $_node_name): docker exec cyberark-dap $_args"
 
   if [[ $DRY_RUN = false ]]; then
     docker-compose exec $_node_name bash -c "
@@ -307,6 +309,17 @@ function _add_follower_proxy() {
     "evoke proxy add 12.16.23.15"
 }
 
+function _fix_11_6_0 {
+  _run conjur-master-1.mycompany.local \
+    "sv stop conjur"
+  _run conjur-master-1.mycompany.local \
+    "chpst -u postgres psql -c \"ALTER TABLE slosilo_keystore DROP COLUMN fingerprint\" -d conjur"
+  _run conjur-master-1.mycompany.local \
+    "chpst -u conjur conjur-possum rake slosilo:migrate"
+  _run conjur-master-1.mycompany.local \
+    "sv start conjur"
+}
+
 TAG=5.0-stable
 DRY_RUN=false
 CMD=""
@@ -336,15 +349,16 @@ elif [[ "$1" = "single" ]]; then
   while true ; do
     case "$1" in
       --add-follower-proxy ) CMD='_add_follower_proxy' ; shift ;;
-      --default ) CMD='_single_master' ; shift ;;
       --create-backup ) CMD='_create_backup' ; shift ;;
-      --with-follower ) CMD='_single_master_follower' ; shift ;;
+      --default ) CMD='_single_master' ; shift ;;
       --dry-run ) DRY_RUN=true ; shift ;;
-      --stop ) _stop ; exit ;;
-      --from-backup ) shift ; CMD "_restore_from_backup" ; shift ;;
-      --upgrade-to ) shift ; CMD="_upgrade_via_backup_restore $1" ; shift ;;
-      -t | --tag ) shift ; TAG=$1 ; shift ;;
+      --fix-11.6-upgrade ) CMD="_fix_11_6_0"; shift ;;
+      --from-backup ) CMD "_restore_from_backup" ; shift ;;
       -h | --help ) _print_single_help ; shift ;;
+      --stop ) _stop ; exit ;;
+      -t | --tag ) shift ; TAG=$1 ; shift ;;
+      --upgrade-to ) shift ; CMD="_upgrade_via_backup_restore $1" ; shift ;;
+      --with-follower ) CMD='_single_master_follower' ; shift ;;
        * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
     esac
   done
