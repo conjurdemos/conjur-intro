@@ -8,11 +8,11 @@ NEW_MASTER_ID=$2
 DROPPED_NODE_INDEX=$((DROPPED_NODE_ID - 1))
 NEW_MASTER_INDEX=$((NEW_MASTER_ID - 1))
 
-MASTER_PRIVATE=$(terraform output -json conjur_master_nodes_private | jq -r ".value[$NEW_MASTER_INDEX]")
-MASTER_PUBLIC=$(terraform output -json conjur_master_nodes_public | jq -r ".value[$NEW_MASTER_INDEX]")
+MASTER_PRIVATE=$(terraform output -json conjur_master_nodes_private | jq -r ".[$NEW_MASTER_INDEX]")
+MASTER_PUBLIC=$(terraform output -json conjur_master_nodes_public | jq -r ".[$NEW_MASTER_INDEX]")
 
-STANDBY_PRIVATE=$(terraform output -json conjur_master_nodes_private | jq -r ".value[$DROPPED_NODE_INDEX]")
-STANDBY_PUBLIC=$(terraform output -json conjur_master_nodes_public | jq -r ".value[$DROPPED_NODE_INDEX]")
+STANDBY_PRIVATE=$(terraform output -json conjur_master_nodes_private | jq -r ".[$DROPPED_NODE_INDEX]")
+STANDBY_PUBLIC=$(terraform output -json conjur_master_nodes_public | jq -r ".[$DROPPED_NODE_INDEX]")
 
 SEED_DIR="./tmp/conjur/seeds"
 
@@ -36,7 +36,7 @@ function recreate_standby() {
       -v /var/log/conjur:/var/log/conjur \
       -v /opt/conjur/backup:/opt/conjur/backup \
       -p "443:443" -p "636:636" -p "5432:5432" -p "1999:1999" \
-      registry.tld/conjur-appliance:5.2.3
+      registry.tld/conjur-appliance:11.4.0
 EOF
 }
 
