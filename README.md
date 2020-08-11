@@ -31,9 +31,10 @@ This instance runs behind an HAProxy load balancer and is available at: [https:/
 - User: `admin`
 - Password: `MySecretP@ss1`
 
-#### Available Flags
+#### Available Operations
 
-The following flags are available with the `single` argument.
+To perform additional operations on the instance, run the `single` command again
+with one of the following flags:
 
 ```
 Usage: bin/dap single [options]
@@ -44,6 +45,12 @@ Usage: bin/dap single [options]
     -h, --help                  Shows this help message
     --stop                      Stops all containers and cleans up cached files
     -t, --tag <appliance-tag>   Starts a cluster with a particular appliance (defaults to 5.0-stable)
+```
+
+For example:
+
+```sh
+$ bin/dap single --create-backup
 ```
 
 ## Start a DAP Cluster
@@ -60,9 +67,10 @@ This cluster runs behind an HAProxy load balancer and is available at: [https://
 - User: `admin`
 - Password: `MySecretP@ss1`
 
-#### Available Flags
+#### Available Operations
 
-The following flags are available with the `single` argument.
+To perform additional operations on the cluster, run the `cluster` command again
+with one of the following flags:
 
 ```
 Usage: bin/dap cluster [options]
@@ -76,6 +84,11 @@ Usage: bin/dap cluster [options]
     -t, --tag <appliance-tag>   Starts a cluster with a particular appliance (defaults to 5.0-stable)
 ```
 
+For example:
+
+```sh
+$ bin/dap cluster --create-backup
+```
 
 ### `bin/cli`
 `bin/cli` is a proxy script, sending all subsequent arguments to a Conjur CLI container. This provides a simple mechanism for loading policy and interacting with Conjur.
