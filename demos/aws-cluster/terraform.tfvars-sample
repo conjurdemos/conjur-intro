@@ -1,9 +1,3 @@
-# (REQUIRED) An AWS access key with the capability to provision the desired infrastructure
-aws_access_key = ""
-
-# (REQUIRED) An AWS secret key with the capability to provision the desired infrastructure
-aws_secret_key = ""
-
 # (REQUIRED) VPC to provision Load Balancer and Nodes into
 vpc_id = ""
 
