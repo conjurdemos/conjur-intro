@@ -2,14 +2,6 @@
 # Inputs
 #############################################
 
-variable "aws_access_key" {
-  type = string
-}
-
-variable "aws_secret_key" {
-  type = string
-}
-
 variable "vpc_id" {
   type = string
 }
@@ -22,13 +14,8 @@ variable "key_name" {
   type = string
 }
 
-variable "region" {
-  type = string
-  default = "eu-west-2"
-}
-
 variable "availability_zones" {
-  default = ["eu-west-2a", "eu-west-2b"]
+  default = ["us-east-1a", "us-east-1b"]
 }
 
 variable "resource_prefix" {
@@ -40,11 +27,7 @@ variable "resource_prefix" {
 # Configure the AWS Provider
 #############################################
 
-provider "aws" {
-  access_key = var.aws_access_key
-  secret_key = var.aws_secret_key
-  region = var.region
-}
+provider "aws" {}
 
 #############################################
 # State Information from AWS
