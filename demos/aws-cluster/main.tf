@@ -1,41 +1,43 @@
-# Configure the AWS Provider
-provider "aws" {
-}
-
 #############################################
 # Inputs
 #############################################
 
-variable "resource_prefix" {
-  type = "string"
-  default = ""
-}
-
 variable "vpc_id" {
-  type = "string"
+  type = string
 }
 
 variable "ami_id" {
-  type = "string"
+  type = string
 }
 
 variable "key_name" {
-  type = "string"
+  type = string
 }
 
 variable "availability_zones" {
   default = ["us-east-1a", "us-east-1b"]
 }
 
+variable "resource_prefix" {
+  type = string
+  default = ""
+}
+
+#############################################
+# Configure the AWS Provider
+#############################################
+
+provider "aws" {}
+
 #############################################
 # State Information from AWS
 #############################################
 
 data "aws_subnet" "subnet" {
-  count             = "${length(var.availability_zones)}"
+  count             = length(var.availability_zones)
 
-  vpc_id            = "${var.vpc_id}"
-  availability_zone = "${element(var.availability_zones, count.index)}"
+  vpc_id            = var.vpc_id
+  availability_zone = element(var.availability_zones, count.index)
 }
 
 
@@ -46,7 +48,7 @@ data "aws_subnet" "subnet" {
 resource "aws_security_group" "lb" {
   name        = "${var.resource_prefix}conjur-ha-lb"
   description = "Allow Conjur Master Traffic"
-  vpc_id      = "${var.vpc_id}"
+  vpc_id      = var.vpc_id
 
   ingress {
     from_port   = 443
@@ -81,8 +83,8 @@ resource "aws_security_group" "lb" {
 resource "aws_elb" "lb" {
   name = "${var.resource_prefix}conjur-ha-lb"
 
-  subnets             = "${data.aws_subnet.subnet.*.id}"
-  security_groups     = ["${aws_security_group.lb.id}"]
+  subnets             = data.aws_subnet.subnet.*.id
+  security_groups     = [aws_security_group.lb.id]
 
   # API and UI
   listener {
@@ -125,8 +127,8 @@ resource "aws_elb" "lb" {
 resource "aws_elb" "follower_lb" {
   name = "${var.resource_prefix}conjur-ha-follower-lb"
 
-  subnets             = "${data.aws_subnet.subnet.*.id}"
-  security_groups     = ["${aws_security_group.lb.id}"]
+  subnets             = data.aws_subnet.subnet.*.id
+  security_groups     = [aws_security_group.lb.id]
 
   # API and UI
   listener {
@@ -157,7 +159,7 @@ resource "aws_elb" "follower_lb" {
 resource "aws_security_group" "master_node" {
   name        = "${var.resource_prefix}conjur-ha-master-node"
   description = "Allow Conjur Master Node Traffic"
-  vpc_id      = "${var.vpc_id}"
+  vpc_id      = var.vpc_id
 
   ingress {
     from_port   = 443
@@ -199,12 +201,12 @@ resource "aws_security_group" "master_node" {
 resource "aws_instance" "conjur_master_node" {
   count                   = 3
 
-  ami                     = "${var.ami_id}"
+  ami                     = var.ami_id
   instance_type           =  "m4.large"
-  availability_zone       = "${element(var.availability_zones, count.index)}"
-  subnet_id               = "${element(data.aws_subnet.subnet.*.id, count.index)}"
-  key_name                = "${var.key_name}"
-  vpc_security_group_ids  = ["${aws_security_group.master_node.id}"]
+  availability_zone       = element(var.availability_zones, count.index)
+  subnet_id               = element(data.aws_subnet.subnet.*.id, count.index)
+  key_name                = var.key_name
+  vpc_security_group_ids  = [aws_security_group.master_node.id]
 
   tags = {
     Name                  = "${var.resource_prefix}conjur-master-${count.index + 1}"
@@ -212,9 +214,9 @@ resource "aws_instance" "conjur_master_node" {
 }
 
 resource "aws_elb_attachment" "lb_nodes" {
-  count     = "${length(aws_instance.conjur_master_node)}"
-  elb      = "${aws_elb.lb.id}"
-  instance = "${element(aws_instance.conjur_master_node.*.id, count.index)}"
+  count    = length(aws_instance.conjur_master_node)
+  elb      = aws_elb.lb.id
+  instance = element(aws_instance.conjur_master_node.*.id, count.index)
 }
 
 #############################################
@@ -225,7 +227,7 @@ resource "aws_elb_attachment" "lb_nodes" {
 resource "aws_security_group" "follower_node" {
   name        = "${var.resource_prefix}conjur-ha-follower-node"
   description = "Allow Conjur Follower Node Traffic"
-  vpc_id      = "${var.vpc_id}"
+  vpc_id      = var.vpc_id
 
   ingress {
     from_port   = 443
@@ -253,12 +255,12 @@ resource "aws_security_group" "follower_node" {
 resource "aws_instance" "conjur_follower_node" {
   count                   = 2
 
-  ami                     = "${var.ami_id}"
+  ami                     = var.ami_id
   instance_type           =  "m4.large"
-  availability_zone       = "${element(var.availability_zones, count.index)}"
-  subnet_id               = "${element(data.aws_subnet.subnet.*.id, count.index)}"
-  key_name                = "${var.key_name}"
-  vpc_security_group_ids  = ["${aws_security_group.follower_node.id}"]
+  availability_zone       = element(var.availability_zones, count.index)
+  subnet_id               = element(data.aws_subnet.subnet.*.id, count.index)
+  key_name                = var.key_name
+  vpc_security_group_ids  = [aws_security_group.follower_node.id]
 
   tags = {
     Name                  = "${var.resource_prefix}conjur-follower-${count.index + 1}"
@@ -266,9 +268,9 @@ resource "aws_instance" "conjur_follower_node" {
 }
 
 resource "aws_elb_attachment" "follower_lb_nodes" {
-  count     = "${length(aws_instance.conjur_follower_node)}"
-  elb      = "${aws_elb.follower_lb.id}"
-  instance = "${element(aws_instance.conjur_follower_node.*.id, count.index)}"
+  count    = length(aws_instance.conjur_follower_node)
+  elb      = aws_elb.follower_lb.id
+  instance = element(aws_instance.conjur_follower_node.*.id, count.index)
 }
 
 #############################################
@@ -276,21 +278,21 @@ resource "aws_elb_attachment" "follower_lb_nodes" {
 #############################################
 
 output "conjur_master_lb_public" {
-  value = "${aws_elb.lb.dns_name}"
+  value = aws_elb.lb.dns_name
 }
 
 output "conjur_follower_lb_public" {
-  value = "${aws_elb.follower_lb.dns_name}"
+  value = aws_elb.follower_lb.dns_name
 }
 
 output "conjur_master_nodes_public" {
-  value = "${aws_instance.conjur_master_node.*.public_dns}"
+  value = aws_instance.conjur_master_node.*.public_dns
 }
 
 output "conjur_master_nodes_private" {
-  value = "${aws_instance.conjur_master_node.*.private_dns}"
+  value = aws_instance.conjur_master_node.*.private_dns
 }
 
 output "conjur_follower_nodes_public" {
-  value = "${aws_instance.conjur_follower_node.*.public_dns}"
+  value = aws_instance.conjur_follower_node.*.public_dns
 }
