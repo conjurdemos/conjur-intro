@@ -65,13 +65,18 @@ To initially install the cluster:
     availability_zones = ["us-east-1a", "us-east-1b"]
     ```
 
-2. Provision the AWS resources
-    > The terraform scripts assumes you will set the AWS connection credentials as
-    > environment variables.
+2. Provision the AWS resources:
+    The terraform scripts assumes you will set the AWS connection credentials as environment variables as below:
+    ```sh
+    $ export AWS_ACCESS_KEY_ID="anaccesskey"
+    $ export AWS_SECRET_ACCESS_KEY="asecretkey"
+    $ export AWS_DEFAULT_REGION="us-west-2"
+     ```
     ```sh-session
     $ ./0_terraform_aws
     ...
     ```
+   
 
 2. Generate certificates for the Cluster
     > TBD, for now the cluster will use self-generated certificates
