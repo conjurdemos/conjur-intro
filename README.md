@@ -75,7 +75,7 @@ $ bin/api --fetch-secrets
 |--trigger-failover|action|• Stops current master|Requires an auto-failover cluster|
 |--create-backup|action|• Creates a backup|Requires configured master|
 |--re-enroll-standby|action|• Removes former auto-failover cluster master container<br>• Starts a standby container<br>• Generates a standby seed<br>• Enrolls standby into auto-failover cluster|Requires triggered failover| 
-|--restore-from-backup|action|• Removes auto-failover (if enabled)<br>• Stops and renames master<br>• Starts new DAP container<br>• Restores master from backup|
+|--restore-from-backup|action|• Removes auto-failover (if enabled)<br>• Stops and renames master<br>• Starts new DAP container<br>• Restores master from backup|Requires a previously created backup|
 |--version `<version>`|configuration|Version of DAP to launch|
 |--dry-run|configuration|Only print configuration commands|
 
