@@ -12,39 +12,11 @@ Tools and scripts  utilities that make it easier to make, manage, and run demos
 - [Generate Signed Certificates](tools/simple-certificates/)
 - [JMeter Performance Tests](tools/performance-tests/)
 
-## Instructions
+## CLI Tools
 
-### bin/dap
-`bin/dap` provides a dead simple mechanism for starting DAP in a variety of configurations and workflows. It provides visibility into the commands required to perform various workflows.
+This project includes a CLI which simplifies the process of running a variety of scenarios.
 
-#### Flags
-|Flag|Type|Outcome|Notes|
-|-|-|-|-|
-|--provision-master|action|• Starts a DAP container and Layer 4 load balancer<br>• Configures with account `default` and password `MySecretP@ss1`||
-|--import-certificates|action|• Imports pre-generated 3rd-party certificates|Requires configured master|
-|--provision-standbys|action|• Removes standbys if present<br>• Starts two DAP containers<br>• Generates standby seed files<br>• Configures standbys<br>• Enable Synchronous Standby|Requires configured master|
-|--enable-auto-failover|action|• Configures Master cluster with auto-failover|Requires configured master and standbys|
-|--provision-follower|action|• Removes follower if present<br>• Starts a DAP container and a Layer 7 load balancer<br>• Generates a follower seed<br>• Configures follower|Requires configured master|
-|--upgrade-master `<version>`|action|• Removes auto-failover (if enabled)<br>• Generates a backup<br>• Stops and removes master<br>• Starts new DAP container<br>• Restores master from backup|Requires configured master|
-|--trigger-failover|action|• Stops current master|Requires an auto-failover cluster|
-|--create-backup|action|• Creates a backup|Requires configured master|
-|--re-enroll-standby|action|• Removes former auto-failover cluster master container<br>• Starts a standby container<br>• Generates a standby seed<br>• Enrolls standby into auto-failover cluster|Requires triggered failover| 
-|--restore-from-backup|action|• Removes auto-failover (if enabled)<br>• Stops and renames master<br>• Starts new DAP container<br>• Restores master from backup|
-|--version `<version>`|configuration|Version of DAP to launch|
-|--dry-run|configuration|Only print configuration commands|
-
-### bin/api
-
-`bin/api` enables some common policy and API flows.
-
-#### Flags
-
-|Flag|Outcome|Notes|
-|-|-|-|
-|--load-policy-and-values|• Authenticates<br>• Loads policy and variable values|Run against master|
-|--fetch-secrets|• Authenticates<br>• Retrieves variable values|Run against follower|
-
-## Sample Workflow
+### Workflow Example
 
 Deploy a master auto-failover cluster with custom certificates.
 
@@ -87,6 +59,37 @@ $ bin/api --fetch-secrets
 ```
 
 ***
+
+### bin/dap
+`bin/dap` provides a dead simple mechanism for starting DAP in a variety of configurations and workflows. It provides visibility into the commands required to perform various workflows.
+
+#### Flags
+|Flag|Type|Outcome|Notes|
+|-|-|-|-|
+|--provision-master|action|• Starts a DAP container and Layer 4 load balancer<br>• Configures with account `default` and password `MySecretP@ss1`||
+|--import-certificates|action|• Imports pre-generated 3rd-party certificates|Requires configured master|
+|--provision-standbys|action|• Removes standbys if present<br>• Starts two DAP containers<br>• Generates standby seed files<br>• Configures standbys<br>• Enable Synchronous Standby|Requires configured master|
+|--enable-auto-failover|action|• Configures Master cluster with auto-failover|Requires configured master and standbys|
+|--provision-follower|action|• Removes follower if present<br>• Starts a DAP container and a Layer 7 load balancer<br>• Generates a follower seed<br>• Configures follower|Requires configured master|
+|--upgrade-master `<version>`|action|• Removes auto-failover (if enabled)<br>• Generates a backup<br>• Stops and removes master<br>• Starts new DAP container<br>• Restores master from backup|Requires configured master|
+|--trigger-failover|action|• Stops current master|Requires an auto-failover cluster|
+|--create-backup|action|• Creates a backup|Requires configured master|
+|--re-enroll-standby|action|• Removes former auto-failover cluster master container<br>• Starts a standby container<br>• Generates a standby seed<br>• Enrolls standby into auto-failover cluster|Requires triggered failover| 
+|--restore-from-backup|action|• Removes auto-failover (if enabled)<br>• Stops and renames master<br>• Starts new DAP container<br>• Restores master from backup|
+|--version `<version>`|configuration|Version of DAP to launch|
+|--dry-run|configuration|Only print configuration commands|
+
+### bin/api
+
+`bin/api` enables some common policy and API flows.
+
+#### Flags
+
+|Flag|Outcome|Notes|
+|-|-|-|
+|--load-policy-and-values|• Authenticates<br>• Loads policy and variable values|Run against master|
+|--fetch-secrets|• Authenticates<br>• Retrieves variable values|Run against follower|
+
 
 ## Start a single DAP instance
 
