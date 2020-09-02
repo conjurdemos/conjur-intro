@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash -ex
 _admin_password="MySecretP@ss1"
 
 function _print_help() {
@@ -32,6 +32,7 @@ Usage: bin/dap cluster [options]
 
     --create-backup             Generates a backup of the Master. The backup can be found in the system/backup folder
     --dry-run                   Displays the commands that will be run, without actually running them
+    --disable-auto-failover     Removes nodes into and auto-failover cluster
     --enable-auto-failover      Enrolls nodes into and auto-failover cluster
     -h, --help                  Shows this help message
     --promote-standby           Stops the Master and promotes the first Standby as the new Master
@@ -136,6 +137,9 @@ function _configure_master() {
 function _setup_standby() {
   local _standby_number=$1
 
+  docker-compose rm --stop conjur-master-$_standby_number.mycompany.local
+  docker-compose up --no-deps --detach conjur-master-$_standby_number.mycompany.local
+
   # Generate a Seed File
   _run conjur-master-1.mycompany.local \
     "evoke seed standby conjur-master-$_standby_number.mycompany.local conjur-master-1.mycompany.local > /opt/cyberark/dap/seeds/standby-seed-$_standby_number.tar"
@@ -151,6 +155,10 @@ function _start_standby_synchronization() {
 }
 
 function _setup_follower() {
+
+  docker-compose rm --stop conjur-follower-1.mycompany.local
+  docker-compose up --no-deps --detach conjur-follower-1.mycompany.local
+
   # Generate Seed file
   _run conjur-master-1.mycompany.local \
     "evoke seed follower conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed.tar"
@@ -194,12 +202,30 @@ function _single_master_follower() {
   echo "Follower available at: 'http://localhost'"
 }
 
+function _reload_container {
+  name="$1"
+  docker-compose rm --stop --force $name
+  docker-compose up --no-deps --detach $name
+
+}
+
+function _setup_standbys {
+  # _setup_standby 2
+  # _setup_standby 3
+  # _start_standby_synchronization
+
+  # Reload load balancer to serve cluster
+  _set_master_multi_node_proxy_config
+  _reload_container 'conjur-master.mycompany.local'
+}
+
 function _basic_cluster() {
   _start_cluster
   _configure_master
- 	_setup_standby 2
-  _setup_standby 3
-  _start_standby_synchronization
+  _setup_standbys
+ 	# _setup_standby 2
+  # _setup_standby 3
+  # _start_standby_synchronization
   _setup_follower
   _start_l7_load_balancer
   echo "Master Cluster available at: 'https://localhost'"
@@ -233,7 +259,12 @@ function _cli() {
   fi
 }
 
-function _enable_autofailover() {
+function _disable_autofailover {
+  _run conjur-master-3.mycompany.local "evoke cluster member remove conjur-master-3.mycompany.local"
+  _run conjur-master-2.mycompany.local "evoke cluster member remove conjur-master-2.mycompany.local"
+}
+
+function _enable_autofailover {
     _cli root "policy/base.yml"
     _cli conjur/cluster policy/cluster.yml
 
@@ -334,9 +365,12 @@ if [[ "$1" = "cluster" ]]; then
       --create-backup ) CMD='_create_backup' ; shift ;;
       --default-cluster ) CMD='_basic_cluster' ; shift ;;
       --dry-run ) DRY_RUN=true ; shift ;;
+      --disable-auto-failover ) CMD='_disable_autofailover' ; shift ;;
       --enable-auto-failover ) CMD='_enable_autofailover' ; shift ;;
       --promote-standby ) CMD='_perform_promotion' ; shift ;;
+      --redeploy-standbys ) CMD='_setup_standbys' ; shift ;;
       --stop ) _stop ; exit ;;
+      --skip-pull ) PULL_IMAGES=false ; shift ;;
       -t | --tag ) shift ; TAG=$1 ; shift ;;
       -h | --help ) _print_cluster_help ; shift ;;
        * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
@@ -366,8 +400,21 @@ elif [[ "$1" = "single" ]]; then
 else
   while true ; do
     case "$1" in
+      --version ) shift ; TAG=$1 ; shift ;;
+      --dry-run ) DRY_RUN=true ; shift ;;
       -h | --help ) _print_help ; shift ;;
-      --stop ) _stop ; exit ;;
+      --provision-master ) CMD='_single_master' ; shift ;;
+      # --import-certificates ) CMD='' ; shift ;;
+      --provision-standbys ) CMD='_setup_standbys' ; shift ;;
+      --enable-auto-failover ) CMD='_enable_autofailover' ; shift ;;
+      --disable-auto-failover ) CMD='_disable_autofailover' ; shift ;;
+      # --provision-follower ) _setup_follower ; _start_l7_load_balancer ; shift ;;
+      --upgrade-master ) CMD='_upgrade_via_backup_restore' ; shift ;;
+      # --trigger-failover ) ; shift ;;
+      --create-backup ) CMD='_create_backup' ; shift ;;
+      # --re-enroll-standby )  ; shift ;;
+      --restore-from-backup ) CMD='_restore_from_backup' ; shift ;;
+      --stop ) _stop ; shift ;;
        * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
     esac
   done
