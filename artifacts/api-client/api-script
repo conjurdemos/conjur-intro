@@ -11,7 +11,7 @@ Usage: bin/api [options]
     -h, --help                  Shows this help message
     -p, --password <password>   Sets the password (default is 'MySecretP@ss1')
     -u, --user <conjur-user>    Sets the username (default is 'admin')
-    --master                    Runs command against the master (only relevant if command is an authenticate/read action)
+    --run-against-master        Runs command against the master (only relevant if command is an authenticate/read action)
     --load-policy-and-values    Loads a default set of policies to mimic a customer experience
 
 EOF
@@ -22,16 +22,23 @@ function retrieve_authentication_token() {
   local user="$1"
   local api_key="$2"
   local url="${3:-$URL}"
-  raw_token="$(curl -s -k -X POST -d $api_key "$url/authn/demo/$user/authenticate")"
+  raw_token=$(curl \
+              --silent \
+              --show-error \
+              --fail \
+              --insecure \
+              --request POST \
+              --data "$api_key" \
+              "$url/authn/demo/$user/authenticate")
   token=$(echo -n $raw_token | base64 | tr -d '\r\n')
   echo "$token"
 }
 
 function authenticate_user() {
-  local user="$1"
-  local password="$2"
+  local user="${1:-$USER}"
+  local password="${2:-$PASSWORD}"
   local url="${3:-$URL}"
-  api_key="$(curl -s -k --user $user:$password "$url/authn/demo/login")"
+  api_key=$(curl --silent --show-error --fail --insecure --user $user:$password "$url/authn/demo/login")
   token=$(retrieve_authentication_token $user $api_key $url)
   echo "$token"
 }
@@ -39,15 +46,22 @@ function authenticate_user() {
 function load_policy() {
   local namespace="$1"
   local policy="$2"
+  local action="POST"
+  local replace="${3:-$action}"
   local token=$(authenticate_user $USER $PASSWORD $master_url)
-  curl --header "Authorization: Token token=\"$token\"" \
-        --insecure \
-        --request POST \
-        --data "$(cat $policy)" \
-     "$master_url/policies/demo/policy/$namespace"
+  local response=$(curl \
+      --header "Authorization: Token token=\"$token\"" \
+      --silent \
+      --show-error \
+      --fail \
+      --insecure \
+      --request $action \
+      --data "$(cat $policy)" \
+     "$master_url/policies/demo/policy/$namespace")
+  echo $response
 }
 
-function set_variable() {
+function set_variable {
   local variable="$1"
   local value="$2"
   local token=$(authenticate_user $USER $PASSWORD $master_url)
@@ -56,9 +70,11 @@ function set_variable() {
         --insecure \
         --data "$value" \
         "$master_url/secrets/demo/variable/$variable"
+  echo "'$variable' set to '$value'"
 }
 
 function load_default_policy {
+  load_policy 'root' 'policy/default.yml'
   load_policy 'root' 'policy/modular/root.yml'
   load_policy 'staging' 'policy/modular/apps/applications.yml'
   load_policy 'staging/my-app-1' 'policy/modular/apps/generic-application.yml'
@@ -78,6 +94,16 @@ function load_policy_and_set_variables {
   load_default_values
 }
 
+function load_puppet_testing_data {
+  load_policy 'root' 'policy/puppet/puppet-servers.yml'
+  load_policy 'root' 'policy/puppet/credentials.yml'
+  load_policy 'root' 'policy/puppet/role-credential-mapping.yml'
+
+  set_variable 'credentials/api-key' 'secret-api-key'
+  set_variable 'credentials/authorization-token' 'secret-auth-token'
+  set_variable 'credentials/public certificate' 'super secret public certificate'
+}
+
 follower_url='http://conjur-follower.mycompany.local'
 master_url='https://conjur-master.mycompany.local'
 URL=$follower_url
@@ -89,10 +115,12 @@ while true ; do
   case "$1" in
     -u | --user ) shift ; USER=$1 ; shift ;;
     -p | --password ) shift ; PASSWORD=$1 ; shift ;;
-    --authenticate-user ) shift ; cmd="authenticate_user $USER $PASSWORD" ;;
+    --authenticate-user ) shift ; cmd="authenticate_user" ;;
     -h | --help ) _print_help ; shift ;;
     --load-policy-and-values ) shift ; cmd="load_policy_and_set_variables" ;;
-    --master ) shift ; URL=$master_url ;;
+    --run-against-master ) shift ; URL=$master_url ;;
+    --load-puppet-data ) shift ; cmd="load_puppet_testing_data" ;;
+    # --configure-seed-service ) shift ; cmd="configure_cluster_seed_service" ;;
      * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
   esac
 done

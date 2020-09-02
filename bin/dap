@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash -e
 _admin_password="MySecretP@ss1"
 
 function _print_help() {
@@ -50,13 +50,14 @@ Provisions a single DAP instance locally using Docker.
 
 Usage: bin/dap single [options]
 
+    --add-follower-proxy          Adds the follower as a trusted proxy (to enable client IP to be visable in audit logs)
     --create-backup               Generates a backup of the Master. The backup can be found in the system/backup folder
     --default                     Starts a single master behind a L4 load balancer (flag not required)
     --dry-run                     Displays the commands that will be run, without actually running them
-    --from-backup                 Restores master from a previously created backup
     --fix-11.6-upgrade            Resolves the migration issue present when upgrading to 11.6.
-    --from-backup                 Configures a master from a backup
+    --from-backup                 Restores master from a previously created backup
     -h, --help                    Shows this help message
+    --skip-pull                   Uses the latest local images instead of pulling the latest images
     --stop                        Stops all containers and cleans up cached files
     -t, --tag <appliance-tag>     Starts a cluster with a particular appliance (defaults to 5.0-stable)
     --upgrade-to <appliance-tag>  Upgrades master to the provided version using backup and restore
@@ -90,6 +91,11 @@ function _run() {
 
 function _start_cluster() {
   if [[ $DRY_RUN = false ]]; then
+
+    if [[ "$PULL_IMAGES" = "true" ]]; then
+      docker-compose pull
+    fi
+
     _set_master_multi_node_proxy_config
     docker-compose up -d --no-deps conjur-master.mycompany.local \
                                     conjur-master-1.mycompany.local \
@@ -101,6 +107,11 @@ function _start_cluster() {
 
 function _start_master() {
   if [[ $DRY_RUN = false ]]; then
+
+    if [[ "$PULL_IMAGES" = "true" ]]; then
+      docker-compose pull
+    fi
+
     _set_master_single_node_proxy_config
     docker-compose up -d --no-deps conjur-master.mycompany.local \
                                     conjur-master-1.mycompany.local
@@ -115,6 +126,11 @@ function _start_l7_load_balancer() {
 
 function _start_master_and_follower() {
   if [[ $DRY_RUN = false ]]; then
+
+    if [[ "$PULL_IMAGES" = "true" ]]; then
+      docker-compose pull
+    fi
+
     _set_master_single_node_proxy_config
     docker-compose up -d --no-deps conjur-master.mycompany.local \
                                     conjur-master-1.mycompany.local \
@@ -273,6 +289,11 @@ function _enable_autofailover {
     _run conjur-master-3.mycompany.local "evoke cluster enroll --cluster-machine-name conjur-master-3.mycompany.local --master-name conjur-master-1.mycompany.local production"
 }
 
+function _re_enable_autofailover {
+  _run conjur-master-2.mycompany.local "evoke cluster enroll --reenroll --cluster-machine-name conjur-master-2.mycompany.local --master-name conjur-master-1.mycompany.local production"
+  _run conjur-master-3.mycompany.local "evoke cluster enroll --reenroll --cluster-machine-name conjur-master-3.mycompany.local --master-name conjur-master-1.mycompany.local production"
+}
+
 function _stop_replication() {
   if [[ $(docker ps --quiet --filter "name=conjur-master-2.mycompany.local") ]]; then
     _run conjur-master-2.mycompany.local "evoke replication stop"
@@ -302,7 +323,12 @@ function _upgrade_via_backup_restore() {
 
 }
 
+function _stop_and_remove_master {
+  docker-compose rm --stop --force conjur-master-1.mycompany.local
+}
+
 function _restore_from_backup {
+  _stop_and_remove_master
   _start_master
 
   # Unpack the backup with docker exec <container> evoke unpack backup -k /opt/conjur/backup/key /opt/conjur/backup/<yourbackupfile>
@@ -331,6 +357,7 @@ function _upgrade_master_via_backup_restore {
 }
 
 function _create_backup() {
+  rm -rf system/backup/*
   _run conjur-master-1.mycompany.local \
     "evoke backup"
 }
@@ -353,6 +380,7 @@ function _fix_11_6_0 {
 
 TAG=5.0-stable
 DRY_RUN=false
+PULL_IMAGES=true
 CMD=""
 to_version=""
 
@@ -363,7 +391,7 @@ if [[ "$1" = "cluster" ]]; then
   while true ; do
     case "$1" in
       --create-backup ) CMD='_create_backup' ; shift ;;
-      --default-cluster ) CMD='_basic_cluster' ; shift ;;
+      --default ) CMD='_basic_cluster' ; shift ;;
       --dry-run ) DRY_RUN=true ; shift ;;
       --disable-auto-failover ) CMD='_disable_autofailover' ; shift ;;
       --enable-auto-failover ) CMD='_enable_autofailover' ; shift ;;
@@ -387,8 +415,9 @@ elif [[ "$1" = "single" ]]; then
       --default ) CMD='_single_master' ; shift ;;
       --dry-run ) DRY_RUN=true ; shift ;;
       --fix-11.6-upgrade ) CMD="_fix_11_6_0"; shift ;;
-      --from-backup ) CMD "_restore_from_backup" ; shift ;;
+      --from-backup ) CMD="_restore_from_backup" ; shift ;;
       -h | --help ) _print_single_help ; shift ;;
+      --skip-pull ) PULL_IMAGES=false ; shift ;;
       --stop ) _stop ; exit ;;
       -t | --tag ) shift ; TAG=$1 ; shift ;;
       --upgrade-to ) shift ; CMD="_upgrade_via_backup_restore $1" ; shift ;;
@@ -408,11 +437,11 @@ else
       --provision-standbys ) CMD='_setup_standbys' ; shift ;;
       --enable-auto-failover ) CMD='_enable_autofailover' ; shift ;;
       --disable-auto-failover ) CMD='_disable_autofailover' ; shift ;;
+      --re-enable-auto-failover ) CMD='_re_enable_autofailover' ; shift ;;
       # --provision-follower ) _setup_follower ; _start_l7_load_balancer ; shift ;;
       --upgrade-master ) CMD='_upgrade_via_backup_restore' ; shift ;;
       # --trigger-failover ) ; shift ;;
       --create-backup ) CMD='_create_backup' ; shift ;;
-      # --re-enroll-standby )  ; shift ;;
       --restore-from-backup ) CMD='_restore_from_backup' ; shift ;;
       --stop ) _stop ; shift ;;
        * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
