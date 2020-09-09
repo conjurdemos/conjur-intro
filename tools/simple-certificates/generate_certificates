@@ -6,7 +6,10 @@ DEFAULT_NODES=( 'conjur-master-1'
                 'conjur-master-2'
                 'conjur-master-3'
                 'follower-1'
-                'follower-2' )
+                'follower-2'
+                'conjur-master'
+                'conjur-follower'
+                'conjur-follower-1' )
 
 CERT_PASSWORD='secret'
 

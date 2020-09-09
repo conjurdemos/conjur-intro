@@ -22,6 +22,7 @@ function proxy_command {
       yes 'yes' | conjur init -u https://conjur-master-1.mycompany.local -a demo
     fi
     conjur authn login -u admin -p MySecretP@ss1
+    conjur authn authenticate -H
     hostname -I
     eval exec \"$cmd\"
   "

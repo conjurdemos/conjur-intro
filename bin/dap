@@ -131,6 +131,21 @@ function _configure_master() {
 
   _run conjur-master-1.mycompany.local \
     "$_cmd"
+
+  _run conjur-master-1.mycompany.local \
+    "evoke ca import -r /certs/ca-chain.cert.pem"
+
+  _run conjur-master-1.mycompany.local \
+    "evoke ca import -k /certs/nodes/conjur-master-1.mycompany.local/conjur-master-1.mycompany.local.key.pem -s /certs/nodes/conjur-master-1.mycompany.local/conjur-master-1.mycompany.local.cert.pem"
+
+  _run conjur-master-1.mycompany.local \
+    "evoke ca import -k /certs/nodes/conjur-master-2.mycompany.local/conjur-master-2.mycompany.local.key.pem -s certs/nodes/conjur-master-2.mycompany.local/conjur-master-2.mycompany.local.cert.pem"
+
+  _run conjur-master-1.mycompany.local \
+    "evoke ca import -k /certs/nodes/conjur-master-3.mycompany.local/conjur-master-3.mycompany.local.key.pem -s /certs/nodes/conjur-master-3.mycompany.local/conjur-master-3.mycompany.local.cert.pem"
+
+  _run conjur-master-1.mycompany.local \
+    "evoke ca import -k /certs/nodes/conjur-follower-1.mycompany.local/conjur-follower-1.mycompany.local.key.pem -s /certs/nodes/conjur-follower-1.mycompany.local/conjur-follower-1.mycompany.local.cert.pem"
 }
 
 function _setup_standby() {
@@ -153,7 +168,7 @@ function _start_standby_synchronization() {
 function _setup_follower() {
   # Generate Seed file
   _run conjur-master-1.mycompany.local \
-    "evoke seed follower conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed.tar"
+    "evoke seed follower conjur-follower-1.mycompany.local > /opt/cyberark/dap/seeds/follower-seed.tar"
 
   # Unpack and Configure
   _run conjur-follower-1.mycompany.local \

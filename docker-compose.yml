@@ -36,6 +36,7 @@ services:
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
       - ./system/logs/master-1:/var/log/conjur:Z
       - ./files:/conjur_files
+      - ./tools/simple-certificates/certificates:/certs
 
   conjur-master-2.mycompany.local:
     image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
