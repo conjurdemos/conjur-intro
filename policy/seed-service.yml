@@ -1,0 +1,14 @@
+- !policy
+  id: seed-service-2
+  body:
+    # User for Seed Service
+    - !user
+
+    # Seed Service Webservice
+    - !webservice seed-generation
+
+    # Enable the seed service for the user
+    - !permit
+      role: !user
+      resource: !webservice seed-generation
+      privileges: [ "execute" ]

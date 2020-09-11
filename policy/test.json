@@ -1,0 +1,9 @@
+{
+  "created_roles": {
+    "demo:user:conjur/seed-service": {
+      "id": "demo:user:conjur/seed-service",
+      "api_key": "8860my1eaz8eb2ah0ww02a31cax3amganjdfcr1n1744p41ahvenc"
+    }
+  },
+  "version": 1
+}

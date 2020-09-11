@@ -1,0 +1,5 @@
+- !policy
+  id: production
+  body:
+    - !policy puppet
+    - !policy services
