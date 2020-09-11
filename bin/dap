@@ -1,7 +1,7 @@
 #!/bin/bash -e
 _admin_password="MySecretP@ss1"
 
-function _print_help() {
+function _print_help {
   cat << EOF
 
 A tool that provides a variety of DAP lifecycle workflows.
@@ -30,15 +30,15 @@ EOF
   exit
 }
 
-function _set_master_multi_node_proxy_config() {
+function _set_master_multi_node_proxy_config {
   cp files/haproxy/master/multi-node/haproxy.cfg files/haproxy/master/haproxy.cfg
 }
 
-function _set_master_single_node_proxy_config() {
+function _set_master_single_node_proxy_config {
   cp files/haproxy/master/single/haproxy.cfg files/haproxy/master/haproxy.cfg
 }
 
-function _run() {
+function _run {
   local _all_args=("$@")
   local _node_name=$1
   local _args=("${_all_args[@]:1}")
@@ -52,7 +52,7 @@ function _run() {
   fi
 }
 
-function _start_cluster() {
+function _start_cluster {
   if [[ $DRY_RUN = false ]]; then
 
     if [[ "$PULL_IMAGES" = "true" ]]; then
@@ -68,7 +68,7 @@ function _start_cluster() {
   fi
 }
 
-function _start_master() {
+function _start_master {
   if [[ $DRY_RUN = false ]]; then
 
     if [[ "$PULL_IMAGES" = "true" ]]; then
@@ -81,13 +81,13 @@ function _start_master() {
   fi
 }
 
-function _start_l7_load_balancer() {
+function _start_l7_load_balancer {
   if [[ $DRY_RUN = false ]]; then
     docker-compose up -d --no-deps conjur-follower.mycompany.local
   fi
 }
 
-function _start_master_and_follower() {
+function _start_master_and_follower {
   if [[ $DRY_RUN = false ]]; then
 
     if [[ "$PULL_IMAGES" = "true" ]]; then
@@ -101,7 +101,7 @@ function _start_master_and_follower() {
   fi
 }
 
-function _configure_master() {
+function _configure_master {
   _cmd="evoke configure master"
   _cmd="$_cmd --accept-eula"
   _cmd="$_cmd --hostname conjur-master.mycompany.local"
@@ -113,7 +113,7 @@ function _configure_master() {
     "$_cmd"
 }
 
-function _setup_standby() {
+function _setup_standby {
   local _standby_number=$1
 
   docker-compose rm --stop --force conjur-master-$_standby_number.mycompany.local
@@ -128,12 +128,12 @@ function _setup_standby() {
     "evoke unpack seed /opt/cyberark/dap/seeds/standby-seed-$_standby_number.tar && evoke configure standby"
 }
 
-function _start_standby_synchronization() {
+function _start_standby_synchronization {
   _run conjur-master-1.mycompany.local \
     "evoke replication sync start"
 }
 
-function _setup_follower() {
+function _setup_follower {
 
   docker-compose rm --stop --force conjur-follower-1.mycompany.local
   docker-compose up --no-deps --detach conjur-follower-1.mycompany.local
@@ -152,7 +152,7 @@ function _setup_follower() {
 #
 ## Failover & Promotion
 #
-function _perform_promotion() {
+function _perform_promotion {
   # Stop current master
   if [[ $DRY_RUN = false ]]; then
     docker-compose stop conjur-master-1.mycompany.local
@@ -167,13 +167,13 @@ function _perform_promotion() {
     "evoke replication rebase conjur-master-2.mycompany.local"
 }
 
-function _single_master() {
+function _single_master {
   _start_master
   _configure_master
   echo "DAP instance available at: 'https://localhost'"
 }
 
-function _single_master_follower() {
+function _single_master_follower {
   _start_master_and_follower
   _configure_master
   sleep 10 # to insure LB has time to detect availability
@@ -200,7 +200,7 @@ function _setup_standbys {
   _reload_container 'conjur-master.mycompany.local'
 }
 
-function _basic_cluster() {
+function _basic_cluster {
   _start_cluster
   _configure_master
   _setup_standbys
@@ -210,7 +210,7 @@ function _basic_cluster() {
   echo "Follower available at: 'http://localhost'"
 }
 
-function _stop() {
+function _stop {
   echo "stopping...."
   docker-compose down -v
 
@@ -221,7 +221,7 @@ function _stop() {
   echo "stopped"
 }
 
-function _cli() {
+function _cli {
   local _namespace=$1
   local _policy=$2
 
@@ -258,7 +258,7 @@ function _enable_autofailover {
   fi
 }
 
-function _stop_replication() {
+function _stop_replication {
   if [[ $(docker ps --quiet --filter "name=conjur-master-2.mycompany.local") ]]; then
     _run conjur-master-2.mycompany.local "evoke replication stop"
   fi
@@ -267,7 +267,7 @@ function _stop_replication() {
   fi
 }
 
-function _stop_and_rename() {
+function _stop_and_rename {
   local container_name="$1"
   local rename_to="$2"
   docker-compose stop $container_name
@@ -275,7 +275,7 @@ function _stop_and_rename() {
   docker rename $image_id $rename_to
 }
 
-function _upgrade_via_backup_restore() {
+function _upgrade_via_backup_restore {
   upgrade_to="$1"
 
   autofailover=$(curl -k https://localhost/info | jq .configuration.conjur.cluster_name)
@@ -320,13 +320,13 @@ function _upgrade_master_via_backup_restore {
   # Confirm master is healthy
 }
 
-function _create_backup() {
+function _create_backup {
   rm -rf system/backup/*
   _run conjur-master-1.mycompany.local \
     "evoke backup"
 }
 
-function _add_follower_proxy() {
+function _add_follower_proxy {
   _run conjur-follower-1.mycompany.local \
     "evoke proxy add 12.16.23.15"
 }
