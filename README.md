@@ -16,18 +16,17 @@ Tools and scripts  utilities that make it easier to make, manage, and run demos
 
 This project includes a CLI which simplifies the process of running a variety of scenarios.
 
-### Workflow Example
+### Workflow Examples
 
-Deploy a master auto-failover cluster with custom certificates.
+Deploy a master auto-failover cluster (behind L4 load balancer).
 
 ```sh
 $ bin/dap --provision-master
-$ bin/dap --import-certificates
 $ bin/dap --provision-standbys
 $ bin/dap --enable-auto-failover
 ```
 
-Given the above, to add a follower, add data, and validate retrieval:
+Given the above, to add a follower (behind L7 load balancer), add data, and validate retrieval:
 ```sh
 $ bin/dap --provision-follower
 $ bin/api --load-policy-and-values
@@ -35,7 +34,7 @@ $ bin/api --fetch-secrets
 ```
 
 Next, let's trigger an auto-failover event:
-```
+```sh
 $ bin/dap --trigger-failover
 ```
 
@@ -66,18 +65,22 @@ $ bin/api --fetch-secrets
 #### Flags
 |Flag|Type|Outcome|Notes|
 |-|-|-|-|
+|--import-custom-certificates|action|• Imports pre-generated 3rd-party certificates|Requires configured master|
+|--trust-follower-proxy|action|• Adds Follower load balancer as a trusted proxy|Requires configured follower|
 |--provision-master|action|• Starts a DAP container and Layer 4 load balancer<br>• Configures with account `default` and password `MySecretP@ss1`||
-|--import-certificates|action|• Imports pre-generated 3rd-party certificates|Requires configured master|
 |--provision-standbys|action|• Removes standbys if present<br>• Starts two DAP containers<br>• Generates standby seed files<br>• Configures standbys<br>• Enable Synchronous Standby|Requires configured master|
 |--enable-auto-failover|action|• Configures Master cluster with auto-failover|Requires configured master and standbys|
 |--provision-follower|action|• Removes follower if present<br>• Starts a DAP container and a Layer 7 load balancer<br>• Generates a follower seed<br>• Configures follower|Requires configured master|
 |--upgrade-master `<version>`|action|• Removes auto-failover (if enabled)<br>• Generates a backup<br>• Stops and removes master<br>• Starts new DAP container<br>• Restores master from backup|Requires configured master|
 |--trigger-failover|action|• Stops current master|Requires an auto-failover cluster|
 |--create-backup|action|• Creates a backup|Requires configured master|
-|--re-enroll-standby|action|• Removes former auto-failover cluster master container<br>• Starts a standby container<br>• Generates a standby seed<br>• Enrolls standby into auto-failover cluster|Requires triggered failover| 
 |--restore-from-backup|action|• Removes auto-failover (if enabled)<br>• Stops and renames master<br>• Starts new DAP container<br>• Restores master from backup|Requires a previously created backup|
-|--version `<version>`|configuration|Version of DAP to launch|
+|--version `<version>`|configuration|Version of DAP to use (defaults to latest)|
 |--dry-run|configuration|Only print configuration commands|
+
+<!--
+|--re-enroll-standby|action|• Removes former auto-failover cluster master container<br>• Starts a standby container<br>• Generates a standby seed<br>• Enrolls standby into auto-failover cluster|Requires triggered failover|
+-->
 
 ### bin/api
 
@@ -143,6 +146,7 @@ Usage: bin/dap cluster [options]
 
     --create-backup             Generates a backup of the Master. The backup can be found in the system/backup folder
     --dry-run                   Displays the commands that will be run, without actually running them
+    --disable-auto-failover     Removes nodes into and auto-failover cluster
     --enable-auto-failover      Enrolls nodes into and auto-failover cluster
     -h, --help                  Shows this help message
     --promote-standby           Stops the Master and promotes the first Standby as the new Master
