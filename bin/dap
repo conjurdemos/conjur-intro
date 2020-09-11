@@ -15,6 +15,7 @@ Usage: bin/dap [options]:
     --enable-auto-failover        Configures Master cluster with auto-failover (Requires configured master and standbys)
     --h, --help                   Shows this help message
     --import-custom-certificates  Imports pre-generated 3rd-party certificates (Requires configured master)
+    --promote-standby             Stops the current master and promotes a standby (Requires configured standbys and no auto-failover)
     --provision-follower          Configures follower behind a Layer 7 load balancer (Requires configured master)
     --provision-master            Configures a DAP Master with account `default` and password `MySecretP@ss1` behind a Layer 4 load balancer
     --provision-standbys          Deploys and configures two standbys (Requires configured master)
@@ -52,22 +53,6 @@ function _run {
   fi
 }
 
-function _start_cluster {
-  if [[ $DRY_RUN = false ]]; then
-
-    if [[ "$PULL_IMAGES" = "true" ]]; then
-      docker-compose pull
-    fi
-
-    _set_master_multi_node_proxy_config
-    docker-compose up -d --no-deps conjur-master.mycompany.local \
-                                    conjur-master-1.mycompany.local \
-                                    conjur-master-2.mycompany.local \
-                                    conjur-master-3.mycompany.local \
-                                    conjur-follower-1.mycompany.local
-  fi
-}
-
 function _start_master {
   if [[ $DRY_RUN = false ]]; then
 
@@ -84,20 +69,6 @@ function _start_master {
 function _start_l7_load_balancer {
   if [[ $DRY_RUN = false ]]; then
     docker-compose up -d --no-deps conjur-follower.mycompany.local
-  fi
-}
-
-function _start_master_and_follower {
-  if [[ $DRY_RUN = false ]]; then
-
-    if [[ "$PULL_IMAGES" = "true" ]]; then
-      docker-compose pull
-    fi
-
-    _set_master_single_node_proxy_config
-    docker-compose up -d --no-deps conjur-master.mycompany.local \
-                                    conjur-master-1.mycompany.local \
-                                    conjur-follower-1.mycompany.local
   fi
 }
 
@@ -173,16 +144,6 @@ function _single_master {
   echo "DAP instance available at: 'https://localhost'"
 }
 
-function _single_master_follower {
-  _start_master_and_follower
-  _configure_master
-  sleep 10 # to insure LB has time to detect availability
-  _setup_follower
-  _start_l7_load_balancer # because the LB needs the CA certificate from DAP follower via volume mount, we wait to set it up
-  echo "Master available at: 'https://localhost'"
-  echo "Follower available at: 'http://localhost'"
-}
-
 function _reload_container {
   name="$1"
   docker-compose rm --stop --force $name
@@ -198,16 +159,6 @@ function _setup_standbys {
   # Reload load balancer to serve cluster
   _set_master_multi_node_proxy_config
   _reload_container 'conjur-master.mycompany.local'
-}
-
-function _basic_cluster {
-  _start_cluster
-  _configure_master
-  _setup_standbys
-  _setup_follower
-  _start_l7_load_balancer
-  echo "Master Cluster available at: 'https://localhost'"
-  echo "Follower available at: 'http://localhost'"
 }
 
 function _stop {
@@ -337,16 +288,16 @@ function _trigger_master_failover_failover {
   echo 'Auto-failover takes about a minute to complete.'
 }
 
-function _fix_11_6_0 {
-  _run conjur-master-1.mycompany.local \
-    "sv stop conjur"
-  _run conjur-master-1.mycompany.local \
-    "chpst -u postgres psql -c \"ALTER TABLE slosilo_keystore DROP COLUMN fingerprint\" -d conjur"
-  _run conjur-master-1.mycompany.local \
-    "chpst -u conjur conjur-possum rake slosilo:migrate"
-  _run conjur-master-1.mycompany.local \
-    "sv start conjur"
-}
+# function _fix_11_6_0 {
+#   _run conjur-master-1.mycompany.local \
+#     "sv stop conjur"
+#   _run conjur-master-1.mycompany.local \
+#     "chpst -u postgres psql -c \"ALTER TABLE slosilo_keystore DROP COLUMN fingerprint\" -d conjur"
+#   _run conjur-master-1.mycompany.local \
+#     "chpst -u conjur conjur-possum rake slosilo:migrate"
+#   _run conjur-master-1.mycompany.local \
+#     "sv start conjur"
+# }
 
 function _import_certificates {
   local cert_path='/opt/cyberark/dap/configuration/certificates'
@@ -367,6 +318,7 @@ to_version=""
 while true ; do
   case "$1" in
     --provision-master ) CMD='_single_master' ; shift ;;
+    --promote-standby ) CMD='_perform_promotion' ; shift ;;
     --import-custom-certificates ) CMD='_import_certificates' ; shift ;;
     --provision-standbys ) CMD='_setup_standbys' ; shift ;;
     --enable-auto-failover ) CMD='_enable_autofailover' ; shift ;;

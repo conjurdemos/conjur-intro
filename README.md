@@ -67,6 +67,7 @@ $ bin/api --fetch-secrets
 |-|-|-|-|
 |--import-custom-certificates|action|• Imports pre-generated 3rd-party certificates|Requires configured master|
 |--trust-follower-proxy|action|• Adds Follower load balancer as a trusted proxy|Requires configured follower|
+|--promote-standby|action|• Stops the current master<br>• Promotes a standby| Requires configured standbys and no auto-failover|
 |--provision-master|action|• Starts a DAP container and Layer 4 load balancer<br>• Configures with account `default` and password `MySecretP@ss1`||
 |--provision-standbys|action|• Removes standbys if present<br>• Starts two DAP containers<br>• Generates standby seed files<br>• Configures standbys<br>• Enable Synchronous Standby|Requires configured master|
 |--enable-auto-failover|action|• Configures Master cluster with auto-failover|Requires configured master and standbys|
