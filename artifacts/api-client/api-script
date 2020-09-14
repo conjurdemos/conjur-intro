@@ -11,8 +11,9 @@ Usage: bin/api [options]
     -h, --help                  Shows this help message
     -p, --password <password>   Sets the password (default is 'MySecretP@ss1')
     -u, --user <conjur-user>    Sets the username (default is 'admin')
-    --master                    Runs command against the master (only relevant if command is an authenticate/read action)
+    --against-master            Runs command against the master (only relevant if command is an authenticate/read action)
     --load-policy-and-values    Loads a default set of policies to mimic a customer experience
+    --fetch-secrets             Fetches previously set variables (use '--against-master' if only master is available)
 
 EOF
   exit
@@ -73,6 +74,21 @@ function load_default_values {
   set_variable 'staging/my-app-1/postgres-database/password' 'secret-p@ssword'
 }
 
+
+function fetch_secrets {
+  local variables="$1"
+  local token=$(authenticate_user $USER $PASSWORD $URL)
+  curl --header "Authorization: Token token=\"$token\"" \
+        --insecure \
+        --request GET \
+        "$master_url/secrets?variable_ids=$variables"
+}
+
+function retrieve_variables {
+  secrets="demo:variable:staging/my-app-1/postgres-database/url,demo:variable:staging/my-app-1/postgres-database/port,demo:variable:staging/my-app-1/postgres-database/username,demo:variable:staging/my-app-1/postgres-database/password"
+  fetch_secrets $secrets | jq .
+}
+
 function load_policy_and_set_variables {
   load_default_policy
   load_default_values
@@ -92,7 +108,8 @@ while true ; do
     --authenticate-user ) shift ; cmd="authenticate_user $USER $PASSWORD" ;;
     -h | --help ) _print_help ; shift ;;
     --load-policy-and-values ) shift ; cmd="load_policy_and_set_variables" ;;
-    --master ) shift ; URL=$master_url ;;
+    --against-master ) shift ; URL=$master_url ;;
+    --fetch-secrets ) shift ; cmd="retrieve_variables" ;;
      * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
   esac
 done
