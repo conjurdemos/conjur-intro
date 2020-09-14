@@ -38,11 +38,6 @@ Next, let's trigger an auto-failover event:
 $ bin/dap --trigger-failover
 ```
 
-restore cluster health:
-```sh
-$ bin/dap --re-enroll-standby
-```
-
 Upgrade and rebuild cluster:
 ```sh
 $ bin/dap --upgrade-master <version>
