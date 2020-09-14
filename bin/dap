@@ -327,7 +327,6 @@ while true ; do
     --version ) shift ; TAG=$1 ; shift ;;
     --dry-run ) DRY_RUN=true ; shift ;;
     -h | --help ) _print_help ; shift ;;
-    # --disable-auto-failover ) CMD='_disable_autofailover' ; shift ;;
     --trigger-failover ) CMD='_trigger_master_failover_failover' ; shift ;;
     --create-backup ) CMD='_create_backup' ; shift ;;
     --restore-from-backup ) CMD='_restore_from_backup' ; shift ;;

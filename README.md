@@ -147,7 +147,6 @@ Usage: bin/dap cluster [options]
 
     --create-backup             Generates a backup of the Master. The backup can be found in the system/backup folder
     --dry-run                   Displays the commands that will be run, without actually running them
-    --disable-auto-failover     Removes nodes into and auto-failover cluster
     --enable-auto-failover      Enrolls nodes into and auto-failover cluster
     -h, --help                  Shows this help message
     --promote-standby           Stops the Master and promotes the first Standby as the new Master
