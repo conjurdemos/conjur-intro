@@ -89,8 +89,8 @@ $ bin/api --fetch-secrets
 |--fetch-secrets|action|• Authenticates<br>• Retrieves variable values|Run against follower unless `--against-master` flag is present|
 |--load-policy|action|• Authenticates<br>• Loads policy|Run against master|
 |--load-policy-and-values|action|• Authenticates<br>• Loads policy and variable values|Run against master, equivalent to running '--load-policy' and '--set-secrets'|
-|--password `<password>`|configuration|Uses a non-default password for authentication|• Authenticates<br>• Sets variable values|Requires `--load-policy` before running|
-|--set-secrets|action|
+|--password `<password>`|configuration|Uses a non-default password for authentication||
+|--set-secrets|action|• Authenticates<br>• Sets variable values|Requires `--load-policy` before running|
 |--user `<conjur-user>`|configuration|Uses a non-default (`admin`) user for authentication||
 
 ## Start a single DAP instance
