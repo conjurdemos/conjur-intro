@@ -1,79 +1,45 @@
 #!/bin/bash -e
 _admin_password="MySecretP@ss1"
 
-function _print_help() {
+function _print_help {
   cat << EOF
 
 A tool that provides a variety of DAP lifecycle workflows.
 
-Synopsis: bin/dap <command> [command options]
+Synopsis: bin/dap [command options]
 
-Global Options:
+Usage: bin/dap [options]:
 
-    --h, --help                 Shows this help message
-    --stop                      Stops all containers and cleans up cached files
-
-Commands: bin/dap <command>
-
-
-    cluster                     Setup and workflows for a DAP cluster
-    single                      Setup and workflows for a single DAP instance
-
-EOF
-  exit
-}
-
-function _print_cluster_help() {
-  cat << EOF
-
-Provisions a DAP cluster locally using Docker, and run through some common workflows.
-
-Usage: bin/dap cluster [options]
-
-    --create-backup             Generates a backup of the Master. The backup can be found in the system/backup folder
-    --dry-run                   Displays the commands that will be run, without actually running them
-    --enable-auto-failover      Enrolls nodes into and auto-failover cluster
-    -h, --help                  Shows this help message
-    --promote-standby           Stops the Master and promotes the first Standby as the new Master
-    --stop                      Stops all containers and cleans up cached files
-    -t, --tag <appliance-tag>   Starts a cluster with a particular appliance (defaults to 5.0-stable)
-
-EOF
-  exit
-}
-
-function _print_single_help() {
-  cat << EOF
-
-Provisions a single DAP instance locally using Docker.
-
-Usage: bin/dap single [options]
-
-    --create-backup               Generates a backup of the Master. The backup can be found in the system/backup folder
-    --default                     Starts a single master behind a L4 load balancer (flag not required)
-    --dry-run                     Displays the commands that will be run, without actually running them
-    --from-backup                 Restores master from a previously created backup
-    --fix-11.6-upgrade            Resolves the migration issue present when upgrading to 11.6.
-    --from-backup                 Configures a master from a backup
-    -h, --help                    Shows this help message
+    --create-backup               Creates a backup|Requires configured master
+    --dry-run                     Print configuration commands with executing
+    --enable-auto-failover        Configures Master cluster with auto-failover (Requires configured master and standbys)
+    --h, --help                   Shows this help message
+    --import-custom-certificates  Imports pre-generated 3rd-party certificates (Requires configured master)
+    --promote-standby             Stops the current master and promotes a standby (Requires configured standbys and no auto-failover)
+    --provision-follower          Configures follower behind a Layer 7 load balancer (Requires configured master)
+    --provision-master            Configures a DAP Master with account `default` and password `MySecretP@ss1` behind a Layer 4 load balancer
+    --provision-standbys          Deploys and configures two standbys (Requires configured master)
+    --restore-from-backup         Restores a master from backup|Requires a previously created backup
     --stop                        Stops all containers and cleans up cached files
-    -t, --tag <appliance-tag>     Starts a cluster with a particular appliance (defaults to 5.0-stable)
-    --upgrade-to <appliance-tag>  Upgrades master to the provided version using backup and restore
-    --with-follower               Starts a DAP follower with a Layer 7 load balance
+    --trigger-failover            Stops current master (Requires an auto-failover cluster)
+    --trust-follower-proxy        Adds Follower load balancer as a trusted proxy (Requires a configured follower)
+    --upgrade-master <version>    Restores master from backup (Requires configured master)
+    --version <version>           Version of DAP to use (defaults to latest build)
+
 
 EOF
   exit
 }
 
-function _set_master_multi_node_proxy_config() {
+function _set_master_multi_node_proxy_config {
   cp files/haproxy/master/multi-node/haproxy.cfg files/haproxy/master/haproxy.cfg
 }
 
-function _set_master_single_node_proxy_config() {
+function _set_master_single_node_proxy_config {
   cp files/haproxy/master/single/haproxy.cfg files/haproxy/master/haproxy.cfg
 }
 
-function _run() {
+function _run {
   local _all_args=("$@")
   local _node_name=$1
   local _args=("${_all_args[@]:1}")
@@ -87,41 +53,26 @@ function _run() {
   fi
 }
 
-function _start_cluster() {
+function _start_master {
   if [[ $DRY_RUN = false ]]; then
-    _set_master_multi_node_proxy_config
-    docker-compose up -d --no-deps conjur-master.mycompany.local \
-                                    conjur-master-1.mycompany.local \
-                                    conjur-master-2.mycompany.local \
-                                    conjur-master-3.mycompany.local \
-                                    conjur-follower-1.mycompany.local
-  fi
-}
 
-function _start_master() {
-  if [[ $DRY_RUN = false ]]; then
+    if [[ "$PULL_IMAGES" = "true" ]]; then
+      docker-compose pull
+    fi
+
     _set_master_single_node_proxy_config
     docker-compose up -d --no-deps conjur-master.mycompany.local \
                                     conjur-master-1.mycompany.local
   fi
 }
 
-function _start_l7_load_balancer() {
+function _start_l7_load_balancer {
   if [[ $DRY_RUN = false ]]; then
     docker-compose up -d --no-deps conjur-follower.mycompany.local
   fi
 }
 
-function _start_master_and_follower() {
-  if [[ $DRY_RUN = false ]]; then
-    _set_master_single_node_proxy_config
-    docker-compose up -d --no-deps conjur-master.mycompany.local \
-                                    conjur-master-1.mycompany.local \
-                                    conjur-follower-1.mycompany.local
-  fi
-}
-
-function _configure_master() {
+function _configure_master {
   _cmd="evoke configure master"
   _cmd="$_cmd --accept-eula"
   _cmd="$_cmd --hostname conjur-master.mycompany.local"
@@ -133,8 +84,11 @@ function _configure_master() {
     "$_cmd"
 }
 
-function _setup_standby() {
+function _setup_standby {
   local _standby_number=$1
+
+  docker-compose rm --stop --force conjur-master-$_standby_number.mycompany.local
+  docker-compose up --no-deps --detach conjur-master-$_standby_number.mycompany.local
 
   # Generate a Seed File
   _run conjur-master-1.mycompany.local \
@@ -145,12 +99,16 @@ function _setup_standby() {
     "evoke unpack seed /opt/cyberark/dap/seeds/standby-seed-$_standby_number.tar && evoke configure standby"
 }
 
-function _start_standby_synchronization() {
+function _start_standby_synchronization {
   _run conjur-master-1.mycompany.local \
     "evoke replication sync start"
 }
 
-function _setup_follower() {
+function _setup_follower {
+
+  docker-compose rm --stop --force conjur-follower-1.mycompany.local
+  docker-compose up --no-deps --detach conjur-follower-1.mycompany.local
+
   # Generate Seed file
   _run conjur-master-1.mycompany.local \
     "evoke seed follower conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed.tar"
@@ -158,12 +116,14 @@ function _setup_follower() {
   # Unpack and Configure
   _run conjur-follower-1.mycompany.local \
     "evoke unpack seed /opt/cyberark/dap/seeds/follower-seed.tar && evoke configure follower"
+
+  _start_l7_load_balancer
 }
 
 #
 ## Failover & Promotion
 #
-function _perform_promotion() {
+function _perform_promotion {
   # Stop current master
   if [[ $DRY_RUN = false ]]; then
     docker-compose stop conjur-master-1.mycompany.local
@@ -178,35 +138,30 @@ function _perform_promotion() {
     "evoke replication rebase conjur-master-2.mycompany.local"
 }
 
-function _single_master() {
+function _single_master {
   _start_master
   _configure_master
   echo "DAP instance available at: 'https://localhost'"
 }
 
-function _single_master_follower() {
-  _start_master_and_follower
-  _configure_master
-  sleep 10 # to insure LB has time to detect availability
-  _setup_follower
-  _start_l7_load_balancer # because the LB needs the CA certificate from DAP follower via volume mount, we wait to set it up
-  echo "Master available at: 'https://localhost'"
-  echo "Follower available at: 'http://localhost'"
+function _reload_container {
+  name="$1"
+  docker-compose rm --stop --force $name
+  docker-compose up --no-deps --detach $name
+
 }
 
-function _basic_cluster() {
-  _start_cluster
-  _configure_master
- 	_setup_standby 2
+function _setup_standbys {
+  _setup_standby 2
   _setup_standby 3
   _start_standby_synchronization
-  _setup_follower
-  _start_l7_load_balancer
-  echo "Master Cluster available at: 'https://localhost'"
-  echo "Follower available at: 'http://localhost'"
+
+  # Reload load balancer to serve cluster
+  _set_master_multi_node_proxy_config
+  _reload_container 'conjur-master.mycompany.local'
 }
 
-function _stop() {
+function _stop {
   echo "stopping...."
   docker-compose down -v
 
@@ -217,7 +172,7 @@ function _stop() {
   echo "stopped"
 }
 
-function _cli() {
+function _cli {
   local _namespace=$1
   local _policy=$2
 
@@ -233,16 +188,28 @@ function _cli() {
   fi
 }
 
-function _enable_autofailover() {
+function _disable_autofailover {
+  _run conjur-master-3.mycompany.local "evoke cluster member remove conjur-master-3.mycompany.local"
+  _run conjur-master-2.mycompany.local "evoke cluster member remove conjur-master-2.mycompany.local"
+}
+
+function _enable_autofailover {
+
+  autofailover=$(curl -k https://localhost/info | jq .configuration.conjur.cluster_name)
+  if [[ $autofailover = 'production' ]]; then
+    _run conjur-master-2.mycompany.local "evoke cluster enroll --reenroll --cluster-machine-name conjur-master-2.mycompany.local --master-name conjur-master-1.mycompany.local production"
+    _run conjur-master-3.mycompany.local "evoke cluster enroll --reenroll --cluster-machine-name conjur-master-3.mycompany.local --master-name conjur-master-1.mycompany.local production"
+  else
     _cli root "policy/base.yml"
     _cli conjur/cluster policy/cluster.yml
 
     _run conjur-master-1.mycompany.local "evoke cluster enroll --cluster-machine-name conjur-master-1.mycompany.local production"
     _run conjur-master-2.mycompany.local "evoke cluster enroll --cluster-machine-name conjur-master-2.mycompany.local --master-name conjur-master-1.mycompany.local production"
     _run conjur-master-3.mycompany.local "evoke cluster enroll --cluster-machine-name conjur-master-3.mycompany.local --master-name conjur-master-1.mycompany.local production"
+  fi
 }
 
-function _stop_replication() {
+function _stop_replication {
   if [[ $(docker ps --quiet --filter "name=conjur-master-2.mycompany.local") ]]; then
     _run conjur-master-2.mycompany.local "evoke replication stop"
   fi
@@ -251,7 +218,7 @@ function _stop_replication() {
   fi
 }
 
-function _stop_and_rename() {
+function _stop_and_rename {
   local container_name="$1"
   local rename_to="$2"
   docker-compose stop $container_name
@@ -259,19 +226,24 @@ function _stop_and_rename() {
   docker rename $image_id $rename_to
 }
 
-function _upgrade_via_backup_restore() {
+function _upgrade_via_backup_restore {
   upgrade_to="$1"
+
+  autofailover=$(curl -k https://localhost/info | jq .configuration.conjur.cluster_name)
+
+  # jq returns a quoted string, so we need to check for: "production" instead of: production (without double quotes)
+  if [ "$autofailover" = '"production"' ]; then
+    _disable_autofailover
+  fi
   _upgrade_master_via_backup_restore $upgrade_to
+}
 
-  # redeploy standbys with the new container image and a new seed file from the master
-  # Enable sync replication
-  # If using Auto failover, enroll the master and standby nodes the cluster
-  # redeploy followers with the new container image
-  # remove old containers}
-
+function _stop_and_remove_master {
+  docker-compose rm --stop --force conjur-master-1.mycompany.local
 }
 
 function _restore_from_backup {
+  _stop_and_remove_master
   _start_master
 
   # Unpack the backup with docker exec <container> evoke unpack backup -k /opt/conjur/backup/key /opt/conjur/backup/<yourbackupfile>
@@ -299,79 +271,70 @@ function _upgrade_master_via_backup_restore {
   # Confirm master is healthy
 }
 
-function _create_backup() {
+function _create_backup {
+  rm -rf system/backup/*
   _run conjur-master-1.mycompany.local \
     "evoke backup"
 }
 
-function _add_follower_proxy() {
+function _add_follower_proxy {
   _run conjur-follower-1.mycompany.local \
     "evoke proxy add 12.16.23.15"
 }
 
-function _fix_11_6_0 {
+function _trigger_master_failover_failover {
   _run conjur-master-1.mycompany.local \
     "sv stop conjur"
+  echo 'Auto-failover takes about a minute to complete.'
+}
+
+# function _fix_11_6_0 {
+#   _run conjur-master-1.mycompany.local \
+#     "sv stop conjur"
+#   _run conjur-master-1.mycompany.local \
+#     "chpst -u postgres psql -c \"ALTER TABLE slosilo_keystore DROP COLUMN fingerprint\" -d conjur"
+#   _run conjur-master-1.mycompany.local \
+#     "chpst -u conjur conjur-possum rake slosilo:migrate"
+#   _run conjur-master-1.mycompany.local \
+#     "sv start conjur"
+# }
+
+function _import_certificates {
+  local cert_path='/opt/cyberark/dap/configuration/certificates'
   _run conjur-master-1.mycompany.local \
-    "chpst -u postgres psql -c \"ALTER TABLE slosilo_keystore DROP COLUMN fingerprint\" -d conjur"
+    "evoke ca import --root $cert_path/ca-chain.cert.pem"
   _run conjur-master-1.mycompany.local \
-    "chpst -u conjur conjur-possum rake slosilo:migrate"
+    "evoke ca import --key $cert_path/conjur-master.mycompany.local.key.pem --set $cert_path/conjur-master.mycompany.local.cert.pem"
   _run conjur-master-1.mycompany.local \
-    "sv start conjur"
+    "evoke ca import --key $cert_path/conjur-follower.mycompany.local.key.pem $cert_path/conjur-follower.mycompany.local.cert.pem"
 }
 
 TAG=5.0-stable
 DRY_RUN=false
+PULL_IMAGES=true
 CMD=""
 to_version=""
 
-if [[ "$1" = "cluster" ]]; then
-  shift
-  CMD="_basic_cluster"
-
-  while true ; do
-    case "$1" in
-      --create-backup ) CMD='_create_backup' ; shift ;;
-      --default-cluster ) CMD='_basic_cluster' ; shift ;;
-      --dry-run ) DRY_RUN=true ; shift ;;
-      --enable-auto-failover ) CMD='_enable_autofailover' ; shift ;;
-      --promote-standby ) CMD='_perform_promotion' ; shift ;;
-      --stop ) _stop ; exit ;;
-      -t | --tag ) shift ; TAG=$1 ; shift ;;
-      -h | --help ) _print_cluster_help ; shift ;;
-       * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
-    esac
-  done
-elif [[ "$1" = "single" ]]; then
-  shift
-  CMD="_single_master"
-
-  while true ; do
-    case "$1" in
-      --add-follower-proxy ) CMD='_add_follower_proxy' ; shift ;;
-      --create-backup ) CMD='_create_backup' ; shift ;;
-      --default ) CMD='_single_master' ; shift ;;
-      --dry-run ) DRY_RUN=true ; shift ;;
-      --fix-11.6-upgrade ) CMD="_fix_11_6_0"; shift ;;
-      --from-backup ) CMD "_restore_from_backup" ; shift ;;
-      -h | --help ) _print_single_help ; shift ;;
-      --stop ) _stop ; exit ;;
-      -t | --tag ) shift ; TAG=$1 ; shift ;;
-      --upgrade-to ) shift ; CMD="_upgrade_via_backup_restore $1" ; shift ;;
-      --with-follower ) CMD='_single_master_follower' ; shift ;;
-       * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
-    esac
-  done
-
-else
-  while true ; do
-    case "$1" in
-      -h | --help ) _print_help ; shift ;;
-      --stop ) _stop ; exit ;;
-       * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
-    esac
-  done
-fi
+while true ; do
+  case "$1" in
+    --provision-master ) CMD='_single_master' ; shift ;;
+    --promote-standby ) CMD='_perform_promotion' ; shift ;;
+    --import-custom-certificates ) CMD='_import_certificates' ; shift ;;
+    --provision-standbys ) CMD='_setup_standbys' ; shift ;;
+    --enable-auto-failover ) CMD='_enable_autofailover' ; shift ;;
+    --provision-follower ) CMD='_setup_follower' ; shift ;;
+    --upgrade-master ) shift ; CMD="_upgrade_via_backup_restore $1" ; shift ;;
+    --version ) shift ; TAG=$1 ; shift ;;
+    --dry-run ) DRY_RUN=true ; shift ;;
+    -h | --help ) _print_help ; shift ;;
+    --trigger-failover ) CMD='_trigger_master_failover_failover' ; shift ;;
+    --create-backup ) CMD='_create_backup' ; shift ;;
+    --restore-from-backup ) CMD='_restore_from_backup' ; shift ;;
+    --trust-follower-proxy ) CMD='_add_follower_proxy' ; shift ;;
+    --stop ) _stop ; shift ;;
+     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+  esac
+done
 
 export VERSION=$TAG
 

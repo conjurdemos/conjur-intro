@@ -7,12 +7,15 @@ A tool which uses the DAP API to perform various tasks.
 
 Usage: bin/api [options]
 
+    --against-master            Runs command against the master (only relevant if command is an authenticate/read action)
     --authenticate-user         Login using the default username (admin) and password (MySecretP@ss1)
+    --fetch-secrets             Fetches previously set variables (use '--against-master' if only master is available)
     -h, --help                  Shows this help message
+    --load-policy               Loads a default set of policies to mimic a customer experience
+    --load-policy-and-values    Loads policy and sets variable values (equivalent to running '--load-policy' and '--set-secrets')
     -p, --password <password>   Sets the password (default is 'MySecretP@ss1')
+    --set-secrets               Sets variable values
     -u, --user <conjur-user>    Sets the username (default is 'admin')
-    --master                    Runs command against the master (only relevant if command is an authenticate/read action)
-    --load-policy-and-values    Loads a default set of policies to mimic a customer experience
 
 EOF
   exit
@@ -73,6 +76,21 @@ function load_default_values {
   set_variable 'staging/my-app-1/postgres-database/password' 'secret-p@ssword'
 }
 
+
+function fetch_secrets {
+  local variables="$1"
+  local token=$(authenticate_user $USER $PASSWORD $URL)
+  curl --header "Authorization: Token token=\"$token\"" \
+        --insecure \
+        --request GET \
+        "$master_url/secrets?variable_ids=$variables"
+}
+
+function retrieve_variables {
+  secrets="demo:variable:staging/my-app-1/postgres-database/url,demo:variable:staging/my-app-1/postgres-database/port,demo:variable:staging/my-app-1/postgres-database/username,demo:variable:staging/my-app-1/postgres-database/password"
+  fetch_secrets $secrets | jq .
+}
+
 function load_policy_and_set_variables {
   load_default_policy
   load_default_values
@@ -92,40 +110,12 @@ while true ; do
     --authenticate-user ) shift ; cmd="authenticate_user $USER $PASSWORD" ;;
     -h | --help ) _print_help ; shift ;;
     --load-policy-and-values ) shift ; cmd="load_policy_and_set_variables" ;;
-    --master ) shift ; URL=$master_url ;;
+    --load-policy ) shift ; cmd='load_default_policy' ;;
+    --set-secrets ) shift ; cmd='load_default_values' ;;
+    --against-master ) shift ; URL=$master_url ;;
+    --fetch-secrets ) shift ; cmd="retrieve_variables" ;;
      * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
   esac
 done
 
 eval $cmd
-
-
-
-# Authenticate with a user
-# auth_token=$(user_authentication_token 'admin' $_admin_password)
-# curl -k -X POST -d $api_key "http://conjur-follower.mycompany.local/authn/default/$user/authenticate
-
-# echo "auth token: $auth_token"
-# secret="production/myapp/database/username"
-# encoded_secret="production%2Fmyapp%2Fdatabase%2Fusername"
-#
-# # Set a variable
-# resp=$(curl -k \
-#       -X POST \
-#       -H "Authorization: Token token=\"$auth_token\"" \
-#       --data "foo-bar" \
-#       "https://localhost/secrets/test/variable/$encoded_secret")
-#
-# # Retrieve variable value
-# resp=$(curl -k \
-#       -H "Authorization: Token token=\"$auth_token\"" \
-#       "https://localhost/secrets/test/variable/$encoded_secret")
-#
-# echo "$resp"
-#
-#
-# # Authenticate with a host
-# host="host%2Ftest-host-1"
-# api_key=""
-# auth_token=$(authentication_token $host $api_key)
-# echo "$auth_token"
