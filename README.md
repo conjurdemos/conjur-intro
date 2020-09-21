@@ -153,20 +153,20 @@ Usage: bin/dap single [options]
 #### Loading policy
 The policy folder contains sample policy which can be loaded with:
 ```sh
-$ ./cli conjur policy load --replace root policy/users.yml
-$ ./cli conjur policy load root policy/policy.yml
-$ ./cli conjur policy load staging policy/apps/myapp.yml
-$ ./cli conjur policy load production policy/apps/myapp.yml
-$ ./cli conjur policy load root policy/application_grants.yml
-$ ./cli conjur policy load root policy/hosts.yml
+$ bin/cli conjur policy load --replace root policy/users.yml
+$ bin/cli conjur policy load root policy/policy.yml
+$ bin/cli conjur policy load staging policy/apps/myapp.yml
+$ bin/cli conjur policy load production policy/apps/myapp.yml
+$ bin/cli conjur policy load root policy/application_grants.yml
+$ bin/cli conjur policy load root policy/hosts.yml
 ```
 
 #### Setting/Retrieving a Variable
 ```
-./cli conjur variable values add production/myapp/database/username my-username
-./cli conjur variable values add production/myapp/database/password my-password
-./cli conjur variable values add production/myapp/database/url https://my-database.mycompany.com
-./cli conjur variable values add production/myapp/database/port 5432
+bin/cli conjur variable values add production/myapp/database/username my-username
+bin/cli conjur variable values add production/myapp/database/password my-password
+bin/cli conjur variable values add production/myapp/database/url https://my-database.mycompany.com
+bin/cli conjur variable values add production/myapp/database/port 5432
 ```
 
 #### Validating Packages
