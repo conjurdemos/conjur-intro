@@ -1,0 +1,19 @@
+{
+  "CN": "Cyberark Conjur",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "US",
+      "L": "Newton",
+      "O": "Cyberark",
+      "OU": "Conjur",
+      "ST": "Massachusetts"
+    }
+  ],
+  "ca": {
+    "expiry": "42720h"
+  }
+}

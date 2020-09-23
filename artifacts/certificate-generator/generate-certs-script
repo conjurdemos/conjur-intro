@@ -1,0 +1,78 @@
+#!/bin/ash -e
+
+print_help() {
+  cat << EOF
+
+Generates a Root, Intermediate, DAP Master and Follower certificates
+
+Usage: bin/generate-certs [options]
+
+    -h, --help        Shows this help message.
+    --reset           Removes and all existing certificates so they can be regenerated.
+
+EOF
+  exit
+}
+
+reset() {
+  rm -rf $certificate_path
+  echo 'Previously generated certificates have been removed.  Run "bin/generate-certs" to generate new certificates.'
+  exit
+}
+
+copy_to_demo() {
+  certificate_destination="/src/dap_certificates"
+  cat $certificate_path/root_ca/ca.pem $certificate_path/intermediate_ca/intermediate.pem > $certificate_destination/ca-chain.pem
+  cp $certificate_path/dap_master/dap-master-key.pem $certificate_destination/
+  cp $certificate_path/dap_master/dap-master.pem $certificate_destination/
+  cp $certificate_path/dap_follower/dap-follower-key.pem $certificate_destination/
+  cp $certificate_path/dap_follower/dap-follower.pem $certificate_destination/
+  echo "Certificates copied to 'system/configuration/certificates'"
+  exit
+}
+
+while true ; do
+  case "$1" in
+    --copy ) copy_to_demo ; shift ;;
+    -h | --help ) print_help ; shift ;;
+    --reset ) reset ; shift ;;
+     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+  esac
+done
+
+config_path="/src/certificate-generator/configuration"
+certificate_path="/src/certificates"
+folders='root_ca intermediate_ca dap_master dap_follower'
+for folder in $folders ; do
+  mkdir -p "$certificate_path/$folder"
+done
+
+
+
+# Generate Root Certificate if it does not exist
+if [ ! -f "$certificate_path/root_ca/ca.pem" ]; then
+  cfssl gencert -initca "$config_path/root_ca.json" | cfssljson -bare $certificate_path/root_ca/ca
+fi
+
+# Generate and sign intermediate certificate if it does not exist
+if [ ! -f "$certificate_path/intermediate_ca/intermediate.pem" ]; then
+  # Generate Intermediate Certificate
+  cfssl gencert -initca $config_path/intermediate_ca.json | cfssljson -bare $certificate_path/intermediate_ca/intermediate
+
+  # Sign Intermediate with Root
+  cfssl sign -ca $certificate_path/root_ca/ca.pem -ca-key $certificate_path/root_ca/ca-key.pem -config $config_path/cfssl.conf -profile intermediate_ca $certificate_path/intermediate_ca/intermediate.csr | cfssljson -bare $certificate_path/intermediate_ca/intermediate
+fi
+
+# Generate and sign master certificate w/ intermediate
+if [ ! -f "$certificate_path/dap_master/dap-master.pem" ]; then
+  cfssl gencert -ca $certificate_path/intermediate_ca/intermediate.pem -ca-key $certificate_path/intermediate_ca/intermediate-key.pem -config $config_path/cfssl.conf -profile=peer $config_path/dap-master.json | cfssljson -bare $certificate_path/dap_master/dap-master
+fi
+
+# Generate and sign follower certificate w/ intermediate
+if [ ! -f "$certificate_path/dap_follower/dap-follower.pem" ]; then
+  cfssl gencert -ca $certificate_path/intermediate_ca/intermediate.pem -ca-key $certificate_path/intermediate_ca/intermediate-key.pem -config $config_path/cfssl.conf -profile=peer $config_path/dap-follower.json | cfssljson -bare $certificate_path/dap_follower/dap-follower
+fi
+
+# echo "Certificates have been generated and placed in: '$(pwd)/$certificate_path/'"
+
+copy_to_demo

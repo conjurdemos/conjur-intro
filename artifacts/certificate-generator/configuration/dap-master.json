@@ -1,0 +1,21 @@
+{
+  "CN": "conjur-master.mycompany.local",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+  {
+    "C": "US",
+    "L": "Newton",
+    "ST": "Massachusetts",
+    "O": "Dynamic Access Provider",
+    "OU": "Master"
+  }
+  ],
+  "hosts": [
+    "conjur-master-1.mycompany.local",
+    "conjur-master-2.mycompany.local",
+    "conjur-master-3.mycompany.local"
+  ]
+}

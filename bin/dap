@@ -300,6 +300,8 @@ function _trigger_master_failover_failover {
 # }
 
 function _import_certificates {
+  bin/generate-certs
+
   local cert_path='/opt/cyberark/dap/configuration/certificates'
   _run conjur-master-1.mycompany.local \
     "evoke ca import --root $cert_path/ca-chain.cert.pem"

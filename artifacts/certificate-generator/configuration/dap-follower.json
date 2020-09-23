@@ -1,0 +1,19 @@
+{
+  "CN": "conjur-follower.mycompany.local",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+  {
+    "C": "US",
+    "L": "Newton",
+    "ST": "Massachusetts",
+    "O": "Dynamic Access Provider",
+    "OU": "Follower"
+  }
+  ],
+  "hosts": [
+    "conjur-follower-1.mycompany.local"
+  ]
+}
