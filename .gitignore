@@ -19,3 +19,6 @@ tools/performance-tests/jmeter/jmeter.log
 **/backup/*
 
 files/haproxy/master/haproxy.cfg
+
+# Certificates
+**/certificates/*
