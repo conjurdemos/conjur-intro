@@ -1,0 +1,15 @@
+dap-nodes:
+  children:
+    master-nodes:
+      hosts:
+        master-1:
+          container_name: conjur-master-1.mycompany.local
+        master-2:
+          container_name: conjur-master-2.mycompany.local
+        master-3:
+          container_name: conjur-master-3.mycompany.local
+  vars:
+    container_name: dap
+    account: default
+    password: MySecretP@ss1
+    ansible_connection: local

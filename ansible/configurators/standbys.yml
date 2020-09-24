@@ -1,0 +1,43 @@
+---
+- hosts: "master-nodes"
+  gather_facts: no
+  vars:
+  tasks:
+    - name: Check if node is master
+      shell:
+        cmd: |
+          docker exec {{ container_name }} \
+            evoke role
+      register: role
+
+    - name: Generate Standby Seeds
+      shell:
+        cmd: |
+          docker exec {{ container_name }} bash -c " \
+            evoke seed standby \
+              {{hostvars[item]['container_name']}} {{ hostvars[inventory_hostname]['container_name'] }} > /opt/cyberark/dap/seeds/standby-seed-{{ item }}.tar
+            "
+      when: role.stdout == 'master'
+      loop: "{{ ansible_play_hosts | difference(inventory_hostname) }}"
+
+    - name: Unpack seed on Standbys
+      shell:
+        cmd: |
+          docker exec {{ container_name }} \
+            evoke unpack seed /opt/cyberark/dap/seeds/standby-seed-{{ inventory_hostname }}.tar
+      when: role.stdout == 'blank'
+
+    - name: Configure Standbys
+      shell:
+        cmd: |
+          docker exec {{ container_name }} \
+            evoke configure standby
+      when: role.stdout == 'blank'
+
+    - name: Cleanup seed files
+      shell:
+        cmd: |
+          docker exec {{ container_name }} \
+            rm -f /opt/cyberark/dap/seeds/standby-seed-{{ item }}.tar || true
+      when: role.stdout == 'master'
+      loop: "{{ ansible_play_hosts | difference(inventory_hostname) }}"

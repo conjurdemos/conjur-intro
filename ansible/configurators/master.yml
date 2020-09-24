@@ -1,0 +1,26 @@
+---
+- hosts: "master-1"
+  gather_facts: no
+  vars:
+  tasks:
+    - name: Check if master has been configured
+      shell:
+        cmd: |
+          docker exec {{ container_name }} \
+            evoke role
+      register: role
+
+    - debug:
+        msg: "role: '{{ role.stdout }}'"
+
+    - name: Configure master
+      shell:
+        cmd: |
+          docker exec {{ container_name }} \
+            evoke configure master \
+              --accept-eula \
+              --hostname conjur-master.mycompany.local \
+              --master-altnames conjur-master-1.mycompany.local,conjur-master-2.mycompany.local,conjur-master-3.mycompany.local \
+              --admin-password {{ password }} \
+            {{ account }}
+      when: role.stdout == 'blank'
