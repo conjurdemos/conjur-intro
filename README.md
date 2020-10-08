@@ -174,14 +174,20 @@ This project can also be used to verify PRs, by installing the branch specific p
 
 ```
 # Start Conjur
-$ ./start
+$ bin/dap --provision-master --version 5.11.0
 ```
 Next in a new tab:
 
 ```
-$ ./install ~/Downloads/conjur-ui_2.10.9.1-e389f20_amd64.deb
+$ bin/install ~/Downloads/conjur-ui_2.10.9.1-e389f20_amd64.deb
 ```
 The install script will install the package into the running Conjur appliance and restart the Conjur service.
+
+You can view the contents of this package by running:
+
+```
+$ docker-compose exec conjur-master-1.mycompany.local ls -a /opt/conjur/possum/
+```
 
 ## Performance Tests
 ```
