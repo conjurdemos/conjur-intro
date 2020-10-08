@@ -1,4 +1,4 @@
-#!/bin/ash -e
+#!/bin/ash -ex
 
 function _print_help() {
   cat << EOF
@@ -156,7 +156,7 @@ follower_url='http://conjur-follower.mycompany.local'
 master_url='https://conjur-master.mycompany.local'
 URL=$follower_url
 USER='admin'
-PASSWORD='MySecretP@ss1'
+PASSWORD='MySecretP@ss1-'
 cmd=''
 
 while true ; do

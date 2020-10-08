@@ -1,4 +1,14 @@
 #!/bin/ash -e
+set -o pipefail
+
+config_path="/src/certificate-generator/configuration"
+certificate_path="/src/certificates"
+
+# Generated Cert paths
+root_destination="$certificate_path/root_ca/ca"
+intermediate_destination="$certificate_path/intermediate_ca/intermediate"
+master_destination="$certificate_path/dap_master/dap-master"
+follower_destination="$certificate_path/dap_follower/dap-follower"
 
 print_help() {
   cat << EOF
@@ -16,10 +26,10 @@ EOF
 copy_to_demo() {
   certificate_destination="/src/dap_certificates"
   cat $certificate_path/root_ca/ca.pem $certificate_path/intermediate_ca/intermediate.pem > $certificate_destination/ca-chain.pem
-  cp $certificate_path/dap_master/dap-master-key.pem $certificate_destination/
-  cp $certificate_path/dap_master/dap-master.pem $certificate_destination/
-  cp $certificate_path/dap_follower/dap-follower-key.pem $certificate_destination/
-  cp $certificate_path/dap_follower/dap-follower.pem $certificate_destination/
+  cp $master_destination-key.pem $certificate_destination/
+  cp $master_destination.pem $certificate_destination/
+  cp $follower_destination-key.pem $certificate_destination/
+  cp $follower_destination.pem $certificate_destination/
   echo "Certificates copied to 'system/configuration/certificates'"
   exit
 }
@@ -33,41 +43,49 @@ create_folders() {
 
 generate_certificates() {
   # Generate Root Certificate if it does not exist
-  if [ ! -f "$certificate_path/root_ca/ca.pem" ]; then
-    cfssl gencert -initca "$config_path/root_ca.json" | cfssljson -bare $certificate_path/root_ca/ca
+  if [ ! -f "$root_destination.pem" ]; then
+    cfssl gencert -initca "$config_path/root_ca.json" | cfssljson -bare $root_destination
   fi
 
   # Generate and sign intermediate certificate if it does not exist
-  if [ ! -f "$certificate_path/intermediate_ca/intermediate.pem" ]; then
+  if [ ! -f "$intermediate_destination.pem" ]; then
     # Generate Intermediate Certificate
-    cfssl gencert -initca $config_path/intermediate_ca.json | cfssljson -bare $certificate_path/intermediate_ca/intermediate
+    cfssl gencert -initca $config_path/intermediate_ca.json | cfssljson -bare $intermediate_destination
 
     # Sign Intermediate with Root
-    cfssl sign -ca $certificate_path/root_ca/ca.pem -ca-key $certificate_path/root_ca/ca-key.pem -config $config_path/cfssl.conf -profile intermediate_ca $certificate_path/intermediate_ca/intermediate.csr | cfssljson -bare $certificate_path/intermediate_ca/intermediate
+    cfssl sign \
+      -ca $root_destination.pem \
+      -ca-key $root_destination-key.pem \
+      -config $config_path/cfssl.conf \
+      -profile intermediate_ca \
+      $intermediate_destination.csr | cfssljson -bare $intermediate_destination
   fi
 
   # Generate and sign master certificate w/ intermediate
-  if [ ! -f "$certificate_path/dap_master/dap-master.pem" ]; then
-    cfssl gencert -ca $certificate_path/intermediate_ca/intermediate.pem -ca-key $certificate_path/intermediate_ca/intermediate-key.pem -config $config_path/cfssl.conf -profile=peer $config_path/dap-master.json | cfssljson -bare $certificate_path/dap_master/dap-master
+  if [ ! -f "$master_destination.pem" ]; then
+    cfssl gencert \
+      -ca $intermediate_destination.pem \
+      -ca-key $intermediate_destination-key.pem \
+      -config $config_path/cfssl.conf \
+      -profile=peer \
+      $config_path/dap-master.json | cfssljson -bare $master_destination
   fi
 
   # Generate and sign follower certificate w/ intermediate
-  if [ ! -f "$certificate_path/dap_follower/dap-follower.pem" ]; then
-    cfssl gencert -ca $certificate_path/intermediate_ca/intermediate.pem -ca-key $certificate_path/intermediate_ca/intermediate-key.pem -config $config_path/cfssl.conf -profile=peer $config_path/dap-follower.json | cfssljson -bare $certificate_path/dap_follower/dap-follower
+  if [ ! -f "$follower_destination.pem" ]; then
+    cfssl gencert \
+      -ca $intermediate_destination.pem \
+      -ca-key $intermediate_destination-key.pem \
+      -config $config_path/cfssl.conf \
+      -profile=peer \
+      $config_path/dap-follower.json | cfssljson -bare $follower_destination
   fi
 }
 
-while true ; do
-  case "$1" in
-    --copy ) copy_to_demo ; shift ;;
-    -h | --help ) print_help ; shift ;;
-     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
-  esac
-done
+main() {
+  create_folders
+  generate_certificates
+  copy_to_demo
+}
 
-config_path="/src/certificate-generator/configuration"
-certificate_path="/src/certificates"
-
-create_folders
-generate_certificates
-copy_to_demo
+main

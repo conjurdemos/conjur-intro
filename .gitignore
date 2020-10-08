@@ -20,5 +20,9 @@ tools/performance-tests/jmeter/jmeter.log
 
 files/haproxy/master/haproxy.cfg
 
-# Certificates
-**/certificates/*
+# Generated Certificates
+**/certificates/ca-chain.pem
+**/certificates/dap-follower.pem
+**/certificates/dap-follower-key.pem
+**/certificates/dap-master.pem
+**/certificates/dap-master-key.pem
