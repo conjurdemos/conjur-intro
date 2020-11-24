@@ -1,0 +1,4 @@
+#!/bin/bash -e
+
+bin/cli conjur policy load --replace root policy/internal/base.yml
+bin/cli conjur policy load  ont policy/internal/one.yml

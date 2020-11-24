@@ -1,0 +1,10 @@
+- !policy
+  id: myfolder
+
+  body:
+    - !host
+      id: mysubfolder
+      annotations:
+        account: mysubfolder
+        comment: IPAS Instance
+      
