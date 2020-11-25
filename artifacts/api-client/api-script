@@ -56,10 +56,11 @@ function authenticate_user() {
 function load_policy() {
   local namespace="$1"
   local policy="$2"
+  local method="${3:-POST}"
   local token=$(authenticate_user $USER $PASSWORD $master_url)
   curl --header "Authorization: Token token=\"$token\"" \
         --insecure \
-        --request POST \
+        --request "$method" \
         --data "$(cat $policy)" \
      "$master_url/policies/demo/policy/$namespace"
 }
@@ -89,6 +90,14 @@ function load_default_policy {
       load_policy "$environment/my-app-$num" 'policy/modular/pg-entitlement.yml'
     done
   done
+
+  load_policy 'root' 'policy/delete_policy/base.yml'
+  load_policy 'delete_branch' 'policy/delete_policy/first_level.yml' 'PUT'
+  load_policy 'delete_branch/first-level' 'policy/delete_policy/second_level.yml'
+}
+
+delete_policy() {
+  load_policy 'delete_branch/first-level' 'policy/delete_policy/delete.yml' 'PATCH'
 }
 
 function load_default_values {
@@ -167,6 +176,7 @@ while true ; do
     -h | --help ) _print_help ; shift ;;
     --load-policy-and-values ) shift ; cmd="load_policy_and_set_variables" ;;
     --load-policy ) shift ; cmd='load_default_policy' ;;
+    --delete-policy ) shift; cmd='delete_policy' ;;
     --set-secrets ) shift ; cmd='load_default_values' ;;
     --against-master ) shift ; URL=$master_url ;;
     --fetch-secrets ) shift ; cmd="retrieve_variables" ;;

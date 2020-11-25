@@ -24,6 +24,7 @@ Usage: bin/dap [options]:
     --trigger-failover            Stops current master (Requires an auto-failover cluster)
     --trust-follower-proxy        Adds Follower load balancer as a trusted proxy (Requires a configured follower)
     --upgrade-master <version>    Restores master from backup (Requires configured master)
+    --wait-for-master             Blocks until the Master is healthy
     --version <version>           Version of DAP to use (defaults to latest build)
 
 
@@ -301,6 +302,29 @@ function _import_certificates {
     "evoke ca import --force --key $cert_path/dap-follower-key.pem $cert_path/dap-follower.pem"
 }
 
+function _wait_for_master {
+  local master_url="https://localhost"
+
+  echo "Waiting for DAP Master to be ready..."
+
+  # Wait for 10 successful connections in a row
+  local COUNTER=0
+  while [ $COUNTER -lt 10 ]; do
+    local response
+    response=$(curl -k --silent --head "$master_url/health" || true)
+
+    if ! echo "$response" | grep -q "Conjur-Health: OK"; then
+      sleep 5
+      COUNTER=0
+    else
+      (( COUNTER=COUNTER+1 ))
+    fi
+
+    sleep 1
+    echo "Successful Health Checks: $COUNTER"
+  done
+}
+
 TAG=5.0-stable
 DRY_RUN=false
 PULL_IMAGES=true
@@ -323,6 +347,7 @@ while true ; do
     --create-backup ) CMD='_create_backup' ; shift ;;
     --restore-from-backup ) CMD='_restore_from_backup' ; shift ;;
     --trust-follower-proxy ) CMD='_add_follower_proxy' ; shift ;;
+    --wait-for-master ) CMD='_wait_for_master' ; shift ;;
     --stop ) _stop ; shift ;;
      * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
   esac
