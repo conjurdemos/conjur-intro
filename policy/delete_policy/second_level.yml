@@ -1,0 +1,8 @@
+- !policy
+  id: second-level
+  body:
+    - !host
+      id: third-level
+      annotations:
+        account: my-account
+        comment: A comment about this host

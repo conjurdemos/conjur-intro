@@ -1,0 +1,151 @@
+#!/usr/bin/env bash
+
+set -eu
+
+# An upgrade test automation tool.
+#
+# Synopsis: bin/upgrade-test <initial-version> <upgrade-version>
+
+main() {
+  if [ "$#" -ne 2 ]; then
+      print_help
+  fi
+
+  local before_version=$1
+  local after_version=$2
+
+  header "Stand Up Initial $before_version Cluster"
+  standup_before_cluster "$before_version"
+  echo
+
+  header "Exercise Initial Cluster"
+  exercise_cluster "$before_version"
+  echo
+
+  header "Backup and Restore $before_version Cluster"
+  backup_and_restore_cluster "$before_version" 
+  echo
+
+  header "Upgrade to $after_version"
+  upgrade_cluster "$after_version"
+  echo
+
+  header "Exercise Upgraded Cluster"
+  exercise_cluster
+  echo
+
+  header "Backup and Restore $after_version Cluster"
+  backup_and_restore_cluster "$after_version" 
+  echo
+
+  header "Exercise Upgraded and Restored Cluster"
+  exercise_cluster
+  echo
+
+  header "Failover Master"
+  failover_master
+  echo
+
+  header "Exercise Cluster After Failover"
+  exercise_cluster
+  echo
+
+  header "Tear Down Test Environment"
+  bin/dap --stop
+  echo
+
+  echo "Upgrade test complete!"
+}
+
+function print_help {
+  cat << EOF
+
+An upgrade test automation tool.
+
+Synopsis: bin/upgrade-test <initial-version> <upgrade-version>
+EOF
+  exit
+}
+
+standup_before_cluster() {
+  local version=$1
+
+  echo "Provisioning $version Master..."
+  bin/dap --provision-master --version "$version"
+
+  # TODO: 3rd party certificates currently cause an error when attempting
+  # to load policy in dap-intro
+  # echo "Importing 3rd party certificates..."
+  # bin/dap --import-custom-certificates
+
+  rollout_cluster "$version"
+}
+
+exercise_cluster() {
+  echo "Loading policy..."
+  bin/api --load-policy
+
+  echo "Setting secret values..."
+  bin/api --set-secrets
+
+  echo "Retrieving secret value from Master..."
+  bin/api --fetch-secrets --against-master
+
+  echo "Retrieving secret value from Follower..."
+  bin/api --fetch-secrets
+
+  echo "Deleting policy..."
+  bin/api --delete-policy
+}
+
+failover_master() {
+  echo "Triggering a failover event..."
+  bin/dap --trigger-failover 
+
+  echo "Waiting for healthy Master..."
+  bin/dap --wait-for-master
+}
+
+backup_and_restore_cluster() {
+  local version=$1
+
+  echo "Creating backup..."
+  bin/dap --create-backup
+
+  echo "Restoring backup..."
+  bin/dap --restore-from-backup --version "$version"
+
+  rollout_cluster "$version"
+}
+
+upgrade_cluster () {
+  local version=$1
+
+  echo "Upgrading DAP Master to $version..."
+  bin/dap --upgrade-master "$version"
+
+  rollout_cluster "$version"
+}
+
+rollout_cluster() {
+  local version=$1 
+
+  echo "Provisioning $version Standbys..."
+  bin/dap --provision-standbys --version "$version"
+
+  echo "Enabling Auto-Failover..."
+  bin/dap --enable-auto-failover
+
+  echo "Provisioning $version Follower"
+  bin/dap --provision-follower --version "$version"
+}
+
+header() {
+  local message=$1
+
+  echo "---------------------------------------------"
+  echo "$message"
+  echo "---------------------------------------------"
+}
+
+main "$@"
