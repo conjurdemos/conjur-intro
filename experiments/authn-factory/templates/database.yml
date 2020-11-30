@@ -1,0 +1,37 @@
+- !policy
+  id: connection
+  annotations:
+    resource/type: database
+    resource/sub-type: postgresql
+  body:
+    - &variables
+      - !variable username
+      - !variable password
+      - !variable url
+      - !variable port
+
+    - !layer
+
+    - !group
+      id: users
+      annotations:
+        editable: true
+
+    - !group administrators
+
+    # Allow Users to read and execute
+    - !permit
+      resource: *variables
+      privileges: [ read, execute ]
+      role: !group users
+
+    # Allow Administrators to update
+    - !permit
+      resource: *variables
+      privileges: [ update ]
+      role: !group administrators
+
+    # Allow Administrators to read and execute through Users permissions
+    - !grant
+      role: !group users
+      member: !group administrators

@@ -1,0 +1,16 @@
+- !policy
+  id: conjur/authn-azure/azure-test-2
+  body:
+  - !webservice
+
+  - !variable provider-uri
+
+  - !group
+    id: workloads
+    annotations:
+      description: Group of hosts that can authenticate using the authn-azure/azure-test-2 authenticator
+
+  - !permit
+    role: !group workloads
+    privilege: [ read, authenticate ]
+    resource: !webservice

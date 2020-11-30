@@ -1,0 +1,7 @@
+- !policy
+  id: production
+  body:
+    - !policy
+      id: databases
+      body:
+        - !policy database-1

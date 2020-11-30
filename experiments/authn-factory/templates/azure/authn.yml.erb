@@ -1,0 +1,16 @@
+- !policy
+  id: conjur/authn-azure/<%= authenticator_identifier %>
+  body:
+  - !webservice
+
+  - !variable provider-uri
+
+  - !group
+    id: workloads
+    annotations:
+      description: Group of hosts that can authenticate using the authn-azure/<%= authenticator_identifier %> authenticator
+
+  - !permit
+    role: !group workloads
+    privilege: [ read, authenticate ]
+    resource: !webservice

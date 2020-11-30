@@ -1,0 +1,37 @@
+#!/bin/bash -ex
+
+API_KEY='32wd8kv331640x6609qh1ghhz3112ep15s3p0vrqfz916maxafs2x'
+ACCOUNT='demo'
+URL='dap-master'
+TOKEN_FILE=/opt/secretless/auth-token.json
+mkdir -p /opt/secretless
+
+function authenticate_user {
+  api_key="$(curl -s -k --user admin:MySecretP@ss1 "https://$URL/authn/demo/login")"
+  echo $api_key
+
+}
+
+function retrieve_authentication_token {
+  # local hostname=$(urlencode $HOSTNAME)
+  raw_token="$(curl -s -k -X POST -d "$API_KEY" "https://$URL/authn/demo/admin/authenticate")"
+  # echo '-------------'
+  echo "$raw_token" > $TOKEN_FILE
+  # echo '-------------'
+
+  # token=$(echo -n $raw_token | base64 | tr -d '\r\n')
+  # echo "$token"
+}
+
+function main {
+  # authenticate_user
+  retrieve_authentication_token
+}
+
+main
+
+
+# Todo
+# - Can we generate a connection string (simplified integration)
+# - Can/Should we build the secretless.yml file dynamically?
+# - Can we populate username/database-name as environment variables?

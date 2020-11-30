@@ -1,0 +1,8 @@
+FROM postgres:latest
+
+RUN mkdir -p /opt/config
+COPY config/postgres/pg_server.crt /opt/config
+COPY config/postgres/pg_server.key /opt/config
+
+COPY config/postgres/postgres.conf /etc/postgres
+CMD postgres -c config_file=/etc/postgres/postgres.conf

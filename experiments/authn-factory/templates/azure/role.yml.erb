@@ -1,0 +1,20 @@
+- !policy
+  id: <%= workload_identifier %>
+  body:
+    - !layer
+
+    - !host
+      annotations:
+        authn-azure/subscription-id: <%= subscription_id %>
+        authn-azure/resource-group: <%= resource_group %>
+        # authn-azure/user-assigned-identity: <user-assigned managed identity>
+        # authn-azure/system-assigned-identity: <Object ID>
+
+    - !grant
+      role: !layer
+      members: !host
+
+# Grant Workload permission to use the Azure Authenticator
+- !grant
+  member: !layer <%= workload_identifier %>
+  role: !group workloads

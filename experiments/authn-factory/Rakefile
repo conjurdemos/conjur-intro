@@ -1,0 +1,26 @@
+require 'conjur/api'
+require 'openssl'
+
+namespace :syncer do
+  def api
+    # OpenSSL::SSL::SSLContext::DEFAULT_CERT_STORE.add_file("/opt/#{name.split('-').last}/conjur/etc/ssl/#{name}.pem")
+    OpenSSL::SSL::SSLContext::DEFAULT_CERT_STORE.add_file('/dap-certs/dap-master.pem')
+    Conjur.configuration.account = 'demo'
+    Conjur.configuration.appliance_url = "https://dap-master/api"
+    api_key = Conjur::API.login('admin', 'MySecretP@ss1')
+    Conjur::API.new_from_key('admin', api_key)
+  end
+
+  task :load_database_policy do
+    puts api.load_policy('root', File.read('templates/base.yml'))
+    puts api.load_policy('production/databases/database-1', File.read('templates/database.yml'))
+    puts api.resource('demo:variable:production/databases/database-1/database/username').add_value('postgres')
+    puts api.resource('demo:variable:production/databases/database-1/database/password').add_value('example')
+    puts api.resource('demo:variable:production/databases/database-1/database/url').add_value('pg')
+    puts api.resource('demo:variable:production/databases/database-1/database/port').add_value('5432')
+    # Grant
+    # puts api.load_policy(
+    #
+    # )
+  end
+end

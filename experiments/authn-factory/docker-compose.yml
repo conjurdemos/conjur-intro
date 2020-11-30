@@ -1,0 +1,65 @@
+version: "3"
+services:
+  dap-master:
+    image: registry2.itci.conjur.net/conjur-appliance:11.7.0
+    container_name: dap-master
+    ports:
+      - "8443:443"
+    security_opt:
+      - "seccomp:unconfined"
+    volumes:
+      - dap-certs:/opt/conjur/etc/ssl
+
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    command: sleep infinity
+    volumes:
+      - ./client/bin:/src/client/bin
+      - auth-token:/opt/secretless
+
+  authn-factory:
+    build:
+      context: .
+    container_name: authn-factory
+    ports:
+      - "4567:4567"
+    expose:
+      - "4567"
+    command: ruby factory.rb
+    volumes:
+      - ./:/src/authn-factory
+      - dap-certs:/dap-certs
+
+  secretless:
+    image: cyberark/secretless-broker
+    ports:
+      - "5454:5454"
+    command: secretless-broker -f /opt/config/secretless.yml -debug
+    environment:
+      CONJUR_APPLIANCE_URL: https://dap-master
+      CONJUR_ACCOUNT: demo
+      CONJUR_AUTHN_LOGIN: admin
+      # CONJUR_AUTHN_API_KEY: 32wd8kv331640x6609qh1ghhz3112ep15s3p0vrqfz916maxafs2x
+      CONJUR_AUTHN_TOKEN_FILE: /opt/secretless/auth-token.json
+      CONJUR_CERT_FILE: /dap-certs/dap-master.pem
+    volumes:
+      - ./secretless/secretless.yml:/secretless.yml
+      # - ./secretless/auth-token.json:/opt/auth-token.json
+      - auth-token:/opt/secretless
+      - dap-certs:/dap-certs
+
+  pg:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: example
+    volumes:
+      - ./config/postgres/pg_server.crt:/var/lib/postgresql/server.crt
+      - ./config/postgres/pg_server.key:/var/lib/postgresql/server.key
+    command: postgres -c ssl=on -c ssl_cert_file=/var/lib/postgresql/server.crt -c ssl_key_file=/var/lib/postgresql/server.key
+
+volumes:
+  dap-certs:
+  auth-token:

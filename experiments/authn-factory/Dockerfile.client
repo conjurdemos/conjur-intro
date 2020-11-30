@@ -1,0 +1,11 @@
+# FROM alpine:3.11
+FROM ubuntu:20.04
+
+# RUN set -x
+# RUN apk update && apk add --virtual postgresql-client jq curl
+# RUN rm -rf /var/cache/apk/*
+RUN apt-get update && apt-get install -y postgresql-client jq curl
+
+RUN mkdir -p /src/client
+WORKDIR /src/client
+COPY ./client/bin /src/client/bin
