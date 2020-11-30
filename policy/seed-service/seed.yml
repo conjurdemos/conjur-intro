@@ -1,0 +1,25 @@
+- !webservice seed-generation
+- !layer masters
+- !layer followers
+
+- !group seed-service
+
+- !permit
+  role: !group seed-service
+  resource: !webservice seed-generation
+  privileges: [ "execute" ]
+
+- !grant
+  members:
+    - !layer masters
+    - !layer followers
+  role: !group seed-service
+
+- !host master-2
+- !host master-3
+
+- !grant
+  members:
+    - !host master-2
+    - !host master-3
+  role: !layer masters
