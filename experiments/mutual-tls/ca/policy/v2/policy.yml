@@ -1,0 +1,86 @@
+- !policy
+  id: staging
+  body:
+    - !policy
+      id: applications
+      body:
+        - !policy
+          id: application-1
+          body:
+            - !layer
+            - !host
+              id: instance-1
+              annotations:
+                ca/hostname: application-1
+            - !grant
+              member: !host instance-1
+              role: !layer
+
+            - !policy
+              id: certificate-authentication
+              body:
+                - !webservice
+
+                # - &variables
+                - !variable private-key
+                - !variable certificate
+                - !variable certificate-chain
+
+                - !group authorized
+
+                # Permit those in the Authorized group to have a CSR signed by
+                # this resource's Certificate Authority. This signing enables
+                # group members to connect using mutual TLS.
+                - !permit
+                  resource: !webservice
+                  privileges: [ x509-signing ]
+                  role: !group authorized
+
+                # Permit thos in the Authorized group to retrieve the public
+                # certificate of this CA.
+                - !permit
+                  resource: !variable certificate-chain
+                  privileges: [ read, execute ]
+                  role: !group authorized
+
+            - !grant
+              member: !layer
+              role: !group certificate-authentication/authorized
+                
+
+    - !policy
+      id: databases
+      body:
+        - !policy
+          id: database-1
+          body:
+            - !policy
+              id: certificate-authentication
+              body:
+                - !webservice
+
+                - &variables
+                  - !variable private-key
+                  - !variable certificate
+                  - !variable certificate-chain
+
+                - !group authorized
+
+                # Permit those in the Authorized group to have a CSR signed by
+                # this resource's Certificate Authority. This signing enables
+                # group members to connect using mutual TLS.
+                - !permit
+                  resource: !webservice
+                  privileges: [ x509-signing ]
+                  role: !group authorized
+
+                # Permit thos in the Authorized group to retrieve the public
+                # certificate of this CA.
+                - !permit
+                  resource: !variable certificate-chain
+                  privileges: [ read, execute ]
+                  role: !group authorized
+
+    - !grant
+      member: !layer applications/application-1
+      role: !group databases/database-1/certificate-authentication/authorized

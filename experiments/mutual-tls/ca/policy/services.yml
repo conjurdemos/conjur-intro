@@ -1,0 +1,20 @@
+# - !policy
+#   id: databases
+#   # templates:
+#   #   - certificate-authenticatable
+#   #   - database
+#   body:
+#     - !policy database-1
+#     # - !policy application-2
+#     # - !policy authentication
+#     # - !policy oracle
+
+- !policy
+  id: applications
+  # templates:
+  #   - certificate-authenticatable
+  #   - application
+  body:
+    - !policy application-1
+    - !policy application-2
+#     - !policy authentication

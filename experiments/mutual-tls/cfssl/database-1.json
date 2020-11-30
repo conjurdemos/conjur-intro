@@ -1,0 +1,19 @@
+{
+  "CN": "database-1.staging.mycompany.com",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+  {
+    "C": "US",
+    "L": "Newton",
+    "ST": "Massachusetts",
+    "O": "Cyberark",
+    "OU": "Conjur"
+  }
+  ],
+  "hosts": [
+    "staging/databases/database-1"
+  ]
+}

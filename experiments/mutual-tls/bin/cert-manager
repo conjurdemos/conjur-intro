@@ -1,0 +1,116 @@
+#!/bin/ash -e
+
+# This script requires jq and curl be installed in the underlying system
+
+BASE_FOLDER='/conjur-managed-certs'
+API_KEY='3q0yx2xanthfy2k3y5n139bvq002042m7k1xqw24q3p2990dfn8rbk'
+HOSTNAME='staging/applications/application-1/instance-1'
+URL='dap-master'
+ACCOUNT='demo'
+
+function main {
+  setup
+  sign_certificates
+}
+
+function sign_certificates {
+  cas=$(available_authorities | cut -d':' -f 3 | sed 's?/certificate-authentication/authorized"??g')
+  for ca in $cas; do
+    echo "sign with $ca"
+    sign_csr $ca
+  done
+}
+
+function sign_csr {
+  local ca_authority=$1
+  local name='application-1'
+  local token=$(retrieve_authentication_token)
+  response=$(curl --header "Authorization: Token token=\"$token\"" \
+      --insecure \
+      --request POST \
+      --form data=@$BASE_FOLDER/$name.csr \
+      http://ca:4567/ca/$ca_authority
+  )
+  echo $response | base64 -d > "$BASE_FOLDER/$name-$(echo $ca_authority | sed -e "s/\//_/g").pem"
+}
+
+
+function available_authorities {
+  local token=$(retrieve_authentication_token)
+  local hostname=$(urlencode $HOSTNAME)
+  # echo $token
+  response=$(curl --header "Authorization: Token token=\"$token\"" \
+        --insecure \
+        --request GET \
+        "https://$URL/roles/$ACCOUNT/host/$hostname?memberships&all=true")
+  echo $response | jq -c '.[] | select(. | contains("certificate-authentication/authorized"))'
+}
+
+
+function urlencode {
+  local in_str="$1"
+  echo $in_str | sed -e "s/\//%2F/g"
+}
+
+function retrieve_authentication_token {
+  local hostname=$(urlencode $HOSTNAME)
+  raw_token="$(curl -s -k -X POST -d $API_KEY "https://$URL/authn/$ACCOUNT/host%2F$hostname/authenticate")"
+  token=$(echo -n $raw_token | base64 | tr -d '\r\n')
+  echo "$token"
+}
+
+function setup {
+  # Create base folder
+  mkdir -p $BASE_FOLDER
+
+  # Generate a certificate pair for this instance
+  # (using a local config file for now)
+  if [ ! -f "$BASE_FOLDER/application-1.pem" ]; then
+    cfssl gencert \
+      -initca /config/application-1.json | \
+      cfssljson \
+        -bare $BASE_FOLDER/application-1
+
+    echo 'Certificate pair generated'
+  fi
+}
+
+main
+
+# folder='/conjur-managed-certs'
+# mkdir -p $folder
+#
+# # Generate Certificates
+# if [ ! -f "$folder/application-1.pem" ]; then
+#   cfssl gencert \
+#     -initca /config/application-1.json | \
+#     cfssljson \
+#       -bare $folder/application-1
+#
+#   echo 'Certificate pair generated'
+# fi
+
+# # Sign with Application 1 CA
+# cfssl sign \
+#   -config /config/request-profile.json \
+#   -profile application_1 \
+#   -label application_1 \
+#   $folder/application-1.csr | \
+#   cfssljson \
+#     -bare $folder/application-1
+#
+# echo 'Signed by Application 1 CA (so others can connect to this application)'
+#
+#
+# # Sign with Database 1 CA to enable access
+# cfssl sign \
+#   -config /config/request-profile.json \
+#   -profile database_1 \
+#   -label database_1 \
+#   $folder/application-1.csr | \
+#   cfssljson \
+#     -bare $folder/database-1
+#
+# echo 'Signed by Database 1 CA (so this application can connect to the database)'
+#
+# cat $folder/application-1-key.pem $folder/database-1.pem > $folder/combo.pem

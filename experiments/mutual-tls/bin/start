@@ -1,0 +1,152 @@
+#!/bin/bash -e
+
+
+docker-compose up -d
+docker-compose exec dap-master bash -c "
+  evoke configure master \
+   --accept-eula \
+   --hostname dap-master \
+   --admin-password MySecretP@ss1 \
+   demo
+"
+docker-compose exec ca /bin/ash
+
+
+# dc run --rm database-1.staging.mycompany.com
+
+# folder_path='experiments/mutual-tls'
+# config="$folder_path/cfssl"
+# cas="$folder_path/certificates/cas"
+# certs="$folder_path/certificates"
+#
+# mkdir -p $certs/cas/{root,database-1,application-1,application-2}
+# mkdir -p $certs/{application-1,application-2,database-1}
+
+# # Generate a root certificate
+# cfssl gencert \
+#   -initca "$config/ca.json" | \
+#   cfssljson \
+#     -bare "$cas/root/ca"
+
+# #
+# # ------------ Database 1 CA ----------------
+# #
+# # Generate database intermediate CA
+# cfssl gencert \
+#   -initca $config/database-1-ca.json | \
+#   cfssljson \
+#     -bare $cas/database-1/database-1
+#
+# # Sign Intermediate with Root
+# cfssl sign \
+#   -ca $cas/root/ca.pem \
+#   -ca-key $cas/root/ca-key.pem \
+#   -config $config/config.json \
+#   -profile intermediate_ca \
+#   $cas/database-1/database-1.csr | \
+#   cfssljson \
+#     -bare $cas/database-1/database-1
+#
+# cat $cas/root/ca.pem $cas/database-1/database-1.pem > $cas/database-1/chain.pem
+
+# #
+# # ------------ Application 1 CA ----------------
+# #
+# # Generate application 1 intermediate CA
+# cfssl gencert \
+#   -initca $config/application-1-ca.json | \
+#   cfssljson \
+#     -bare $cas/application-1/application-1
+#
+# # Sign Intermediate with Root
+# cfssl sign \
+#   -ca $cas/root/ca.pem \
+#   -ca-key $cas/root/ca-key.pem \
+#   -config $config/config.json \
+#   -profile intermediate_ca \
+#   $cas/application-1/application-1.csr | \
+#   cfssljson \
+#     -bare $cas/application-1/application-1
+#
+# cat $cas/root/ca.pem $cas/application-1/application-1.pem > $cas/application-1/chain.pem
+
+# #
+# # ------------ Application 2 CA ----------------
+# #
+# # Generate application 2 intermediate CA
+# cfssl gencert \
+#   -initca $config/application-2-ca.json | \
+#   cfssljson \
+#     -bare $cas/application-2/application-2
+#
+# # # Sign Intermediate with Root
+# cfssl sign \
+#   -ca $cas/root/ca.pem \
+#   -ca-key $cas/root/ca-key.pem \
+#   -config $config/config.json \
+#   -profile intermediate_ca \
+#   $cas/application-2/application-2.csr | \
+#   cfssljson \
+#     -bare $cas/application-2/application-2
+#
+# cat $cas/root/ca.pem $cas/application-2/application-2.pem > $cas/application-2/chain.pem
+
+# #
+# # ------------ Database 1 ----------------
+# #
+# # Generate database 1 certificates
+# cfssl gencert \
+#   -initca $config/database-1.json | \
+#   cfssljson \
+#     -bare $certs/database-1/database-1
+# cfssl sign \
+#   -ca $cas/database-1/database-1.pem \
+#   -ca-key $cas/database-1/database-1-key.pem \
+#   -config $config/config.json \
+#   -profile intermediate_ca \
+#   $certs/database-1/database-1.csr | \
+#   cfssljson \
+#     -bare $certs/database-1/database-1
+
+
+
+# #
+# # ------------ Application 1 ----------------
+# #
+# # Generate application 1 certificates
+# cfssl gencert \
+#   -initca $config/application-1.json | \
+#   cfssljson \
+#     -bare $certs/application-1/application-1
+
+# #
+# # ------------ Application 2 ----------------
+# #
+# # Generate application 2 certificates
+# cfssl gencert \
+#   -initca $config/application-2.json | \
+#   cfssljson \
+#     -bare $certs/application-2/application-2
+
+# # Sign Application 1 CSR with Application 2 CA (to enable mutual TLS
+# # access for Application 1 to Application 2)
+# cfssl sign \
+#   -ca $cas/application-2/application-2.pem \
+#   -ca-key $cas/application-2/application-2-key.pem \
+#   -config $config/config.json \
+#   -profile intermediate_ca \
+#   $certs/application-1/application-1.csr | \
+#   cfssljson \
+#     -bare $certs/application-1/application-1-database-
+
+
+# # Sign Application 1 CSR with Database 1 CA (to enable mutual TLS
+# # access for Application 1 to Database 2)
+# cfssl sign \
+#   -ca $cas/database-1/database-1.pem \
+#   -ca-key $cas/database-1/database-1-key.pem \
+#   -config $config/config.json \
+#   -profile intermediate_ca \
+#   $certs/application-1/application-1.csr | \
+#   cfssljson \
+#     -bare $certs/application-1/application-1-to-database-1

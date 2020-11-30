@@ -1,0 +1,30 @@
+- !policy
+  id: database
+  body:
+    - &variables
+      - !variable username
+      - !variable password
+      - !variable servername
+      - !variable port
+
+    - !layer
+
+    - !group users
+    - !group administrators
+
+    # Allow Users to read and execute
+    - !permit
+      resource: *variables
+      privileges: [ read, execute ]
+      role: !group users
+
+    # Allow Administrators to update
+    - !permit
+      resource: *variables
+      privileges: [ update ]
+      role: !group administrators
+
+    # Allow Administrators to read and execute through Users permissions
+    - !grant
+      role: !group users
+      member: !group administrators

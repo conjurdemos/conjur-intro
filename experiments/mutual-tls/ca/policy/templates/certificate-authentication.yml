@@ -1,0 +1,45 @@
+- !policy
+  id: certificate-authentication
+  body:
+    - !webservice
+
+    - &variables
+      - !variable private-key
+      - !variable certificate
+      - !variable certificate-chain
+
+    - !group authorized
+
+    # Permit those in the Authorized group to have a CSR signed by
+    # this resource's Certificate Authority. This signing enables
+    # group members to connect using mutual TLS.
+    - !permit
+      resource: !webservice
+      privileges: [ x509-signing ]
+      role: !group authorized
+
+    # Permit thos in the Authorized group to retrieve the public
+    # certificate of this CA.
+    - !permit
+      resource: !variable certificate-chain
+      privileges: [ read, execute ]
+      role: !group authorized
+
+    # Permit Certificate Authority access to this Intermediate CA's certs
+    - !group authority
+
+    - !permit
+      resources:
+        - !variable private-key
+        - !variable certificate
+      privileges: [ read, exectute ]
+      role: !group authority
+
+    # Create a group, Administrators, which is allowed to manage this CA's
+    # certificates. This allows certificate rotation to be delegated.
+    - !group administrators
+
+    - !permit
+      resource: *variables
+      privileges: [ read, execute, update ]
+      role: !group administrators

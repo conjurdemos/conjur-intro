@@ -1,0 +1,19 @@
+{
+  "CN": "application-1",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+  {
+    "C": "US",
+    "L": "Newton",
+    "ST": "Massachusetts",
+    "O": "Cyberark",
+    "OU": "Conjur"
+  }
+  ],
+  "hosts": [
+    "application-1.staging.mycompany.com"
+  ]
+}

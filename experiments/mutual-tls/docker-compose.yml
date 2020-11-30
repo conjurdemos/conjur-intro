@@ -1,0 +1,69 @@
+version: "3"
+services:
+  dap-master:
+    image: registry2.itci.conjur.net/conjur-appliance:11.7.0
+    container_name: dap-master
+    ports:
+      - "443:443"
+    security_opt:
+      - "seccomp:unconfined"
+    volumes:
+      - dap-certs:/opt/conjur/etc/ssl
+
+  ca:
+    build:
+      context: ./ca
+    container_name: ca
+    ports:
+      - "4567:4567"
+    expose:
+      - "4567"
+    command: ruby ca.rb
+    volumes:
+      - ./certificates:/certs
+      - ./cfssl:/config
+      - ./ca:/src/ca
+      - .:/opt/cfssl
+      - dap-certs:/dap-certs
+
+  database:
+    image: postgres
+    container_name: database-1.staging.mycompany.com
+    restart: always
+    environment:
+      POSTGRES_USER: docker
+      POSTGRES_PASSWORD: docker
+    ports:
+      - "6432:5432"
+    expose:
+      - "5432"
+    volumes:
+      - ./postgres/postgres.conf:/etc/postgresql/postgresql.conf
+      - ./postgres/data:/var/lib/postgresql/data
+      - ./postgres/db-init.sh:/docker-entrypoint-initdb.d/db-init.sh
+      - ./certificates:/certs
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+
+  db-client:
+    build:
+      context: .
+    command: sleep infinity
+    volumes:
+      - ./certificates:/certs
+      - ./cfssl:/config
+      - ./bin:/opt/bin
+      - .:/opt/source
+
+  # cfssl:
+  #   build:
+  #     context: .
+  #   container_name: cfssl
+  #   expose:
+  #     - "80"
+  #   working_dir: /opt/cfssl
+  #   command: multirootca -a 0.0.0.0:80 -l default -roots cfssl/multiroot-profile.ini
+  #   volumes:
+  #     - .:/opt/cfssl
+
+volumes:
+  dap-certs:

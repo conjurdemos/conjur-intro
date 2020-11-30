@@ -1,0 +1,30 @@
+# Application 1 grants
+- !grant
+  role: !layer applications/application-1/application
+  member: !group databases/database-1/certificate-authentication/authorized
+  
+# - !grant
+#   role: !layer applications/application-1
+#   member: !group applications/authentication/authorized
+#
+# - !grant
+#   role: !layer applications/application-1
+#   member: !group databases/application-1/authorized
+#
+# # Application 2 grants
+# - !grant
+#   role: !layer applications/application-2
+#   member: !group applications/authentication/authorized
+#
+# - !grant
+#   role: !layer applications/application-2
+#   member: !group databases/application-2/authorized
+#
+# - !grant
+#   role: !layer applications/application-2
+#   member: !group databases/oracle/authorized
+#
+# # Authentication grants
+# - !grant
+#   role: !layer applications/authentication
+#   member: !group databases/authentication/authorized

@@ -1,0 +1,19 @@
+{
+  "signing": {
+    "default": {
+      "auth_remote": {
+        "remote": "ca_server",
+        "auth_key": "default_auth"
+      }
+    }
+  },
+  "auth_keys": {
+    "default_auth": {
+      "key": "4409844391027686323027382711800239083838958354",
+      "type": "standard"
+    }
+  },
+  "remotes": {
+    "ca_server": "cfssl:80"
+  }
+}

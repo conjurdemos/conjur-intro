@@ -1,0 +1,16 @@
+{
+  "CN": "Cyberark CA",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+     {
+       "C": "US",
+       "L": "Newton",
+       "O": "Cyberark USA Engineering",
+       "OU": "Conjur",
+       "ST": "Massachusetts"
+     }
+  ]
+}
