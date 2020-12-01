@@ -25,7 +25,9 @@ EOF
 
 copy_to_demo() {
   certificate_destination="/src/dap_certificates"
-  cat $certificate_path/root_ca/ca.pem $certificate_path/intermediate_ca/intermediate.pem > $certificate_destination/ca-chain.pem
+  cat $certificate_path/root_ca/ca.pem \
+    $certificate_path/intermediate_ca/intermediate.pem > \
+      $certificate_destination/ca-chain.pem
   cp $master_destination-key.pem $certificate_destination/
   cp $master_destination.pem $certificate_destination/
   cp $follower_destination-key.pem $certificate_destination/
@@ -44,13 +46,15 @@ create_folders() {
 generate_certificates() {
   # Generate Root Certificate if it does not exist
   if [ ! -f "$root_destination.pem" ]; then
-    cfssl gencert -initca "$config_path/root_ca.json" | cfssljson -bare $root_destination
+    cfssl gencert -initca "$config_path/root_ca.json" | \
+    cfssljson -bare $root_destination
   fi
 
   # Generate and sign intermediate certificate if it does not exist
   if [ ! -f "$intermediate_destination.pem" ]; then
     # Generate Intermediate Certificate
-    cfssl gencert -initca $config_path/intermediate_ca.json | cfssljson -bare $intermediate_destination
+    cfssl gencert -initca $config_path/intermediate_ca.json | \
+    cfssljson -bare $intermediate_destination
 
     # Sign Intermediate with Root
     cfssl sign \

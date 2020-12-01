@@ -7,10 +7,10 @@
   "names": [
     {
       "C": "US",
+      "ST": "Massachusetts",
       "L": "Newton",
-      "O": "Cyberark",
-      "OU": "Conjur",
-      "ST": "Massachusetts"
+      "O": "Cyberark USA Engineering",
+      "OU": "Conjur"
     }
   ],
   "ca": {
