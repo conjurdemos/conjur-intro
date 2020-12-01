@@ -100,8 +100,9 @@ function _setup_standby {
 }
 
 function _start_standby_synchronization {
-  _run conjur-master-1.mycompany.local \
-    "evoke replication sync start"
+  #_run conjur-master-1.mycompany.local \
+  #  "evoke replication sync start"
+  echo "did not start replication"
 }
 
 function _setup_follower {
@@ -302,11 +303,11 @@ function _trigger_master_failover_failover {
 function _import_certificates {
   local cert_path='/opt/cyberark/dap/configuration/certificates'
   _run conjur-master-1.mycompany.local \
-    "evoke ca import --root $cert_path/ca-chain.cert.pem"
+    "evoke ca import --force --root $cert_path/ca-chain.cert.pem"
   _run conjur-master-1.mycompany.local \
-    "evoke ca import --key $cert_path/conjur-master.mycompany.local.key.pem --set $cert_path/conjur-master.mycompany.local.cert.pem"
+    "evoke ca import --force --key $cert_path/conjur-master.mycompany.local.key.pem --set $cert_path/conjur-master.mycompany.local.cert.pem"
   _run conjur-master-1.mycompany.local \
-    "evoke ca import --key $cert_path/conjur-follower.mycompany.local.key.pem $cert_path/conjur-follower.mycompany.local.cert.pem"
+    "evoke ca import --force --key $cert_path/conjur-follower.mycompany.local.key.pem $cert_path/conjur-follower.mycompany.local.cert.pem"
 }
 
 TAG=5.0-stable
