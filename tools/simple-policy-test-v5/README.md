@@ -11,10 +11,10 @@ $ ./apply-and-watch <MASTER_HOSTNAME> <ACCOUNT> <ADMIN_API_KEY> [<FOLLOWER_HOSTN
 
 Example with both master and follower:
 ```
-$ ./apply-and-watch master.myorg.com default supersecretapikey follower.myorg.com
+$ ./apply-and-watch master.myorg.com demo supersecretapikey follower.myorg.com
 ```
 
 Example with no follower:
 ```
-$ ./apply-and-watch master.myorg.com default supersecretapikey
+$ ./apply-and-watch master.myorg.com demo supersecretapikey
 ```
