@@ -67,7 +67,7 @@ $ bin/api --fetch-secrets
 |--import-custom-certificates|action|• Imports pre-generated 3rd-party certificates|Requires configured master|
 |--promote-standby|action|• Stops the current master<br>• Promotes a standby| Requires configured standbys and no auto-failover|
 |--provision-follower|action|• Removes follower if present<br>• Starts a DAP container and a Layer 7 load balancer<br>• Generates a follower seed<br>• Configures follower|Requires configured master|
-|--provision-master|action|• Starts a DAP container and Layer 4 load balancer<br>• Configures with account `default` and password `MySecretP@ss1`||
+|--provision-master|action|• Starts a DAP container and Layer 4 load balancer<br>• Configures with account `demo` and password `MySecretP@ss1`||
 |--provision-standbys|action|• Removes standbys if present<br>• Starts two DAP containers<br>• Generates standby seed files<br>• Configures standbys<br>• Enable Synchronous Standby|Requires configured master|
 |--restore-from-backup|action|• Removes auto-failover (if enabled)<br>• Stops and renames master<br>• Starts new DAP container<br>• Restores master from backup|Requires a previously created backup|
 |--stop|action|Stops and removes all containers||
@@ -103,7 +103,7 @@ $ bin/dap --provision-master
 
 This instance runs behind an HAProxy load balancer and is available at: [https://localhost].  Login:
 
-- Account `default`
+- Account `demo`
 - User: `admin`
 - Password: `MySecretP@ss1`
 
@@ -119,7 +119,7 @@ $ bin/dap --provision-follower
 
 This instance runs behind an HAProxy load balancer and is available at: [https://localhost].  Login:
 
-- Account `default`
+- Account `demo`
 - User: `admin`
 - Password: `MySecretP@ss1`
 
@@ -137,7 +137,7 @@ Usage: bin/dap single [options]
     --import-custom-certificates  Imports pre-generated 3rd-party certificates (Requires configured master)
     --promote-standby             Stops the current master and promotes a standby (Requires configured standbys and no auto-failover)
     --provision-follower          Configures follower behind a Layer 7 load balancer (Requires configured master)
-    --provision-master            Configures a DAP Master with account `default` and password `MySecretP@ss1` behind a Layer 4 load balancer
+    --provision-master            Configures a DAP Master with account `demo` and password `MySecretP@ss1` behind a Layer 4 load balancer
     --provision-standbys          Deploys and configures two standbys (Requires configured master)
     --restore-from-backup         Restores a master from backup|Requires a previously created backup
     --stop                        Stops all containers and cleans up cached files
