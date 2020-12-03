@@ -17,7 +17,7 @@ Usage: bin/dap [options]:
     --import-custom-certificates  Imports pre-generated 3rd-party certificates (Requires configured master)
     --promote-standby             Stops the current master and promotes a standby (Requires configured standbys and no auto-failover)
     --provision-follower          Configures follower behind a Layer 7 load balancer (Requires configured master)
-    --provision-master            Configures a DAP Master with account `default` and password `MySecretP@ss1` behind a Layer 4 load balancer
+    --provision-master            Configures a DAP Master with account `demo` and password `MySecretP@ss1` behind a Layer 4 load balancer
     --provision-standbys          Deploys and configures two standbys (Requires configured master)
     --restore-from-backup         Restores a master from backup|Requires a previously created backup
     --stop                        Stops all containers and cleans up cached files
