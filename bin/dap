@@ -1,4 +1,14 @@
 #!/bin/bash -e
+
+# Always work from repo root directory
+cd "$(dirname ${0})/..";
+
+source ./bin/utils.sh
+
+# Make sure .env envvars are available
+dotenv
+
+CONJUR_MASTER_PORT=${CONJUR_MASTER_PORT:-443}
 _admin_password="MySecretP@ss1"
 
 function _print_help {
@@ -143,7 +153,7 @@ function _perform_promotion {
 function _single_master {
   _start_master
   _configure_master
-  echo "DAP instance available at: 'https://localhost'"
+  echo "DAP instance available at: 'https://localhost:${CONJUR_MASTER_PORT}'"
   echo "Login using with the username/password: 'admin'/'$_admin_password'"
 }
 
@@ -203,9 +213,9 @@ function _disable_autofailover {
 }
 
 function _enable_autofailover {
-  autofailover=$(curl -k https://localhost/info | jq -r .configuration.conjur.cluster_name)
+  autofailover=$(curl -k https://localhost:${CONJUR_MASTER_PORT}/info | jq .configuration.conjur.cluster_name)
 
-  if [ "$autofailover" = 'production' ]; then
+  if [[ $autofailover = 'production' ]]; then
     _run conjur-master-2.mycompany.local "evoke cluster enroll --reenroll --cluster-machine-name conjur-master-2.mycompany.local --master-name conjur-master-1.mycompany.local production"
     _run conjur-master-3.mycompany.local "evoke cluster enroll --reenroll --cluster-machine-name conjur-master-3.mycompany.local --master-name conjur-master-1.mycompany.local production"
   else
@@ -238,7 +248,7 @@ function _stop_and_rename {
 function _upgrade_via_backup_restore {
   upgrade_to="$1"
 
-  autofailover=$(curl -k https://localhost/info | jq -r .configuration.conjur.cluster_name)
+  autofailover=$(curl -k https://localhost:${CONJUR_MASTER_PORT}/info | jq .configuration.conjur.cluster_name)
 
   if [ "$autofailover" = 'production' ]; then
     _disable_autofailover
