@@ -32,3 +32,5 @@ files/haproxy/master/haproxy.cfg
 
 # Ignore HAProxy SSL files
 system/haproxy/certs/**
+
+.env

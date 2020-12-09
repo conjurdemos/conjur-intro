@@ -2,6 +2,15 @@
 
 set -e
 
+# Always work from repo root directory
+cd "$(dirname ${0})/..";
+
+source ./bin/utils.sh
+
+# Make sure .env envvars are available
+dotenv
+
+CONJUR_MASTER_PORT=${CONJUR_MASTER_PORT:-443}
 _admin_password="MySecretP@ss1"
 
 function _print_help {
@@ -312,7 +321,7 @@ function _single_master {
   _start_master
   _configure_master
   deploy_proxy
-  echo "DAP instance available at: 'https://localhost'"
+  echo "DAP instance available at: 'https://localhost:${CONJUR_MASTER_PORT}'"
   echo "Login using with the username/password: 'admin'/'$_admin_password'"
 }
 
@@ -377,7 +386,7 @@ function _disable_autofailover {
 }
 
 function _enable_autofailover {
-  autofailover=$(curl -k https://localhost/info | jq -r .configuration.conjur.cluster_name)
+  autofailover=$(curl -k https://localhost:${CONJUR_MASTER_PORT}/info | jq .configuration.conjur.cluster_name)
 
   if [ "$autofailover" = 'production' ]; then
     for ((i=2; i<=STANDBY_COUNT+1; i++))
@@ -450,7 +459,7 @@ function _stop_and_rename {
 function _upgrade_via_backup_restore {
   upgrade_to="$1"
 
-  autofailover=$(curl -k https://localhost/info | jq -r .configuration.conjur.cluster_name)
+  autofailover=$(curl -k https://localhost:${CONJUR_MASTER_PORT}/info | jq .configuration.conjur.cluster_name)
 
   if [ "$autofailover" = 'production' ]; then
     _disable_autofailover
@@ -589,7 +598,7 @@ function _rotate_certificates {
 }
 
 function _pause_autofailover {
-  autofailover=$(curl -k https://localhost/info | jq -r .configuration.conjur.cluster_name)
+  autofailover=$(curl -k https://localhost:${CONJUR_MASTER_PORT}/info | jq -r .configuration.conjur.cluster_name)
   if [ "$autofailover" = 'production' ]; then
     for ((i=2; i<=STANDBY_COUNT+1; i++))
     do
@@ -599,7 +608,7 @@ function _pause_autofailover {
 }
 
 function _resume_autofailover {
-  autofailover=$(curl -k https://localhost/info | jq -r .configuration.conjur.cluster_name)
+  autofailover=$(curl -k https://localhost:${CONJUR_MASTER_PORT}/info | jq -r .configuration.conjur.cluster_name)
   if [ "$autofailover" = 'production' ]; then
     for ((i=2; i<=STANDBY_COUNT+1; i++))
     do
@@ -609,7 +618,7 @@ function _resume_autofailover {
 }
 
 function _wait_for_master {
-  local master_url="https://localhost"
+  local master_url="https://localhost:${CONJUR_MASTER_PORT}"
 
   echo "Waiting for DAP Master to be ready..."
 

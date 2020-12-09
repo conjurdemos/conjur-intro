@@ -6,7 +6,7 @@ services:
       dap_net:
         ipv4_address: 12.16.23.10
     ports:
-      - "443:443"
+      - "${CONJUR_MASTER_PORT:-443}:443"
       - "7000:7000"
     expose:
       - "1999"
