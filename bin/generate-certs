@@ -2,4 +2,4 @@
 
 export VERSION='5.0-stable'
 
-docker-compose run --no-deps --rm certificate-generator certificate-generator/generate-certs-script "$@"
+docker-compose run --no-deps --rm certificate-generator

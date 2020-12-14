@@ -12,3 +12,9 @@ RUN git clone https://github.com/cloudflare/cfssl.git && \
 FROM alpine:3.11
 COPY --from=builder /workdir/cfssl /etc/cfssl
 COPY --from=builder /workdir/cfssl/bin/ /usr/bin
+
+RUN mkdir -p /src
+COPY . /src
+WORKDIR /src
+
+ENTRYPOINT "./generate-certs-script"
