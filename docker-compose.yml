@@ -151,20 +151,19 @@ services:
       - ./artifacts/api-client/api-script:/src/bin/api
       - ./policy:/src/policy
 
+<<<<<<< HEAD
   certificate-generator:
     build:
       context: ./artifacts/certificate-generator
     volumes:
       - ./system/configuration/certificates:/src/dap_certificates
 
+=======
+>>>>>>> storing for reference
 volumes:
   seeds:
   follower-certs:
 
 networks:
   dap_net:
-    driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 12.16.23.0/27
+    external: true

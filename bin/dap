@@ -164,12 +164,14 @@ function _setup_standbys {
 function _stop {
   echo "stopping...."
   docker-compose down -v
+  docker network remove dap_net || true
 
   rm -rf cli_cache
   rm -rf system/backup/
   rm -rf system/logs/
   rm files/haproxy/master/haproxy.cfg || true
   echo "stopped"
+  exit
 }
 
 function _cli {
@@ -193,10 +195,23 @@ function _disable_autofailover {
   _run conjur-master-2.mycompany.local "evoke cluster member remove conjur-master-2.mycompany.local"
 }
 
-function _enable_autofailover {
+#
+# function local_or_docker_endpoint {
+#   local endpoint="$1"
+#   local response
+#   response=$(netstat -na | grep '\*.443')
+#   echo "Response: $response"
+#   if [ -n "$response" ]; then
+#     echo "$endpoint"
+#   else
+#     echo 'https://localhost'
+#   fi
+# }
 
-  autofailover=$(curl -k https://localhost/info | jq .configuration.conjur.cluster_name)
-  if [[ $autofailover = 'production' ]]; then
+function _enable_autofailover {
+  autofailover=$(curl -k https://conjur-master.mycompany.local/info | jq -r .configuration.conjur.cluster_name)
+
+  if [ "$autofailover" = "production" ]; then
     _run conjur-master-2.mycompany.local "evoke cluster enroll --reenroll --cluster-machine-name conjur-master-2.mycompany.local --master-name conjur-master-1.mycompany.local production"
     _run conjur-master-3.mycompany.local "evoke cluster enroll --reenroll --cluster-machine-name conjur-master-3.mycompany.local --master-name conjur-master-1.mycompany.local production"
   else
@@ -229,10 +244,9 @@ function _stop_and_rename {
 function _upgrade_via_backup_restore {
   upgrade_to="$1"
 
-  autofailover=$(curl -k https://localhost/info | jq .configuration.conjur.cluster_name)
+  autofailover=$(curl -k https://conjur-master.mycompany.local/info | jq -r .configuration.conjur.cluster_name)
 
-  # jq returns a quoted string, so we need to check for: "production" instead of: production (without double quotes)
-  if [ "$autofailover" = '"production"' ]; then
+  if [ "$autofailover" = 'production' ]; then
     _disable_autofailover
   fi
   _upgrade_master_via_backup_restore $upgrade_to
@@ -303,9 +317,8 @@ function _import_certificates {
 
 TAG=5.0-stable
 DRY_RUN=false
-PULL_IMAGES=true
+PULL_IMAGES=false
 CMD=""
-to_version=""
 
 while true ; do
   case "$1" in
@@ -329,5 +342,7 @@ while true ; do
 done
 
 export VERSION=$TAG
+
+preparation
 
 eval $CMD

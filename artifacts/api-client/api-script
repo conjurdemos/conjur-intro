@@ -9,16 +9,13 @@ Usage: bin/api [options]
 
     --against-master            Runs command against the master (only relevant if command is an authenticate/read action)
     --authenticate-user         Login using the default username (admin) and password (MySecretP@ss1)
-    --enable-seed-service       Enables Seed Service for Standbys and Followers
     --fetch-secrets             Fetches previously set variables (use '--against-master' if only master is available)
     -h, --help                  Shows this help message
     --load-policy               Loads a default set of policies to mimic a customer experience
     --load-policy-and-values    Loads policy and sets variable values (equivalent to running '--load-policy' and '--set-secrets')
-    -p, --password <password>   Password used for authentication (default is 'MySecretP@ss1')
-    --rotate-api-key            Rotates the authenticated user's API key
+    -p, --password <password>   Sets the password (default is 'MySecretP@ss1')
     --set-secrets               Sets variable values
-    -u, --user <conjur-user>    Username to authenticate with (default is 'admin')
-    --view-roles                Displays the user's roles
+    -u, --user <conjur-user>    Sets the username (default is 'admin')
 
 EOF
   exit
@@ -26,16 +23,9 @@ EOF
 
 function retrieve_authentication_token() {
   local user="$1"
-  # Allow hosts to be used instead of just users
-  user=$(echo "$user" | sed -e "s/\//%2F/g")
   local api_key="$2"
   local url="${3:-$URL}"
-  raw_token="$(curl \
-      --silent \
-      --insecure \
-      --request POST \
-      --data $api_key \
-      "$url/authn/demo/$user/authenticate")"
+  raw_token="$(curl -s -k -X POST -d $api_key "$url/authn/demo/$user/authenticate")"
   token=$(echo -n $raw_token | base64 | tr -d '\r\n')
   echo "$token"
 }
@@ -44,11 +34,7 @@ function authenticate_user() {
   local user="$1"
   local password="$2"
   local url="${3:-$URL}"
-  api_key="$(curl \
-      --silent \
-      --insecure \
-      --user $user:$password \
-      "$url/authn/demo/login")"
+  api_key="$(curl -s -k --user $user:$password "$url/authn/demo/login")"
   token=$(retrieve_authentication_token $user $api_key $url)
   echo "$token"
 }
@@ -76,34 +62,20 @@ function set_variable() {
 }
 
 function load_default_policy {
-  local environments='staging production'
-  local numbers='1 2 3 4 5 6'
-
   load_policy 'root' 'policy/modular/root.yml'
-
-  for environment in $environments; do
-    load_policy $environment 'policy/modular/apps/applications.yml'
-    for num in $numbers; do
-      load_policy "$environment/my-app-$num" 'policy/modular/apps/generic-application.yml'
-      load_policy "$environment/my-app-$num" 'policy/modular/services/pg-database.yml'
-      load_policy "$environment/my-app-$num" 'policy/modular/pg-entitlement.yml'
-    done
-  done
+  load_policy 'staging' 'policy/modular/apps/applications.yml'
+  load_policy 'staging/my-app-1' 'policy/modular/apps/generic-application.yml'
+  load_policy 'staging/my-app-1' 'policy/modular/services/pg-database.yml'
+  load_policy 'staging/my-app-1' 'policy/modular/pg-entitlement.yml'
 }
 
 function load_default_values {
-  local environments='staging production'
-  local numbers='1 2 3 4 5 6'
-
-  for environment in $environments; do
-    for num in $numbers; do
-      set_variable "$environment/my-app-$num/postgres-database/url" "$environment.my-app-$num.staging.mycompany-postgres.com/my-app"
-      set_variable "$environment/my-app-$num/postgres-database/port" "5432"
-      set_variable "$environment/my-app-$num/postgres-database/username" "my-app-$num"
-      set_variable "$environment/my-app-$num/postgres-database/password" "secret-p@ssword-$environment-my-app-$num"
-    done
-  done
+  set_variable 'staging/my-app-1/postgres-database/url' 'staging.mycompany-postgres.com/my-app'
+  set_variable 'staging/my-app-1/postgres-database/port' '5432'
+  set_variable 'staging/my-app-1/postgres-database/username' 'my-app'
+  set_variable 'staging/my-app-1/postgres-database/password' 'secret-p@ssword'
 }
+
 
 function fetch_secrets {
   local variables="$1"
@@ -116,40 +88,12 @@ function fetch_secrets {
 
 function retrieve_variables {
   secrets="demo:variable:staging/my-app-1/postgres-database/url,demo:variable:staging/my-app-1/postgres-database/port,demo:variable:staging/my-app-1/postgres-database/username,demo:variable:staging/my-app-1/postgres-database/password"
-  fetch_secrets $secrets | jq .
+  fetch_secrets $secrets #| jq .
 }
 
 function load_policy_and_set_variables {
   load_default_policy
   load_default_values
-}
-
-function view_policy_members {
-  local token=$(authenticate_user $USER $PASSWORD $URL)
-  curl --header "Authorization: Token token=\"$token\"" \
-        --insecure \
-        --request GET \
-        "$master_url/roles/demo/policy/production?members"
-}
-
-function view_roles {
-  local token=$(authenticate_user $USER $PASSWORD $URL)
-  curl --header "Authorization: Token token=\"$token\"" \
-        --insecure \
-        --request GET \
-        "$master_url/resources/demo" | jq .
-}
-
-function rotate_api_key {
-  curl --header "Authorization: Token token=\"$token\"" \
-        --insecure \
-        --request GET \
-        "$master_url/resources/demo"
-}
-
-function enable_seed_service {
-  load_policy 'root' 'policy/seed-service/default.yml'
-  load_policy 'conjur' 'policy/seed-service/seed.yml'
 }
 
 follower_url='http://conjur-follower.mycompany.local'
@@ -170,9 +114,6 @@ while true ; do
     --set-secrets ) shift ; cmd='load_default_values' ;;
     --against-master ) shift ; URL=$master_url ;;
     --fetch-secrets ) shift ; cmd="retrieve_variables" ;;
-    --view-roles ) cmd="view_roles" ; shift ;;
-    --rotate-api-key ) cmd="rotate_api_key" ;;
-    --enable-seed-service ) shift ; cmd='enable_seed_service' ;;
      * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
   esac
 done
