@@ -1,4 +1,4 @@
-#!/bin/ash -ex
+#!/bin/ash -e
 
 function _print_help() {
   cat << EOF
