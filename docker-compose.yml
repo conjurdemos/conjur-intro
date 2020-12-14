@@ -154,9 +154,7 @@ services:
   certificate-generator:
     build:
       context: ./artifacts/certificate-generator
-    working_dir: /src/
     volumes:
-      - ./artifacts/certificate-generator:/src/certificate-generator
       - ./system/configuration/certificates:/src/dap_certificates
 
 volumes:

@@ -1,7 +1,7 @@
 #!/bin/ash -e
 set -o pipefail
 
-config_path="/src/certificate-generator/configuration"
+config_path="/src/configuration"
 certificate_path="/src/certificates"
 
 # Generated Cert paths
