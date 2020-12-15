@@ -325,6 +325,17 @@ function _wait_for_master {
     sleep 1
     echo "Successful Health Checks: $COUNTER"
   done
+
+prepare_configuration() {
+  dap_net_pid=$(docker network ls --quiet --filter name=dap_net)
+
+  if [[ -z "$dap_net_pid" ]]; then
+    docker network create \
+      --driver bridge \
+      --ipam-driver default \
+      --subnet 12.16.23.0/27 \
+      dap_net
+    fi
 }
 
 create_docker_network() {
