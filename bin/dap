@@ -325,6 +325,7 @@ function _wait_for_master {
     sleep 1
     echo "Successful Health Checks: $COUNTER"
   done
+}
 
 prepare_configuration() {
   dap_net_pid=$(docker network ls --quiet --filter name=dap_net)
