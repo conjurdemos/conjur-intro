@@ -69,13 +69,41 @@ module CI
       end
 
       def wait_for_failover_to_complete(sleep_for: 10)
-        while true
+        sleep(5)
+        loop do
           begin
             response = master_connection.request(Net::HTTP::Get.new('/health'))
             if response.is_a?(Net::HTTPSuccess)
-              break if JSON.parse(response.body)['ok']
+              response_message = JSON.parse(response.body)
+
+              # Not sure if this is a bug, but following an auto-failover, we
+              # sometimes see the following in health:
+              # ```
+              # ...
+              # "cluster": {
+              #   "ok": true,
+              #   "status": "standing_by",
+              #   "message": null
+              # },
+              # "ok": true
+              # ```
+              # It seems to reset relatively quickly to the following:
+              # ```
+              # ...
+              # "cluster": {
+              #     "ok": true,
+              #     "status": "running",
+              #     "message": "acting as master"
+              #   },
+              #   "ok": true
+              # ```
+              if response_message['ok'] &&
+                 response_message['cluster']['status'] == 'running'
+                break
+              end
+            else
+              sleep(sleep_for)
             end
-            sleep(sleep_for)
           rescue Exception => e
             sleep(sleep_for)
           end
