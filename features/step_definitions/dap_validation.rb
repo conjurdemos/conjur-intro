@@ -14,7 +14,7 @@ end
 Then('the variable value is returned') do
   expect(
     @variable_request['demo:variable:staging/my-app-1/postgres-database/password']
-  ).to eq('secret-p@ssword')
+  ).to eq('secret-p@ssword-staging-my-app-1')
 end
 
 Then('the audit event is present on the master') do
