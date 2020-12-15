@@ -24,9 +24,7 @@ Scenario: A cluster is deployed for production environments
   Then the variable value is returned
     And the audit event is present on the master
 
-
-Scenario: A cluster can be upgraded from one version to another
-Scenario Outline: DAP Releases
+Scenario Outline: A cluster can be upgraded from one version to another
   Given a DAP master is deployed with version <release>
     And one follower is deployed with version <release>
     And a variable and value are loaded

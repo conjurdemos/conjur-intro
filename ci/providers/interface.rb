@@ -25,6 +25,8 @@ module CI
 
       def trigger_auto_failover; end
 
+      def wait_for_failover_to_complete; end
+
       def last_audit_event; end
 
       def upgrade_master(version:); end

@@ -59,14 +59,31 @@ module CI
         system('bin/dap --trigger-failover')
       end
 
-      # Find the current master.  This is neccesary after a failover event.
+      def master_connection
+        @connection ||= begin
+          http = Net::HTTP.new('conjur-master.mycompany.local', 443)
+          http.use_ssl = true
+          http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+          http
+        end
+      end
+
+      def wait_for_failover_to_complete(sleep_for: 10)
+        while true
+          begin
+            response = master_connection.request(Net::HTTP::Get.new('/health'))
+            if response.is_a?(Net::HTTPSuccess)
+              break if JSON.parse(response.body)['ok']
+            end
+            sleep(sleep_for)
+          rescue Exception => e
+            sleep(sleep_for)
+          end
+        end
+      end
+
       def current_master
-        http = Net::HTTP.new('conjur-master.mycompany.local', 443)
-        http.use_ssl = true
-        http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-
-        response = http.request(Net::HTTP::Get.new('/info'))
-
+        response = master_connection.request(Net::HTTP::Get.new('/info'))
         return nil unless response.is_a?(Net::HTTPSuccess)
 
         conjur_info = JSON.parse(response.body)['configuration']['conjur']

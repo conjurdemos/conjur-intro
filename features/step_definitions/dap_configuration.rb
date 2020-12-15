@@ -32,7 +32,7 @@ end
 
 When('a failover event is triggered') do
   @provider.trigger_auto_failover
-  sleep(90)
+  @provider.wait_for_failover_to_complete
 end
 
 Given('a DAP master is deployed with version {int}.{int}.{int}') do |int1, int2, int3|
