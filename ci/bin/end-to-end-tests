@@ -1,9 +1,14 @@
 #!/bin/bash -e
+set -o pipefail
 
-versions=('5.12.4' '11.6.0' '11.7.0')
+# Array of versions to be used in testing
+versions=('11.6.0' '11.7.0' '12.0.0')
+# Array of providers to run end-to-end tests against
+providers=('docker')
 
-prepare() {
-  # With Docker in Docker, the network context seems not to be passed correctly
+prepare_environment() {
+  # With Docker in Docker, the network context seems not to be passed correctly.
+  # We'll create it here and provide it to the Docker Compose.
   docker network prune --force
   docker network create \
     --driver bridge \
@@ -21,20 +26,22 @@ prepare() {
   docker build -t cucumber --file ci/assets/Dockerfile.ci .
 }
 
-# Prepare the exterior environment for Docker in Docker
-prepare
 
-# Array of providers to run end-to-end tests against
-providers=('docker')
+main() {
+  # Prepare the exterior environment for Docker in Docker
+  prepare_environment
 
-for provider in "${providers[@]}"; do
-  docker run \
-    --rm \
-    -it \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    --network dap_net \
-    -v $(pwd):$(pwd) \
-    --env PROVIDER=$provider \
-    --workdir $(pwd) \
-    cucumber /bin/bash -c "rake features"
-done
+  for provider in "${providers[@]}"; do
+    docker run \
+      --rm \
+      -it \
+      -v /var/run/docker.sock:/var/run/docker.sock \
+      --network dap_net \
+      -v "$(pwd):$(pwd)" \
+      --env PROVIDER=$provider \
+      --workdir "$(pwd)" \
+      cucumber /bin/bash -c "rake features"
+  done
+}
+
+main
