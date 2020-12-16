@@ -16,8 +16,8 @@ ci/bin/end-to-end-tests
 
 When a new release candidate is ready to be added, three changes must be made in this repository:
 
-1. Add the version to line 3 of [/ci/bin/end-to-end-tests](../ci/bin/end-to-end-tests)
-2. Update `@current_version` on line 4 in [/features/step_definitions/world.rb](../features/step_definitions/world.rb)
+1. Add the version to line 5 of [/ci/bin/end-to-end-tests](../ci/bin/end-to-end-tests)
+2. Update `CURRENT_VERSION` on line 6 in [/features/step_definitions/world.rb](../features/step_definitions/world.rb)
 3. Add a the previously "Current" version to the `releases` table in [/features/cluster.feature](../features/cluster.feature)
 
 ## Development
@@ -26,7 +26,7 @@ These end-to-end tests were designed to be run against multiple environments and
 
 ### Adding a new Environment
 
-In order to implement a new environment, an environment specific provider must be created. This provider must implement the interface defined in [/ci/providers/interface.rb](../ci/providers/interface.rb).  The Provider should handle both component setup (VM/LB provisioning and configuration) as well as inspection. [CI::Providers::DockerCompose](../ci/providers/docker_compose.rb) can be used as an example.
+In order to implement a new environment, an environment specific provider must be created. This provider must implement the interface defined in [/ci/providers/provider_interface.rb](../ci/providers/provider_interface.rb).  The Provider should handle both component setup (VM/LB provisioning and configuration) as well as inspection. [CI::Providers::DockerCompose](../ci/providers/docker_compose.rb) can be used as an example.
 
 Once the Provider has been completed, it must be added to:
 
