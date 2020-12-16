@@ -9,7 +9,6 @@ Scenario: I deploy a cluster for a non-production environments
     And when I check the master audit log, I see the audit event
 
 Scenario: I deploy a cluster for a production environment
-  Given skip
   Given I deploy a DAP master with a load balancer
     And I configure the master with custom certificates
     And I deploy two standbys
@@ -26,7 +25,6 @@ Scenario: I deploy a cluster for a production environment
     And when I check the master audit log, I see the audit event
 
 Scenario Outline: I can upgrade a cluster from one version to another
-  Given skip
   Given I deploy a DAP master with version <release>
     And I deploy one follower with version <release>
     And I load a variable and value
