@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require './ci/providers/interface'
+require './ci/providers/provider_interface'
 
 require 'json'
 require 'net/https'
@@ -14,7 +14,11 @@ module CI
     #
     # The DockerCompose class implements the public methods for the generic
     # CI::Providers::Interface using Docker Compose.
-    class DockerCompose < Interface
+    class DockerCompose < ProviderInterface
+
+      def initialize(logger:)
+        @logger = logger
+      end
 
       def provision_master(version:, with_load_balancer: true)
         system('cp files/haproxy/master/single/haproxy.cfg files/haproxy/master/haproxy.cfg')
@@ -68,7 +72,7 @@ module CI
         end
       end
 
-      def wait_for_failover_to_complete(sleep_for: 10)
+      def wait_for_healthy_master(sleep_for: 10)
         sleep(5)
         loop do
           begin
