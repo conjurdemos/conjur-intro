@@ -1,38 +1,41 @@
-Feature: A DAP cluster can be deployed
+Feature: A DAP cluster is deployed in a variety of configurations
 
-Scenario: A cluster is deployed for non-production environments
-  Given a DAP master is deployed
-    And one follower is deployed
-    And a variable and value are loaded
-  When a user requests the variable value
-  Then the variable value is returned
-    And the audit event is present on the master
+Scenario: I deploy a cluster for a non-production environments
+  Given I deploy a DAP master
+    And I deploy one follower
+    And I load a variable and value
+  When I request the variable value through the API
+  Then I get the variable value
+    And when I check the master audit log, I see the audit event
 
-Scenario: A cluster is deployed for production environments
-  Given a DAP master is deployed with a load balancer
-    And configured with custom certificates
-    And two standbys are deployed
-    And configured as an auto-failover cluster
-    And one follower is deployed with a load balancer
-    And a variable and value are loaded
-  When a user requests the variable value
-  Then the variable value is returned
-    And the audit event is present on the master
-  When a failover event is triggered
-    And the variable value is updated
-    And a user requests the variable value
-  Then the variable value is returned
-    And the audit event is present on the master
+Scenario: I deploy a cluster for a production environment
+  Given skip
+  Given I deploy a DAP master with a load balancer
+    And I configure the master with custom certificates
+    And I deploy two standbys
+    And I configured the master and standby as an auto-failover cluster
+    And I deploy a follower with a load balancer
+    And I load a variable and value
+  When I request the variable value through the API
+  Then I get the variable value
+    And when I check the master audit log, I see the audit event
+  When I trigger a failover event
+    And I update the variable value
+    And I request the variable value through the API
+  Then I get the variable value
+    And when I check the master audit log, I see the audit event
 
-Scenario Outline: A cluster can be upgraded from one version to another
-  Given a DAP master is deployed with version <release>
-    And one follower is deployed with version <release>
-    And a variable and value are loaded
-  When the master is upgraded to the current version
-    And the follower is upgraded to the current version
-    And a user requests the variable value
-  Then the variable value is returned
-    And the audit event is present on the master
+Scenario Outline: I can upgrade a cluster from one version to another
+  Given skip
+  Given I deploy a DAP master with version <release>
+    And I deploy one follower with version <release>
+    And I load a variable and value
+  When I upgrade the master to the current version
+    And I upgrade the follower to the current version
+    And I request the variable value through the API
+  Then I get the variable value
+    And when I check the master audit log, I see the audit event
+
   Examples: DAP Releases
     | release |
     | 11.6.0  |

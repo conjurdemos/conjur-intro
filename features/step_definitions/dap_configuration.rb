@@ -2,51 +2,58 @@
 
 
 # Setup tasks
-Given('a DAP master is deployed') do
-  @provider.provision_master(version: @current_version)
+Given('I deploy a DAP master') do
+  @provider.provision_master(version: CURRENT_VERSION)
 end
 
-Given('one follower is deployed') do
-  @provider.provision_follower(version: @current_version)
+Given('I deploy one follower') do
+  @provider.provision_follower(version: CURRENT_VERSION)
 end
 
-Given('a DAP master is deployed with a load balancer') do
-  @provider.provision_master(version: @current_version, with_load_balancer: true)
+Given('I deploy a DAP master with a load balancer') do
+  @provider.provision_master(version: CURRENT_VERSION, with_load_balancer: true)
 end
 
-Given('configured with custom certificates') do
-  @provider.import_custom_certificates
+Given('I configure the master with custom certificates') do |word|
+  @provider.import_custom_certificates if word.match?('with')
 end
 
-Given('two standbys are deployed') do
-  @provider.provision_standbys(version: @current_version)
+Given('I deploy two standbys') do
+  @provider.provision_standbys(version: CURRENT_VERSION)
 end
 
-Given('configured as an auto-failover cluster') do
-  @provider.enable_autofailover
+Given('I configured the master and standby as an auto-failover cluster') do |word|
+  @provider.enable_autofailover if word.match?('with')
 end
 
-Given('one follower is deployed with a load balancer') do
-  @provider.provision_follower(version: @current_version, with_load_balancer: true)
+Given('I deploy a follower with a load balancer') do
+  @provider.provision_follower(
+    version: CURRENT_VERSION,
+    with_load_balancer: true
+  )
 end
 
-When('a failover event is triggered') do
+When('I trigger a failover event') do
   @provider.trigger_auto_failover
-  @provider.wait_for_failover_to_complete
+  @provider.wait_for_healthy_master
 end
 
-Given('a DAP master is deployed with version {int}.{int}.{int}') do |int1, int2, int3|
+Given('I deploy a DAP master with version {int}.{int}.{int}') do |int1, int2, int3|
   @provider.provision_master(version: "#{int1}.#{int2}.#{int3}")
 end
 
-Given('one follower is deployed with version {int}.{int}.{int}') do |int1, int2, int3|
+Given('I deploy one follower with version {int}.{int}.{int}') do |int1, int2, int3|
   @provider.provision_follower(version: "#{int1}.#{int2}.#{int3}")
 end
 
-When('the master is upgraded to the current version') do
-  @provider.upgrade_master(version: @current_version)
+When('I upgrade the master to the current version') do
+  @provider.upgrade_master(version: CURRENT_VERSION)
 end
 
-When('the follower is upgraded to the current version') do
-  @provider.provision_follower(version: @current_version)
+When('I upgrade the follower to the current version') do
+  @provider.provision_follower(version: CURRENT_VERSION)
 end
+
+# Given('configured with {word} master key encryption') do |mke|
+#   pending # Write code here that turns the phrase above into concrete actions
+# end

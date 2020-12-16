@@ -1,23 +1,21 @@
 # frozen_string_literal: true
 
-# require 'json'
-
 # Validation tasks
-Given('a variable and value are loaded') do
+Given('I load a variable and value') do
   system('bin/api --load-policy-and-values')
 end
 
-When('a user requests the variable value') do
+When('I request the variable value through the API') do
   @variable_request = JSON.parse(`bin/api --fetch-secrets`)
 end
 
-Then('the variable value is returned') do
+Then('I get the variable value') do
   expect(
     @variable_request['demo:variable:staging/my-app-1/postgres-database/password']
   ).to eq('secret-p@ssword-staging-my-app-1')
 end
 
-Then('the audit event is present on the master') do
+Then('when I check the master audit log, I see the audit event') do
   response = @provider.last_audit_event
   expect(response['subject@43868']['resource']).to eq(
     'demo:variable:staging/my-app-1/postgres-database/port'
@@ -26,6 +24,6 @@ Then('the audit event is present on the master') do
   expect(response['action@43868']['result']).to eq('success')
 end
 
-When('the variable value is updated') do
+When('I update the variable value') do
   system('bin/api --set-secrets')
 end
