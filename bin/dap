@@ -327,7 +327,7 @@ function _wait_for_master {
   done
 }
 
-prepare_configuration() {
+create_docker_network() {
   dap_net_pid=$(docker network ls --quiet --filter name=dap_net)
 
   if [[ -z "$dap_net_pid" ]]; then
@@ -336,7 +336,7 @@ prepare_configuration() {
       --ipam-driver default \
       --subnet 12.16.23.0/27 \
       dap_net
-    fi
+  fi
 }
 
 TAG=5.0-stable
@@ -368,6 +368,6 @@ done
 
 export VERSION=$TAG
 
-prepare_configuration
+create_docker_network
 
 eval $CMD
