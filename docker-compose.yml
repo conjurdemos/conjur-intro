@@ -163,8 +163,4 @@ volumes:
 
 networks:
   dap_net:
-    driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 12.16.23.0/27
+    external: true

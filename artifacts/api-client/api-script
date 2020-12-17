@@ -125,7 +125,7 @@ function fetch_secrets {
 
 function retrieve_variables {
   secrets="demo:variable:staging/my-app-1/postgres-database/url,demo:variable:staging/my-app-1/postgres-database/port,demo:variable:staging/my-app-1/postgres-database/username,demo:variable:staging/my-app-1/postgres-database/password"
-  fetch_secrets $secrets | jq .
+  fetch_secrets $secrets
 }
 
 function load_policy_and_set_variables {
