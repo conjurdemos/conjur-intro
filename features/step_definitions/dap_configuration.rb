@@ -14,16 +14,16 @@ Given('I deploy a DAP master with a load balancer') do
   @provider.provision_master(version: CURRENT_VERSION, with_load_balancer: true)
 end
 
-Given('I configure the master with custom certificates') do |word|
-  @provider.import_custom_certificates if word.match?('with')
+Given('I configure the master with custom certificates') do
+  @provider.import_custom_certificates
 end
 
 Given('I deploy two standbys') do
   @provider.provision_standbys(version: CURRENT_VERSION)
 end
 
-Given('I configured the master and standby as an auto-failover cluster') do |word|
-  @provider.enable_autofailover if word.match?('with')
+Given('I configured the master and standby as an auto-failover cluster') do
+  @provider.enable_autofailover
 end
 
 Given('I deploy a follower with a load balancer') do
