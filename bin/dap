@@ -328,8 +328,12 @@ function _wait_for_master {
 }
 
 create_docker_network() {
-  dap_net_pid=$(docker network ls --quiet --filter name=dap_net)
 
+  # Cleanup any old, unused networks, including the previous DAP Docker Compose
+  # networks.
+  docker network prune --force
+
+  dap_net_pid=$(docker network ls --quiet --filter name=dap_net)
   if [[ -z "$dap_net_pid" ]]; then
     docker network create \
       --driver bridge \
