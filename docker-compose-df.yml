@@ -1,0 +1,32 @@
+# For setting up a decomposed Follower
+version: "3"
+services:
+  # Seedfetcher Init Container
+  seedfetcher:
+    image: registry2.itci.conjur.net/cyberark/container-dap-seedfetcher:${DF_VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.30
+    environment:
+      CONJUR_ACCOUNT: demo
+      CONJUR_APPLIANCE_URL: https://conjur-master-1.mycompany.local
+      CONJUR_AUTHN_URL: https://conjur-master-1.mycompany.local/authn
+      CONJUR_AUTHN_LOGIN: admin
+      CONJUR_AUTHN_API_KEY: ${CONJUR_AUTHN_API_KEY}
+      CONJUR_SSL_CERTIFICATE: ${CONJUR_SSL_CERTIFICATE}
+      FOLLOWER_HOSTNAME: conjur-follower.mycompany.local
+      MY_POD_NAMESPACE: nope
+    volumes:
+      - dap_config:/opt/conjur/etc/config
+      - dap_datakey:/opt/conjur/etc/data_key
+      - dap_certs:/opt/conjur/etc/ssl
+
+volumes:
+  dap_run:
+  dap_config:
+  dap_certs:
+  dap_datakey:
+
+networks:
+  dap_net:
+    external: true

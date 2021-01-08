@@ -10,23 +10,23 @@ Synopsis: bin/dap [command options]
 
 Usage: bin/dap [options]:
 
-    --create-backup               Creates a backup|Requires configured master
-    --dry-run                     Print configuration commands with executing
-    --enable-auto-failover        Configures Master cluster with auto-failover (Requires configured master and standbys)
-    --h, --help                   Shows this help message
-    --import-custom-certificates  Imports pre-generated 3rd-party certificates (Requires configured master)
-    --promote-standby             Stops the current master and promotes a standby (Requires configured standbys and no auto-failover)
-    --provision-follower          Configures follower behind a Layer 7 load balancer (Requires configured master)
-    --provision-master            Configures a DAP Master with account `demo` and password `MySecretP@ss1` behind a Layer 4 load balancer
-    --provision-standbys          Deploys and configures two standbys (Requires configured master)
-    --restore-from-backup         Restores a master from backup|Requires a previously created backup
-    --stop                        Stops all containers and cleans up cached files
-    --trigger-failover            Stops current master (Requires an auto-failover cluster)
-    --trust-follower-proxy        Adds Follower load balancer as a trusted proxy (Requires a configured follower)
-    --upgrade-master <version>    Restores master from backup (Requires configured master)
-    --wait-for-master             Blocks until the Master is healthy
-    --version <version>           Version of DAP to use (defaults to latest build)
-
+    --create-backup                 Creates a backup|Requires configured master
+    --dry-run                       Print configuration commands with executing
+    --enable-auto-failover          Configures Master cluster with auto-failover (Requires configured master and standbys)
+    --h, --help                     Shows this help message
+    --import-custom-certificates    Imports pre-generated 3rd-party certificates (Requires configured master)
+    --promote-standby               Stops the current master and promotes a standby (Requires configured standbys and no auto-failover)
+    --provision-follower            Configures follower behind a Layer 7 load balancer (Requires configured master)
+    --provision-master              Configures a DAP Master with account `demo` and password `MySecretP@ss1` behind a Layer 4 load balancer
+    --provision-standbys            Deploys and configures two standbys (Requires configured master)
+    --provision-decomposed-follower Configures decomposed follower behind a Layer 7 load balancer (Requires configured master)
+    --restore-from-backup           Restores a master from backup|Requires a previously created backup
+    --stop                          Stops all containers and cleans up cached files
+    --trigger-failover              Stops current master (Requires an auto-failover cluster)
+    --trust-follower-proxy          Adds Follower load balancer as a trusted proxy (Requires a configured follower)
+    --upgrade-master <version>      Restores master from backup (Requires configured master)
+    --wait-for-master               Blocks until the Master is healthy
+    --version <version>             Version of DAP to use (defaults to latest build)
 
 EOF
   exit
@@ -45,7 +45,7 @@ function _run {
   local _node_name=$1
   local _args=("${_all_args[@]:1}")
 
-  echo "Running Command (on $_node_name): docker exec cyberark-dap $_args"
+  #echo "Running Command (on $_node_name): docker exec cyberark-dap $_args"
 
   if [[ $DRY_RUN = false ]]; then
     docker-compose exec $_node_name bash -c "
@@ -106,7 +106,6 @@ function _start_standby_synchronization {
 }
 
 function _setup_follower {
-
   docker-compose rm --stop --force conjur-follower-1.mycompany.local
   docker-compose up --no-deps --detach conjur-follower-1.mycompany.local
 
@@ -119,6 +118,21 @@ function _setup_follower {
     "evoke unpack seed /opt/cyberark/dap/seeds/follower-seed.tar && evoke configure follower"
 
   _start_l7_load_balancer
+}
+
+function _setup_decomposed_follower {
+  CONJUR_AUTHN_API_KEY=$(_run conjur-master-1.mycompany.local \
+    "curl -k --user admin:MySecretP@ss1 localhost/authn/demo/login")
+  export CONJUR_AUTHN_API_KEY
+
+  CONJUR_SSL_CERTIFICATE=$(_run conjur-master-1.mycompany.local \
+    "cat /opt/conjur/etc/ssl/conjur-master.mycompany.local.pem")
+  export CONJUR_SSL_CERTIFICATE
+
+  DF_VERSION=1.1.1
+  export DF_VERSION
+
+  docker-compose -f docker-compose-df.yml up --no-deps --detach seedfetcher
 }
 
 #
@@ -150,7 +164,6 @@ function _reload_container {
   name="$1"
   docker-compose rm --stop --force $name
   docker-compose up --no-deps --detach $name
-
 }
 
 function _setup_standbys {
@@ -328,7 +341,6 @@ function _wait_for_master {
 }
 
 create_docker_network() {
-
   # Cleanup any old, unused networks, including the previous DAP Docker Compose
   # networks.
   docker network prune --force
@@ -356,6 +368,7 @@ while true ; do
     --provision-standbys ) CMD='_setup_standbys' ; shift ;;
     --enable-auto-failover ) CMD='_enable_autofailover' ; shift ;;
     --provision-follower ) CMD='_setup_follower' ; shift ;;
+    --provision-decomposed-follower ) CMD='_setup_decomposed_follower' ; shift ;;
     --upgrade-master ) shift ; CMD="_upgrade_via_backup_restore $1" ; shift ;;
     --version ) shift ; TAG=$1 ; shift ;;
     --dry-run ) DRY_RUN=true ; shift ;;
