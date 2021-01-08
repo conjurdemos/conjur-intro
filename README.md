@@ -92,6 +92,7 @@ $ bin/api --fetch-secrets
 |--password `<password>`|configuration|Uses a non-default password for authentication||
 |--set-secrets|action|• Authenticates<br>• Sets variable values|Requires `--load-policy` before running|
 |--user `<conjur-user>`|configuration|Uses a non-default (`admin`) user for authentication||
+|--enable-seed-service|configuration|Enables the seed sevice for Standbys and Followers||
 
 ## Start a single DAP instance
 
