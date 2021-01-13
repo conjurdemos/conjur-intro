@@ -25,8 +25,8 @@ EOF
 
 copy_to_demo() {
   certificate_destination="/src/dap_certificates"
-  cat $certificate_path/root_ca/ca.pem \
-    $certificate_path/intermediate_ca/intermediate.pem > \
+  cat $certificate_path/intermediate_ca/intermediate.pem \
+    $certificate_path/root_ca/ca.pem > \
       $certificate_destination/ca-chain.pem
   cp $master_destination-key.pem $certificate_destination/
   cp $master_destination.pem $certificate_destination/
