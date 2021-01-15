@@ -132,7 +132,11 @@ function _setup_decomposed_follower {
   DF_VERSION=1.1.1
   export DF_VERSION
 
-  docker-compose -f docker-compose-df.yml up --no-deps --detach seedfetcher
+  docker-compose -f docker-compose-df.yml up --no-deps --detach
+}
+
+function _stop_decomposed_follower {
+  docker-compose -f docker-compose-df.yml down
 }
 
 #
@@ -369,6 +373,7 @@ while true ; do
     --enable-auto-failover ) CMD='_enable_autofailover' ; shift ;;
     --provision-follower ) CMD='_setup_follower' ; shift ;;
     --provision-decomposed-follower ) CMD='_setup_decomposed_follower' ; shift ;;
+    --stop-decomposed-follower ) CMD='_stop_decomposed_follower' ; shift ;;
     --upgrade-master ) shift ; CMD="_upgrade_via_backup_restore $1" ; shift ;;
     --version ) shift ; TAG=$1 ; shift ;;
     --dry-run ) DRY_RUN=true ; shift ;;
