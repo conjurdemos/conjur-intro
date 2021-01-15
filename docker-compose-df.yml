@@ -6,7 +6,7 @@ services:
     image: registry2.itci.conjur.net/cyberark/container-dap-seedfetcher:${DF_VERSION}
     networks:
       dap_net:
-        ipv4_address: 12.16.23.30
+        ipv4_address: 12.16.23.20
     environment:
       CONJUR_ACCOUNT: demo
       CONJUR_APPLIANCE_URL: https://conjur-master-1.mycompany.local
@@ -19,6 +19,18 @@ services:
     volumes:
       - dap_config:/opt/conjur/etc/config
       - dap_datakey:/opt/conjur/etc/data_key
+      - dap_certs:/opt/conjur/etc/ssl
+
+  nginx:
+    image: registry2.itci.conjur.net/cyberark/dap-nginx:${DF_VERSION}
+    user: www-data:0
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.21
+    ports:
+      - "9000:9000"
+      - "9443:9443"
+    volumes:
       - dap_certs:/opt/conjur/etc/ssl
 
 volumes:
