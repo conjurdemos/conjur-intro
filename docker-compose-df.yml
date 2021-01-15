@@ -33,6 +33,55 @@ services:
     volumes:
       - dap_certs:/opt/conjur/etc/ssl
 
+
+  # conjur:
+  #   image: registry2.itci.conjur.net/cyberark/dap-conjur:${DF_VERSION}
+  #   environment:
+  #     CONJUR_DATABASE_HOSTNAME: pg
+  #     DATABASE_URL: postgres://conjur@pg/conjur
+  #   depends_on:
+  #     - nginx
+  #     - pg
+  #     - syslog-ng
+  #   volumes:
+  #     - dap_config:/opt/conjur/etc/config
+  #     - dap_datakey:/opt/conjur/etc/data_key
+  #     - dap_certs:/opt/conjur/etc/ssl
+  #     - dap_run:/run/conjur
+  #   network_mode: service:nginx
+
+  pg:
+    image: registry2.itci.conjur.net/cyberark/dap-postgres:${DF_VERSION}
+    user: "999:0" # non-root UID specified in Dockerfile
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.22
+    environment:
+      CONTAINER_DEBUG: "true"
+    volumes:
+      - dap_certs:/opt/conjur/etc/ssl
+      - dap_config:/opt/conjur/etc/config
+
+  # syslog-ng:
+  #   image: registry2.itci.conjur.net/cyberark/dap-syslog-ng:${DF_VERSION}
+  #   user: ${SYSLOGNG_USERID}:0
+  #   volumes:
+  #     - dap_run:/run/conjur
+  #     - dap_certs:/opt/conjur/etc/ssl
+  #     - dap_config:/opt/conjur/etc/config
+
+  # info:
+  #   image: registry2.itci.conjur.net/cyberark/dap-info:${DF_VERSION}
+  #   user: ${INFO_USERID}:0
+  #   environment:
+  #     CONJUR_DATABASE_HOSTNAME: pg
+  #   volumes:
+  #     - dap_certs:/opt/conjur/etc/ssl
+  #     - dap_config:/opt/conjur/etc/config
+  #   network_mode: service:nginx
+    
+      
+      
 volumes:
   dap_run:
   dap_config:
