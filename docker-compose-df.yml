@@ -9,8 +9,8 @@ services:
         ipv4_address: 12.16.23.20
     environment:
       CONJUR_ACCOUNT: demo
-      CONJUR_APPLIANCE_URL: https://conjur-master-1.mycompany.local
-      CONJUR_AUTHN_URL: https://conjur-master-1.mycompany.local/authn
+      CONJUR_APPLIANCE_URL: https://conjur-master.mycompany.local
+      CONJUR_AUTHN_URL: https://conjur-master.mycompany.local/authn
       CONJUR_AUTHN_LOGIN: admin
       CONJUR_AUTHN_API_KEY: ${CONJUR_AUTHN_API_KEY}
       CONJUR_SSL_CERTIFICATE: ${CONJUR_SSL_CERTIFICATE}
