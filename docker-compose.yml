@@ -12,6 +12,7 @@ services:
       - "1999"
       - "5432"
     volumes:
+      - master-certs:/etc/ssl/certs
       - ./files/haproxy/master:/usr/local/etc/haproxy
 
   conjur-master-1.mycompany.local:
@@ -32,6 +33,7 @@ services:
         - "seccomp:unconfined"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
+      - master-certs:/opt/conjur/etc/ssl/
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
       - ./system/logs/master-1:/var/log/conjur:Z
@@ -53,6 +55,7 @@ services:
         - "seccomp:unconfined"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
+      - master-certs:/opt/conjur/etc/ssl/
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
       - ./system/logs/master-2:/var/log/conjur:Z
@@ -74,6 +77,7 @@ services:
         - "seccomp:unconfined"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
+      - master-certs:/opt/conjur/etc/ssl/
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
       - ./system/logs/master-3:/var/log/conjur:Z
@@ -160,6 +164,7 @@ services:
 volumes:
   seeds:
   follower-certs:
+  master-certs:
 
 networks:
   dap_net:
