@@ -59,6 +59,7 @@ load_policy() {
   local method="${3:-POST}"
   local token=$(authenticate_user $USER $PASSWORD $master_url)
   curl --header "Authorization: Token token=\"$token\"" \
+        --write-out "\n" \
         --insecure \
         --request "$method" \
         --data "$(cat $policy)" \
@@ -118,6 +119,7 @@ fetch_secrets() {
   local variables="$1"
   local token=$(authenticate_user $USER $PASSWORD $URL)
   curl --header "Authorization: Token token=\"$token\"" \
+        --write-out "\n" \
         --insecure \
         --request GET \
         "$master_url/secrets?variable_ids=$variables"
@@ -136,6 +138,7 @@ load_policy_and_set_variables() {
 view_policy_members() {
   local token=$(authenticate_user $USER $PASSWORD $URL)
   curl --header "Authorization: Token token=\"$token\"" \
+        --write-out "\n" \
         --insecure \
         --request GET \
         "$master_url/roles/demo/policy/production?members"
@@ -144,6 +147,7 @@ view_policy_members() {
 view_roles() {
   local token=$(authenticate_user $USER $PASSWORD $URL)
   curl --header "Authorization: Token token=\"$token\"" \
+        --write-out "\n" \
         --insecure \
         --request GET \
         "$master_url/resources/demo" | jq .
