@@ -198,7 +198,7 @@ function _disable_autofailover {
 }
 
 function _enable_autofailover {
-  autofailover=$(curl -k https://conjur-master.mycompany.local/info | jq -r .configuration.conjur.cluster_name)
+  autofailover=$(curl -k https://localhost/info | jq -r .configuration.conjur.cluster_name)
 
   if [ "$autofailover" = 'production' ]; then
     _run conjur-master-2.mycompany.local "evoke cluster enroll --reenroll --cluster-machine-name conjur-master-2.mycompany.local --master-name conjur-master-1.mycompany.local production"
@@ -233,7 +233,7 @@ function _stop_and_rename {
 function _upgrade_via_backup_restore {
   upgrade_to="$1"
 
-  autofailover=$(curl -k https://conjur-master.mycompany.local/info | jq -r .configuration.conjur.cluster_name)
+  autofailover=$(curl -k https://localhost/info | jq -r .configuration.conjur.cluster_name)
 
   if [ "$autofailover" = 'production' ]; then
     _disable_autofailover
@@ -299,9 +299,73 @@ function _import_certificates {
   _run conjur-master-1.mycompany.local \
     "evoke ca import --force --root $cert_path/ca-chain.pem"
   _run conjur-master-1.mycompany.local \
-    "evoke ca import --force --key $cert_path/dap-master-key.pem --set $cert_path/dap-master.pem"
+    "evoke ca import --force --key $cert_path/dap_master/dap-master-key.pem --set $cert_path/dap_master/dap-master.pem"
   _run conjur-master-1.mycompany.local \
-    "evoke ca import --force --key $cert_path/dap-follower-key.pem $cert_path/dap-follower.pem"
+    "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
+}
+
+function _rotate_certificates {
+  bin/generate-certs --rotate-server --force
+
+  # Disable auto-failover while rotating the Master cluster certificates
+  # to prevent an unintended failover.
+  _pause_autofailover
+
+  # Import the new certificate into the active DAP Master
+  local cert_path='/opt/cyberark/dap/configuration/certificates'
+  _run conjur-master-1.mycompany.local \
+    "evoke ca import --force --key $cert_path/dap_master/dap-master-key.pem --set $cert_path/dap_master/dap-master.pem"
+  
+  # Import the new Follower certificate into the active DAP master so that it
+  # is available through the seed service
+  _run conjur-master-1.mycompany.local \
+    "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
+
+  # Import the new certificate into the DAP Standbys
+  if [[ $(docker ps --quiet --filter "name=conjur-master-2.mycompany.local") ]]; then
+    _run conjur-master-2.mycompany.local \
+      "evoke ca import --force --key $cert_path/dap_master/dap-master-key.pem --set $cert_path/dap_master/dap-master.pem"
+  
+    # Import the new Follower certificate into each DAP Standby so that it
+    # is available through the seed service if the Standby is promoted.
+    _run conjur-master-2.mycompany.local \
+      "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
+  fi
+  
+  if [[ $(docker ps --quiet --filter "name=conjur-master-3.mycompany.local") ]]; then
+    _run conjur-master-3.mycompany.local \
+      "evoke ca import --force --key $cert_path/dap_master/dap-master-key.pem --set $cert_path/dap_master/dap-master.pem"
+  
+    # Import the new Follower certificate into each DAP Standby so that it
+    # is available through the seed service if the Standby is promoted.
+    _run conjur-master-3.mycompany.local \
+      "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
+  fi
+
+  # Re-enable auto-failover for the Master cluster
+  _resume_autofailover
+
+  if [[ $(docker ps --quiet --filter "name=conjur-follower-1.mycompany.local") ]]; then
+    # Import the new certificate into each Follower
+    _run conjur-follower-1.mycompany.local \
+      "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem --set $cert_path/dap_follower/dap-follower.pem"
+  fi
+}
+
+function _pause_autofailover {
+  autofailover=$(curl -k https://localhost/info | jq -r .configuration.conjur.cluster_name)
+  if [ "$autofailover" = 'production' ]; then
+    _run conjur-master-2.mycompany.local "sv down cluster"
+    _run conjur-master-3.mycompany.local "sv down cluster"
+  fi
+}
+
+function _resume_autofailover {
+  autofailover=$(curl -k https://localhost/info | jq -r .configuration.conjur.cluster_name)
+  if [ "$autofailover" = 'production' ]; then
+    _run conjur-master-2.mycompany.local "sv up cluster"
+    _run conjur-master-3.mycompany.local "sv up cluster"
+  fi
 }
 
 function _wait_for_master {
@@ -353,6 +417,7 @@ while true ; do
     --provision-master ) CMD='_single_master' ; shift ;;
     --promote-standby ) CMD='_perform_promotion' ; shift ;;
     --import-custom-certificates ) CMD='_import_certificates' ; shift ;;
+    --rotate-custom-certificates ) CMD='_rotate_certificates' ; shift ;;
     --provision-standbys ) CMD='_setup_standbys' ; shift ;;
     --enable-auto-failover ) CMD='_enable_autofailover' ; shift ;;
     --provision-follower ) CMD='_setup_follower' ; shift ;;
