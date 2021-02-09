@@ -159,7 +159,7 @@ services:
     build:
       context: ./artifacts/certificate-generator
     volumes:
-      - ./system/configuration/certificates:/src/dap_certificates
+      - ./system/configuration/certificates:/src/certificates
 
 volumes:
   seeds:

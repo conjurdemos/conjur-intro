@@ -17,4 +17,4 @@ RUN mkdir -p /src
 COPY . /src
 WORKDIR /src
 
-ENTRYPOINT "./generate-certs-script"
+ENTRYPOINT [ "/src/generate-certs-script" ]

@@ -22,7 +22,7 @@ files/haproxy/master/haproxy.cfg
 
 # Generated Certificates
 **/certificates/ca-chain.pem
-**/certificates/dap-follower.pem
-**/certificates/dap-follower-key.pem
-**/certificates/dap-master.pem
-**/certificates/dap-master-key.pem
+**/certificates/dap_follower/
+**/certificates/dap_master/
+**/certificates/intermediate_ca/
+**/certificates/root_ca/
