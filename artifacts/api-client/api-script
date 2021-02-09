@@ -1,6 +1,6 @@
 #!/bin/ash -e
 
-function _print_help() {
+_print_help() {
   cat << EOF
 
 A tool which uses the DAP API to perform various tasks.
@@ -24,7 +24,7 @@ EOF
   exit
 }
 
-function retrieve_authentication_token() {
+retrieve_authentication_token() {
   local user="$1"
   # Allow hosts to be used instead of just users
   user=$(echo "$user" | sed -e "s/\//%2F/g")
@@ -40,7 +40,7 @@ function retrieve_authentication_token() {
   echo "$token"
 }
 
-function authenticate_user() {
+authenticate_user() {
   local user="$1"
   local password="$2"
   local url="${3:-$URL}"
@@ -53,7 +53,7 @@ function authenticate_user() {
   echo "$token"
 }
 
-function load_policy() {
+load_policy() {
   local namespace="$1"
   local policy="$2"
   local method="${3:-POST}"
@@ -65,7 +65,7 @@ function load_policy() {
      "$master_url/policies/demo/policy/$namespace"
 }
 
-function set_variable() {
+set_variable() {
   local variable="$1"
   local value="$2"
   local token=$(authenticate_user $USER $PASSWORD $master_url)
@@ -76,7 +76,7 @@ function set_variable() {
         "$master_url/secrets/demo/variable/$variable"
 }
 
-function load_default_policy {
+load_default_policy() {
   local environments='staging production'
   local numbers='1 2 3 4 5 6'
 
@@ -100,7 +100,7 @@ delete_policy() {
   load_policy 'delete_branch/first-level' 'policy/delete_policy/delete.yml' 'PATCH'
 }
 
-function load_default_values {
+load_default_values() {
   local environments='staging production'
   local numbers='1 2 3 4 5 6'
 
@@ -114,7 +114,7 @@ function load_default_values {
   done
 }
 
-function fetch_secrets {
+fetch_secrets() {
   local variables="$1"
   local token=$(authenticate_user $USER $PASSWORD $URL)
   curl --header "Authorization: Token token=\"$token\"" \
@@ -123,17 +123,17 @@ function fetch_secrets {
         "$master_url/secrets?variable_ids=$variables"
 }
 
-function retrieve_variables {
+retrieve_variables() {
   secrets="demo:variable:staging/my-app-1/postgres-database/url,demo:variable:staging/my-app-1/postgres-database/port,demo:variable:staging/my-app-1/postgres-database/username,demo:variable:staging/my-app-1/postgres-database/password"
   fetch_secrets $secrets
 }
 
-function load_policy_and_set_variables {
+load_policy_and_set_variables() {
   load_default_policy
   load_default_values
 }
 
-function view_policy_members {
+view_policy_members() {
   local token=$(authenticate_user $USER $PASSWORD $URL)
   curl --header "Authorization: Token token=\"$token\"" \
         --insecure \
@@ -141,7 +141,7 @@ function view_policy_members {
         "$master_url/roles/demo/policy/production?members"
 }
 
-function view_roles {
+view_roles() {
   local token=$(authenticate_user $USER $PASSWORD $URL)
   curl --header "Authorization: Token token=\"$token\"" \
         --insecure \
@@ -149,14 +149,14 @@ function view_roles {
         "$master_url/resources/demo" | jq .
 }
 
-function rotate_api_key {
+rotate_api_key() {
   curl --header "Authorization: Token token=\"$token\"" \
         --insecure \
         --request GET \
         "$master_url/resources/demo"
 }
 
-function enable_seed_service {
+enable_seed_service() {
   load_policy 'root' 'policy/seed-service/default.yml'
   load_policy 'conjur' 'policy/seed-service/seed.yml'
 }
