@@ -74,8 +74,8 @@ generate_certificates() {
         $intermediate_destination.csr | cfssljson -bare $intermediate_destination
     fi
 
-    cat $certificate_path/root_ca/ca.pem \
-      $certificate_path/intermediate_ca/intermediate.pem > \
+    cat $certificate_path/intermediate_ca/intermediate.pem \
+      $certificate_path/root_ca/ca.pem > \
       $certificate_path/ca-chain.pem
   fi
 
