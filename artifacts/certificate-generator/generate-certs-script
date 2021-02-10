@@ -81,25 +81,67 @@ generate_certificates() {
 
   # Generate and sign master certificate w/ intermediate
   if [ "$GENERATE_SERVER" = true ]; then
+    if [ ! -f "$master_destination-key.pem" ]; then
+      generate_master_key      
+    fi
+
     if [ ! -f "$master_destination.pem" ] || [ "$FORCE" = true ]; then
-      cfssl gencert \
-        -ca $intermediate_destination.pem \
-        -ca-key $intermediate_destination-key.pem \
-        -config $config_path/cfssl.conf \
-        -profile=peer \
-        $config_path/dap-master.json | cfssljson -bare $master_destination
+      generate_master_csr
+      issue_master_certificate
+    fi
+    
+    if [ ! -f "$follower_destination-key.pem" ]; then
+      generate_follower_key      
     fi
 
     # Generate and sign follower certificate w/ intermediate
     if [ ! -f "$follower_destination.pem" ] || [ "$FORCE" = true ]; then
-      cfssl gencert \
-        -ca $intermediate_destination.pem \
-        -ca-key $intermediate_destination-key.pem \
-        -config $config_path/cfssl.conf \
-        -profile=peer \
-        $config_path/dap-follower.json | cfssljson -bare $follower_destination
+      generate_follower_csr
+      issue_follower_certificate
     fi
   fi
+}
+
+generate_master_key() {
+  cfssl genkey \
+    -config $config_path/cfssl.conf \
+    $config_path/dap-master.json | cfssljson -bare $master_destination
+}
+
+generate_master_csr() {
+  cfssl gencsr \
+    -key "$master_destination-key.pem" \
+    $config_path/dap-master.json | cfssljson -bare $master_destination
+}
+
+issue_master_certificate() {
+  cfssl sign \
+    -ca $intermediate_destination.pem \
+    -ca-key $intermediate_destination-key.pem \
+    -config $config_path/cfssl.conf \
+    -profile=peer \
+    $master_destination.csr | cfssljson -bare $master_destination
+}
+
+generate_follower_key() {
+  cfssl genkey \
+    -config $config_path/cfssl.conf \
+    $config_path/dap-follower.json | cfssljson -bare $follower_destination
+}
+
+generate_follower_csr() {
+  cfssl gencsr \
+    -key "$follower_destination-key.pem" \
+    $config_path/dap-follower.json | cfssljson -bare $follower_destination
+}
+
+issue_follower_certificate() {
+  cfssl sign \
+    -ca $intermediate_destination.pem \
+    -ca-key $intermediate_destination-key.pem \
+    -config $config_path/cfssl.conf \
+    -profile=peer \
+    $follower_destination.csr | cfssljson -bare $follower_destination
 }
 
 main "$@"
