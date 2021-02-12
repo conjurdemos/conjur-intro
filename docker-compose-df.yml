@@ -70,6 +70,16 @@ services:
       - dap_run:/run/conjur
     network_mode: service:nginx
 
+  info:
+    image: registry2.itci.conjur.net/cyberark/dap-info:${DF_VERSION}
+    user: ${INFO_USERID}:0
+    environment:
+      CONJUR_DATABASE_HOSTNAME: pg
+    volumes:
+      - dap_certs:/opt/conjur/etc/ssl
+      - dap_config:/opt/conjur/etc/config
+    network_mode: service:nginx
+
 volumes:
   dap_run:
   dap_config:
