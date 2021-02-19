@@ -48,7 +48,7 @@ function _run {
   echo "Running Command (on $_node_name): docker exec cyberark-dap $_args"
 
   if [[ $DRY_RUN = false ]]; then
-    docker-compose exec $_node_name bash -c "
+    docker-compose exec -T $_node_name bash -c "
       $_args
     "
   fi
