@@ -30,7 +30,9 @@ services:
     environment:
       TRUSTED_PROXIES: 123.123.1.1,123.5.1.1
     security_opt:
-        - "seccomp:unconfined"
+      - "seccomp:unconfined"
+    env_file:
+      - dap.env
     volumes:
       - seeds:/opt/cyberark/dap/seeds
       - master-certs:/opt/conjur/etc/ssl/
@@ -52,7 +54,9 @@ services:
       - "1999"
       - "5432"
     security_opt:
-        - "seccomp:unconfined"
+      - "seccomp:unconfined"
+    env_file:
+      - dap.env
     volumes:
       - seeds:/opt/cyberark/dap/seeds
       - master-certs:/opt/conjur/etc/ssl/
@@ -74,7 +78,9 @@ services:
       - "1999"
       - "5432"
     security_opt:
-        - "seccomp:unconfined"
+      - "seccomp:unconfined"
+    env_file:
+      - dap.env
     volumes:
       - seeds:/opt/cyberark/dap/seeds
       - master-certs:/opt/conjur/etc/ssl/
@@ -107,7 +113,9 @@ services:
       - "443"
       - "444"
     security_opt:
-        - "seccomp:unconfined"
+      - "seccomp:unconfined"
+    env_file:
+      - dap.env
     volumes:
       - seeds:/opt/cyberark/dap/seeds
       - follower-certs:/opt/conjur/etc/ssl/
