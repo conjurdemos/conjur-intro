@@ -13,6 +13,7 @@ Usage: bin/dap [options]:
     --create-backup               Creates a backup|Requires configured master
     --dry-run                     Print configuration commands with executing
     --enable-auto-failover        Configures Master cluster with auto-failover (Requires configured master and standbys)
+    --generate-dh                 Don't mount pre-generated DH params into the appliance containers (will cause a _lot_ more CPU consumption)
     --h, --help                   Shows this help message
     --import-custom-certificates  Imports pre-generated 3rd-party certificates (Requires configured master)
     --promote-standby             Stops the current master and promotes a standby (Requires configured standbys and no auto-failover)
@@ -411,6 +412,7 @@ TAG=5.0-stable
 DRY_RUN=false
 PULL_IMAGES=false
 CMD=""
+export DHPATH="${DHPATH:-/etc/ssl}"
 
 while true ; do
   case "$1" in
@@ -430,6 +432,7 @@ while true ; do
     --restore-from-backup ) CMD='_restore_from_backup' ; shift ;;
     --trust-follower-proxy ) CMD='_add_follower_proxy' ; shift ;;
     --wait-for-master ) CMD='_wait_for_master' ; shift ;;
+    --generate-dh ) export DHPATH=/tmp ; shift ;;
     --stop ) _stop ; shift ;;
      * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
   esac
