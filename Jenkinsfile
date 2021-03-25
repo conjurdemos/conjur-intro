@@ -17,8 +17,8 @@ pipeline {
     stage('Run upgrade test') {
       when {
         allOf {
-          expression env.FROM
-          expression env.TO
+          expression { env.FROM }
+          expression { env.TO }
         }
       }
       steps {
