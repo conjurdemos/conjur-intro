@@ -163,15 +163,19 @@ function _setup_standbys {
   _reload_container 'conjur-master.mycompany.local'
 }
 
+function _command {
+  docker run --rm -w /dap-intro -v "$(pwd):/dap-intro" alpine "$@"
+}
+
 function _stop {
   echo "stopping...."
   docker-compose down -v
   docker network remove dap_net || true
 
-  rm -rf cli_cache
-  rm -rf system/backup/
-  rm -rf system/logs/
-  rm files/haproxy/master/haproxy.cfg || true
+  _command rm -rf cli_cache
+  _command rm -rf system/backup
+  _command rm -rf system/logs
+  _command rm files/haproxy/master/haproxy.cfg || true
   echo "stopped"
   exit
 }
