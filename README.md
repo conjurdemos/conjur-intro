@@ -63,6 +63,7 @@ $ bin/api --fetch-secrets
 |--create-backup|action|• Creates a backup|Requires configured master|
 |--dry-run|configuration|Only print configuration commands|
 |--enable-auto-failover|action|• Configures Master cluster with auto-failover|Requires configured master and standbys|
+|--generate-dh|configuration|• Disables the mounting of pre-generated DH params inside the master so they're generated on the fly|
 |--help||Shows all available arguments||
 |--import-custom-certificates|action|• Imports pre-generated 3rd-party certificates|Requires configured master|
 |--promote-standby|action|• Stops the current master<br>• Promotes a standby| Requires configured standbys and no auto-failover|
