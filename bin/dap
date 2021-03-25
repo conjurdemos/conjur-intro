@@ -250,7 +250,7 @@ function _restore_from_backup {
   _start_master
 
   # Unpack the backup with docker exec <container> evoke unpack backup -k /opt/conjur/backup/key /opt/conjur/backup/<yourbackupfile>
-  backup=$(ls -1t system/backup | grep gpg | head -1)
+  backup=$(_run conjur-master-1.mycompany.local "ls -1t /opt/conjur/backup | grep gpg | head -1")
   _run conjur-master-1.mycompany.local "evoke unpack backup --key /opt/conjur/backup/key /opt/conjur/backup/$backup"
 
   # Configure the new master with docker exec <container> evoke restore master
