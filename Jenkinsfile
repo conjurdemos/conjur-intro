@@ -4,6 +4,7 @@ pipeline {
   agent { label 'executor-v2' }
 
   options {
+    ansiColor('xterm')
     timestamps()
     buildDiscarder(logRotator(daysToKeepStr: '30'))
   }
@@ -17,8 +18,8 @@ pipeline {
     stage('Run upgrade test') {
       when {
         allOf {
-          expression env.FROM
-          expression env.TO
+          expression { env.FROM }
+          expression { env.TO }
         }
       }
       steps {
