@@ -140,7 +140,7 @@ services:
       dap_net:
         ipv4_address: 12.16.23.17
     ports:
-      - "450:443"
+      - "${CONJUR_FOLLOWER_PORT:-450}:443"
     expose:
       - "443"
       - "444"
