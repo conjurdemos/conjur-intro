@@ -9,6 +9,7 @@ source ./bin/utils.sh
 dotenv
 
 CONJUR_MASTER_PORT=${CONJUR_MASTER_PORT:-443}
+CONJUR_FOLLOWER_PORT=${CONJUR_FOLLOWER_PORT:-448}
 _admin_password="MySecretP@ss1"
 
 function _print_help {
@@ -130,6 +131,7 @@ function _setup_follower {
     "evoke unpack seed /opt/cyberark/dap/seeds/follower-seed.tar && evoke configure follower"
 
   _start_l7_load_balancer
+  echo "DAP Follower instance available at: 'https://localhost:${CONJUR_FOLLOWER_PORT}'"
 }
 
 #
