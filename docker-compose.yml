@@ -103,7 +103,7 @@ services:
       dap_net:
         ipv4_address: 12.16.23.16
     ports:
-      - "449:443"
+      - "${CONJUR_FOLLOWER_PORT:-449}:443"
     expose:
       - "443"
       - "444"
