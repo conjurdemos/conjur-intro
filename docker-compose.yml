@@ -29,6 +29,7 @@ services:
       - "5432"
     environment:
       TRUSTED_PROXIES: 123.123.1.1,123.5.1.1
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
     security_opt:
         - "seccomp:unconfined"
     volumes:
@@ -107,6 +108,8 @@ services:
     expose:
       - "443"
       - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
     security_opt:
         - "seccomp:unconfined"
     volumes:
