@@ -6,11 +6,14 @@ source bin/lib/aws_context
 source bin/lib/conjur_context
 
 SEED_DIR="./tmp/conjur/seeds"
+SSH_USER=${SSH_USER-ec2-user}
 
 function configure_master() {
   ssh -i "$SSH_KEY_FILE" \
     -o "StrictHostKeyChecking no" \
-    core@$MASTER_1_PUBLIC /bin/bash << EOF
+    "$SSH_USER@$MASTER_1_PUBLIC" /bin/bash << EOF
+    docker start conjur-appliance
+
     docker exec conjur-appliance \
       evoke configure master \
       \$(docker exec conjur-appliance evoke configure master --help | grep -q accept-eula && echo "--accept-eula") \
@@ -62,7 +65,7 @@ EOF
 function enroll_master() {
   ssh -i "$SSH_KEY_FILE" \
     -o "StrictHostKeyChecking no" \
-    core@$MASTER_1_PUBLIC /bin/bash << EOF
+    $SSH_USER@$MASTER_1_PUBLIC /bin/bash << EOF
     docker exec conjur-appliance \
       evoke cluster enroll \
       -n $MASTER_1_PRIVATE \
@@ -79,7 +82,7 @@ function create_standby_seed() {
   # Create Standby Seed
   ssh -i "$SSH_KEY_FILE" \
     -o "StrictHostKeyChecking no" \
-    core@$MASTER_1_PUBLIC /bin/bash << EOF
+    $SSH_USER@$MASTER_1_PUBLIC /bin/bash << EOF
     docker exec conjur-appliance bash -c " \
       evoke seed standby "$standby_private" "$MASTER_1_PRIVATE" > "/opt/conjur/backup/$filename"
     "
@@ -88,7 +91,7 @@ EOF
   # Copy seed to host
   scp -i "$SSH_KEY_FILE" \
     -o "StrictHostKeyChecking no" \
-    "core@$MASTER_1_PUBLIC:/opt/conjur/backup/$filename" \
+    "$SSH_USER@$MASTER_1_PUBLIC:/opt/conjur/backup/$filename" \
     "$SEED_DIR/$filename"
 }
 
@@ -100,14 +103,16 @@ function configure_standby() {
   scp -i "$SSH_KEY_FILE" \
     -o "StrictHostKeyChecking no" \
     "$SEED_DIR/$filename" \
-    "core@$standby_public:~/$filename"
+    "$SSH_USER@$standby_public:~/$filename"
     
   # Configure node
   ssh -i "$SSH_KEY_FILE" \
     -o "StrictHostKeyChecking no" \
-    core@$standby_public /bin/bash << EOF
+    $SSH_USER@$standby_public /bin/bash << EOF
     sudo mv "\$HOME/$filename" "/opt/conjur/backup/$filename"
-    
+
+    docker start conjur-appliance
+
     docker exec conjur-appliance \
       evoke unpack seed "/opt/conjur/backup/$filename"
 
@@ -123,7 +128,7 @@ function enroll_standby() {
   # Configure node
   ssh -i "$SSH_KEY_FILE" \
     -o "StrictHostKeyChecking no" \
-    core@$standby_public /bin/bash << EOF
+    $SSH_USER@$standby_public /bin/bash << EOF
     docker exec conjur-appliance \
       evoke cluster enroll \
       ${3:-} \
@@ -136,7 +141,7 @@ EOF
 function enable_sync_replication() {
   ssh -i "$SSH_KEY_FILE" \
     -o "StrictHostKeyChecking no" \
-    core@$MASTER_1_PUBLIC /bin/bash << EOF
+    $SSH_USER@$MASTER_1_PUBLIC /bin/bash << EOF
     docker exec conjur-appliance \
       evoke replication sync
 EOF
