@@ -12,3 +12,6 @@ key_name = ""
 # availability_zones = ["us-east-1a", "us-east-1b"]
 
 resource_prefix = ""
+
+# (REQUIRED) Id of a prefix list to allow connections from
+prefix_list_id = ""

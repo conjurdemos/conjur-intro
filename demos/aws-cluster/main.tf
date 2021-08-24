@@ -28,6 +28,10 @@ variable "follower_count" {
   default = 2
 }
 
+variable "prefix_list_id" {
+  type = string
+}
+
 #############################################
 # Configure the AWS Provider
 #############################################
@@ -55,25 +59,20 @@ resource "aws_security_group" "lb" {
   description = "Allow Conjur Master Traffic"
   vpc_id      = var.vpc_id
 
+  # Allow subnet traffic
   ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "6"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = data.aws_subnet.subnet.*.cidr_block
   }
 
+  # Allow workstation traffic
   ingress {
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "6"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 1999
-    to_port     = 1999
-    protocol    = "6"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port       = 0
+    to_port         = 0
+    protocol        = "-1"
+    prefix_list_ids = [var.prefix_list_id]
   }
 
   egress {
@@ -166,32 +165,20 @@ resource "aws_security_group" "master_node" {
   description = "Allow Conjur Master Node Traffic"
   vpc_id      = var.vpc_id
 
+  # Allow subnet traffic
   ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "6"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = data.aws_subnet.subnet.*.cidr_block
   }
 
+  # Allow workstation traffic
   ingress {
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "6"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 1999
-    to_port     = 1999
-    protocol    = "6"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "6"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port       = 0
+    to_port         = 0
+    protocol        = "-1"
+    prefix_list_ids = [var.prefix_list_id]
   }
 
   egress {
@@ -234,18 +221,20 @@ resource "aws_security_group" "follower_node" {
   description = "Allow Conjur Follower Node Traffic"
   vpc_id      = var.vpc_id
 
+  # Allow subnet traffic
   ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "6"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = data.aws_subnet.subnet.*.cidr_block
   }
 
+  # Allow workstation traffic
   ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "6"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port       = 0
+    to_port         = 0
+    protocol        = "-1"
+    prefix_list_ids = [var.prefix_list_id]
   }
 
   egress {

@@ -60,6 +60,9 @@ To initially install the cluster:
     # (REQUIRED) Name of SSH key pair to attach to Conjur Master nodes
     key_name = ""
 
+    # (REQUIRED) Id of a prefix list to allow connections from
+    prefix_list_id = ""
+
     # (OPTIONAL) Names of availability zones to use for nodes, 
     # defaults to the value below
     availability_zones = ["us-east-1a", "us-east-1b"]
