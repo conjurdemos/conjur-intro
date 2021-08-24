@@ -23,6 +23,11 @@ variable "resource_prefix" {
   default = ""
 }
 
+variable "follower_count" {
+  type = number
+  default = 2
+}
+
 #############################################
 # Configure the AWS Provider
 #############################################
@@ -253,7 +258,7 @@ resource "aws_security_group" "follower_node" {
 
 # Instances
 resource "aws_instance" "conjur_follower_node" {
-  count                   = 2
+  count                   = var.follower_count
 
   ami                     = var.ami_id
   instance_type           =  "m4.large"
