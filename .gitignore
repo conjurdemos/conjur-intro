@@ -26,3 +26,5 @@ files/haproxy/master/haproxy.cfg
 **/certificates/dap_master/
 **/certificates/intermediate_ca/
 **/certificates/root_ca/
+demos/aws-cluster/.terraform.lock.hcl
+demos/aws-cluster/.terraform.tfstate.lock.info
