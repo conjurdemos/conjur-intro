@@ -7,18 +7,19 @@ A tool which uses the DAP API to perform various tasks.
 
 Usage: bin/api [options]
 
-    --against-master            Runs command against the master (only relevant if command is an authenticate/read action)
-    --authenticate-user         Login using the default username (admin) and password (MySecretP@ss1)
-    --enable-seed-service       Enables Seed Service for Standbys and Followers
-    --fetch-secrets             Fetches previously set variables (use '--against-master' if only master is available)
-    -h, --help                  Shows this help message
-    --load-policy               Loads a default set of policies to mimic a customer experience
-    --load-policy-and-values    Loads policy and sets variable values (equivalent to running '--load-policy' and '--set-secrets')
-    -p, --password <password>   Password used for authentication (default is 'MySecretP@ss1')
-    --rotate-api-key            Rotates the authenticated user's API key
-    --set-secrets               Sets variable values
-    -u, --user <conjur-user>    Username to authenticate with (default is 'admin')
-    --view-roles                Displays the user's roles
+    --against-master                  Runs command against the master (only relevant if command is an authenticate/read action)
+    --authenticate-user               Login using the default username (admin) and password (MySecretP@ss1)
+    --enable-seed-service             Enables Seed Service for Standbys and Followers
+    --fetch-secrets                   Fetches previously set variables (use '--against-master' if only master is available)
+    -h, --help                        Shows this help message
+    --load-policy
+    --load-sample-policy              Loads a default set of policies to mimic a customer experience
+    --load-sample-policy-and-values   Loads policy and sets variable values (equivalent to running '--load-policy' and '--set-secrets')
+    -p, --password <password>         Password used for authentication (default is 'MySecretP@ss1')
+    --rotate-api-key                  Rotates the authenticated user's API key
+    --set-secrets                     Sets variable values
+    -u, --user <conjur-user>          Username to authenticate with (default is 'admin')
+    --view-roles                      Displays the user's roles
 
 EOF
   exit
@@ -178,8 +179,10 @@ while true ; do
     -p | --password ) shift ; PASSWORD=$1 ; shift ;;
     --authenticate-user ) shift ; cmd="authenticate_user $USER $PASSWORD" ;;
     -h | --help ) _print_help ; shift ;;
-    --load-policy-and-values ) shift ; cmd="load_policy_and_set_variables" ;;
-    --load-policy ) shift ; cmd='load_default_policy' ;;
+    --delete-policy ) shift ; cmd="load_policy $1 $2 PATCH" ; shift ; shift ;;
+    --load-policy ) shift ; cmd="load_policy $1 $2" ; shift ; shift ;;
+    --load-sample-policy-and-values ) shift ; cmd="load_policy_and_set_variables" ;;
+    --load-sample-policy ) shift ; cmd='load_default_policy' ;;
     --delete-policy ) shift; cmd='delete_policy' ;;
     --set-secrets ) shift ; cmd='load_default_values' ;;
     --against-master ) shift ; URL=$master_url ;;

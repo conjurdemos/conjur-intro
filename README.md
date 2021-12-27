@@ -29,7 +29,7 @@ $ bin/dap --enable-auto-failover
 Given the above, to add a follower (behind L7 load balancer), add data, and validate retrieval:
 ```sh
 $ bin/dap --provision-follower
-$ bin/api --load-policy-and-values
+$ bin/api --load-sample-policy-and-values
 $ bin/api --fetch-secrets
 ```
 
@@ -52,6 +52,20 @@ and finally, validate:
 $ bin/api --fetch-secrets
 ```
 
+### Working with Podman
+
+The project is enabled to work with Podman instead of Docker.
+To use Podman the above commands can be replaced as follows:
+
+```sh
+$ bin/podman-dap --provision-master
+$ bin/podman-dap --provision-standbys
+$ bin/podman-dap --enable-auto-failover
+```
+
+Similarly bin/api and bin/cli can be replaced with bin/podman-api and bin/podman-cli.
+
+To connect to the UI in the browser, use ports 10443(through HA proxy) or 10444(Conjur)
 ***
 
 ### bin/dap
