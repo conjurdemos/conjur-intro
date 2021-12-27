@@ -46,10 +46,10 @@ function _run {
   local _node_name=$1
   local _args=("${_all_args[@]:1}")
 
-  echo "Running Command (on $_node_name): docker exec cyberark-dap $_args"
+  echo "Running Command (on $_node_name): podman exec cyberark-dap $_args"
 
   if [[ $DRY_RUN = false ]]; then
-    docker-compose exec -T $_node_name bash -c "
+    podman exec $_node_name bash -c "
       $_args
     "
   fi
@@ -59,18 +59,59 @@ function _start_master {
   if [[ $DRY_RUN = false ]]; then
 
     if [[ "$PULL_IMAGES" = "true" ]]; then
-      docker-compose pull
+      podman pull haproxy:2.1-alpine
+      podman pull registry.tld/conjur-appliance:$VERSION
     fi
 
     _set_master_single_node_proxy_config
-    docker-compose up -d --no-deps conjur-master.mycompany.local \
-                                    conjur-master-1.mycompany.local
+
+    podman run --name conjur-master.mycompany.local \
+    -d --privileged --restart=unless-stopped \
+    --security-opt seccomp=unconfined \
+    --publish "10443:443" \
+    --publish "7000:7000" \
+    --log-driver journald \
+    --network dap_net \
+    --volume master-certs:/etc/ssl/certs:Z \
+    --volume ./files/haproxy/master:/usr/local/etc/haproxy:Z \
+    haproxy:2.1-alpine
+
+    mkdir -p ./system/backup
+    mkdir -p ./system/logs/master-1
+
+    podman run --name conjur-master-1.mycompany.local \
+    -d --privileged --restart=unless-stopped \
+    --security-opt seccomp=unconfined \
+    --publish "10444:443" \
+    --publish "5432:5432" \
+    --publish "1999:1999" \
+    --log-driver journald \
+    --network dap_net \
+    --volume seeds:/opt/cyberark/dap/seeds \
+    --volume master-certs:/opt/conjur/etc/ssl \
+    --volume ./system/backup:/opt/conjur/backup:Z \
+    --volume ./system/configuration:/opt/cyberark/dap/configuration:Z \
+    --volume ./system/logs/master-1:/var/log/conjur:Z \
+    --volume ./files:/conjur_files \
+    --volume ./files/dhparam.pem:${DHPATH}/dhparam.pem \
+    --volume ./files/cluster.conf:/opt/conjur/etc/cluster.conf \
+    --volume ./files/etcd.conf:/etc/etcd/etcd.conf \
+    registry.tld/conjur-appliance:$VERSION
   fi
 }
 
 function _start_l7_load_balancer {
   if [[ $DRY_RUN = false ]]; then
-    docker-compose up -d --no-deps conjur-follower.mycompany.local
+      podman run --name conjur-follower.mycompany.local \
+    -d --privileged --restart=unless-stopped \
+    --security-opt seccomp=unconfined \
+    --publish "10450:443" \
+    --publish "7001:7000" \
+    --log-driver journald \
+    --network dap_net \
+    --volume follower-certs:/etc/ssl/certs:Z \
+    --volume ./files/haproxy/follower:/usr/local/etc/haproxy:Z \
+    haproxy:2.1-alpine
   fi
 }
 
@@ -89,8 +130,25 @@ function _configure_master {
 function _setup_standby {
   local _standby_number=$1
 
-  docker-compose rm --stop --force conjur-master-$_standby_number.mycompany.local
-  docker-compose up --no-deps --detach conjur-master-$_standby_number.mycompany.local
+  mkdir -p ./system/logs/master-$_standby_number
+
+  podman run --name conjur-master-$_standby_number.mycompany.local \
+  -d --privileged --restart=unless-stopped \
+  --security-opt seccomp=unconfined \
+  --publish "$((10443 + $1)):443" \
+  --publish "$((5432 + $1)):5432" \
+  --publish "$((1999 + $1)):1999" \
+  --log-driver journald \
+  --network dap_net \
+  --volume seeds:/opt/cyberark/dap/seeds \
+  --volume master-certs:/opt/conjur/etc/ssl \
+  --volume ./system/backup:/opt/conjur/backup:Z \
+  --volume ./system/configuration:/opt/cyberark/dap/configuration:Z \
+  --volume ./system/logs/master-$_standby_number:/var/log/conjur:Z \
+  --volume ./files:/conjur_files \
+  --volume ./files/cluster.conf:/opt/conjur/etc/cluster.conf \
+  --volume ./files/etcd.conf:/etc/etcd/etcd.conf \
+  registry.tld/conjur-appliance:$VERSION
 
   # Generate a Seed File
   _run conjur-master-1.mycompany.local \
@@ -108,8 +166,25 @@ function _start_standby_synchronization {
 
 function _setup_follower {
 
-  docker-compose rm --stop --force conjur-follower-1.mycompany.local
-  docker-compose up --no-deps --detach conjur-follower-1.mycompany.local
+  mkdir -p ./system/logs/follower-1
+
+  podman run --name conjur-follower-1.mycompany.local\
+  -d --privileged --restart=unless-stopped \
+  --security-opt seccomp=unconfined \
+  --publish "10449:443" \
+  --publish "5440:5432" \
+  --publish "2010:1999" \
+  --log-driver journald \
+  --network dap_net \
+  --volume seeds:/opt/cyberark/dap/seeds \
+  --volume follower-certs:/opt/conjur/etc/ssl \
+  --volume ./system/backup:/opt/conjur/backup:Z \
+  --volume ./system/configuration:/opt/cyberark/dap/configuration:Z \
+  --volume ./system/logs/follower-1:/var/log/conjur:Z \
+  --volume ./files:/conjur_files \
+  --volume ./files/cluster.conf:/opt/conjur/etc/cluster.conf \
+  --volume ./files/etcd.conf:/etc/etcd/etcd.conf \
+  registry.tld/conjur-appliance:$VERSION
 
   # Generate Seed file
   _run conjur-master-1.mycompany.local \
@@ -128,7 +203,7 @@ function _setup_follower {
 function _perform_promotion {
   # Stop current master
   if [[ $DRY_RUN = false ]]; then
-    docker-compose stop conjur-master-1.mycompany.local
+    podman stop conjur-master-1.mycompany.local
   fi
 
   # Promote Standby to Master
@@ -147,13 +222,6 @@ function _single_master {
   echo "Login using with the username/password: 'admin'/'$_admin_password'"
 }
 
-function _reload_container {
-  name="$1"
-  docker-compose rm --stop --force $name
-  docker-compose up --no-deps --detach $name
-
-}
-
 function _setup_standbys {
   _setup_standby 2
   _setup_standby 3
@@ -163,17 +231,29 @@ function _setup_standbys {
 
   # Reload load balancer to serve cluster
   _set_master_multi_node_proxy_config
-  _reload_container 'conjur-master.mycompany.local'
+
+  podman stop conjur-master.mycompany.local
+  podman rm conjur-master.mycompany.local
+  podman run --name conjur-master.mycompany.local \
+  -d --privileged --restart=unless-stopped \
+  --security-opt seccomp=unconfined \
+  --publish "10443:443" \
+  --publish "7000:7000" \
+  --log-driver journald \
+  --network dap_net \
+  --volume master-certs:/etc/ssl/certs:Z \
+  --volume ./files/haproxy/master:/usr/local/etc/haproxy:Z \
+  haproxy:2.1-alpine
 }
 
 function _command {
-  docker run --rm -w /dap-intro -v "$(pwd):/dap-intro" alpine "$@"
+  podman run --rm -w /dap-intro -v "$(pwd):/dap-intro" alpine "$@"
 }
 
 function _stop {
   echo "stopping...."
-  docker-compose down -v
-  docker network remove dap_net || true
+  podman stop -a
+  podman rm -a
 
   _command rm -rf cli_cache
   _command rm -rf system/backup
@@ -195,7 +275,7 @@ function _cli {
   echo ''
 
   if [[ $DRY_RUN = false ]]; then
-    bin/cli conjur policy load $_namespace $_policy
+    bin/podman-cli conjur policy load $_namespace $_policy
   fi
 }
 
@@ -207,7 +287,7 @@ function _disable_autofailover {
 }
 
 function _enable_autofailover {
-  autofailover=$(curl -k https://localhost/info | jq -r .configuration.conjur.cluster_name)
+  autofailover=$(curl -k https://localhost:10444/info | jq -r .configuration.conjur.cluster_name)
 
   if [ "$autofailover" = 'production' ]; then
     _run conjur-master-2.mycompany.local "evoke cluster enroll --reenroll --cluster-machine-name conjur-master-2.mycompany.local --master-name conjur-master-1.mycompany.local production"
@@ -227,16 +307,16 @@ function _enable_autofailover {
 }
 
 function _stop_replication {
-  if [[ $(docker ps --quiet --filter "name=conjur-master-2.mycompany.local") ]]; then
+  if [[ $(podman ps --quiet --filter "name=conjur-master-2.mycompany.local") ]]; then
     _run conjur-master-2.mycompany.local "evoke replication stop"
   fi
-  if [[ $(docker ps --quiet --filter "name=conjur-master-3.mycompany.local") ]]; then
+  if [[ $(podman ps --quiet --filter "name=conjur-master-3.mycompany.local") ]]; then
     _run conjur-master-3.mycompany.local "evoke replication stop"
   fi
-  if [[ $(docker ps --quiet --filter "name=conjur-master-4.mycompany.local") ]]; then
+  if [[ $(podman ps --quiet --filter "name=conjur-master-4.mycompany.local") ]]; then
     _run conjur-master-4.mycompany.local "evoke replication stop"
   fi
-  if [[ $(docker ps --quiet --filter "name=conjur-master-5.mycompany.local") ]]; then
+  if [[ $(podman ps --quiet --filter "name=conjur-master-5.mycompany.local") ]]; then
     _run conjur-master-5.mycompany.local "evoke replication stop"
   fi
 }
@@ -244,9 +324,9 @@ function _stop_replication {
 function _stop_and_rename {
   local container_name="$1"
   local rename_to="$2"
-  docker-compose stop $container_name
-  image_id=$(docker ps --all --quiet --filter "name=$container_name")
-  docker rename $image_id $rename_to
+  podman stop $container_name
+  image_id=$(podman ps --all --quiet --filter "name=$container_name")
+  podman rename $image_id $rename_to
 }
 
 function _upgrade_via_backup_restore {
@@ -261,17 +341,18 @@ function _upgrade_via_backup_restore {
 }
 
 function _stop_and_remove_master {
-  docker-compose rm --stop --force conjur-master-1.mycompany.local
+  podman stop conjur-master-1.mycompany.local 
+  podman rm conjur-master-1.mycompany.local
 }
 
 function _restore_from_backup {
   _stop_and_remove_master
   _start_master
 
-  # Unpack the backup with docker exec <container> evoke unpack backup -k /opt/conjur/backup/key /opt/conjur/backup/<yourbackupfile>
+  # Unpack the backup with podman exec <container> evoke unpack backup -k /opt/conjur/backup/key /opt/conjur/backup/<yourbackupfile>
   _run conjur-master-1.mycompany.local 'evoke unpack backup --key /opt/conjur/backup/key /opt/conjur/backup/$(ls -1t /opt/conjur/backup | grep gpg | head -1)'
 
-  # Configure the new master with docker exec <container> evoke restore master
+  # Configure the new master with podman exec <container> evoke restore master
   _run conjur-master-1.mycompany.local "evoke restore --accept-eula"
 }
 
@@ -283,7 +364,7 @@ function _upgrade_master_via_backup_restore {
   # Generate a backup on the existing master using evoke backup
   _create_backup
 
-  # Stop the existing master container with docker stop <container> and rename
+  # Stop the existing master container with podman stop <container> and rename
   _stop_and_rename 'conjur-master-1.mycompany.local' 'conjur-master-1.mycompany.local_backup'
 
   # Start a container using the new version image (this will become the new master)
@@ -340,7 +421,7 @@ function _rotate_certificates {
     "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
 
   # Import the new certificate into the DAP Standbys
-  if [[ $(docker ps --quiet --filter "name=conjur-master-2.mycompany.local") ]]; then
+  if [[ $(podman ps --quiet --filter "name=conjur-master-2.mycompany.local") ]]; then
     _run conjur-master-2.mycompany.local \
       "evoke ca import --force --key $cert_path/dap_master/dap-master-key.pem --set $cert_path/dap_master/dap-master.pem"
   
@@ -350,7 +431,7 @@ function _rotate_certificates {
       "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
   fi
   
-  if [[ $(docker ps --quiet --filter "name=conjur-master-3.mycompany.local") ]]; then
+  if [[ $(podman ps --quiet --filter "name=conjur-master-3.mycompany.local") ]]; then
     _run conjur-master-3.mycompany.local \
       "evoke ca import --force --key $cert_path/dap_master/dap-master-key.pem --set $cert_path/dap_master/dap-master.pem"
   
@@ -363,7 +444,7 @@ function _rotate_certificates {
   # Re-enable auto-failover for the Master cluster
   _resume_autofailover
 
-  if [[ $(docker ps --quiet --filter "name=conjur-follower-1.mycompany.local") ]]; then
+  if [[ $(podman ps --quiet --filter "name=conjur-follower-1.mycompany.local") ]]; then
     # Import the new certificate into each Follower
     _run conjur-follower-1.mycompany.local \
       "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem --set $cert_path/dap_follower/dap-follower.pem"
@@ -413,17 +494,16 @@ function _wait_for_master {
   done
 }
 
-create_docker_network() {
+create_podman_network() {
 
-  # Cleanup any old, unused networks, including the previous DAP Docker Compose
+  # Cleanup any old, unused networks, including the previous DAP podman Compose
   # networks.
-  docker network prune --force
+  podman network prune --force
 
-  dap_net_pid=$(docker network ls --quiet --filter name=dap_net)
+  dap_net_pid=$(podman network ls --quiet --filter name=dap_net)
   if [[ -z "$dap_net_pid" ]]; then
-    docker network create \
+    podman network create \
       --driver bridge \
-      --ipam-driver default \
       --subnet 12.16.23.0/27 \
       dap_net
   fi
@@ -455,12 +535,13 @@ while true ; do
     --wait-for-master ) CMD='_wait_for_master' ; shift ;;
     --generate-dh ) export DHPATH=/tmp ; shift ;;
     --stop ) _stop ; shift ;;
+    --add-standby ) shift ; CMD="_setup_standby $1" ; shift ;;
      * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
   esac
 done
 
 export VERSION=$TAG
 
-create_docker_network
+create_podman_network
 
 eval $CMD
