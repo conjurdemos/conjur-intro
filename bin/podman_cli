@@ -1,0 +1,29 @@
+#!/bin/bash -e
+
+function proxy_command {
+  cmd="$@"
+
+  podman machine ssh mkdir -p /mnt/conjur-intro/cli_cache/master
+
+  podman run --name client \
+  --rm --privileged --restart=no \
+  --network dap_net \
+  --volume /mnt/conjur-intro:/src/cli:Z \
+  --volume /mnt/conjur-intro/cli_cache/master:/root:Z \
+  -e CONJUR_APPLIANCE_URL=https://conjur-master.mycompany.local \
+  -e CONJUR_ACCOUNT=demo \
+  -e CONJUR_AUTHN_LOGIN=admin \
+  -w /src/cli \
+  --entrypoint /bin/bash \
+  cyberark/conjur-cli:5 \
+  -c "
+    if [ ! -e /root/conjur-demo.pem ]; then
+      yes 'yes' | conjur init -u https://conjur-master.mycompany.local -a demo
+    fi
+    conjur authn login -u admin -p MySecretP@ss1
+    hostname -I
+    eval exec \"$cmd\"
+  "
+}
+
+proxy_command "$@"

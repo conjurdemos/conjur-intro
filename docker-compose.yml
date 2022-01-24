@@ -84,6 +84,50 @@ services:
       - ./system/logs/master-3:/var/log/conjur:Z
       - ./files:/conjur_files
 
+  conjur-master-4.mycompany.local:
+    image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.14
+    ports:
+      - "447:443"
+    expose:
+      - "443"
+      - "444"
+      - "1999"
+      - "5432"
+    security_opt:
+        - "seccomp:unconfined"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - master-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/master-4:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-master-5.mycompany.local:
+    image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.15
+    ports:
+      - "448:443"
+    expose:
+      - "443"
+      - "444"
+      - "1999"
+      - "5432"
+    security_opt:
+        - "seccomp:unconfined"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - master-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/master-5:/var/log/conjur:Z
+      - ./files:/conjur_files
+
   conjur-follower.mycompany.local:
     image: haproxy:2.1-alpine
     networks:
