@@ -1,5 +1,7 @@
 #!/bin/bash -eu
 
+SSH_USER=${SSH_USER:-ec2-user}
+
 node_num=$1; shift
 node_index=$((node_num - 1))
 
@@ -9,4 +11,4 @@ echo "Connecting to node $node_num ($public_dns)..."
 
 ssh -i "$SSH_KEY_FILE" \
     -o "StrictHostKeyChecking no" \
-    "core@$public_dns" "$@"
+    "$SSH_USER@$public_dns" "$@"

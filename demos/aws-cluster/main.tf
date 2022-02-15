@@ -36,7 +36,9 @@ variable "prefix_list_id" {
 # Configure the AWS Provider
 #############################################
 
-provider "aws" {}
+provider "aws" {
+  region = "us-east-1"
+}
 
 #############################################
 # State Information from AWS
