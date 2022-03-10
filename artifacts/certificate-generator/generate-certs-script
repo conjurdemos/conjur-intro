@@ -25,6 +25,9 @@ main() {
     esac
   done
 
+  echo "***TEMP*** generate-certs-script"
+  echo "***TEMP*** GENERATE_CA: $GENERATE_CA"
+  echo "***TEMP*** FORCE:       $FORCE"
   create_folders
   generate_certificates
 }
@@ -45,6 +48,7 @@ EOF
 }
 
 create_folders() {
+  echo "***TEMP*** create_folders()"
   folders='root_ca intermediate_ca dap_master dap_follower'
   for folder in $folders ; do
     mkdir -p "$certificate_path/$folder"
@@ -52,9 +56,17 @@ create_folders() {
 }
 
 generate_certificates() {
+  echo "***TEMP*** In generate_certificates()"
+  echo "======================================================"
+  ls -l "$config_path"
+  echo "======================================================"
   if [ "$GENERATE_CA" = true ]; then
     # Generate Root Certificate if it does not exist
     if [ ! -f "$root_destination.pem" ] || [ "$FORCE" = true ]; then
+      echo "***TEMP*** Generate Root certificate"
+      echo "======================================================"
+      ls -l "$config_path"
+      echo "======================================================"
       cfssl gencert -initca "$config_path/root_ca.json" | \
       cfssljson -bare $root_destination
     fi
@@ -62,10 +74,18 @@ generate_certificates() {
     # Generate and sign intermediate certificate if it does not exist
     if [ ! -f "$intermediate_destination.pem" ] || [ "$FORCE" = true ]; then
       # Generate Intermediate Certificate
+      echo "***TEMP*** Generate intermediate certificate"
+      echo "======================================================"
+      ls -l "$config_path"
+      echo "======================================================"
       cfssl gencert -initca $config_path/intermediate_ca.json | \
       cfssljson -bare $intermediate_destination
 
       # Sign Intermediate with Root
+      echo "***TEMP*** Sign intermediate with Root"
+      echo "======================================================"
+      ls -l "$config_path"
+      echo "======================================================"
       cfssl sign \
         -ca $root_destination.pem \
         -ca-key $root_destination-key.pem \
@@ -80,26 +100,74 @@ generate_certificates() {
   fi
 
   # Generate and sign master certificate w/ intermediate
+  echo "***TEMP*** Generate and sign master cert w/ intermediate"
   if [ "$GENERATE_SERVER" = true ]; then
     if [ ! -f "$master_destination-key.pem" ]; then
+      echo "***TEMP*** Calling generate_master_key"
+      echo "======================================================"
+      ls -l "$config_path"
+      echo "======================================================"
       generate_master_key      
+      echo "***TEMP*** Return from generate_master_key"
+      echo "======================================================"
+      ls -l "$config_path"
+      echo "======================================================"
     fi
 
     if [ ! -f "$master_destination.pem" ] || [ "$FORCE" = true ]; then
+      echo "***TEMP*** Calling generate_master_csr"
+      echo "======================================================"
+      ls -l "$config_path"
+      echo "======================================================"
       generate_master_csr
+      echo "***TEMP*** Return from generate_master_csr"
+      echo "======================================================"
+      ls -l "$config_path"
+      echo "======================================================"
+      echo "***TEMP*** Calling issue_master_certificate"
       issue_master_certificate
+      echo "***TEMP*** Return from issue_master_certificate"
+      echo "======================================================"
+      ls -l "$config_path"
+      echo "======================================================"
     fi
     
     if [ ! -f "$follower_destination-key.pem" ]; then
+      echo "***TEMP*** Calling generate_follower_key"
+      echo "======================================================"
+      ls -l "$config_path"
+      echo "======================================================"
       generate_follower_key      
+      echo "======================================================"
+      ls -l "$config_path"
+      echo "======================================================"
+      echo "***TEMP*** Return from generate_follower_key"
     fi
 
     # Generate and sign follower certificate w/ intermediate
+    echo "***TEMP*** Generate and sign follower cert w/ intermediate"
     if [ ! -f "$follower_destination.pem" ] || [ "$FORCE" = true ]; then
+      echo "***TEMP*** Calling generate_follower_csr"
+      echo "======================================================"
+      ls -l "$config_path"
+      echo "======================================================"
       generate_follower_csr
+      echo "***TEMP*** Return from generate_follower_csr"
+      echo "======================================================"
+      ls -l "$config_path"
+      echo "======================================================"
+      echo "***TEMP*** Calling issue_follower_certificate"
       issue_follower_certificate
+      echo "***TEMP*** Return from issue_follower_certificate"
+      echo "======================================================"
+      ls -l "$config_path"
+      echo "======================================================"
     fi
   fi
+  echo "***TEMP*** Returning from generate_certificates()"
+  echo "======================================================"
+  ls -l "$config_path"
+  echo "======================================================"
 }
 
 generate_master_key() {
@@ -124,9 +192,27 @@ issue_master_certificate() {
 }
 
 generate_follower_key() {
+  #cfssl genkey \
+  #  -config $config_path/cfssl.conf \
+  #  $config_path/dap-follower.json | cfssljson -bare $follower_destination
+  echo "***TEMP*** In generate_follower_key(). config_path: $config_path"
+  echo "***TEMP*** Files in $config_path:"
+  echo "***TEMP*** ================================"
+  ls -l "$config_path"
+  echo "***TEMP*** ================================"
+  echo "***TEMP*** dap-follower.json content:"
+  echo "***TEMP*** ================================"
+  cat $config_path/dap-follower.json
+  echo "***TEMP*** ================================"
   cfssl genkey \
     -config $config_path/cfssl.conf \
-    $config_path/dap-follower.json | cfssljson -bare $follower_destination
+    $config_path/dap-follower.json > temp-key-json
+  echo "***TEMP*** Output of 'cfssl genkey...':"
+  echo "***TEMP*** ================================"
+  cat temp-key-json
+  echo "***TEMP*** ================================"
+  echo "***TEMP*** Calling 'cfssljson'...', follower_destination: $follower_destination"
+  cat temp-key-json | cfssljson -bare $follower_destination
 }
 
 generate_follower_csr() {

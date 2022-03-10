@@ -312,10 +312,27 @@ function _import_certificates {
   bin/generate-certs
 
   local cert_path='/opt/cyberark/dap/configuration/certificates'
+  echo "***TEMP*** Contents of cert_path directory:"
+  ls -l "$cert_path"
+  echo "==============================================================="
+  echo
+  echo "***TEMP*** Running evoke ca import --force --root ..."
+  echo
+  echo "==============================================================="
   _run conjur-master-1.mycompany.local \
     "evoke ca import --force --root $cert_path/ca-chain.pem"
+  echo "==============================================================="
+  echo
+  echo "***TEMP*** Running evoke ca import --force --key ... for master"
+  echo
+  echo "==============================================================="
   _run conjur-master-1.mycompany.local \
     "evoke ca import --force --key $cert_path/dap_master/dap-master-key.pem --set $cert_path/dap_master/dap-master.pem"
+  echo "==============================================================="
+  echo
+  echo "***TEMP*** Running evoke ca import --force --key ... for follower"
+  echo
+  echo "==============================================================="
   _run conjur-master-1.mycompany.local \
     "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
 }

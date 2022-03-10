@@ -3,3 +3,4 @@
 export VERSION='5.0-stable'
 
 docker-compose run --no-deps --rm certificate-generator "$@"
+echo "***TEMP*** Run of certificate-generator is complete"
