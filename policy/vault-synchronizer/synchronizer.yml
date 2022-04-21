@@ -1,0 +1,23 @@
+- !policy
+  id: conjur
+  body:
+  - !policy
+    id: vault-synchronizer
+    body:
+    - !variable leader-expiration
+
+    # The Group all Synchronizer hosts need to be added to.
+    - !group members
+
+    - !permit
+        role: !group members
+        privileges: [ read, execute, update ]
+        resources: !variable leader-expiration
+
+    - !policy
+      id: leader
+      owner: !group members
+
+    - !policy
+      id: vault-lines-of-business
+      owner: !group members

@@ -1,0 +1,7 @@
+# Host for Synchronizer
+- !host synchronizer-2
+
+# Add Synchronizer host to the `members` group (so this host can update the LOB last updated variables)
+- !grant
+  member: !host synchronizer-2
+  role: !group conjur/vault-synchronizer/members

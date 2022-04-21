@@ -1,0 +1,8 @@
+# Remove permission from the host
+- !revoke
+  member: !host synchronizer-1
+  role: !group conjur/vault-synchronizer/members
+
+# Remove the host
+- !delete
+  record: !host synchronizer-1

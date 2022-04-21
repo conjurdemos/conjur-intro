@@ -1,0 +1,5 @@
+# Leader definition
+- !host
+  id: current-leader
+  annotations:
+    leader: host-1

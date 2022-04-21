@@ -181,19 +181,33 @@ function _stop {
   exit
 }
 
-function _cli {
+function _load_policy {
   local _namespace=$1
   local _policy=$2
+  local _args=${3:-''}
 
   echo "Loading Policy '$_policy':"
   cat $_policy
   echo ''
-  echo "with command: 'conjur policy load $_namespace $_policy'"
+  echo "with command: 'conjur policy load $_args $_namespace $_policy'"
   echo ''
   echo ''
 
   if [[ $DRY_RUN = false ]]; then
-    bin/cli conjur policy load $_namespace $_policy
+    bin/cli conjur policy load $_args $_namespace $_policy
+  fi
+}
+
+function _set_variable {
+  local variable=$1
+  local value=$2
+
+  echo "Setting variable: '$variable'"
+  echo "with value: '$value'"
+  echo ''
+
+  if [[ $DRY_RUN = false ]]; then
+    bin/cli conjur variable values add "$variable" "$value"
   fi
 }
 
@@ -411,6 +425,39 @@ create_docker_network() {
   fi
 }
 
+_synchronizer_demo() {
+  # Load Synchronizer policy
+  _load_policy "root" "policy/vault-synchronizer/synchronizer.yml"
+
+  # Create a Synchronizer host 1
+  _load_policy "root" "policy/vault-synchronizer/host-1.yml"
+
+  # *** The following steps should be run using the Synchronizer host/API key created in the last step ***
+  _load_policy "conjur/vault-synchronizer/leader" "policy/vault-synchronizer/leader-1.yml"
+  # As this is the only Synchronizer, we know this one will be the leader
+  _set_variable "conjur/vault-synchronizer/leader-expiration" "2022-04-20T19:25:43.511Z"
+
+  # Let's assume we're planning to add more Synchronizer hosts, so let's set `host-1` as the leader:
+  # _set_variable "conjur/vault-synchronizer/vault-lines-of-business/lob-1" "{\"safe-1\":\"2022-04-20T18:25:43.511Z\",\"safe-2\":\"2022-04-20T18:25:43.511Z\"}"
+
+  # Create a LOB (lob-1) and populate it with a JSON hash
+  _load_policy "conjur/vault-synchronizer/vault-lines-of-business" "policy/vault-synchronizer/lob-1.yml"
+  # _set_variable "conjur/vault-synchronizer/vault-lines-of-business/lob-1" "{\"safe-1\":\"2022-04-20T18:25:43.511Z\",\"safe-2\":\"2022-04-20T18:25:43.511Z\"}"
+
+  # Add a second Synchronizer
+  _load_policy "root" "policy/vault-synchronizer/host-2.yml"
+
+  # Remove Leader (this can be done by any Synchronizer)
+  _load_policy "conjur/vault-synchronizer/leader" "policy/vault-synchronizer/delete-leader.yml" "--delete"
+  # Make second Synchronizer the new leader
+  _load_policy "conjur/vault-synchronizer/leader" "policy/vault-synchronizer/leader-2.yml"
+  # Update expiration
+  _set_variable "conjur/vault-synchronizer/leader-expiration" "2022-04-20T20:25:43.511Z"
+
+  # Completely remove Synchronizer 1
+  _load_policy "root" "policy/vault-synchronizer/remove-host-1.yml" "--delete"
+}
+
 TAG=5.0-stable
 DRY_RUN=false
 PULL_IMAGES=false
@@ -436,6 +483,7 @@ while true ; do
     --trust-follower-proxy ) CMD='_add_follower_proxy' ; shift ;;
     --wait-for-master ) CMD='_wait_for_master' ; shift ;;
     --generate-dh ) export DHPATH=/tmp ; shift ;;
+    --synchronizer-demo ) CMD='_synchronizer_demo' ; shift ;;
     --stop ) _stop ; shift ;;
      * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
   esac

@@ -1,0 +1,2 @@
+- !delete
+  record: !host current-leader

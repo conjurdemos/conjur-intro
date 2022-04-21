@@ -7,7 +7,7 @@ services:
         ipv4_address: 12.16.23.10
     ports:
       - "443:443"
-      - "7000:7000"
+      - "7001:7000"
     expose:
       - "1999"
       - "5432"
@@ -34,9 +34,11 @@ services:
     volumes:
       - seeds:/opt/cyberark/dap/seeds
       - master-certs:/opt/conjur/etc/ssl/
+      - ./system/security/encryption-key/:/opt/conjur/encryption-key/
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
       - ./system/logs/master-1:/var/log/conjur:Z
+      - ./system/configuration/conjur.yml:/etc/conjur/config/conjur.yml
       - ./files:/conjur_files
       - ./files/dhparam.pem:${DHPATH}/dhparam.pem
 
@@ -57,6 +59,7 @@ services:
     volumes:
       - seeds:/opt/cyberark/dap/seeds
       - master-certs:/opt/conjur/etc/ssl/
+      - ./system/security/encryption-key/:/opt/conjur/encryption-key/
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
       - ./system/logs/master-2:/var/log/conjur:Z
@@ -79,6 +82,7 @@ services:
     volumes:
       - seeds:/opt/cyberark/dap/seeds
       - master-certs:/opt/conjur/etc/ssl/
+      - ./system/security/encryption-key/:/opt/conjur/encryption-key/
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
       - ./system/logs/master-3:/var/log/conjur:Z
@@ -112,6 +116,7 @@ services:
     volumes:
       - seeds:/opt/cyberark/dap/seeds
       - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/security/encryption-key/:/opt/conjur/encryption-key/
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
       - ./system/logs/follower:/var/log/conjur:Z
