@@ -1,0 +1,6 @@
+- !grant
+  roles:
+  - !group conjur/authn-jwt/my-authenticator-id/apps
+  - !group conjur/seed-generation/consumers
+  members:
+  - !host app-path/system:serviceaccount:cyberark-conjur:conjur-serviceaccount

@@ -1,0 +1,8 @@
+- !policy
+  id: app-path
+  body:
+  - !host
+    id: system:serviceaccount:cyberark-conjur:conjur-serviceaccount
+    annotations:
+      authn-jwt/my-authenticator-id/kubernetes.io/namespace: cyberark-conjur
+      authn-jwt/my-authenticator-id/kubernetes.io/serviceaccount/name: conjur-serviceaccount

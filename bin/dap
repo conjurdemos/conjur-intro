@@ -319,7 +319,7 @@ function _rotate_certificates {
   local cert_path='/opt/cyberark/dap/configuration/certificates'
   _run conjur-master-1.mycompany.local \
     "evoke ca import --force --key $cert_path/dap_master/dap-master-key.pem --set $cert_path/dap_master/dap-master.pem"
-  
+
   # Import the new Follower certificate into the active DAP master so that it
   # is available through the seed service
   _run conjur-master-1.mycompany.local \
@@ -329,17 +329,17 @@ function _rotate_certificates {
   if [[ $(docker ps --quiet --filter "name=conjur-master-2.mycompany.local") ]]; then
     _run conjur-master-2.mycompany.local \
       "evoke ca import --force --key $cert_path/dap_master/dap-master-key.pem --set $cert_path/dap_master/dap-master.pem"
-  
+
     # Import the new Follower certificate into each DAP Standby so that it
     # is available through the seed service if the Standby is promoted.
     _run conjur-master-2.mycompany.local \
       "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
   fi
-  
+
   if [[ $(docker ps --quiet --filter "name=conjur-master-3.mycompany.local") ]]; then
     _run conjur-master-3.mycompany.local \
       "evoke ca import --force --key $cert_path/dap_master/dap-master-key.pem --set $cert_path/dap_master/dap-master.pem"
-  
+
     # Import the new Follower certificate into each DAP Standby so that it
     # is available through the seed service if the Standby is promoted.
     _run conjur-master-3.mycompany.local \

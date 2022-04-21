@@ -1,13 +1,14 @@
 version: "3"
 services:
   conjur-master.mycompany.local:
+    container_name: conjur-master.mycompany.local
     image: haproxy:2.1-alpine
     networks:
       dap_net:
         ipv4_address: 12.16.23.10
     ports:
       - "443:443"
-      - "7000:7000"
+      - "7001:7000"
     expose:
       - "1999"
       - "5432"
@@ -16,6 +17,7 @@ services:
       - ./files/haproxy/master:/usr/local/etc/haproxy
 
   conjur-master-1.mycompany.local:
+    container_name: conjur-master-1.mycompany.local
     image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
     networks:
       dap_net:
@@ -29,8 +31,9 @@ services:
       - "5432"
     environment:
       TRUSTED_PROXIES: 123.123.1.1,123.5.1.1
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
     security_opt:
-        - "seccomp:unconfined"
+      - "seccomp:unconfined"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
       - master-certs:/opt/conjur/etc/ssl/
@@ -41,6 +44,7 @@ services:
       - ./files/dhparam.pem:${DHPATH}/dhparam.pem
 
   conjur-master-2.mycompany.local:
+    container_name: conjur-master-2.mycompany.local
     image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
     networks:
       dap_net:
@@ -63,6 +67,7 @@ services:
       - ./files:/conjur_files
 
   conjur-master-3.mycompany.local:
+    container_name: conjur-master-3.mycompany.local
     image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
     networks:
       dap_net:
@@ -85,6 +90,7 @@ services:
       - ./files:/conjur_files
 
   conjur-follower.mycompany.local:
+    container_name: conjur-follower.mycompany.local
     image: haproxy:2.1-alpine
     networks:
       dap_net:
@@ -98,6 +104,7 @@ services:
       - ./files/haproxy/follower:/usr/local/etc/haproxy
 
   conjur-follower-1.mycompany.local:
+    container_name: conjur-follower-1.mycompany.local
     image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
     networks:
       dap_net:
