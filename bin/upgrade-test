@@ -26,6 +26,8 @@ main() {
   backup_and_restore_cluster "$before_version" 
   echo
 
+  sleep 30
+
   header "Upgrade to $after_version"
   upgrade_cluster "$after_version"
   echo
