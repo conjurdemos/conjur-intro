@@ -2,33 +2,33 @@
   id: conjur/authn-jwt/my-authenticator-id
   body:
     - !webservice
- 
+
     # Uncomment one of following variables depending on the public availability
-    # of the Service Account Issuer Discovery service in Kubernetes 
+    # of the Service Account Issuer Discovery service in Kubernetes
     # If the service is publicly available, uncomment 'jwks-uri'.
     # If the service is not available, uncomment 'public-keys'
     - !variable jwks-uri
     # - !variable public-keys
- 
+
     - !variable issuer
     - !variable ca-cert
     - !variable token-app-property
     - !variable identity-path
     - !variable audience
-    
+
     # Group of applications that can authenticate using this JWT Authenticator
     - !group apps
-   
+
     - !permit
       role: !group apps
       privilege: [ read, authenticate ]
       resource: !webservice
-   
+
     - !webservice status
-   
+
     # Group of users who can check the status of the JWT Authenticator
     - !group operators
-   
+
     - !permit
       role: !group operators
       privilege: [ read ]
