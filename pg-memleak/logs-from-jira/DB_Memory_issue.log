@@ -1,0 +1,71 @@
+NAME                                   CPU(cores)   MEMORY(bytes)
+conjur-oss-postgres-8665ff4bf4-jwtls   414m         1712Mi
+Ofira.Burstein@NG-OFIRA-BU aam-performance % dev kubectl top pod conjur-oss-postgres-8665ff4bf4-jwtls -n ofira-workspace
+NAME                                   CPU(cores)   MEMORY(bytes)
+conjur-oss-postgres-8665ff4bf4-jwtls   448m         1800Mi
+Ofira.Burstein@NG-OFIRA-BU aam-performance % date
+Wed Apr 27 12:53:38 IDT 2022
+Ofira.Burstein@NG-OFIRA-BU aam-performance % dev kubectl get pods -n ofira-workspace
+NAME                                   READY   STATUS    RESTARTS   AGE
+conjur-oss-7c4449fb4c-fskdx            2/2     Running   0          71m
+conjur-oss-postgres-8665ff4bf4-jwtls   1/1     Running   0          71m
+Ofira.Burstein@NG-OFIRA-BU aam-performance % dev kubectl top pod conjur-oss-postgres-8665ff4bf4-jwtls -n ofira-workspace
+NAME                                   CPU(cores)   MEMORY(bytes)
+conjur-oss-postgres-8665ff4bf4-jwtls   465m         1878Mi
+Ofira.Burstein@NG-OFIRA-BU aam-performance % date
+Wed Apr 27 12:56:06 IDT 2022
+Ofira.Burstein@NG-OFIRA-BU aam-performance %
+Ofira.Burstein@NG-OFIRA-BU aam-performance %
+Ofira.Burstein@NG-OFIRA-BU aam-performance % dev kubectl top pod conjur-oss-postgres-8665ff4bf4-jwtls -n ofira-workspace
+NAME                                   CPU(cores)   MEMORY(bytes)
+conjur-oss-postgres-8665ff4bf4-jwtls   491m         1966Mi
+Ofira.Burstein@NG-OFIRA-BU aam-performance % date
+Wed Apr 27 13:00:28 IDT 2022
+Ofira.Burstein@NG-OFIRA-BU aam-performance % dev kubectl get pods -n ofira-workspace
+NAME                                   READY   STATUS    RESTARTS   AGE
+conjur-oss-7c4449fb4c-fskdx            2/2     Running   0          80m
+conjur-oss-postgres-8665ff4bf4-jwtls   1/1     Running   0          80m
+Ofira.Burstein@NG-OFIRA-BU aam-performance % dev kubectl top pod conjur-oss-postgres-8665ff4bf4-jwtls -n ofira-workspace
+NAME                                   CPU(cores)   MEMORY(bytes)
+conjur-oss-postgres-8665ff4bf4-jwtls   76m          153Mi
+Ofira.Burstein@NG-OFIRA-BU aam-performance % dev kubectl logs conjur-oss-postgres-8665ff4bf4-jwtls > postgres.log
+Error from server (NotFound): pods "conjur-oss-postgres-8665ff4bf4-jwtls" not found
+^C%
+Ofira.Burstein@NG-OFIRA-BU aam-performance % dev kubectl logs conjur-oss-postgres-8665ff4bf4-jwtls -n ofira-workspace > postgres.log
+Ofira.Burstein@NG-OFIRA-BU aam-performance % vi postgres.log
+Ofira.Burstein@NG-OFIRA-BU aam-performance %
+Ofira.Burstein@NG-OFIRA-BU aam-performance %
+Ofira.Burstein@NG-OFIRA-BU aam-performance %
+Ofira.Burstein@NG-OFIRA-BU aam-performance %
+Ofira.Burstein@NG-OFIRA-BU aam-performance % date
+Wed Apr 27 13:07:34 IDT 2022
+Ofira.Burstein@NG-OFIRA-BU aam-performance % grep "database system is ready to accep" postgres.log
+2022-04-27 08:44:35.242 UTC [39] LOG:  database system is ready to accept connections
+2022-04-27 08:44:35.500 UTC [1] LOG:  database system is ready to accept connections
+2022-04-27 10:03:29.673 UTC [1] LOG:  database system is ready to accept connections
+Ofira.Burstein@NG-OFIRA-BU aam-performance % dev kubectl get pods -n ofira-workspace
+NAME                                   READY   STATUS    RESTARTS   AGE
+conjur-oss-7c4449fb4c-fskdx            2/2     Running   0          83m
+conjur-oss-postgres-8665ff4bf4-jwtls   1/1     Running   0          83m
+Ofira.Burstein@NG-OFIRA-BU aam-performance % grep "shutdown" postgres.log
+2022-04-27 08:44:35.367 UTC [39] LOG:  received fast shutdown request
+Ofira.Burstein@NG-OFIRA-BU aam-performance % vi postgres.log
+Ofira.Burstein@NG-OFIRA-BU aam-performance %
+Ofira.Burstein@NG-OFIRA-BU aam-performance %
+Ofira.Burstein@NG-OFIRA-BU aam-performance % grep "database system was shut down" postgres.log
+2022-04-27 08:44:35.238 UTC [40] LOG:  database system was shut down at 2022-04-27 08:44:35 UTC
+2022-04-27 08:44:35.495 UTC [57] LOG:  database system was shut down at 2022-04-27 08:44:35 UTC
+Ofira.Burstein@NG-OFIRA-BU aam-performance %
+Ofira.Burstein@NG-OFIRA-BU aam-performance %
+Ofira.Burstein@NG-OFIRA-BU aam-performance %
+Ofira.Burstein@NG-OFIRA-BU aam-performance % grep "database system" postgres.log
+The files belonging to this database system will be owned by user "postgres".
+2022-04-27 08:44:35.238 UTC [40] LOG:  database system was shut down at 2022-04-27 08:44:35 UTC
+2022-04-27 08:44:35.242 UTC [39] LOG:  database system is ready to accept connections
+2022-04-27 08:44:35.382 UTC [39] LOG:  database system is shut down
+2022-04-27 08:44:35.495 UTC [57] LOG:  database system was shut down at 2022-04-27 08:44:35 UTC
+2022-04-27 08:44:35.500 UTC [1] LOG:  database system is ready to accept connections
+2022-04-27 10:03:28.216 UTC [159] LOG:  database system was interrupted; last known up at 2022-04-27 10:00:58 UTC
+2022-04-27 10:03:28.356 UTC [159] LOG:  database system was not properly shut down; automatic recovery in progress
+2022-04-27 10:03:29.576 UTC [160] FATAL:  the database system is in recovery mode
+2022-04-27 10:03:29.673 UTC [1] LOG:  database system is ready to accept connections

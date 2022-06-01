@@ -1,0 +1,815 @@
+2022-02-07 10:01:27.885 GMT [31700] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-07 10:01:27.885 GMT [31700] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-07 10:01:27.885 GMT [31700] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-07 10:01:27 UTC::@:[31700]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-07 10:01:27 UTC::@:[31700]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-07 10:01:27 UTC::@:[31700]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-02-07 10:01:28.936 GMT [31869] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-07 10:01:28.936 GMT [31869] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-07 10:01:28.936 GMT [31869] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-07 10:01:28 UTC::@:[31869]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-07 10:01:28 UTC::@:[31869]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-07 10:01:28 UTC::@:[31869]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-02-07 10:01:28 UTC::@:[31869]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-02-07 10:01:28 UTC::@:[31869]:LOG:  listening on IPv6 address "::", port 5432
+2022-02-07 10:01:28 UTC::@:[31869]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-02-07 10:01:29 UTC::@:[31869]:LOG:  redirecting log output to logging collector process
+2022-02-07 10:01:29 UTC::@:[31869]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-02-07 10:05:10 UTC::@:[31892]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-07 10:05:10 UTC::@:[31892]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-07 10:05:30 UTC::@:[31892]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-07 10:05:30 UTC::@:[31892]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-09 07:22:37.868 GMT [32330] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-09 07:22:37.868 GMT [32330] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-09 07:22:37.868 GMT [32330] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-09 07:22:37 UTC::@:[32330]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-09 07:22:37 UTC::@:[32330]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-09 07:22:37 UTC::@:[32330]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-02-09 07:22:39.174 GMT [32435] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-09 07:22:39.174 GMT [32435] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-09 07:22:39.174 GMT [32435] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-09 07:22:39 UTC::@:[32435]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-09 07:22:39 UTC::@:[32435]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-09 07:22:39 UTC::@:[32435]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-02-09 07:22:39 UTC::@:[32435]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-02-09 07:22:39 UTC::@:[32435]:LOG:  listening on IPv6 address "::", port 5432
+2022-02-09 07:22:39 UTC::@:[32435]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-02-09 07:22:39 UTC::@:[32435]:LOG:  redirecting log output to logging collector process
+2022-02-09 07:22:39 UTC::@:[32435]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-02-09 07:25:10 UTC::@:[32479]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-09 07:25:10 UTC::@:[32479]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-09 07:25:30 UTC::@:[32479]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-09 07:25:30 UTC::@:[32479]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+Uh oh, gzflush operation on GzipFile /rdsdbdata/tmp/grover.postgres.2022-02-10-00-00-00.32479.2.log.gz failed: Cannot allocate memory
+Uh oh, gzputs operation on GzipFile /rdsdbdata/tmp/grover.postgres.2022-02-10-00-00-00.32479.2.log.gz failed: Cannot allocate memory
+Uh oh, gzputs operation on GzipFile /rdsdbdata/tmp/grover.postgres.2022-02-10-00-00-00.32479.2.log.gz failed: Cannot allocate memory
+Uh oh, gzputs operation on GzipFile /rdsdbdata/tmp/grover.postgres.2022-02-10-00-00-00.32479.2.log.gz failed: Cannot allocate memory
+Uh oh, gzputs operation on GzipFile /rdsdbdata/tmp/grover.postgres.2022-02-10-00-00-00.32479.2.log.gz failed: Cannot allocate memory
+Uh oh, gzputs operation on GzipFile /rdsdbdata/tmp/grover.postgres.2022-02-10-00-00-00.32479.2.log.gz failed: Cannot allocate memory
+Uh oh, gzflush operation on GzipFile /rdsdbdata/tmp/grover.postgres.2022-02-10-00-00-00.32479.2.log.gz failed: Cannot allocate memory
+Uh oh, gzflush operation on GzipFile /rdsdbdata/tmp/grover.postgres.2022-02-10-00-00-00.32479.2.log.gz failed: Cannot allocate memory
+Uh oh, gzflush operation on GzipFile /rdsdbdata/tmp/grover.postgres.2022-02-10-00-00-00.32479.2.log.gz failed: Cannot allocate memory
+2022-02-10 13:02:09.919 GMT [29316] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-10 13:02:09.919 GMT [29316] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-10 13:02:09.919 GMT [29316] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-10 13:02:09 UTC::@:[29316]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-10 13:02:09 UTC::@:[29316]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-10 13:02:09 UTC::@:[29316]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-02-10 13:02:11.130 GMT [29424] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-10 13:02:11.130 GMT [29424] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-10 13:02:11.130 GMT [29424] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-10 13:02:11 UTC::@:[29424]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-10 13:02:11 UTC::@:[29424]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-10 13:02:11 UTC::@:[29424]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-02-10 13:02:11 UTC::@:[29424]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-02-10 13:02:11 UTC::@:[29424]:LOG:  listening on IPv6 address "::", port 5432
+2022-02-10 13:02:11 UTC::@:[29424]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-02-10 13:02:11 UTC::@:[29424]:LOG:  redirecting log output to logging collector process
+2022-02-10 13:02:11 UTC::@:[29424]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-02-10 13:05:10 UTC::@:[29448]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-10 13:05:10 UTC::@:[29448]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-10 13:05:30 UTC::@:[29448]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-10 13:05:30 UTC::@:[29448]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-11 15:30:39.729 GMT [28843] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-11 15:30:39.729 GMT [28843] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-11 15:30:39.729 GMT [28843] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-11 15:30:39 UTC::@:[28843]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-11 15:30:39 UTC::@:[28843]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-11 15:30:39 UTC::@:[28843]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-02-11 15:30:40.895 GMT [28951] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-11 15:30:40.895 GMT [28951] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-11 15:30:40.895 GMT [28951] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-11 15:30:40 UTC::@:[28951]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-11 15:30:40 UTC::@:[28951]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-11 15:30:40 UTC::@:[28951]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-02-11 15:30:40 UTC::@:[28951]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-02-11 15:30:40 UTC::@:[28951]:LOG:  listening on IPv6 address "::", port 5432
+2022-02-11 15:30:40 UTC::@:[28951]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-02-11 15:30:40 UTC::@:[28951]:LOG:  redirecting log output to logging collector process
+2022-02-11 15:30:40 UTC::@:[28951]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-02-11 15:35:10 UTC::@:[28953]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-11 15:35:10 UTC::@:[28953]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-11 15:35:30 UTC::@:[28953]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-11 15:35:30 UTC::@:[28953]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-12 17:10:45.947 GMT [29412] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-12 17:10:45.948 GMT [29412] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-12 17:10:45.948 GMT [29412] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-12 17:10:45 UTC::@:[29412]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-12 17:10:45 UTC::@:[29412]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-12 17:10:45 UTC::@:[29412]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-02-12 17:10:47.294 GMT [29540] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-12 17:10:47.294 GMT [29540] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-12 17:10:47.294 GMT [29540] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-12 17:10:47 UTC::@:[29540]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-12 17:10:47 UTC::@:[29540]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-12 17:10:47 UTC::@:[29540]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-02-12 17:10:47 UTC::@:[29540]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-02-12 17:10:47 UTC::@:[29540]:LOG:  listening on IPv6 address "::", port 5432
+2022-02-12 17:10:47 UTC::@:[29540]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-02-12 17:10:47 UTC::@:[29540]:LOG:  redirecting log output to logging collector process
+2022-02-12 17:10:47 UTC::@:[29540]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-02-12 17:15:10 UTC::@:[29541]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-12 17:15:10 UTC::@:[29541]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-12 17:15:30 UTC::@:[29541]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-12 17:15:30 UTC::@:[29541]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-13 18:49:35.705 GMT [11418] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-13 18:49:35.705 GMT [11418] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-13 18:49:35.705 GMT [11418] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-13 18:49:35 UTC::@:[11418]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-13 18:49:35 UTC::@:[11418]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-13 18:49:35 UTC::@:[11418]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-02-13 18:49:37.035 GMT [11830] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-13 18:49:37.035 GMT [11830] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-13 18:49:37.035 GMT [11830] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-13 18:49:37 UTC::@:[11830]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-13 18:49:37 UTC::@:[11830]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-13 18:49:37 UTC::@:[11830]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-02-13 18:49:37 UTC::@:[11830]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-02-13 18:49:37 UTC::@:[11830]:LOG:  listening on IPv6 address "::", port 5432
+2022-02-13 18:49:37 UTC::@:[11830]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-02-13 18:49:37 UTC::@:[11830]:LOG:  redirecting log output to logging collector process
+2022-02-13 18:49:37 UTC::@:[11830]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-02-13 18:50:10 UTC::@:[11831]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-13 18:50:10 UTC::@:[11831]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-13 18:50:30 UTC::@:[11831]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-13 18:50:30 UTC::@:[11831]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-15 15:17:19.563 GMT [12760] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-15 15:17:19.563 GMT [12760] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-15 15:17:19.563 GMT [12760] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-15 15:17:19 UTC::@:[12760]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-15 15:17:19 UTC::@:[12760]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-15 15:17:19 UTC::@:[12760]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-02-15 15:17:20.776 GMT [13068] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-15 15:17:20.776 GMT [13068] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-15 15:17:20.776 GMT [13068] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-15 15:17:20 UTC::@:[13068]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-15 15:17:20 UTC::@:[13068]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-15 15:17:20 UTC::@:[13068]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-02-15 15:17:20 UTC::@:[13068]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-02-15 15:17:20 UTC::@:[13068]:LOG:  listening on IPv6 address "::", port 5432
+2022-02-15 15:17:20 UTC::@:[13068]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-02-15 15:17:20 UTC::@:[13068]:LOG:  redirecting log output to logging collector process
+2022-02-15 15:17:20 UTC::@:[13068]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-02-15 15:20:10 UTC::@:[13071]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-15 15:20:10 UTC::@:[13071]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-15 15:20:30 UTC::@:[13071]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-15 15:20:30 UTC::@:[13071]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+Uh oh, gzflush operation on GzipFile /rdsdbdata/tmp/grover.postgres.2022-02-16-00-00-00.13071.2.log.gz failed: Cannot allocate memory
+Uh oh, gzputs operation on GzipFile /rdsdbdata/tmp/grover.postgres.2022-02-16-00-00-00.13071.2.log.gz failed: Cannot allocate memory
+Uh oh, gzputs operation on GzipFile /rdsdbdata/tmp/grover.postgres.2022-02-16-00-00-00.13071.2.log.gz failed: Cannot allocate memory
+Uh oh, gzputs operation on GzipFile /rdsdbdata/tmp/grover.postgres.2022-02-16-00-00-00.13071.2.log.gz failed: Cannot allocate memory
+Uh oh, gzflush operation on GzipFile /rdsdbdata/tmp/grover.postgres.2022-02-16-00-00-00.13071.2.log.gz failed: Cannot allocate memory
+Uh oh, gzflush operation on GzipFile /rdsdbdata/tmp/grover.postgres.2022-02-16-00-00-00.13071.2.log.gz failed: Cannot allocate memory
+Uh oh, gzflush operation on GzipFile /rdsdbdata/tmp/grover.postgres.2022-02-16-00-00-00.13071.2.log.gz failed: Interrupted system call
+2022-02-16 13:06:21.586 GMT [17903] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-16 13:06:21.586 GMT [17903] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-16 13:06:21.586 GMT [17903] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-16 13:06:21 UTC::@:[17903]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-16 13:06:21 UTC::@:[17903]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-16 13:06:21 UTC::@:[17903]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-02-16 13:06:22.816 GMT [18303] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-16 13:06:22.816 GMT [18303] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-16 13:06:22.816 GMT [18303] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-16 13:06:22 UTC::@:[18303]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-16 13:06:22 UTC::@:[18303]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-16 13:06:22 UTC::@:[18303]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-02-16 13:06:22 UTC::@:[18303]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-02-16 13:06:22 UTC::@:[18303]:LOG:  listening on IPv6 address "::", port 5432
+2022-02-16 13:06:22 UTC::@:[18303]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-02-16 13:06:22 UTC::@:[18303]:LOG:  redirecting log output to logging collector process
+2022-02-16 13:06:22 UTC::@:[18303]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-02-16 13:10:10 UTC::@:[18304]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-16 13:10:10 UTC::@:[18304]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-16 13:10:30 UTC::@:[18304]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-16 13:10:30 UTC::@:[18304]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-17 11:44:18.029 GMT [19598] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-17 11:44:18.029 GMT [19598] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-17 11:44:18.029 GMT [19598] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-17 11:44:18 UTC::@:[19598]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-17 11:44:18 UTC::@:[19598]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-17 11:44:18 UTC::@:[19598]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-02-17 11:44:19.297 GMT [19761] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-17 11:44:19.298 GMT [19761] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-17 11:44:19.298 GMT [19761] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-17 11:44:19 UTC::@:[19761]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-17 11:44:19 UTC::@:[19761]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-17 11:44:19 UTC::@:[19761]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-02-17 11:44:19 UTC::@:[19761]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-02-17 11:44:19 UTC::@:[19761]:LOG:  listening on IPv6 address "::", port 5432
+2022-02-17 11:44:19 UTC::@:[19761]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-02-17 11:44:19 UTC::@:[19761]:LOG:  redirecting log output to logging collector process
+2022-02-17 11:44:19 UTC::@:[19761]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-02-17 11:45:10 UTC::@:[19784]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-17 11:45:10 UTC::@:[19784]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-17 11:45:30 UTC::@:[19784]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-17 11:45:30 UTC::@:[19784]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-18 10:37:28.212 GMT [25983] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-18 10:37:28.212 GMT [25983] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-18 10:37:28.212 GMT [25983] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-18 10:37:28 UTC::@:[25983]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-18 10:37:28 UTC::@:[25983]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-18 10:37:28 UTC::@:[25983]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-02-18 10:37:29.955 GMT [26878] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-18 10:37:29.955 GMT [26878] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-18 10:37:29.955 GMT [26878] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-18 10:37:29 UTC::@:[26878]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-18 10:37:29 UTC::@:[26878]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-18 10:37:29 UTC::@:[26878]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-02-18 10:37:29 UTC::@:[26878]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-02-18 10:37:29 UTC::@:[26878]:LOG:  listening on IPv6 address "::", port 5432
+2022-02-18 10:37:29 UTC::@:[26878]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-02-18 10:37:30 UTC::@:[26878]:LOG:  redirecting log output to logging collector process
+2022-02-18 10:37:30 UTC::@:[26878]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-02-18 10:40:10 UTC::@:[26906]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-18 10:40:10 UTC::@:[26906]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-18 10:40:30 UTC::@:[26906]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-18 10:40:30 UTC::@:[26906]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-19 09:30:20.225 GMT [26288] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-19 09:30:20.225 GMT [26288] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-19 09:30:20.225 GMT [26288] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-19 09:30:20 UTC::@:[26288]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-19 09:30:20 UTC::@:[26288]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-19 09:30:20 UTC::@:[26288]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-02-19 09:30:21.476 GMT [26419] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-19 09:30:21.476 GMT [26419] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-19 09:30:21.476 GMT [26419] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-19 09:30:21 UTC::@:[26419]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-19 09:30:21 UTC::@:[26419]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-19 09:30:21 UTC::@:[26419]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-02-19 09:30:21 UTC::@:[26419]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-02-19 09:30:21 UTC::@:[26419]:LOG:  listening on IPv6 address "::", port 5432
+2022-02-19 09:30:21 UTC::@:[26419]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-02-19 09:30:21 UTC::@:[26419]:LOG:  redirecting log output to logging collector process
+2022-02-19 09:30:21 UTC::@:[26419]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-02-19 09:30:30 UTC::@:[26420]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-19 09:30:30 UTC::@:[26420]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-19 09:35:10 UTC::@:[26420]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-19 09:35:10 UTC::@:[26420]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+fflush of gtrace log file failed: Cannot allocate memory
+uh oh, can not flush /rdsdbdata/tmp/grover.brief.postgres.2022-02-20-00-00-01.26420.2.log
+Uh oh, gzflush operation on GzipFile /rdsdbdata/tmp/grover.postgres.2022-02-20-00-00-00.26420.2.log.gz failed: Cannot allocate memory
+Uh oh, gzputs operation on GzipFile /rdsdbdata/tmp/grover.postgres.2022-02-20-00-00-00.26420.2.log.gz failed: Cannot allocate memory
+Uh oh, gzflush operation on GzipFile /rdsdbdata/tmp/grover.postgres.2022-02-20-00-00-00.26420.2.log.gz failed: Cannot allocate memory
+Uh oh, gzflush operation on GzipFile /rdsdbdata/tmp/grover.postgres.2022-02-20-00-00-00.26420.2.log.gz failed: Cannot allocate memory
+Uh oh, gzflush operation on GzipFile /rdsdbdata/tmp/grover.postgres.2022-02-20-00-00-00.26420.2.log.gz failed: Interrupted system call
+2022-02-20 07:47:45.649 GMT [7828] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-20 07:47:45.649 GMT [7828] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-20 07:47:45.649 GMT [7828] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-20 07:47:45 UTC::@:[7828]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-20 07:47:45 UTC::@:[7828]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-20 07:47:45 UTC::@:[7828]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-02-20 07:47:46.595 GMT [8100] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-20 07:47:46.595 GMT [8100] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-20 07:47:46.595 GMT [8100] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-20 07:47:46 UTC::@:[8100]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-20 07:47:46 UTC::@:[8100]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-20 07:47:46 UTC::@:[8100]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-02-20 07:47:46 UTC::@:[8100]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-02-20 07:47:46 UTC::@:[8100]:LOG:  listening on IPv6 address "::", port 5432
+2022-02-20 07:47:46 UTC::@:[8100]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-02-20 07:47:46 UTC::@:[8100]:LOG:  redirecting log output to logging collector process
+2022-02-20 07:47:46 UTC::@:[8100]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-02-20 07:50:10 UTC::@:[8101]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-20 07:50:10 UTC::@:[8101]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-20 07:50:30 UTC::@:[8101]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-20 07:50:30 UTC::@:[8101]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-21 06:23:19.972 GMT [21232] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-21 06:23:19.972 GMT [21232] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-21 06:23:19.972 GMT [21232] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-21 06:23:19 UTC::@:[21232]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-21 06:23:19 UTC::@:[21232]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-21 06:23:19 UTC::@:[21232]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-02-21 06:23:20.992 GMT [21343] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-21 06:23:20.992 GMT [21343] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-21 06:23:20.992 GMT [21343] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-21 06:23:21 UTC::@:[21343]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-21 06:23:21 UTC::@:[21343]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-21 06:23:21 UTC::@:[21343]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-02-21 06:23:21 UTC::@:[21343]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-02-21 06:23:21 UTC::@:[21343]:LOG:  listening on IPv6 address "::", port 5432
+2022-02-21 06:23:21 UTC::@:[21343]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-02-21 06:23:21 UTC::@:[21343]:LOG:  redirecting log output to logging collector process
+2022-02-21 06:23:21 UTC::@:[21343]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-02-21 06:25:10 UTC::@:[21348]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-21 06:25:10 UTC::@:[21348]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-21 06:25:30 UTC::@:[21348]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-21 06:25:30 UTC::@:[21348]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-22 05:06:23.633 GMT [27487] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-22 05:06:23.633 GMT [27487] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-22 05:06:23.633 GMT [27487] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-22 05:06:23 UTC::@:[27487]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-22 05:06:23 UTC::@:[27487]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-22 05:06:23 UTC::@:[27487]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-02-22 05:06:24.963 GMT [27960] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-22 05:06:24.963 GMT [27960] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-22 05:06:24.963 GMT [27960] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-22 05:06:24 UTC::@:[27960]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-22 05:06:24 UTC::@:[27960]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-22 05:06:24 UTC::@:[27960]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-02-22 05:06:24 UTC::@:[27960]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-02-22 05:06:24 UTC::@:[27960]:LOG:  listening on IPv6 address "::", port 5432
+2022-02-22 05:06:24 UTC::@:[27960]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-02-22 05:06:25 UTC::@:[27960]:LOG:  redirecting log output to logging collector process
+2022-02-22 05:06:25 UTC::@:[27960]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-02-22 05:10:10 UTC::@:[27961]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-22 05:10:10 UTC::@:[27961]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-22 05:10:30 UTC::@:[27961]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-22 05:10:30 UTC::@:[27961]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-23 03:50:19.585 GMT [3856] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-23 03:50:19.585 GMT [3856] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-23 03:50:19.585 GMT [3856] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-23 03:50:19 UTC::@:[3856]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-23 03:50:19 UTC::@:[3856]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-23 03:50:19 UTC::@:[3856]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-02-23 03:50:20.806 GMT [3967] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-23 03:50:20.806 GMT [3967] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-23 03:50:20.806 GMT [3967] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-23 03:50:20 UTC::@:[3967]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-23 03:50:20 UTC::@:[3967]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-23 03:50:20 UTC::@:[3967]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-02-23 03:50:20 UTC::@:[3967]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-02-23 03:50:20 UTC::@:[3967]:LOG:  listening on IPv6 address "::", port 5432
+2022-02-23 03:50:20 UTC::@:[3967]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-02-23 03:50:20 UTC::@:[3967]:LOG:  redirecting log output to logging collector process
+2022-02-23 03:50:20 UTC::@:[3967]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-02-23 03:50:30 UTC::@:[3968]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-23 03:50:30 UTC::@:[3968]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-23 03:55:10 UTC::@:[3968]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-23 03:55:10 UTC::@:[3968]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-24 02:44:27.570 GMT [8821] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-24 02:44:27.570 GMT [8821] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-24 02:44:27.570 GMT [8821] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-24 02:44:27 UTC::@:[8821]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-24 02:44:27 UTC::@:[8821]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-24 02:44:27 UTC::@:[8821]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-02-24 02:44:29.300 GMT [9332] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-24 02:44:29.300 GMT [9332] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-24 02:44:29.300 GMT [9332] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-24 02:44:29 UTC::@:[9332]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-24 02:44:29 UTC::@:[9332]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-24 02:44:29 UTC::@:[9332]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-02-24 02:44:29 UTC::@:[9332]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-02-24 02:44:29 UTC::@:[9332]:LOG:  listening on IPv6 address "::", port 5432
+2022-02-24 02:44:29 UTC::@:[9332]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-02-24 02:44:29 UTC::@:[9332]:LOG:  redirecting log output to logging collector process
+2022-02-24 02:44:29 UTC::@:[9332]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-02-24 02:45:10 UTC::@:[9378]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-24 02:45:10 UTC::@:[9378]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-24 02:45:30 UTC::@:[9378]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-24 02:45:30 UTC::@:[9378]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-25 01:35:19.727 GMT [1568] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-25 01:35:19.727 GMT [1568] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-25 01:35:19.727 GMT [1568] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-25 01:35:19 UTC::@:[1568]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-25 01:35:19 UTC::@:[1568]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-25 01:35:19 UTC::@:[1568]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-02-25 01:35:20.837 GMT [1684] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-25 01:35:20.837 GMT [1684] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-25 01:35:20.837 GMT [1684] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-25 01:35:20 UTC::@:[1684]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-25 01:35:20 UTC::@:[1684]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-25 01:35:20 UTC::@:[1684]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-02-25 01:35:20 UTC::@:[1684]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-02-25 01:35:20 UTC::@:[1684]:LOG:  listening on IPv6 address "::", port 5432
+2022-02-25 01:35:20 UTC::@:[1684]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-02-25 01:35:20 UTC::@:[1684]:LOG:  redirecting log output to logging collector process
+2022-02-25 01:35:20 UTC::@:[1684]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-02-25 01:35:30 UTC::@:[1689]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-25 01:35:30 UTC::@:[1689]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-25 01:40:10 UTC::@:[1689]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-25 01:40:10 UTC::@:[1689]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-26 00:30:17.798 GMT [5291] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-26 00:30:17.798 GMT [5291] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-26 00:30:17.798 GMT [5291] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-26 00:30:17 UTC::@:[5291]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-26 00:30:17 UTC::@:[5291]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-26 00:30:17 UTC::@:[5291]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-02-26 00:30:18.891 GMT [5411] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-26 00:30:18.891 GMT [5411] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-26 00:30:18.891 GMT [5411] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-26 00:30:18 UTC::@:[5411]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-26 00:30:18 UTC::@:[5411]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-26 00:30:18 UTC::@:[5411]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-02-26 00:30:18 UTC::@:[5411]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-02-26 00:30:18 UTC::@:[5411]:LOG:  listening on IPv6 address "::", port 5432
+2022-02-26 00:30:18 UTC::@:[5411]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-02-26 00:30:18 UTC::@:[5411]:LOG:  redirecting log output to logging collector process
+2022-02-26 00:30:18 UTC::@:[5411]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-02-26 00:30:30 UTC::@:[5424]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-26 00:30:30 UTC::@:[5424]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-26 00:35:10 UTC::@:[5424]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-26 00:35:10 UTC::@:[5424]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-27 00:04:21.500 GMT [5075] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-27 00:04:21.500 GMT [5075] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-27 00:04:21.500 GMT [5075] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-27 00:04:21 UTC::@:[5075]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-27 00:04:21 UTC::@:[5075]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-27 00:04:21 UTC::@:[5075]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-02-27 00:04:22.690 GMT [5195] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-27 00:04:22.690 GMT [5195] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-27 00:04:22.690 GMT [5195] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-27 00:04:22 UTC::@:[5195]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-27 00:04:22 UTC::@:[5195]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-27 00:04:22 UTC::@:[5195]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-02-27 00:04:22 UTC::@:[5195]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-02-27 00:04:22 UTC::@:[5195]:LOG:  listening on IPv6 address "::", port 5432
+2022-02-27 00:04:22 UTC::@:[5195]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-02-27 00:04:22 UTC::@:[5195]:LOG:  redirecting log output to logging collector process
+2022-02-27 00:04:22 UTC::@:[5195]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-02-27 00:05:10 UTC::@:[5196]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-27 00:05:10 UTC::@:[5196]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-27 00:05:30 UTC::@:[5196]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-27 00:05:30 UTC::@:[5196]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-28 06:57:22.206 GMT [12591] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-28 06:57:22.206 GMT [12591] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-28 06:57:22.208 GMT [12591] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-28 06:57:22 UTC::@:[12591]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-28 06:57:22 UTC::@:[12591]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-28 06:57:22 UTC::@:[12591]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-02-28 06:57:23.390 GMT [13290] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-28 06:57:23.391 GMT [13290] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-28 06:57:23.391 GMT [13290] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-28 06:57:23 UTC::@:[13290]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-02-28 06:57:23 UTC::@:[13290]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-02-28 06:57:23 UTC::@:[13290]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-02-28 06:57:23 UTC::@:[13290]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-02-28 06:57:23 UTC::@:[13290]:LOG:  listening on IPv6 address "::", port 5432
+2022-02-28 06:57:23 UTC::@:[13290]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-02-28 06:57:23 UTC::@:[13290]:LOG:  redirecting log output to logging collector process
+2022-02-28 06:57:23 UTC::@:[13290]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-02-28 07:00:10 UTC::@:[13317]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-28 07:00:10 UTC::@:[13317]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-02-28 07:00:30 UTC::@:[13317]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-02-28 07:00:30 UTC::@:[13317]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-01 13:17:45.414 GMT [32305] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-01 13:17:45.414 GMT [32305] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-01 13:17:45.414 GMT [32305] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-01 13:17:45 UTC::@:[32305]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-01 13:17:45 UTC::@:[32305]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-01 13:17:45 UTC::@:[32305]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-03-01 13:17:46.959 GMT [32416] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-01 13:17:46.959 GMT [32416] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-01 13:17:46.959 GMT [32416] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-01 13:17:46 UTC::@:[32416]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-01 13:17:46 UTC::@:[32416]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-01 13:17:46 UTC::@:[32416]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-03-01 13:17:46 UTC::@:[32416]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-03-01 13:17:46 UTC::@:[32416]:LOG:  listening on IPv6 address "::", port 5432
+2022-03-01 13:17:46 UTC::@:[32416]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-03-01 13:17:47 UTC::@:[32416]:LOG:  redirecting log output to logging collector process
+2022-03-01 13:17:47 UTC::@:[32416]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-03-01 13:20:10 UTC::@:[32417]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-01 13:20:10 UTC::@:[32417]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-01 13:20:30 UTC::@:[32417]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-01 13:20:30 UTC::@:[32417]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-02 20:07:17.635 GMT [2844] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-02 20:07:17.635 GMT [2844] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-02 20:07:17.635 GMT [2844] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-02 20:07:17 UTC::@:[2844]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-02 20:07:17 UTC::@:[2844]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-02 20:07:17 UTC::@:[2844]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-03-02 20:07:18.703 GMT [3007] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-02 20:07:18.704 GMT [3007] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-02 20:07:18.704 GMT [3007] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-02 20:07:18 UTC::@:[3007]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-02 20:07:18 UTC::@:[3007]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-02 20:07:18 UTC::@:[3007]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-03-02 20:07:18 UTC::@:[3007]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-03-02 20:07:18 UTC::@:[3007]:LOG:  listening on IPv6 address "::", port 5432
+2022-03-02 20:07:18 UTC::@:[3007]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-03-02 20:07:18 UTC::@:[3007]:LOG:  redirecting log output to logging collector process
+2022-03-02 20:07:18 UTC::@:[3007]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-03-02 20:10:10 UTC::@:[3008]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-02 20:10:10 UTC::@:[3008]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-02 20:10:30 UTC::@:[3008]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-02 20:10:30 UTC::@:[3008]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-04 02:49:17.902 GMT [9639] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-04 02:49:17.902 GMT [9639] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-04 02:49:17.902 GMT [9639] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-04 02:49:17 UTC::@:[9639]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-04 02:49:17 UTC::@:[9639]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-04 02:49:17 UTC::@:[9639]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-03-04 02:49:19.001 GMT [9804] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-04 02:49:19.001 GMT [9804] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-04 02:49:19.001 GMT [9804] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-04 02:49:19 UTC::@:[9804]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-04 02:49:19 UTC::@:[9804]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-04 02:49:19 UTC::@:[9804]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-03-04 02:49:19 UTC::@:[9804]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-03-04 02:49:19 UTC::@:[9804]:LOG:  listening on IPv6 address "::", port 5432
+2022-03-04 02:49:19 UTC::@:[9804]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-03-04 02:49:19 UTC::@:[9804]:LOG:  redirecting log output to logging collector process
+2022-03-04 02:49:19 UTC::@:[9804]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-03-04 02:50:10 UTC::@:[9822]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-04 02:50:10 UTC::@:[9822]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-04 02:50:30 UTC::@:[9822]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-04 02:50:30 UTC::@:[9822]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-05 09:43:23.344 GMT [11799] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-05 09:43:23.344 GMT [11799] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-05 09:43:23.344 GMT [11799] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-05 09:43:23 UTC::@:[11799]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-05 09:43:23 UTC::@:[11799]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-05 09:43:23 UTC::@:[11799]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-03-05 09:43:24.427 GMT [12168] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-05 09:43:24.427 GMT [12168] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-05 09:43:24.427 GMT [12168] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-05 09:43:24 UTC::@:[12168]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-05 09:43:24 UTC::@:[12168]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-05 09:43:24 UTC::@:[12168]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-03-05 09:43:24 UTC::@:[12168]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-03-05 09:43:24 UTC::@:[12168]:LOG:  listening on IPv6 address "::", port 5432
+2022-03-05 09:43:24 UTC::@:[12168]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-03-05 09:43:24 UTC::@:[12168]:LOG:  redirecting log output to logging collector process
+2022-03-05 09:43:24 UTC::@:[12168]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-03-05 09:45:10 UTC::@:[12211]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-05 09:45:10 UTC::@:[12211]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-05 09:45:30 UTC::@:[12211]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-05 09:45:30 UTC::@:[12211]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-06 16:31:23.386 GMT [30640] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-06 16:31:23.386 GMT [30640] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-06 16:31:23.386 GMT [30640] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-06 16:31:23 UTC::@:[30640]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-06 16:31:23 UTC::@:[30640]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-06 16:31:23 UTC::@:[30640]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-03-06 16:31:24.631 GMT [30758] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-06 16:31:24.631 GMT [30758] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-06 16:31:24.631 GMT [30758] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-06 16:31:24 UTC::@:[30758]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-06 16:31:24 UTC::@:[30758]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-06 16:31:24 UTC::@:[30758]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-03-06 16:31:24 UTC::@:[30758]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-03-06 16:31:24 UTC::@:[30758]:LOG:  listening on IPv6 address "::", port 5432
+2022-03-06 16:31:24 UTC::@:[30758]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-03-06 16:31:24 UTC::@:[30758]:LOG:  redirecting log output to logging collector process
+2022-03-06 16:31:24 UTC::@:[30758]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-03-06 16:35:10 UTC::@:[30759]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-06 16:35:10 UTC::@:[30759]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-06 16:35:30 UTC::@:[30759]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-06 16:35:30 UTC::@:[30759]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-07 21:44:35.338 GMT [1236] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-07 21:44:35.338 GMT [1236] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-07 21:44:35.338 GMT [1236] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-07 21:44:35 UTC::@:[1236]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-07 21:44:35 UTC::@:[1236]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-07 21:44:35 UTC::@:[1236]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-03-07 21:44:36.634 GMT [1816] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-07 21:44:36.634 GMT [1816] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-07 21:44:36.634 GMT [1816] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-07 21:44:36 UTC::@:[1816]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-07 21:44:36 UTC::@:[1816]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-07 21:44:36 UTC::@:[1816]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-03-07 21:44:36 UTC::@:[1816]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-03-07 21:44:36 UTC::@:[1816]:LOG:  listening on IPv6 address "::", port 5432
+2022-03-07 21:44:36 UTC::@:[1816]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-03-07 21:44:36 UTC::@:[1816]:LOG:  redirecting log output to logging collector process
+2022-03-07 21:44:36 UTC::@:[1816]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-03-07 21:45:10 UTC::@:[1817]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-07 21:45:10 UTC::@:[1817]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-07 21:45:30 UTC::@:[1817]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-07 21:45:30 UTC::@:[1817]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-09 04:29:17.415 GMT [22313] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-09 04:29:17.415 GMT [22313] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-09 04:29:17.415 GMT [22313] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-09 04:29:17 UTC::@:[22313]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-09 04:29:17 UTC::@:[22313]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-09 04:29:17 UTC::@:[22313]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-03-09 04:29:18.472 GMT [22478] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-09 04:29:18.472 GMT [22478] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-09 04:29:18.472 GMT [22478] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-09 04:29:18 UTC::@:[22478]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-09 04:29:18 UTC::@:[22478]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-09 04:29:18 UTC::@:[22478]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-03-09 04:29:18 UTC::@:[22478]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-03-09 04:29:18 UTC::@:[22478]:LOG:  listening on IPv6 address "::", port 5432
+2022-03-09 04:29:18 UTC::@:[22478]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-03-09 04:29:18 UTC::@:[22478]:LOG:  redirecting log output to logging collector process
+2022-03-09 04:29:18 UTC::@:[22478]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-03-09 04:30:10 UTC::@:[22479]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-09 04:30:10 UTC::@:[22479]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-09 04:30:30 UTC::@:[22479]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-09 04:30:30 UTC::@:[22479]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-10 16:23:43.707 GMT [24173] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-10 16:23:43.707 GMT [24173] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-10 16:23:43.707 GMT [24173] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-10 16:23:43 UTC::@:[24173]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-10 16:23:43 UTC::@:[24173]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-10 16:23:43 UTC::@:[24173]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-03-10 16:23:44.802 GMT [24279] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-10 16:23:44.803 GMT [24279] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-10 16:23:44.803 GMT [24279] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-10 16:23:44 UTC::@:[24279]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-10 16:23:44 UTC::@:[24279]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-10 16:23:44 UTC::@:[24279]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-03-10 16:23:44 UTC::@:[24279]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-03-10 16:23:44 UTC::@:[24279]:LOG:  listening on IPv6 address "::", port 5432
+2022-03-10 16:23:44 UTC::@:[24279]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-03-10 16:23:44 UTC::@:[24279]:LOG:  redirecting log output to logging collector process
+2022-03-10 16:23:44 UTC::@:[24279]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-03-10 16:25:10 UTC::@:[24280]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-10 16:25:10 UTC::@:[24280]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-10 16:25:30 UTC::@:[24280]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-10 16:25:30 UTC::@:[24280]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-11 21:45:45.416 GMT [29818] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-11 21:45:45.416 GMT [29818] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-11 21:45:45.416 GMT [29818] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-11 21:45:45 UTC::@:[29818]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-11 21:45:45 UTC::@:[29818]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-11 21:45:45 UTC::@:[29818]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-03-11 21:45:46.425 GMT [29924] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-11 21:45:46.425 GMT [29924] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-11 21:45:46.425 GMT [29924] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-11 21:45:46 UTC::@:[29924]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-11 21:45:46 UTC::@:[29924]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-11 21:45:46 UTC::@:[29924]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-03-11 21:45:46 UTC::@:[29924]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-03-11 21:45:46 UTC::@:[29924]:LOG:  listening on IPv6 address "::", port 5432
+2022-03-11 21:45:46 UTC::@:[29924]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-03-11 21:45:46 UTC::@:[29924]:LOG:  redirecting log output to logging collector process
+2022-03-11 21:45:46 UTC::@:[29924]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-03-11 21:50:10 UTC::@:[29925]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-11 21:50:10 UTC::@:[29925]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-11 21:50:30 UTC::@:[29925]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-11 21:50:30 UTC::@:[29925]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-13 04:25:37.376 GMT [27611] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-13 04:25:37.376 GMT [27611] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-13 04:25:37.376 GMT [27611] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-13 04:25:37 UTC::@:[27611]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-13 04:25:37 UTC::@:[27611]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-13 04:25:37 UTC::@:[27611]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-03-13 04:25:38.537 GMT [27794] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-13 04:25:38.537 GMT [27794] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-13 04:25:38.537 GMT [27794] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-13 04:25:38 UTC::@:[27794]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-13 04:25:38 UTC::@:[27794]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-13 04:25:38 UTC::@:[27794]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-03-13 04:25:38 UTC::@:[27794]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-03-13 04:25:38 UTC::@:[27794]:LOG:  listening on IPv6 address "::", port 5432
+2022-03-13 04:25:38 UTC::@:[27794]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-03-13 04:25:38 UTC::@:[27794]:LOG:  redirecting log output to logging collector process
+2022-03-13 04:25:38 UTC::@:[27794]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-03-13 04:30:10 UTC::@:[27795]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-13 04:30:10 UTC::@:[27795]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-13 04:30:30 UTC::@:[27795]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-13 04:30:30 UTC::@:[27795]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-14 11:09:29.973 GMT [14055] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-14 11:09:29.973 GMT [14055] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-14 11:09:29.973 GMT [14055] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-14 11:09:29 UTC::@:[14055]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-14 11:09:29 UTC::@:[14055]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-14 11:09:29 UTC::@:[14055]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-03-14 11:09:31.334 GMT [14279] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-14 11:09:31.334 GMT [14279] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-14 11:09:31.334 GMT [14279] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-14 11:09:31 UTC::@:[14279]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-14 11:09:31 UTC::@:[14279]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-14 11:09:31 UTC::@:[14279]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-03-14 11:09:31 UTC::@:[14279]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-03-14 11:09:31 UTC::@:[14279]:LOG:  listening on IPv6 address "::", port 5432
+2022-03-14 11:09:31 UTC::@:[14279]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-03-14 11:09:31 UTC::@:[14279]:LOG:  redirecting log output to logging collector process
+2022-03-14 11:09:31 UTC::@:[14279]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-03-14 11:10:10 UTC::@:[14280]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-14 11:10:10 UTC::@:[14280]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-14 11:10:30 UTC::@:[14280]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-14 11:10:30 UTC::@:[14280]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-15 17:07:35.588 GMT [23190] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-15 17:07:35.589 GMT [23190] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-15 17:07:35.589 GMT [23190] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-15 17:07:35 UTC::@:[23190]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-15 17:07:35 UTC::@:[23190]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-15 17:07:35 UTC::@:[23190]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-03-15 17:07:36.886 GMT [23768] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-15 17:07:36.886 GMT [23768] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-15 17:07:36.886 GMT [23768] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-15 17:07:36 UTC::@:[23768]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-15 17:07:36 UTC::@:[23768]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-15 17:07:36 UTC::@:[23768]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-03-15 17:07:36 UTC::@:[23768]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-03-15 17:07:36 UTC::@:[23768]:LOG:  listening on IPv6 address "::", port 5432
+2022-03-15 17:07:36 UTC::@:[23768]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-03-15 17:07:36 UTC::@:[23768]:LOG:  redirecting log output to logging collector process
+2022-03-15 17:07:36 UTC::@:[23768]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-03-15 17:10:10 UTC::@:[23769]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-15 17:10:10 UTC::@:[23769]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-15 17:10:30 UTC::@:[23769]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-15 17:10:30 UTC::@:[23769]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-16 23:53:27.293 GMT [14108] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-16 23:53:27.294 GMT [14108] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-16 23:53:27.294 GMT [14108] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-16 23:53:27 UTC::@:[14108]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-16 23:53:27 UTC::@:[14108]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-16 23:53:27 UTC::@:[14108]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-03-16 23:53:28.494 GMT [14733] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-16 23:53:28.494 GMT [14733] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-16 23:53:28.494 GMT [14733] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-16 23:53:28 UTC::@:[14733]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-16 23:53:28 UTC::@:[14733]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-16 23:53:28 UTC::@:[14733]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-03-16 23:53:28 UTC::@:[14733]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-03-16 23:53:28 UTC::@:[14733]:LOG:  listening on IPv6 address "::", port 5432
+2022-03-16 23:53:28 UTC::@:[14733]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-03-16 23:53:28 UTC::@:[14733]:LOG:  redirecting log output to logging collector process
+2022-03-16 23:53:28 UTC::@:[14733]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-03-16 23:55:10 UTC::@:[14734]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-16 23:55:10 UTC::@:[14734]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-16 23:55:30 UTC::@:[14734]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-16 23:55:30 UTC::@:[14734]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-18 06:44:37.760 GMT [15026] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-18 06:44:37.760 GMT [15026] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-18 06:44:37.760 GMT [15026] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-18 06:44:37 UTC::@:[15026]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-18 06:44:37 UTC::@:[15026]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-18 06:44:37 UTC::@:[15026]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-03-18 06:44:39.057 GMT [15190] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-18 06:44:39.057 GMT [15190] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-18 06:44:39.057 GMT [15190] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-18 06:44:39 UTC::@:[15190]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-18 06:44:39 UTC::@:[15190]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-18 06:44:39 UTC::@:[15190]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-03-18 06:44:39 UTC::@:[15190]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-03-18 06:44:39 UTC::@:[15190]:LOG:  listening on IPv6 address "::", port 5432
+2022-03-18 06:44:39 UTC::@:[15190]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-03-18 06:44:39 UTC::@:[15190]:LOG:  redirecting log output to logging collector process
+2022-03-18 06:44:39 UTC::@:[15190]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-03-18 06:45:10 UTC::@:[15222]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-18 06:45:10 UTC::@:[15222]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-18 06:45:30 UTC::@:[15222]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-18 06:45:30 UTC::@:[15222]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-19 13:35:25.939 GMT [8946] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-19 13:35:25.939 GMT [8946] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-19 13:35:25.939 GMT [8946] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-19 13:35:25 UTC::@:[8946]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-19 13:35:25 UTC::@:[8946]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-19 13:35:25 UTC::@:[8946]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-03-19 13:35:27.263 GMT [9082] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-19 13:35:27.264 GMT [9082] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-19 13:35:27.264 GMT [9082] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-19 13:35:27 UTC::@:[9082]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-19 13:35:27 UTC::@:[9082]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-19 13:35:27 UTC::@:[9082]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-03-19 13:35:27 UTC::@:[9082]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-03-19 13:35:27 UTC::@:[9082]:LOG:  listening on IPv6 address "::", port 5432
+2022-03-19 13:35:27 UTC::@:[9082]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-03-19 13:35:27 UTC::@:[9082]:LOG:  redirecting log output to logging collector process
+2022-03-19 13:35:27 UTC::@:[9082]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-03-19 13:35:30 UTC::@:[9083]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-19 13:35:30 UTC::@:[9083]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-19 13:40:10 UTC::@:[9083]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-19 13:40:10 UTC::@:[9083]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-20 20:00:34.321 GMT [6251] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-20 20:00:34.322 GMT [6251] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-20 20:00:34.322 GMT [6251] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-20 20:00:34 UTC::@:[6251]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-20 20:00:34 UTC::@:[6251]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-20 20:00:34 UTC::@:[6251]:LOG:  database system is shut down
+Postgres Shared Memory Value: 11226791936 bytes
+2022-03-20 20:00:35.538 GMT [6396] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-20 20:00:35.538 GMT [6396] LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-20 20:00:35.538 GMT [6396] LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-20 20:00:35 UTC::@:[6396]:WARNING:  unrecognized configuration parameter "rds.adaptive_autovacuum"
+2022-03-20 20:00:35 UTC::@:[6396]:WARNING:  unrecognized configuration parameter "rds.enable_plan_management"
+2022-03-20 20:00:35 UTC::@:[6396]:LOG:  starting PostgreSQL 12.4 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 7.4.0, 64-bit
+2022-03-20 20:00:35 UTC::@:[6396]:LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2022-03-20 20:00:35 UTC::@:[6396]:LOG:  listening on IPv6 address "::", port 5432
+2022-03-20 20:00:35 UTC::@:[6396]:LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2022-03-20 20:00:35 UTC::@:[6396]:LOG:  redirecting log output to logging collector process
+2022-03-20 20:00:35 UTC::@:[6396]:HINT:  Future log output will appear in directory "/rdsdbdata/log/error".
+2022-03-20 20:05:10 UTC::@:[6397]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-20 20:05:10 UTC::@:[6397]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"
+2022-03-20 20:05:30 UTC::@:[6397]:LOG:  skipping missing configuration file "/rdsdbdata/config/recovery.conf"
+2022-03-20 20:05:30 UTC::@:[6397]:LOG:  skipping missing configuration file "/rdsdbdata/db/postgresql.auto.conf"

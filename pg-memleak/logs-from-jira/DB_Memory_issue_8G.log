@@ -1,0 +1,24 @@
+Ofira.Burstein@NG-OFIRA-BU openshift-install % dev kubectl get pods -n ofira-workspace
+NAME                                   READY   STATUS    RESTARTS   AGE
+conjur-oss-5944c9996c-j2kqt            2/2     Running   0          16h
+conjur-oss-postgres-7b4886fcf9-6z9vx   1/1     Running   0          16h
+Ofira.Burstein@NG-OFIRA-BU openshift-install %
+Ofira.Burstein@NG-OFIRA-BU openshift-install %
+Ofira.Burstein@NG-OFIRA-BU openshift-install %
+Ofira.Burstein@NG-OFIRA-BU openshift-install % dev kubectl logs conjur-oss-postgres-7b4886fcf9-6z9vx -n ofira-workspace > postgres1.log
+Ofira.Burstein@NG-OFIRA-BU openshift-install % dev kubectl top pod conjur-oss-postgres-7b4886fcf9-6z9vx -n ofira-workspace
+NAME                                   CPU(cores)   MEMORY(bytes)
+conjur-oss-postgres-7b4886fcf9-6z9vx   654m         3113Mi
+Ofira.Burstein@NG-OFIRA-BU openshift-install %
+Ofira.Burstein@NG-OFIRA-BU openshift-install %
+Ofira.Burstein@NG-OFIRA-BU openshift-install % dev kubectl top pod conjur-oss-postgres-7b4886fcf9-6z9vx -n ofira-workspace
+NAME                                   CPU(cores)   MEMORY(bytes)
+conjur-oss-postgres-7b4886fcf9-6z9vx   607m         3120Mi
+Ofira.Burstein@NG-OFIRA-BU openshift-install % grep "database system" postgres1.log
+The files belonging to this database system will be owned by user "postgres".
+2022-04-27 14:40:21.762 UTC [41] LOG:  database system was shut down at 2022-04-27 14:40:21 UTC
+2022-04-27 14:40:21.767 UTC [40] LOG:  database system is ready to accept connections
+2022-04-27 14:40:21.929 UTC [40] LOG:  database system is shut down
+2022-04-27 14:40:22.042 UTC [58] LOG:  database system was shut down at 2022-04-27 14:40:21 UTC
+2022-04-27 14:40:22.046 UTC [1] LOG:  database system is ready to accept connections
+Ofira.Burstein@NG-OFIRA-BU openshift-install % vi postgres1.log
