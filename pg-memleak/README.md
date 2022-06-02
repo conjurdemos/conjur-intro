@@ -1,14 +1,25 @@
 Table of Contents
 - [Purpose](#purpose)
 - [Goal](#goal)
-  - [Disclaimer](#disclaimer)
-- [Prerequisites](#prerequisites)
-- [Workflow](#workflow)
-- [Active Debugging](#active-debugging)
 - [Speculation](#speculation)
-- [Resetting Your Environment](#resetting-your-environment)
-  - [Stopping jmeter](#stopping-jmeter)
-  - [Stopping the Appliance](#stopping-the-appliance)
+  - [Notice](#notice)
+- [Prerequisites](#prerequisites)
+- [Reproduce with Conjur OSS Helm Chart](#reproduce-with-conjur-oss-helm-chart)
+  - [Initialize the Environment](#initialize-the-environment)
+  - [Configure the jmeter Template](#configure-the-jmeter-template)
+    - [Setting the Admin Password](#setting-the-admin-password)
+  - [Starting the jmeter Tests](#starting-the-jmeter-tests)
+  - [Monitoring Conjur OSS](#monitoring-conjur-oss)
+  - [Resetting Your Environment](#resetting-your-environment)
+    - [Stopping jmeter](#stopping-jmeter)
+    - [Stopping Conjur OSS](#stopping-conjur-oss)
+- [Reproduce with Conjur Enterprise using Conjur Intro](#reproduce-with-conjur-enterprise-using-conjur-intro)
+  - [Initialize the Environment](#initialize-the-environment-1)
+  - [Monitoring Conjur Enterprise](#monitoring-conjur-enterprise)
+    - [Active Debugging](#active-debugging)
+    - [Resetting Your Environment](#resetting-your-environment-1)
+      - [Stopping jmeter](#stopping-jmeter-1)
+      - [Stopping the Appliance](#stopping-the-appliance)
 # Purpose
 
 This document will tell you how to setup the `conjur-intro` to simulate
@@ -18,14 +29,17 @@ the alleged postgres memory leak.
 
 Determine what is causing what appears to be a postgres memory leak.
 
-## Disclaimer
+# Speculation
 
-These steps are to reproduce what appears to be a memory leak in `conjur-intro`
-with Conjur Enterprise. The original ticket came in with the use of
-Conjur OSS Helm Charts, which this environment does not use.
+At the moment, I am suspecting:
 
-The latest release of the [Conjur OSS Helm Chart v2.0.4](https://github.com/cyberark/conjur-oss-helm-chart/releases/)
-uses the following postgres image:
+- Connections are not being released or too much RAM is allocated to connections
+- See: [Medium - PostgreSQL Out Of Memory](https://italux.medium.com/postgresql-out-of-memory-3fc1105446d#:~:text=The%20most%20common%20cause%20of,writing%20to%20temporary%20disk%20files.)
+
+## Notice
+
+The issue has been reproduced against the following postgres image
+(as specified the latest Conjur OSS Helm Chart):
 
 ```
 # values.yaml
@@ -41,7 +55,7 @@ postgres:
     pullPolicy: Always
 ```
 
-This has been replicated with:
+This has also been reproduced with the following Appliance versions:
 
 - Appliance image `registry.tld/conjur-appliance:11.5.0`. The version of postgres is `9.4`.
 - Appliance image `latest`. The version of postgres is `10.21`.
@@ -53,6 +67,147 @@ This has been replicated with:
   ```bash
   $ brew install jmeter
   ```
+
+# Reproduce with Conjur OSS Helm Chart
+
+## Initialize the Environment
+
+```bash
+# clone the conjur-oss-helm-chart repository
+$ git clone git@github.com:cyberark/conjur-oss-helm-chart.git
+
+# configure .env
+export USE_DOCKER_LOCAL_REGISTRY="true"
+
+# run from example
+$ cd conjur-oss-helm-chart/examples/kubernetes-in-docker
+$ ./start
+```
+
+> Note: this helm chart example setup automatically creates a kind image
+> registry that is mapped to port `5000` on your docker host. So if you have one
+> already, either stop and remove that container.
+
+We will not run jmeter inside of Kubernetes. Once conjur is up and running,
+let's make this server accessible from your host:
+
+```bash
+# open a port to this service, locally
+$ kubectl port-forward service/conjur-oss -n $CONJUR_NAMESPACE 28015:443
+
+# visit this address on your browser to confirm you can access the conjur server
+$ https://localhost:28015/
+```
+
+## Configure the jmeter Template
+
+We will make two changes to the conjur-oss jmeter template:
+
+1. The server URL and port
+   1. The URL already hard-coded under the `master` config variable
+   2. The port is already hard-coded in each HTTP request controller as: `28015`
+2. The admin password
+
+### Setting the Admin Password
+
+With conjur up and running, obtain your admin password:
+
+> Note: these variables used below are default to this example environment
+> provisioned by the oss helm chart repo.
+
+```bash
+# get the master pod name
+$ CONJUR_NAMESPACE=conjur-oss
+$ CONJUR_ACCOUNT=myConjurAccount
+$ MASTER_POD_NAME="$(kubectl get pod -n conjur-oss --selector app=conjur-oss --no-headers | awk '{ print $1 }')"
+
+# print the password 
+$ CONJUR_ADMIN_PASSWORD="$(kubectl exec \
+        -n "$CONJUR_NAMESPACE" \
+        "conjur-oss-5f86ff589f-ndcwm" \
+        --container=conjur-oss \
+        -- conjurctl role retrieve-key "$CONJUR_ACCOUNT":user:admin | tail -1)"
+
+# convert to base64 -> myConjurAccount:password
+$ echo -n "admin:$CONJUR_ADMIN_PASSWORD" | base64
+```
+
+> WARNING: be sure to include the `-n` switch for `echo` to ensure that a
+> new line is not encoded!
+
+You must take this base64-encoded value and place it into the jmeter template
+under Populate Master DB > Execute Loop > Config Variables > `admin_password`:
+
+```
+# example 1
+Basic <your base64 encoded value>
+```
+
+## Starting the jmeter Tests
+
+> Note: because we are port forwarding from a kind cluster, we want to 
+> run jmeter from your docker host, as opposed to within a docker container like
+> we do when testing against the appliance...
+
+```bash
+# from the pg-memleak/tests/conjur-oss directory
+$ jmeter -n -t test-plan.jmx
+```
+
+## Monitoring Conjur OSS
+
+We have to install to the Metrics Server in order to use the `kubetl top`
+command.
+
+```bash
+# pull the metrics server image and push it into your KinD registry
+$ docker pull k8s.gcr.io/metrics-server/metrics-server:v0.6.1
+$ docker tag k8s.gcr.io/metrics-server/metrics-server:v0.6.1 localhost:5000/metrics-server/metrics-server:v0.6.1
+$ docker push localhost:5000/metrics-server/metrics-server:v0.6.1
+# install metrics server
+$ kubectl apply -f metrics-server.yaml
+# view pod status
+$ kubectl get pod -n kube-system | grep metrics-server
+# view stats from k8s
+$ kubectl top pod conjur-oss-postgres-0 -n conjur-oss
+```
+
+```bash
+# view stats from the postgres pods
+$ kubectl exec -it conjur-oss-postgres-0 -n conjur-oss -- bash
+$ apt-get update && apt-get install procps
+
+# monitor processes
+$ ps aux
+
+# monitor processes and resource usage
+$ top
+```
+
+References:
+
+- [GitHub: Metrics Server](https://github.com/kubernetes-sigs/metrics-server#deployment)
+- [Enabling Metrics Server for Kubernets on Docker Desktop](https://blog.codewithdan.com/enabling-metrics-server-for-kubernetes-on-docker-desktop/)
+
+## Resetting Your Environment
+
+### Stopping jmeter
+
+Kill the process you are running `jmeter` with using `SIGINT` (CTRL+C).
+
+### Stopping Conjur OSS
+
+Since the example scripts provision much of the environment, I rather tear
+it all down and start from scratch:
+
+```bash
+$ kind delete cluster
+$ docker stop kind-registry && docker rm kind-registry
+```
+
+# Reproduce with Conjur Enterprise using Conjur Intro
+
+## Initialize the Environment
 
 1. Start conjur-intro
 
@@ -102,7 +257,7 @@ This has been replicated with:
     way to view the appliance logs is outlined in the [Workflow](#workflow)
     section.
 
-# Workflow
+## Monitoring Conjur Enterprise
 
 1. Log into `conjur-intro` at `https://localhost:443`
 
@@ -185,7 +340,7 @@ usage declines until postgres is reset. View more in the [Debugging](#active-deb
 section.
 
 
-# Active Debugging
+### Active Debugging
 
 At this point, your server is getting hammered. It's time to see what we can
 learn.
@@ -259,7 +414,21 @@ learn.
 
   However, I noticed that this doesn't appear to affect memory usage very much.
 
-3. When the container runs out of memory, it will start killing processes off
+3. View active connections
+
+    ```sql
+    conjur=# select pid as process_id, 
+              usename as username, 
+              datname as database_name, 
+              client_addr as client_address, 
+              application_name,
+              backend_start,
+              state,
+              state_change
+            from pg_stat_activity;
+    ```
+
+4. When the container runs out of memory, it will start killing processes off
    at random. Usually `postgres` is the first to go, which will then restart.
    The memory is usually freed up afterwards. The appliance logs will indicate
    the restart from postgres, which looks something like this:
@@ -274,24 +443,17 @@ learn.
 
    Eventually the postgres service back up thanks to `runit`.
 
-# Speculation
+### Resetting Your Environment
 
-At the moment, I am suspecting:
+#### Stopping jmeter
 
-- Connections are not being released or too much RAM is allocated to connections
-- See: [Medium - PostgreSQL Out Of Memory](https://italux.medium.com/postgresql-out-of-memory-3fc1105446d#:~:text=The%20most%20common%20cause%20of,writing%20to%20temporary%20disk%20files.)
-
-# Resetting Your Environment
-
-## Stopping jmeter
-
-I kill the docker container:
+Kill the docker container:
 
 ```bash
 $ docker stop jmeter3 && docker rm jmeter3
 ```
 
-## Stopping the Appliance
+#### Stopping the Appliance
 
 Simply stop the `conjur-intro` project:
 
@@ -299,6 +461,3 @@ Simply stop the `conjur-intro` project:
 # from the root of the repo
 $ ./bin/dap --stop
 ```
-
-This command should remove all volumes, thus the database should be destroyed.
-Then restart it as mentioned in the [Workflow](#workflow) section.
