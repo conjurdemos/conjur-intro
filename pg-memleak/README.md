@@ -4,22 +4,36 @@ Table of Contents
 - [Speculation](#speculation)
   - [Notice](#notice)
 - [Prerequisites](#prerequisites)
-- [Reproduce with Conjur OSS Helm Chart](#reproduce-with-conjur-oss-helm-chart)
+- [Reproduce with Conjur OSS Dev Environment](#reproduce-with-conjur-oss-dev-environment)
   - [Initialize the Environment](#initialize-the-environment)
   - [Configure the jmeter Template](#configure-the-jmeter-template)
     - [Setting the Admin Password](#setting-the-admin-password)
   - [Starting the jmeter Tests](#starting-the-jmeter-tests)
-  - [Monitoring Conjur OSS](#monitoring-conjur-oss)
-  - [Resetting Your Environment](#resetting-your-environment)
-    - [Stopping jmeter](#stopping-jmeter)
+  - [Monitoring Conjur OSS Dev Environment](#monitoring-conjur-oss-dev-environment)
+    - [Resetting Your Environment](#resetting-your-environment)
+      - [Stopping jmeter](#stopping-jmeter)
+      - [Stopping Conjur](#stopping-conjur)
+- [Reproduce with Conjur OSS Helm Chart](#reproduce-with-conjur-oss-helm-chart)
+  - [Initialize the Environment](#initialize-the-environment-1)
+  - [Configure the jmeter Template](#configure-the-jmeter-template-1)
+    - [Setting the Admin Password](#setting-the-admin-password-1)
+  - [Starting the jmeter Tests](#starting-the-jmeter-tests-1)
+  - [Monitoring Conjur OSS in Kubernetes](#monitoring-conjur-oss-in-kubernetes)
+  - [Active Debugging](#active-debugging)
+  - [Resetting Your Environment](#resetting-your-environment-1)
+    - [Stopping jmeter](#stopping-jmeter-1)
     - [Stopping Conjur OSS](#stopping-conjur-oss)
 - [Reproduce with Conjur Enterprise using Conjur Intro](#reproduce-with-conjur-enterprise-using-conjur-intro)
-  - [Initialize the Environment](#initialize-the-environment-1)
+  - [Initialize the Environment](#initialize-the-environment-2)
   - [Monitoring Conjur Enterprise](#monitoring-conjur-enterprise)
-    - [Active Debugging](#active-debugging)
-    - [Resetting Your Environment](#resetting-your-environment-1)
-      - [Stopping jmeter](#stopping-jmeter-1)
+    - [Active Debugging](#active-debugging-1)
+    - [Resetting Your Environment](#resetting-your-environment-2)
+      - [Stopping jmeter](#stopping-jmeter-2)
       - [Stopping the Appliance](#stopping-the-appliance)
+- [Recommended Terminal Setup](#recommended-terminal-setup)
+- [Postgres Troubleshooting](#postgres-troubleshooting)
+  - [Connect to the Database with psql](#connect-to-the-database-with-psql)
+  - [Troulbeshooting Steps](#troulbeshooting-steps)
 # Purpose
 
 This document will tell you how to setup the `conjur-intro` to simulate
@@ -68,6 +82,138 @@ This has also been reproduced with the following Appliance versions:
   $ brew install jmeter
   ```
 
+# Reproduce with Conjur OSS Dev Environment
+
+## Initialize the Environment
+
+This utilizes the `cyberark/conjur` repo. Review the root README.md for
+these steps below.
+
+1. Clone the repo
+
+    ```bash
+    $ git clone https://github.com/cyberark/conjur
+    $ cd conjur
+    ```
+
+1. (Optional) consider specifying a memory limit for the postgres container,
+   as this is the container that appears to have this "memory leak"
+
+    ```yaml
+    pg:
+      deploy:
+        resources:
+            limits:
+              memory: 3G
+      # ...
+    ```
+
+3. Start the dev environment
+
+
+    ```bash
+    $ cd dev
+    $ ./start
+
+    # start conjur
+    root@927b8d7206aa:/src/conjur-server# conjurctl server
+    ```
+
+4. Obtain admin user credentials
+
+    ```bash
+    # get the password from the running conjur container
+    # from cli script from conjur/dev directory:
+    $ CONJUR_ADMIN_PASSWORD=$(./cli key)
+    $ echo -n "admin:$CONJUR_ADMIN_PASSWORD" | base64
+    ```
+
+    > WARNING: be sure to include the `-n` switch for `echo` to ensure that a
+    > new line is not encoded!
+
+    Copy the base64-encoded password, as we'll need this to configure the jmeter
+    template.
+
+## Configure the jmeter Template
+
+We will make two changes to the conjur-oss-k8s jmeter template:
+
+1. The server URL and port
+
+    Since this dev environment is initialized with Docker Compose, the
+    url that jmeter needs to use will be http://conjur:3000.
+
+    The following are already hard-coded in the provided
+    `conjur-oss/test-plan.jmx`.
+
+   1. The domain name of the  `master` field in the config variable
+   2. The port is already hard-coded in each HTTP request controller as: `3000`
+
+2. The admin password
+
+    You need to update this. We will do this in the next section.
+
+### Setting the Admin Password
+
+You must take this base64-encoded value and place it into the jmeter template
+under Populate Master DB > Execute Loop > Config Variables > `admin_password`:
+
+```
+# example 1
+Basic <your base64 encoded value>
+```
+
+## Starting the jmeter Tests
+
+> Note: be default the test.sh script assumes it is running against
+> conjur-intro / enterprise dev environment!
+
+```bash
+# from the pg-memleak/ directory, run:
+$ ./test.sh --oss
+```
+
+## Monitoring Conjur OSS Dev Environment
+
+When the jmeter tests are running, you should notice memory usage increasing
+on the postgres container. Given the jmeter tests should be infinite out-of-box,
+we should never the RAM usage go down. You can monitor the resources below:
+
+Before beginning to monitor, we need to install some tools in the postgres 
+container (`top`):
+
+```bash
+$ docker exec -it dev_pg_1 bash
+$ apt-get update
+$ apt-get install procps
+```
+
+See:
+- [Recommended Terminal Setup](#recommended-terminal-setup)
+- [Postgres Troubleshooting](#postgres-troubleshooting)
+
+### Resetting Your Environment
+
+#### Stopping jmeter
+
+Kill the docker container:
+
+```bash
+$ docker stop jmeter-oss && docker rm jmeter-oss
+```
+
+#### Stopping Conjur
+
+Simply stop the `conjur-intro` project:
+
+```bash
+# from conjur/dev, run:
+$ ./stop
+```
+
+> Important: before restarting, you will need to re-fetch the admin password
+> and update it in the jmeter template each time!
+
 # Reproduce with Conjur OSS Helm Chart
 
 ## Initialize the Environment
@@ -101,7 +247,7 @@ $ https://localhost:28015/
 
 ## Configure the jmeter Template
 
-We will make two changes to the conjur-oss jmeter template:
+We will make two changes to the conjur-oss-k8s jmeter template:
 
 1. The server URL and port
    1. The URL already hard-coded under the `master` config variable
@@ -150,11 +296,11 @@ Basic <your base64 encoded value>
 > we do when testing against the appliance...
 
 ```bash
-# from the pg-memleak/tests/conjur-oss directory
+# from the pg-memleak/tests/conjur-oss-k8s directory
 $ jmeter -n -t test-plan.jmx
 ```
 
-## Monitoring Conjur OSS
+## Monitoring Conjur OSS in Kubernetes
 
 We have to install to the Metrics Server in order to use the `kubetl top`
 command.
@@ -188,6 +334,11 @@ References:
 
 - [GitHub: Metrics Server](https://github.com/kubernetes-sigs/metrics-server#deployment)
 - [Enabling Metrics Server for Kubernets on Docker Desktop](https://blog.codewithdan.com/enabling-metrics-server-for-kubernetes-on-docker-desktop/)
+
+## Active Debugging
+
+See:
+- [Postgres Troubleshooting](#postgres-troubleshooting)
 
 ## Resetting Your Environment
 
@@ -265,6 +416,9 @@ $ docker stop kind-registry && docker rm kind-registry
 
 1. Open the jmeter GUI
 
+    The credentials are hard-coded into conjur-intro, so we should not need
+    to tweak the jmeter template.
+
     Run this from your terminal. Leave this tab open. We use this GUI only
     for editing the file, NOT for running the tests.
 
@@ -301,35 +455,18 @@ $ docker stop kind-registry && docker rm kind-registry
 
 1. Configure your terminal with the following tabs:
 
-    1. View docker resource usage
-       
-      ```bash
-      $ docker stats
-      ```
-
-    2. Viewing the docker container resources (inside)
-
-      ```bash
-      $ docker exec -it conjur-intro_conjur-master-1.mycompany.local_1 top
-      ````
-    
-    3. Viewing the appliance logs
-
-      > Note: all of our service logs piped through to syslog, which is what
-      > is output to stdout when logging our docker containers.
-
-      I prefer viewing this file in `vscode` instead of the terminal.
-
-      ```bash
-      $ docker logs conjur-intro_conjur-master-1.mycompany.local_1 -f > appliance.log
-      ```
+    See [Recommended Terminal Setup](#recommended-terminal-setup).
 
 2. Run the `jmeter` tests
 
     In another tab, from this directory, use the provided `test.sh` script to
     run the jmeter template:
 
+    > Note: be default the test.sh script assumes it is running against
+    > conjur-intro / enterprise dev environment!
+
     ```bash
+    # from the pg-memleak/ directory, run:
     $ ./test.sh
     ```
 
@@ -344,6 +481,106 @@ section.
 
 At this point, your server is getting hammered. It's time to see what we can
 learn.
+
+See:
+- [Recommended Terminal Setup](#recommended-terminal-setup)
+- [Postgres Troubleshooting](#postgres-troubleshooting)
+
+### Resetting Your Environment
+
+#### Stopping jmeter
+
+Kill the docker container:
+
+```bash
+$ docker stop jmeter-enterprise && docker rm jmeter-enterprise
+```
+
+#### Stopping the Appliance
+
+Simply stop the `conjur-intro` project:
+
+```bash
+# from the root of the repo
+$ ./bin/dap --stop
+```
+
+# Recommended Terminal Setup
+
+1. Configure your terminal with the following tabs:
+
+    1. If using kubernetes-based environment, see [Monitoring Conjur OSS in Kubernetes](#monitoring-conjur-oss-in-kubernetes)
+
+    2. If using docker-based dev environments
+
+       1. View docker resource usage
+          
+         ```bash
+         $ docker stats
+         ```
+
+       2. Viewing the docker container resources (inside)
+
+         ```bash
+         # enterprise
+         $ docker exec -it conjur-intro_conjur-master-1.mycompany.local_1 top
+         
+         # oss
+         $ docker exec -it dev_pg_1 top
+         ````
+    
+    3. Viewing the logs logs
+       
+       1. Appliance
+       
+        > Note: for the appliance all of our service logs piped through to
+        > syslog, which is what is output to stdout when logging our docker
+        > containers.
+
+        I prefer viewing this file in `vscode` instead of the terminal.
+
+        ```bash
+        $ docker logs conjur-intro_conjur-master-1.mycompany.local_1 -f > appliance.log
+        ```
+
+        1. Conjur OSS
+
+        > Note: the dev environment should already log the SQL commands by
+        > default in the log output mentioned below.
+
+        The OSS components runs in separate containers (i.e. conjur,
+        postgresql). However, when we start the conjur server with
+        `conjurctl server` all logs are written to that console. You may
+        consider piping that to a file as such:
+
+        ```bash
+        # note we are in the container at /src/conjur-server
+        root@8980439ba22a:/src/conjur-server# conjurctl server | tee conjur.log
+        ```
+        
+        You can find that file on your docker host, as the root of the conjur
+        repo is mounted to `/src/conjur-server` inside the container. So
+        check the root of this repo for the `conjur.log` file.
+
+# Postgres Troubleshooting
+
+## Connect to the Database with psql
+
+If using the Appliance via conjur-intro, `exec` into the container and run:
+
+```bash
+$ docker exec -it conjur-intro_conjur-master-1.mycompany.local_1 su conjur
+$ psql
+```
+
+If using Conjur OSS via the conjur repo dev environment, run the following
+from the postgres container:
+
+```
+$ docker exec -it dev_pg_1 psql -d postgres -U postgres
+```
+
+## Troulbeshooting Steps
 
 1. Know the default postgresql.conf:
 
@@ -442,22 +679,3 @@ learn.
    ```
 
    Eventually the postgres service back up thanks to `runit`.
-
-### Resetting Your Environment
-
-#### Stopping jmeter
-
-Kill the docker container:
-
-```bash
-$ docker stop jmeter3 && docker rm jmeter3
-```
-
-#### Stopping the Appliance
-
-Simply stop the `conjur-intro` project:
-
-```bash
-# from the root of the repo
-$ ./bin/dap --stop
-```

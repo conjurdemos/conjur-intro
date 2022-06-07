@@ -1,11 +1,10 @@
 #!/bin/bash
 #
 # Run JMeter Docker image with options
-
-NAME="jmeter3"
 JMETER_VERSION=${JMETER_VERSION:-"latest"}
 IMAGE="justb4/jmeter:${JMETER_VERSION}"
 
-# Finally run (Add to dap-net)
-#docker run --rm --name ${NAME} --network dap_net -i -v ${PWD}:${PWD} -w ${PWD} ${IMAGE} $@
-docker run --rm --name ${NAME} --network dap_net -i -v ${PWD}:${PWD} -w ${PWD} ${IMAGE} $@
+# Run jmeter tests
+echo "Running jmeter, connected to network: $DOCKER_NETWORK"
+sleep 1
+docker run --rm --name ${JMETER_CONTAINER_NAME} --network ${DOCKER_NETWORK} -i -v ${PWD}:${PWD} -w ${PWD} ${IMAGE} $@

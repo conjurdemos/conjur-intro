@@ -31,12 +31,12 @@
           <collectionProp name="Arguments.arguments">
             <elementProp name="master" elementType="Argument">
               <stringProp name="Argument.name">master</stringProp>
-              <stringProp name="Argument.value">conjur</stringProp>
+              <stringProp name="Argument.value">localhost</stringProp>
               <stringProp name="Argument.metadata">=</stringProp>
             </elementProp>
             <elementProp name="conjur_account" elementType="Argument">
               <stringProp name="Argument.name">conjur_account</stringProp>
-              <stringProp name="Argument.value">cucumber</stringProp>
+              <stringProp name="Argument.value">myConjurAccount</stringProp>
               <stringProp name="Argument.metadata">=</stringProp>
             </elementProp>
             <elementProp name="admin_account" elementType="Argument">
@@ -76,7 +76,7 @@
             </elementProp>
             <elementProp name="admin_password" elementType="Argument">
               <stringProp name="Argument.name">admin_password</stringProp>
-              <stringProp name="Argument.value">Basic YWRtaW46MjJyYWZkMTNtZXp2a24yNHZqOWo1ZTJydnpiMXNleXNicDJjOXhhOXoyeGh6NDExa2M3azh0</stringProp>
+              <stringProp name="Argument.value">Basic YWRtaW46ZWhzazIwMWpkYXE2ZDJtMWI4ZmszcWpzZjRrM2hzbTR6NTJ6MTg1YmgyOWpobXE2MTdtNmU3Yg==</stringProp>
               <stringProp name="Argument.metadata">=</stringProp>
               <stringProp name="Argument.desc">Basic base64(admin:password)</stringProp>
             </elementProp>
@@ -98,8 +98,8 @@
             <collectionProp name="Arguments.arguments"/>
           </elementProp>
           <stringProp name="HTTPSampler.domain">${master}</stringProp>
-          <stringProp name="HTTPSampler.port">3000</stringProp>
-          <stringProp name="HTTPSampler.protocol">http</stringProp>
+          <stringProp name="HTTPSampler.port">28015</stringProp>
+          <stringProp name="HTTPSampler.protocol">https</stringProp>
           <stringProp name="HTTPSampler.contentEncoding"></stringProp>
           <stringProp name="HTTPSampler.path">/authn/${conjur_account}/login</stringProp>
           <stringProp name="HTTPSampler.method">GET</stringProp>
@@ -157,8 +157,8 @@
               </collectionProp>
             </elementProp>
             <stringProp name="HTTPSampler.domain">${master}</stringProp>
-            <stringProp name="HTTPSampler.port">3000</stringProp>
-            <stringProp name="HTTPSampler.protocol">http</stringProp>
+            <stringProp name="HTTPSampler.port">28015</stringProp>
+            <stringProp name="HTTPSampler.protocol">https</stringProp>
             <stringProp name="HTTPSampler.contentEncoding"></stringProp>
             <stringProp name="HTTPSampler.path">/authn/${conjur_account}/${admin_account}/authenticate</stringProp>
             <stringProp name="HTTPSampler.method">POST</stringProp>
@@ -224,8 +224,8 @@ vars.put(&quot;authn_token&quot;, new String(encoded_Token));</stringProp>
               </collectionProp>
             </elementProp>
             <stringProp name="HTTPSampler.domain">${master}</stringProp>
-            <stringProp name="HTTPSampler.port">3000</stringProp>
-            <stringProp name="HTTPSampler.protocol">http</stringProp>
+            <stringProp name="HTTPSampler.port">28015</stringProp>
+            <stringProp name="HTTPSampler.protocol">https</stringProp>
             <stringProp name="HTTPSampler.contentEncoding"></stringProp>
             <stringProp name="HTTPSampler.path">/policies/${conjur_account}/policy/root</stringProp>
             <stringProp name="HTTPSampler.method">POST</stringProp>
@@ -260,8 +260,8 @@ vars.put(&quot;authn_token&quot;, new String(encoded_Token));</stringProp>
               </collectionProp>
             </elementProp>
             <stringProp name="HTTPSampler.domain">${master}</stringProp>
-            <stringProp name="HTTPSampler.port">3000</stringProp>
-            <stringProp name="HTTPSampler.protocol">http</stringProp>
+            <stringProp name="HTTPSampler.port">28015</stringProp>
+            <stringProp name="HTTPSampler.protocol">https</stringProp>
             <stringProp name="HTTPSampler.contentEncoding"></stringProp>
             <stringProp name="HTTPSampler.path">/policies/${conjur_account}/policy/root</stringProp>
             <stringProp name="HTTPSampler.method">POST</stringProp>
@@ -318,8 +318,8 @@ vars.put(&quot;authn_token&quot;, new String(encoded_Token));</stringProp>
                 </collectionProp>
               </elementProp>
               <stringProp name="HTTPSampler.domain">${master}</stringProp>
-              <stringProp name="HTTPSampler.port">3000</stringProp>
-              <stringProp name="HTTPSampler.protocol">http</stringProp>
+              <stringProp name="HTTPSampler.port">28015</stringProp>
+              <stringProp name="HTTPSampler.protocol">https</stringProp>
               <stringProp name="HTTPSampler.contentEncoding"></stringProp>
               <stringProp name="HTTPSampler.path">/policies/${conjur_account}/policy/${policy_branch}/app-${host_id_index}</stringProp>
               <stringProp name="HTTPSampler.method">POST</stringProp>
@@ -358,8 +358,8 @@ vars.put(&quot;authn_token&quot;, new String(encoded_Token));</stringProp>
                   </collectionProp>
                 </elementProp>
                 <stringProp name="HTTPSampler.domain">${master}</stringProp>
-                <stringProp name="HTTPSampler.port">3000</stringProp>
-                <stringProp name="HTTPSampler.protocol">http</stringProp>
+                <stringProp name="HTTPSampler.port"></stringProp>
+                <stringProp name="HTTPSampler.protocol">https</stringProp>
                 <stringProp name="HTTPSampler.contentEncoding"></stringProp>
                 <stringProp name="HTTPSampler.path">/secrets/${conjur_account}/variable/${policy_branch}/app-${host_id_index}/account-${account_id_index}/account-secret-${secret_idx}/variable</stringProp>
                 <stringProp name="HTTPSampler.method">POST</stringProp>
