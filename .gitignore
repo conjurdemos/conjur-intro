@@ -26,3 +26,6 @@ files/haproxy/master/haproxy.cfg
 **/certificates/dap_master/
 **/certificates/intermediate_ca/
 **/certificates/root_ca/
+
+# Versions plugin backup file (use git history instead)
+**/pom.xml.versionsBackup
