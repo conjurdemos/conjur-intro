@@ -16,7 +16,11 @@ services:
       - ./files/haproxy/master:/usr/local/etc/haproxy
 
   conjur-master-1.mycompany.local:
-    image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
+    image: registry.tld/conjur-appliance:${VERSION}
+    deploy:
+      resources:
+          limits:
+            memory: 3G
     networks:
       dap_net:
         ipv4_address: 12.16.23.11
@@ -29,6 +33,7 @@ services:
       - "5432"
     environment:
       TRUSTED_PROXIES: 123.123.1.1,123.5.1.1
+      CONJUR_AUTHENTICATORS: authn,authn-k8s/dev
     security_opt:
         - "seccomp:unconfined"
     volumes:
@@ -41,7 +46,7 @@ services:
       - ./files/dhparam.pem:${DHPATH}/dhparam.pem
 
   conjur-master-2.mycompany.local:
-    image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
+    image: registry.tld/conjur-appliance:${VERSION}
     networks:
       dap_net:
         ipv4_address: 12.16.23.12
@@ -63,7 +68,7 @@ services:
       - ./files:/conjur_files
 
   conjur-master-3.mycompany.local:
-    image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
+    image: registry.tld/conjur-appliance:${VERSION}
     networks:
       dap_net:
         ipv4_address: 12.16.23.13
@@ -98,7 +103,7 @@ services:
       - ./files/haproxy/follower:/usr/local/etc/haproxy
 
   conjur-follower-1.mycompany.local:
-    image: registry2.itci.conjur.net/conjur-appliance:${VERSION}
+    image: registry.tld/conjur-appliance:${VERSION}
     networks:
       dap_net:
         ipv4_address: 12.16.23.16

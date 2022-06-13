@@ -76,7 +76,7 @@
             </elementProp>
             <elementProp name="admin_password" elementType="Argument">
               <stringProp name="Argument.name">admin_password</stringProp>
-              <stringProp name="Argument.value">Basic YWRtaW46MjJyYWZkMTNtZXp2a24yNHZqOWo1ZTJydnpiMXNleXNicDJjOXhhOXoyeGh6NDExa2M3azh0</stringProp>
+              <stringProp name="Argument.value">Basic YWRtaW46MTM3cjF5azF2MzgzMnEzYndxcTM0MXYwNGNzc25rMG50ZTNyczJ0ZTgzcGhxOHZ2NjNkdDIw</stringProp>
               <stringProp name="Argument.metadata">=</stringProp>
               <stringProp name="Argument.desc">Basic base64(admin:password)</stringProp>
             </elementProp>

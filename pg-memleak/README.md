@@ -34,6 +34,8 @@ Table of Contents
 - [Postgres Troubleshooting](#postgres-troubleshooting)
   - [Connect to the Database with psql](#connect-to-the-database-with-psql)
   - [Troulbeshooting Steps](#troulbeshooting-steps)
+- [YET TO TRY](#yet-to-try)
+- [Root Cause Analysis](#root-cause-analysis)
 # Purpose
 
 This document will tell you how to setup the `conjur-intro` to simulate
@@ -566,6 +568,8 @@ $ ./bin/dap --stop
 
 ## Connect to the Database with psql
 
+See the commands below to log into postgres:
+
 If using the Appliance via conjur-intro, `exec` into the container and run:
 
 ```bash
@@ -665,7 +669,71 @@ $ docker exec -it dev_pg_1 psql -d postgres -U postgres
             from pg_stat_activity;
     ```
 
-4. When the container runs out of memory, it will start killing processes off
+1. Use `pg_top`
+
+  For OSS:
+
+  ```bash
+  $ apt-get install -y pg_top
+  $ su postgres
+  $ pg_top
+  ```
+
+  Watching this seems to indicate that one process (the same PID) is hogging
+  memory (`SIZE` column), and is increasing similarly to the container memory
+  usage (`docker stats`). When viewing the connections via `psql` (see above
+  command) the `application_name` is: `puma: cluster worker 0: 152 [Conjur API Server]`
+
+  The other process taking up about the same amount as RAM as the previous
+  process as an `application_name`: `puma: cluster worker 1: 152 [Conjur API Server]`
+
+  References:
+  - https://severalnines.com/database-blog/dynamic-monitoring-postgresql-instances-using-pgtop
+  - https://www.systutorials.com/docs/linux/man/1-pg_top/
+
+2. For future reference, perhaps we can debug with `gdb` if running from source
+
+  For OSS:
+
+  Add the following capabilities to the pg service:
+
+  ```yaml
+    pg:
+      cap_add:
+      - ALL
+    # ...
+  ```
+
+  We want to attach `gdb` to our running postgres process, which requires
+  the capability: `SYS_PTRACE`.
+
+  Get the pid of the process by running this command in `psql`:
+
+  ```sql
+  SELECT pg_backend_pid();
+  ```
+
+  ```bash
+  # note: procps installs commands: top, ps
+  $ apt-get update && apt-get install -y libc6-dbg gdb valgrind procps
+  $ ps | grep pg
+  $ su postgres
+  $ gdb -p PID_FROM_ABOVE
+  # load the symbols
+  # TODO: not helpful??
+  (gdb) attach PID_FROM_ABOVE
+  (gdb) p MemoryContextStats(TopMemoryContext)
+  # Couldn't get extended state status: No such process.
+  ```
+
+  See debugging steps with gdb:
+  - https://wiki.postgresql.org/wiki/Developer_FAQ#Examining_backend_memory_use
+  - https://wiki.postgresql.org/wiki/Getting_a_stack_trace_of_a_running_PostgreSQL_backend_on_Linux/BSD
+  - https://sourceware.org/gdb/current/onlinedocs/gdb/Symbols.html#index-info-variables-918
+
+2. When the container runs out of memory
+
+   In the appliance, it will start killing processes off
    at random. Usually `postgres` is the first to go, which will then restart.
    The memory is usually freed up afterwards. The appliance logs will indicate
    the restart from postgres, which looks something like this:
@@ -679,3 +747,13 @@ $ docker exec -it dev_pg_1 psql -d postgres -U postgres
    ```
 
    Eventually the postgres service back up thanks to `runit`.
+
+   For OSS, the postgres container will just restart.
+
+# YET TO TRY
+
+https://stackoverflow.com/questions/37096186/memory-issues-on-rds-postgresql-instance-rails-4
+
+# Root Cause Analysis
+
+See [my comment ONYX-18692](https://ca-il-jira.il.cyber-ark.com:8443/browse/ONYX-18692?focusedCommentId=622453&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#comment-622453).
