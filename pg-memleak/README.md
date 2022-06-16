@@ -669,12 +669,13 @@ $ docker exec -it dev_pg_1 psql -d postgres -U postgres
             from pg_stat_activity;
     ```
 
-1. Use `pg_top`
+1. Use `pgtop`
 
   For OSS:
 
   ```bash
-  $ apt-get install -y pg_top
+  $ apt-get update
+  $ apt-get install -y pgtop
   $ su postgres
   $ pg_top
   ```
