@@ -36,6 +36,8 @@ Table of Contents
   - [Troulbeshooting Steps](#troulbeshooting-steps)
 - [YET TO TRY](#yet-to-try)
 - [Root Cause Analysis](#root-cause-analysis)
+- [Pgbouncer](#pgbouncer)
+  - [TRACKING](#tracking)
 # Purpose
 
 This document will tell you how to setup the `conjur-intro` to simulate
@@ -119,6 +121,9 @@ these steps below.
 
     # start conjur
     root@927b8d7206aa:/src/conjur-server# conjurctl server
+
+    # optionally log the server logs such to a file you can view from your host
+    root@927b8d7206aa:/src/conjur-server# conjurctl server | tee /src/conjur-server/conjur-server.log
     ```
 
 4. Obtain admin user credentials
@@ -758,3 +763,146 @@ https://stackoverflow.com/questions/37096186/memory-issues-on-rds-postgresql-ins
 # Root Cause Analysis
 
 See [my comment ONYX-18692](https://ca-il-jira.il.cyber-ark.com:8443/browse/ONYX-18692?focusedCommentId=622453&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#comment-622453).
+
+# Pgbouncer
+
+These steps are with regards to the conjur dev repo (not conjur-intro).
+See the [conjur/pg-bouncer branch](https://github.com/cyberark/conjur/tree/pg-bouncer).
+
+> Note: pgbouncer does not support prepared statements, so this will likely be
+> a deal breaker, if adding this to the conjur architecture doesn't already.
+
+1. Create `dev/files/pgbouncer/pgbouncer.ini`
+
+    ```ini
+    ################## Auto generated ##################
+    [databases]
+    postgres = host=pg port=5432 user=postgres
+
+    [pgbouncer]
+    listen_addr = 0.0.0.0
+    listen_port = 5432
+    unix_socket_dir =
+    user = postgres
+    auth_file = /etc/pgbouncer/userlist.txt
+    # Note: this is configured similarly to pg services in docker-compose.yml
+    auth_type = trust
+    ignore_startup_parameters = extra_float_digits
+
+    # Custom settings
+    server_lifetime = 60
+
+    # Log settings
+    admin_users = postgres
+
+    # Connection sanity checks, timeouts
+
+    # TLS settings
+
+    # Dangerous timeouts
+    ################## end file ##################
+    ```
+
+
+1. Add `pgbouncer` service to docker-compose.yml
+
+  ```yaml
+  conjur:
+    # ...
+    environment:
+      DATABASE_URL: postgres://postgres@pgbouncer/postgres
+  # ...
+  pgbouncer:
+    image: edoburu/pgbouncer
+    environment:
+      DATABASE_URL: postgres://postgres@pg/postgres
+      # DB_USER: postgres
+      # DB_PASSWORD: postgres
+      # DB_HOST: pg
+      # DB_NAME: postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - ./files/pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+      - ./files/pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
+  # ...
+  ```
+
+1. Edit `dev/start.sh` and add `pgbouncer` to the `services` variable
+
+    ```bash
+    # Minimal set of services.  We add to this list based on cmd line flags.
+    services=(pg conjur client pgbouncer)
+    ```
+
+2. Create `dev/files/pgbouncer/userlist.txt`
+
+    > Note: this may not be required due to using `auth_method = trust` in
+    > pgbouncer.ini. See "Using a Custom Configuration": https://hub.docker.com/r/edoburu/pgbouncer/.
+
+    ```txt
+    "postgres" "md53175bce1d3201d16594cebf9d7eb3f9d"
+    # or
+    "postgres" "postgres"
+    ```
+
+5. Configure `auth_type` in pgbouncer.ini to be `trust`, which aligns with our
+   postgres config in the `docker-compose.yml` file
+
+The `./start` script should now properly init all of the services, and conjur
+should try to connect to , pgbouncer, which should proxy that connection to
+pg.
+
+If needed, you can connect to `pg` via `pgbouncer` using `psql` as follows, from
+any docker container on the dev network:
+
+```bash
+$ psql -h pgbouncer -U postgres -d postgres
+```
+
+## TRACKING
+
+`docker logs -f dev_pgbouncer_1` outputs:
+
+2022-06-16 23:00:34.270 UTC [1] LOG S-0x7faf974dd350: postgres/postgres@172.23.0.2:5432 closing because: server lifetime over (age=60s)
+2022-06-16 23:00:37.602 UTC [1] LOG S-0x7faf974de070: postgres/postgres@172.23.0.2:5432 closing because: server lifetime over (age=63s)
+2022-06-16 23:00:40.936 UTC [1] LOG S-0x7faf974de2a0: postgres/postgres@172.23.0.2:5432 closing because: server lifetime over (age=61s)
+
+Sample Output from pg_top:
+
+  last pid:  2227;  load avg:  0.06,  0.36,  0.50;       up 0+08:54:25                                                                                                                                              23:19:01
+  13 processes: 5 other background task(s), 7 idle, 1 active
+  CPU states:  0.2% user,  0.0% nice,  0.5% system, 99.3% idle,  0.0% iowait
+  Memory: 3625M used, 6341M free, 0K shared, 337M buffers, 1344M cached
+  Swap: 0K used, 1024M free, 0K cached, 0K in, 0K out
+
+  PID USERNAME    SIZE   RES STATE   XTIME  QTIME  %CPU LOCKS COMMAND
+  2228 postgres    283M   15M active   0:00   0:00   0.0     8 postgres: postgres postgres [local] idle
+  957 postgres    373M  123M idle     0:00   0:00   0.0     0 postgres: postgres postgres 172.23.0.3(49632) idle
+  1071 postgres    878M  629M idle     0:00   0:00   0.0     0 postgres: postgres postgres 172.23.0.3(49638) idle
+    71             282M 6448K          0:00   0:00   0.0     0 postgres: autovacuum launcher process
+    73 postgres    282M 4812K          0:00   0:00   0.0     0 postgres: bgworker: logical replication launcher
+  123 postgres    284M   17M idle     0:00   0:00   0.2     0 postgres: postgres postgres 172.23.0.3(49610) idle
+    68             284M   37M          0:00   0:00   0.0     0 postgres: checkpointer process
+    80 postgres    282M   11M idle     0:00   0:00   0.0     0 postgres: postgres postgres 172.23.0.3(49556) idle
+    69             282M 7320K          0:00   0:00   0.2     0 postgres: writer process
+    79 postgres    283M   15M idle     0:00   0:00   0.0     0 postgres: postgres postgres 172.23.0.3(49552) idle
+    70             282M 8664K          0:00   0:00   0.0     0 postgres: wal writer process
+  124 postgres    282M 9648K idle     0:00   0:00   0.0     0 postgres: postgres postgres 172.23.0.3(49618) idle
+  121 postgres    282M   10M idle     0:00   0:00   0.0     0 postgres: postgres postgres [local] idle
+
+Though it appears that pgbouncer does drop idle conncetions after that time
+limit, it isn't dropping the connection (pid) that conjur was using to process
+requests from jmeter (1071).
+
+06/16/2022 6:1? PM: PID 1071 @ 878M dev_pg_1 @ 809 MB
+06/16/2022 6:15 PM: PID 1071 @ 878M dev_pg_1 @ 796 MB
+06/16/2022 6:20 PM: PID 1071 @ 878M dev_pg_1 @ 793.1 MB
+
+
+--- Restart, add `server_idle_timeout = 60`
+
+
+06/16/2022 6:29 PM: PID 2556 @ 380M dev_pg_1 @ 230 MB
+06/16/2022 6:29 PM: PID 2556 @ 452M dev_pg_1 @ 299 MB
+06/16/2022 6:36 PM: PID 2556 @ 452M dev_pg_1 @ 291 MB

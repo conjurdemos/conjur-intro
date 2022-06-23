@@ -76,7 +76,7 @@
             </elementProp>
             <elementProp name="admin_password" elementType="Argument">
               <stringProp name="Argument.name">admin_password</stringProp>
-              <stringProp name="Argument.value">Basic YWRtaW46MTM3cjF5azF2MzgzMnEzYndxcTM0MXYwNGNzc25rMG50ZTNyczJ0ZTgzcGhxOHZ2NjNkdDIw</stringProp>
+              <stringProp name="Argument.value">Basic YWRtaW46MXl5ZzgyanQ4Mno3dmQxd2YwZDVkdHhoNzFzOHdrdnMxNXJibm1yMjQyOWhnZzFxYWduanQ=</stringProp>
               <stringProp name="Argument.metadata">=</stringProp>
               <stringProp name="Argument.desc">Basic base64(admin:password)</stringProp>
             </elementProp>
@@ -372,6 +372,46 @@ vars.put(&quot;authn_token&quot;, new String(encoded_Token));</stringProp>
                 <stringProp name="HTTPSampler.response_timeout"></stringProp>
               </HTTPSamplerProxy>
               <hashTree/>
+            </hashTree>
+            <LoopController guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller (Read Secrets)" enabled="false">
+              <boolProp name="LoopController.continue_forever">true</boolProp>
+              <intProp name="LoopController.loops">-1</intProp>
+            </LoopController>
+            <hashTree>
+              <LoopController guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
+                <boolProp name="LoopController.continue_forever">true</boolProp>
+                <stringProp name="LoopController.loops">${secrets_per_account}</stringProp>
+              </LoopController>
+              <hashTree>
+                <CounterConfig guiclass="CounterConfigGui" testclass="CounterConfig" testname="Secrets Counter" enabled="true">
+                  <stringProp name="CounterConfig.start">1</stringProp>
+                  <stringProp name="CounterConfig.end">${secrets_per_account}</stringProp>
+                  <stringProp name="CounterConfig.incr">1</stringProp>
+                  <stringProp name="CounterConfig.name">secret_idx</stringProp>
+                  <stringProp name="CounterConfig.format"></stringProp>
+                  <boolProp name="CounterConfig.per_user">false</boolProp>
+                </CounterConfig>
+                <hashTree/>
+                <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Get Variables" enabled="true">
+                  <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+                    <collectionProp name="Arguments.arguments"/>
+                  </elementProp>
+                  <stringProp name="HTTPSampler.domain">${master}</stringProp>
+                  <stringProp name="HTTPSampler.port">3000</stringProp>
+                  <stringProp name="HTTPSampler.protocol">http</stringProp>
+                  <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+                  <stringProp name="HTTPSampler.path">/secrets/${conjur_account}/variable/${policy_branch}/app-${host_id_index}/account-${account_id_index}/account-secret-${secret_idx}/variable</stringProp>
+                  <stringProp name="HTTPSampler.method">GET</stringProp>
+                  <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+                  <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+                  <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+                  <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+                  <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+                  <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+                  <stringProp name="HTTPSampler.response_timeout"></stringProp>
+                </HTTPSamplerProxy>
+                <hashTree/>
+              </hashTree>
             </hashTree>
           </hashTree>
         </hashTree>
