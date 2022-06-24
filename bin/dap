@@ -1,4 +1,7 @@
-#!/bin/bash -e
+#!/usr/bin/env bash
+
+set -e
+
 _admin_password="MySecretP@ss1"
 
 function _print_help {
@@ -27,6 +30,7 @@ Usage: bin/dap [options]:
     --upgrade-master <version>    Restores master from backup (Requires configured master)
     --wait-for-master             Blocks until the Master is healthy
     --version <version>           Version of DAP to use (defaults to latest build)
+    --standby-count <count>       Number of Standbys to deploy (defaults to 2)
 
 
 EOF
@@ -34,7 +38,124 @@ EOF
 }
 
 function _set_master_multi_node_proxy_config {
-  cp files/haproxy/master/multi-node/haproxy.cfg files/haproxy/master/haproxy.cfg
+  cat << EOF > files/haproxy/master/haproxy.cfg
+global
+  daemon
+  maxconn 256
+  log-send-hostname
+
+defaults
+  mode tcp
+  option http-use-htx
+  timeout connect 5000ms
+  timeout client  50000ms
+  timeout server  50000ms
+
+#
+# Peform SSL Pass-Through to proxy HTTPS requests to DAP
+#
+frontend www
+  mode tcp
+  bind *:443
+  option tcplog
+  default_backend www-backend
+
+#
+# Peform SSL pass-through to proxy Postgres TCP requests from standbys/followers to DAP Master
+#
+frontend postgres
+  mode tcp
+  bind *:5432
+  option tcplog
+  default_backend postgres-backend
+
+#
+# Peform SSL pass-through to proxy Syslog TCP requests from followers to DAP Master
+#
+frontend syslog
+  mode tcp
+  bind *:1999
+  option tcplog
+  default_backend syslog-backend
+
+#
+# Performs Layer 4 proxy
+# Uses DAP's HTTP health endpoint to determine master
+#
+backend www-backend
+  mode tcp
+  balance roundrobin
+  option httpchk GET /health
+  server conjur-master-1 conjur-master-1.mycompany.local:443 check port 443 check-ssl ca-file /etc/ssl/certs/ca.pem
+$(_standby_backend_www_lines)
+
+#
+# Performs Layer 4 proxy
+# Uses DAP's HTTP health endpoint to determine master
+#
+backend postgres-backend
+  mode tcp
+  balance roundrobin
+  option httpchk GET /health
+  server conjur-master-1 conjur-master-1.mycompany.local:5432 check port 443 check-ssl ca-file /etc/ssl/certs/ca.pem
+$(_standby_backend_postgres_lines)
+
+#
+# Performs Layer 4 proxy
+# Uses DAP's HTTP health endpoint to determine master
+#
+backend syslog-backend
+  mode tcp
+  balance roundrobin
+  option httpchk GET /health
+  server conjur-master-1 conjur-master-1.mycompany.local:1999 check port 443 check-ssl ca-file /etc/ssl/certs/ca.pem
+$(_standby_backend_syslog_lines)
+
+#
+# Enables HAProxy's UI for debugging
+#
+listen stats
+  mode http
+  bind *:7000
+  stats enable
+  stats uri /
+EOF
+}
+
+_standby_backend_www_lines() {
+  declare -a standby_servers
+
+  # The identifier for the Leader is 1, so we start at 2 for Standbys
+  for ((i=2; i<=STANDBY_COUNT+1; i++))
+  do
+    standby_servers+=("  server conjur-master-$i conjur-master-$i.mycompany.local:443 check port 443 check-ssl ca-file /etc/ssl/certs/ca.pem")
+  done
+
+  printf '%s' "$(IFS=$'\n' ; echo "${standby_servers[*]}")"
+}
+
+_standby_backend_postgres_lines() {
+  declare -a standby_servers
+
+  # The identifier for the Leader is 1, so we start at 2 for Standbys
+  for ((i=2; i<=STANDBY_COUNT+1; i++))
+  do
+    standby_servers+=("  server conjur-master-$i conjur-master-$i.mycompany.local:5432 check port 443 check-ssl ca-file /etc/ssl/certs/ca.pem")
+  done
+
+  printf '%s' "$(IFS=$'\n' ; echo "${standby_servers[*]}")"
+}
+
+_standby_backend_syslog_lines() {
+    declare -a standby_servers
+
+  # The identifier for the Leader is 1, so we start at 2 for Standbys
+  for ((i=2; i<=STANDBY_COUNT+1; i++))
+  do
+    standby_servers+=("  server conjur-master-$i conjur-master-$i.mycompany.local:1999 check port 443 check-ssl ca-file /etc/ssl/certs/ca.pem")
+  done
+
+  printf '%s' "$(IFS=$'\n' ; echo "${standby_servers[*]}")"
 }
 
 function _set_master_single_node_proxy_config {
@@ -78,7 +199,7 @@ function _configure_master {
   _cmd="evoke configure master"
   _cmd="$_cmd --accept-eula"
   _cmd="$_cmd --hostname conjur-master.mycompany.local"
-  _cmd="$_cmd --master-altnames conjur-master-1.mycompany.local,conjur-master-2.mycompany.local,conjur-master-3.mycompany.local,conjur-master-4.mycompany.local,conjur-master-5.mycompany.local"
+  _cmd="$_cmd --master-altnames conjur-master-1.mycompany.local,$(_standby_altnames)"
   _cmd="$_cmd --admin-password $_admin_password"
   _cmd="$_cmd demo"
 
@@ -89,8 +210,8 @@ function _configure_master {
 function _setup_standby {
   local _standby_number=$1
 
-  docker-compose rm --stop --force conjur-master-$_standby_number.mycompany.local
-  docker-compose up --no-deps --detach conjur-master-$_standby_number.mycompany.local
+  docker-compose rm --stop --force "conjur-master-$_standby_number.mycompany.local"
+  docker-compose up --no-deps --detach "conjur-master-$_standby_number.mycompany.local"
 
   # Generate a Seed File
   _run conjur-master-1.mycompany.local \
@@ -155,10 +276,10 @@ function _reload_container {
 }
 
 function _setup_standbys {
-  _setup_standby 2
-  _setup_standby 3
-  _setup_standby 4
-  _setup_standby 5
+  for ((i=2; i<=STANDBY_COUNT+1; i++))
+  do
+    _setup_standby "$i"
+  done
   _start_standby_synchronization
 
   # Reload load balancer to serve cluster
@@ -200,45 +321,71 @@ function _cli {
 }
 
 function _disable_autofailover {
-  _run conjur-master-5.mycompany.local "evoke cluster member remove conjur-master-5.mycompany.local"
-  _run conjur-master-4.mycompany.local "evoke cluster member remove conjur-master-4.mycompany.local"
-  _run conjur-master-3.mycompany.local "evoke cluster member remove conjur-master-3.mycompany.local"
-  _run conjur-master-2.mycompany.local "evoke cluster member remove conjur-master-2.mycompany.local"
+  for ((i=2; i<=STANDBY_COUNT+1; i++))
+  do
+    _run "conjur-master-$i.mycompany.local" "evoke cluster member remove conjur-master-$i.mycompany.local"
+  done
 }
 
 function _enable_autofailover {
   autofailover=$(curl -k https://localhost/info | jq -r .configuration.conjur.cluster_name)
 
   if [ "$autofailover" = 'production' ]; then
-    _run conjur-master-2.mycompany.local "evoke cluster enroll --reenroll --cluster-machine-name conjur-master-2.mycompany.local --master-name conjur-master-1.mycompany.local production"
-    _run conjur-master-3.mycompany.local "evoke cluster enroll --reenroll --cluster-machine-name conjur-master-3.mycompany.local --master-name conjur-master-1.mycompany.local production"
-    _run conjur-master-4.mycompany.local "evoke cluster enroll --reenroll --cluster-machine-name conjur-master-4.mycompany.local --master-name conjur-master-1.mycompany.local production"
-    _run conjur-master-5.mycompany.local "evoke cluster enroll --reenroll --cluster-machine-name conjur-master-5.mycompany.local --master-name conjur-master-1.mycompany.local production"
+    for ((i=2; i<=STANDBY_COUNT+1; i++))
+    do
+      _run "conjur-master-$i.mycompany.local" "evoke cluster enroll --reenroll --cluster-machine-name conjur-master-$i.mycompany.local --master-name conjur-master-1.mycompany.local production"
+    done
   else
     _cli root "policy/base.yml"
+
+    _set_cluster_policy_file
     _cli conjur/cluster policy/cluster.yml
 
     _run conjur-master-1.mycompany.local "evoke cluster enroll --cluster-machine-name conjur-master-1.mycompany.local production"
-    _run conjur-master-2.mycompany.local "evoke cluster enroll --cluster-machine-name conjur-master-2.mycompany.local --master-name conjur-master-1.mycompany.local production"
-    _run conjur-master-3.mycompany.local "evoke cluster enroll --cluster-machine-name conjur-master-3.mycompany.local --master-name conjur-master-1.mycompany.local production"
-    _run conjur-master-4.mycompany.local "evoke cluster enroll --cluster-machine-name conjur-master-4.mycompany.local --master-name conjur-master-1.mycompany.local production"
-    _run conjur-master-5.mycompany.local "evoke cluster enroll --cluster-machine-name conjur-master-5.mycompany.local --master-name conjur-master-1.mycompany.local production"
+    for ((i=2; i<=STANDBY_COUNT+1; i++))
+    do
+      _run "conjur-master-$i.mycompany.local" "evoke cluster enroll --cluster-machine-name conjur-master-$i.mycompany.local --master-name conjur-master-1.mycompany.local production"
+    done
   fi
 }
 
+_set_cluster_policy_file() {
+  cat << EOF > policy/cluster.yml
+- !policy
+  id: production
+  body:
+    - !layer
+
+    # Host nodes to be enrolled in the `production` auto-failover cluster
+    - &hosts
+      - !host conjur-master-1.mycompany.local
+$(_standby_host_lines)
+
+    - !grant
+      role: !layer
+      member: *hosts
+EOF
+}
+
+_standby_host_lines() {
+    declare -a standby_servers
+
+  # The identifier for the Leader is 1, so we start at 2 for Standbys
+  for ((i=2; i<=STANDBY_COUNT+1; i++))
+  do
+    standby_servers+=("      - !host conjur-master-$i.mycompany.local")
+  done
+
+  printf '%s' "$(IFS=$'\n' ; echo "${standby_servers[*]}")"
+}
+
 function _stop_replication {
-  if [[ $(docker ps --quiet --filter "name=conjur-master-2.mycompany.local") ]]; then
-    _run conjur-master-2.mycompany.local "evoke replication stop"
-  fi
-  if [[ $(docker ps --quiet --filter "name=conjur-master-3.mycompany.local") ]]; then
-    _run conjur-master-3.mycompany.local "evoke replication stop"
-  fi
-  if [[ $(docker ps --quiet --filter "name=conjur-master-4.mycompany.local") ]]; then
-    _run conjur-master-4.mycompany.local "evoke replication stop"
-  fi
-  if [[ $(docker ps --quiet --filter "name=conjur-master-5.mycompany.local") ]]; then
-    _run conjur-master-5.mycompany.local "evoke replication stop"
-  fi
+  for ((i=2; i<=STANDBY_COUNT+1; i++))
+  do
+    if [[ $(docker ps --quiet --filter "name=conjur-master-$i.mycompany.local") ]]; then
+      _run "conjur-master-$i.mycompany.local" "evoke replication stop"
+    fi
+  done
 }
 
 function _stop_and_rename {
@@ -333,32 +480,25 @@ function _rotate_certificates {
   local cert_path='/opt/cyberark/dap/configuration/certificates'
   _run conjur-master-1.mycompany.local \
     "evoke ca import --force --key $cert_path/dap_master/dap-master-key.pem --set $cert_path/dap_master/dap-master.pem"
-  
+
   # Import the new Follower certificate into the active DAP master so that it
   # is available through the seed service
   _run conjur-master-1.mycompany.local \
     "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
 
   # Import the new certificate into the DAP Standbys
-  if [[ $(docker ps --quiet --filter "name=conjur-master-2.mycompany.local") ]]; then
-    _run conjur-master-2.mycompany.local \
-      "evoke ca import --force --key $cert_path/dap_master/dap-master-key.pem --set $cert_path/dap_master/dap-master.pem"
-  
-    # Import the new Follower certificate into each DAP Standby so that it
-    # is available through the seed service if the Standby is promoted.
-    _run conjur-master-2.mycompany.local \
-      "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
-  fi
-  
-  if [[ $(docker ps --quiet --filter "name=conjur-master-3.mycompany.local") ]]; then
-    _run conjur-master-3.mycompany.local \
-      "evoke ca import --force --key $cert_path/dap_master/dap-master-key.pem --set $cert_path/dap_master/dap-master.pem"
-  
-    # Import the new Follower certificate into each DAP Standby so that it
-    # is available through the seed service if the Standby is promoted.
-    _run conjur-master-3.mycompany.local \
-      "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
-  fi
+  for ((i=2; i<=STANDBY_COUNT+1; i++))
+  do
+    if [[ $(docker ps --quiet --filter "name=conjur-master-$i.mycompany.local") ]]; then
+      _run "conjur-master-$i.mycompany.local" \
+        "evoke ca import --force --key $cert_path/dap_master/dap-master-key.pem --set $cert_path/dap_master/dap-master.pem"
+
+      # Import the new Follower certificate into each DAP Standby so that it
+      # is available through the seed service if the Standby is promoted.
+      _run "conjur-master-$i.mycompany.local" \
+        "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
+    fi
+  done
 
   # Re-enable auto-failover for the Master cluster
   _resume_autofailover
@@ -373,20 +513,20 @@ function _rotate_certificates {
 function _pause_autofailover {
   autofailover=$(curl -k https://localhost/info | jq -r .configuration.conjur.cluster_name)
   if [ "$autofailover" = 'production' ]; then
-    _run conjur-master-2.mycompany.local "sv down cluster"
-    _run conjur-master-3.mycompany.local "sv down cluster"
-    _run conjur-master-4.mycompany.local "sv down cluster"
-    _run conjur-master-5.mycompany.local "sv down cluster"
+    for ((i=2; i<=STANDBY_COUNT+1; i++))
+    do
+      _run "conjur-master-$i.mycompany.local" "sv down cluster"
+    done
   fi
 }
 
 function _resume_autofailover {
   autofailover=$(curl -k https://localhost/info | jq -r .configuration.conjur.cluster_name)
   if [ "$autofailover" = 'production' ]; then
-    _run conjur-master-2.mycompany.local "sv up cluster"
-    _run conjur-master-3.mycompany.local "sv up cluster"
-    _run conjur-master-4.mycompany.local "sv up cluster"
-    _run conjur-master-5.mycompany.local "sv up cluster"
+    for ((i=2; i<=STANDBY_COUNT+1; i++))
+    do
+      _run conjur-master-3.mycompany.local "sv up cluster"
+    done
   fi
 }
 
@@ -413,6 +553,20 @@ function _wait_for_master {
   done
 }
 
+_standby_altnames() {
+
+  declare -a standby_altnames
+
+  # The identifier for the Leader is 1, so we start at 2 for Standbys
+  for ((i=2; i<=STANDBY_COUNT+1; i++))
+  do
+    standby_altnames+=("conjur-master-$i.mycompany.local")
+  done
+
+  # Output the command delimited string
+  echo "$(IFS=, ; echo "${standby_altnames[*]}")"
+}
+
 create_docker_network() {
 
   # Cleanup any old, unused networks, including the previous DAP Docker Compose
@@ -434,6 +588,7 @@ DRY_RUN=false
 PULL_IMAGES=false
 CMD=""
 export DHPATH="${DHPATH:-/etc/ssl}"
+STANDBY_COUNT=2
 
 while true ; do
   case "$1" in
@@ -446,6 +601,7 @@ while true ; do
     --provision-follower ) CMD='_setup_follower' ; shift ;;
     --upgrade-master ) shift ; CMD="_upgrade_via_backup_restore $1" ; shift ;;
     --version ) shift ; TAG=$1 ; shift ;;
+    --standby-count ) shift; STANDBY_COUNT=$1 ; shift ;;
     --dry-run ) DRY_RUN=true ; shift ;;
     -h | --help ) _print_help ; shift ;;
     --trigger-failover ) CMD='_trigger_master_failover_failover' ; shift ;;

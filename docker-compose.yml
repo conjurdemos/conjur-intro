@@ -132,10 +132,10 @@ services:
     image: haproxy:2.1-alpine
     networks:
       dap_net:
-        ipv4_address: 12.16.23.15
+        ipv4_address: 12.16.23.16
     ports:
       - "80:80"
-      - "448:443"
+      - "449:443"
       - "7001:7000"
     volumes:
       - follower-certs:/etc/ssl/certs
@@ -145,9 +145,9 @@ services:
     image: registry.tld/conjur-appliance:${VERSION}
     networks:
       dap_net:
-        ipv4_address: 12.16.23.16
+        ipv4_address: 12.16.23.17
     ports:
-      - "449:443"
+      - "450:443"
     expose:
       - "443"
       - "444"
@@ -165,7 +165,7 @@ services:
     image: cyberark/conjur-cli:5
     networks:
       dap_net:
-        ipv4_address: 12.16.23.17
+        ipv4_address: 12.16.23.18
     working_dir:  /src/cli
     environment:
       CONJUR_APPLIANCE_URL: https://conjur-master.mycompany.local
@@ -179,7 +179,7 @@ services:
     image: cyberark/conjur-cli:5
     networks:
       dap_net:
-        ipv4_address: 12.16.23.18
+        ipv4_address: 12.16.23.19
     working_dir:  /src/cli
     environment:
       CONJUR_APPLIANCE_URL: https://conjur-follower.mycompany.local
@@ -194,7 +194,7 @@ services:
       context: ./artifacts/api-client
     networks:
       dap_net:
-        ipv4_address: 12.16.23.19
+        ipv4_address: 12.16.23.20
     working_dir: /src/
     volumes:
       - ./artifacts/api-client/api-script:/src/bin/api
