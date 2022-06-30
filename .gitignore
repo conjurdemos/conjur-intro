@@ -28,3 +28,4 @@ files/haproxy/master/haproxy.cfg
 **/certificates/root_ca/
 demos/aws-cluster/.terraform.lock.hcl
 demos/aws-cluster/.terraform.tfstate.lock.info
+demos/aws-cluster/conjur_enterprise_12.5.1.tar.gz

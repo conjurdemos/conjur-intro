@@ -25,7 +25,7 @@ variable "resource_prefix" {
 
 variable "follower_count" {
   type = number
-  default = 2
+  default = 1
 }
 
 variable "prefix_list_id" {

@@ -1,4 +1,4 @@
-#!/bin/bash -eux
+#!/bin/bash -eu
 
 : ${SSH_KEY_FILE?"Need to set SSH_KEY_FILE"}
 SSH_USER=${SSH_USER:-ec2-user}
@@ -7,6 +7,9 @@ source bin/lib/aws_context
 source bin/lib/conjur_context
 
 SEED_DIR="./tmp/conjur/seeds"
+
+container_cmd="podman"
+container_name="conjur"
 
 function create_follower_seed() {
   local filename=$1
@@ -17,8 +20,8 @@ function create_follower_seed() {
   ssh -i "$SSH_KEY_FILE" \
     -o "StrictHostKeyChecking no" \
     "$SSH_USER@$MASTER_1_PUBLIC" /bin/bash << EOF
-    docker exec conjur-appliance bash -c " \
-      evoke seed follower "$LB_FOLLOWER_DNS" "$LB_DNS" > "/opt/conjur/backup/$filename"
+    $container_cmd exec $container_name bash -c " \
+      evoke seed follower "ec2-54-80-182-241.compute-1.amazonaws.com" "$LB_DNS" > "/opt/conjur/backup/$filename"
     "
 EOF
 
@@ -45,13 +48,15 @@ function configure_follower() {
     "$SSH_USER@$follower_public" /bin/bash << EOF
     sudo mv "\$HOME/$filename" "/opt/conjur/backup/$filename"
 
-    docker start conjur-appliance
+    $container_cmd start $container_name
 
-    docker exec conjur-appliance \
+    $container_cmd exec $container_name \
       evoke unpack seed "/opt/conjur/backup/$filename"
 
-    docker exec conjur-appliance \
+    $container_cmd exec $container_name \
       evoke configure follower
+      # evoke keys exec -m /opt/conjur/secrets/master.key -- \
+      #   evoke configure follower
 EOF
 }
 

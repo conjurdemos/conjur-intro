@@ -1,4 +1,6 @@
-#!/bin/bash -eu
+#!/usr/bin/env bash
+
+set -eu
 
 : ${SSH_KEY_FILE?"Need to set SSH_KEY_FILE"}
 
@@ -8,26 +10,167 @@ source bin/lib/conjur_context
 SEED_DIR="./tmp/conjur/seeds"
 SSH_USER=${SSH_USER-ec2-user}
 
-function configure_master() {
+container_cmd="sudo podman"
+container_name="conjur"
+
+tag="12.5.1"
+
+master_key_path="/opt/conjur/secrets/master.key"
+
+main() {
+  nodes=(
+    "$MASTER_1_PUBLIC"
+    "$MASTER_2_PUBLIC"
+    "$MASTER_3_PUBLIC"
+  )
+
+  pull_image
+
+  for node_public in "${nodes[@]}"
+  do
+    echo "Configuring $node_public..."
+    configure_podman "$node_public"
+    upload_image "$node_public"
+    load_image "$node_public"
+    create_container "$node_public"
+  done
+
+ configure_master
+
+  create_standby_seed "$MASTER_2_PRIVATE" "master-2-seed.tar"
+  configure_standby "$MASTER_2_PUBLIC" "master-2-seed.tar"
+
+  create_standby_seed "$MASTER_3_PRIVATE" "master-3-seed.tar"
+  configure_standby "$MASTER_3_PUBLIC" "master-3-seed.tar"
+
+  enable_sync_replication
+
+  ./bin/util/wait_for_master
+
+  load_cluster_policy
+  enroll_master
+  enroll_standby "$MASTER_2_PUBLIC" "$MASTER_2_PRIVATE"
+  enroll_standby "$MASTER_3_PUBLIC" "$MASTER_3_PRIVATE"
+
+  ./bin/util/wait_for_master
+
+  cat << EOF
+
+==============================================
+Your HA Conjur Cluster is running at:
+
+https://${LB_DNS}
+
+Username: admin
+Password value is in the file 'tmp/conjur/admin_password'
+==============================================
+
+EOF
+}
+
+configure_podman() {
+  local public_ip="$1"
+
+  ssh -i "$SSH_KEY_FILE" \
+    -o "StrictHostKeyChecking no" \
+    "$SSH_USER@$public_ip" /bin/bash << EOF
+    # Install podman
+    sudo dnf install -y podman-3.4.2-9.module+el8.5.0+13852+150547f7
+
+    podman --version
+EOF
+}
+
+pull_image() {
+  local filename="conjur_enterprise_$tag.tar.gz"
+  local image="registry.tld/conjur-appliance:$tag"
+
+  if [ ! -f "$filename" ]; then
+    docker pull "$image"
+
+    echo "Exporting Conjur image to a file..."
+    docker save "$image" | \
+      gzip > "$filename"
+  fi
+}
+
+upload_image() {
+  local public_ip="$1"
+  local filename="conjur_enterprise_$tag.tar.gz"
+
+  echo "Uploading image..."
+  scp -i "$SSH_KEY_FILE" \
+    -o "StrictHostKeyChecking no" \
+    "./$filename"  \
+    "$SSH_USER@$public_ip:~/$filename"
+}
+
+load_image() {
+  local public_ip="$1"
+  local filename="conjur_enterprise_$tag.tar.gz"
+
+  echo "Loading image..."
+  ssh -i "$SSH_KEY_FILE" \
+    -o "StrictHostKeyChecking no" \
+    "$SSH_USER@$public_ip" /bin/bash << EOF
+    $container_cmd load --input ~/$filename
+EOF
+}
+
+create_container() {
+  local public_ip="$1"
+
+  echo "Creating container..."
+  ssh -i "$SSH_KEY_FILE" \
+    -o "StrictHostKeyChecking no" \
+    "$SSH_USER@$public_ip" /bin/bash << EOF
+
+    sudo mkdir -p \
+      /opt/conjur/backup \
+      /var/log/conjur
+
+    $container_cmd rm -f $container_name
+
+    $container_cmd create \
+      --name $container_name \
+      --pull=never \
+      --privileged \
+      --restart unless-stopped \
+      -v /var/log/conjur:/var/log/conjur \
+      -v /opt/conjur/backup:/opt/conjur/backup \
+      -p "443:443" \
+      -p "636:636" \
+      -p "5432:5432" \
+      -p "5433:5433" \
+      -p "1999:1999" \
+      "registry.tld/conjur-appliance:$tag"
+EOF
+}
+
+configure_master() {
   ssh -i "$SSH_KEY_FILE" \
     -o "StrictHostKeyChecking no" \
     "$SSH_USER@$MASTER_1_PUBLIC" /bin/bash << EOF
-    docker start conjur-appliance
+    $container_cmd start $container_name
 
-    docker exec conjur-appliance \
+    $container_cmd exec $container_name \
       evoke configure master \
-      \$(docker exec conjur-appliance evoke configure master --help | grep -q accept-eula && echo "--accept-eula") \
+      \$($container_cmd exec $container_name evoke configure master --help | grep -q accept-eula && echo "--accept-eula") \
       -h "$MASTER_1_PRIVATE" \
       --master-altnames "$LB_DNS,$MASTER_2_PRIVATE,$MASTER_3_PRIVATE" \
       -p "$CONJUR_ADMIN_PASSWORD" \
       "$CONJUR_ACCOUNT"
 
-    docker exec conjur-appliance \
+    $container_cmd exec $container_name \
       evoke ca issue --force $LB_FOLLOWER_DNS
+
+    # $container_cmd exec $container_name evoke keys lock
+    # $container_cmd exec $container_name evoke keys encrypt $master_key_path
+    # $container_cmd exec $container_name evoke keys unlock $master_key_path
 EOF
 }
 
-function load_cluster_policy() {
+load_cluster_policy() {
   mkdir -p ./tmp/conjur/policy
 
   cat > ./tmp/conjur/policy/conjur.yml <<EOF
@@ -37,19 +180,21 @@ EOF
 
   # Geneate policy for cluster
   cat > ./tmp/conjur/policy/cluster.yml <<EOF
-- !policy 
-    id: cluster/$CONJUR_CLUSTER_NAME 
-    body: 
-      - !layer 
-      - &hosts 
-        - !host 
+- !policy
+    id: cluster/$CONJUR_CLUSTER_NAME
+    annotations:
+      ttl: 60
+    body:
+      - !layer
+      - &hosts
+        - !host
           id: $MASTER_1_PRIVATE
-        - !host 
+        - !host
           id: $MASTER_2_PRIVATE
-        - !host 
+        - !host
           id: $MASTER_3_PRIVATE
-      - !grant 
-        role: !layer 
+      - !grant
+        role: !layer
         member: *hosts
 EOF
 
@@ -62,18 +207,18 @@ EOF
   "
 }
 
-function enroll_master() {
+enroll_master() {
   ssh -i "$SSH_KEY_FILE" \
     -o "StrictHostKeyChecking no" \
-    $SSH_USER@$MASTER_1_PUBLIC /bin/bash << EOF
-    docker exec conjur-appliance \
+    "$SSH_USER@$MASTER_1_PUBLIC" /bin/bash << EOF
+    $container_cmd exec $container_name \
       evoke cluster enroll \
       -n $MASTER_1_PRIVATE \
       $CONJUR_CLUSTER_NAME
 EOF
 }
 
-function create_standby_seed() {
+create_standby_seed() {
   local standby_private=$1
   local filename=$2
 
@@ -82,8 +227,8 @@ function create_standby_seed() {
   # Create Standby Seed
   ssh -i "$SSH_KEY_FILE" \
     -o "StrictHostKeyChecking no" \
-    $SSH_USER@$MASTER_1_PUBLIC /bin/bash << EOF
-    docker exec conjur-appliance bash -c " \
+    "$SSH_USER@$MASTER_1_PUBLIC" /bin/bash << EOF
+    $container_cmd exec $container_name bash -c " \
       evoke seed standby "$standby_private" "$MASTER_1_PRIVATE" > "/opt/conjur/backup/$filename"
     "
 EOF
@@ -95,7 +240,7 @@ EOF
     "$SEED_DIR/$filename"
 }
 
-function configure_standby() {
+configure_standby() {
   local standby_public=$1
   local filename=$2
 
@@ -104,32 +249,32 @@ function configure_standby() {
     -o "StrictHostKeyChecking no" \
     "$SEED_DIR/$filename" \
     "$SSH_USER@$standby_public:~/$filename"
-    
+
   # Configure node
   ssh -i "$SSH_KEY_FILE" \
     -o "StrictHostKeyChecking no" \
     $SSH_USER@$standby_public /bin/bash << EOF
     sudo mv "\$HOME/$filename" "/opt/conjur/backup/$filename"
 
-    docker start conjur-appliance
+    $container_cmd start $container_name
 
-    docker exec conjur-appliance \
+    $container_cmd exec $container_name \
       evoke unpack seed "/opt/conjur/backup/$filename"
 
-    docker exec conjur-appliance \
-      evoke configure standby -a "$MASTER_1_PRIVATE"
+    $container_cmd exec $container_name \
+        evoke configure standby -a "$MASTER_1_PRIVATE"
 EOF
 }
 
-function enroll_standby() {
+enroll_standby() {
   local standby_public=$1
   local standby_private=$2
-    
+
   # Configure node
   ssh -i "$SSH_KEY_FILE" \
     -o "StrictHostKeyChecking no" \
     $SSH_USER@$standby_public /bin/bash << EOF
-    docker exec conjur-appliance \
+    $container_cmd exec $container_name \
       evoke cluster enroll \
       ${3:-} \
       -n "$standby_private" \
@@ -138,43 +283,13 @@ function enroll_standby() {
 EOF
 }
 
-function enable_sync_replication() {
+enable_sync_replication() {
   ssh -i "$SSH_KEY_FILE" \
     -o "StrictHostKeyChecking no" \
     $SSH_USER@$MASTER_1_PUBLIC /bin/bash << EOF
-    docker exec conjur-appliance \
+    $container_cmd exec $container_name \
       evoke replication sync
 EOF
 }
 
-configure_master
-
-create_standby_seed $MASTER_2_PRIVATE "master-2-seed.tar"
-configure_standby $MASTER_2_PUBLIC "master-2-seed.tar"
-
-create_standby_seed $MASTER_3_PRIVATE "master-3-seed.tar"
-configure_standby $MASTER_3_PUBLIC "master-3-seed.tar"
-
-enable_sync_replication
-
-./bin/util/wait_for_master
-
-load_cluster_policy
-enroll_master
-enroll_standby $MASTER_2_PUBLIC $MASTER_2_PRIVATE
-enroll_standby $MASTER_3_PUBLIC $MASTER_3_PRIVATE
-
-./bin/util/wait_for_master
-
-cat << EOF
-
-==============================================
-Your HA Conjur Cluster is running at:
-
-https://${LB_DNS}
-
-Username: admin
-Password value is in the file 'tmp/conjur/admin_password'
-==============================================
-
-EOF
+main "$@"
