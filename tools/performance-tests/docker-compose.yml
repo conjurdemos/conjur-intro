@@ -1,7 +1,7 @@
 version: "3"
 services:
   dap:
-    image: registry2.itci.conjur.net/conjur-appliance:${DAP_VERSION}
+    image: registry.tld/conjur-appliance:${DAP_VERSION}
     ports:
       - "443:443"
     security_opt:
