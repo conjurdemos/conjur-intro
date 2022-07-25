@@ -19,7 +19,7 @@ prepare_environment() {
   # Docker in Docker container won't have permission to pull images, so
   # we need to pull them before we start.
   for version in "${versions[@]}"; do
-    docker pull registry2.itci.conjur.net/conjur-appliance:$version
+    docker pull registry.tld/conjur-appliance:$version
   done
 
   # Build Docker in Docker image

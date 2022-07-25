@@ -24,7 +24,7 @@
     loop: "{{ master_nodes }}"
     docker_container:
       name: "conjur-{{ item.name }}"
-      image: 'registry2.itci.conjur.net/conjur-appliance:5.0-stable'
+      image: 'registry.tld/conjur-appliance:5.0-stable'
       security_opts: 'seccomp:unconfined'
       published_ports:
         - "{{ item.port }}:443"

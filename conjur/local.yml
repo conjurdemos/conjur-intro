@@ -82,7 +82,7 @@
 
       # docker_container:
       #   name: "{{ hostvars[item]['inventory_hostname'] }}"
-      #   image: 'registry2.itci.conjur.net/conjur-appliance:5.0-stable'
+      #   image: 'registry.tld/conjur-appliance:5.0-stable'
       #   security_opts: 'seccomp:unconfined'
       #   published_ports:
       #     - "{{ hostvars[item]['conjur_port'] }}:443"
@@ -104,7 +104,7 @@
 #     - loop: "{{ master_nodes }}"
 #     - docker_container:
 #         name: "conjur-{{ item.name }}"
-#         image: 'registry2.itci.conjur.net/conjur-appliance:5.0-stable'
+#         image: 'registry.tld/conjur-appliance:5.0-stable'
 #         security_opts: 'seccomp:unconfined'
 #         published_ports:
 #           - "{{ item.conjur_port }}:443"

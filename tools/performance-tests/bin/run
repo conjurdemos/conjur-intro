@@ -78,7 +78,7 @@ trap finish EXIT
 export DAP_VERSION=$DAP_TAG
 
 if [ "$PULL_ARGS" == "--pull" ]; then
-  docker pull registry2.itci.conjur.net/conjur-appliance:$DAP_VERSION
+  docker pull registry.tld/conjur-appliance:$DAP_VERSION
 fi
 
 main
