@@ -4,7 +4,7 @@
   when: container_network | default('') != ''
   docker_container:
     name: "{{ hostname | default('conjur') }}"
-    image: 'registry2.itci.conjur.net/conjur-appliance:5.0-stable'
+    image: 'registry.tld/conjur-appliance:5.0-stable'
     security_opts: 'seccomp:unconfined'
     published_ports:
       - "{{ conjur_port | default('443') }}:443"
@@ -16,7 +16,7 @@
   when: container_network | default('') == ''
   docker_container:
     name: "{{ hostname | default('conjur') }}"
-    image: 'registry2.itci.conjur.net/conjur-appliance:5.0-stable'
+    image: 'registry.tld/conjur-appliance:5.0-stable'
     security_opts: 'seccomp:unconfined'
     published_ports:
       - "{{ conjur_port | default('443') }}:443"
@@ -24,7 +24,7 @@
 
 
     # name: 'conjur'
-    # image: 'registry2.itci.conjur.net/conjur-appliance:5.0-stable'
+    # image: 'registry.tld/conjur-appliance:5.0-stable'
     # security_opts: 'seccomp:unconfined'
     # published_ports:
     #   - "{{ conjur_port }}:443"
