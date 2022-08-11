@@ -179,7 +179,7 @@ while true ; do
     -p | --password ) shift ; PASSWORD=$1 ; shift ;;
     --authenticate-user ) shift ; cmd="authenticate_user $USER $PASSWORD" ;;
     -h | --help ) _print_help ; shift ;;
-    --delete-policy ) shift ; cmd="load_policy $1 $2 PATCH" ; shift ; shift ;;
+    --patch-policy ) shift ; cmd="load_policy $1 $2 PATCH" ; shift ; shift ;;
     --load-policy ) shift ; cmd="load_policy $1 $2" ; shift ; shift ;;
     --load-sample-policy-and-values ) shift ; cmd="load_policy_and_set_variables" ;;
     --load-sample-policy ) shift ; cmd='load_default_policy' ;;

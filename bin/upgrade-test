@@ -23,7 +23,7 @@ main() {
   echo
 
   header "Backup and Restore $before_version Cluster"
-  backup_and_restore_cluster "$before_version" 
+  backup_and_restore_cluster "$before_version"
   echo
 
   header "Upgrade to $after_version"
@@ -35,7 +35,7 @@ main() {
   echo
 
   header "Backup and Restore $after_version Cluster"
-  backup_and_restore_cluster "$after_version" 
+  backup_and_restore_cluster "$after_version"
   echo
 
   header "Exercise Upgraded and Restored Cluster"
@@ -83,7 +83,7 @@ standup_before_cluster() {
 
 exercise_cluster() {
   echo "Loading policy..."
-  bin/api --load-policy
+  bin/api --load-sample-policy
 
   echo "Setting secret values..."
   bin/api --set-secrets
@@ -100,7 +100,7 @@ exercise_cluster() {
 
 failover_master() {
   echo "Triggering a failover event..."
-  bin/dap --trigger-failover 
+  bin/dap --trigger-failover
 
   echo "Waiting for healthy Master..."
   bin/dap --wait-for-master
@@ -128,7 +128,7 @@ upgrade_cluster () {
 }
 
 rollout_cluster() {
-  local version=$1 
+  local version=$1
 
   echo "Provisioning $version Standbys..."
   bin/dap --provision-standbys --version "$version"
