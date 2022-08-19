@@ -4,44 +4,50 @@ set -eu
 
 # An upgrade test automation tool.
 #
-# Synopsis: bin/upgrade-test <initial-version> <upgrade-version>
+# Synopsis: bin/upgrade-test <initial-version> [intermediate-versions...] <final-version>
 
 main() {
-  if [ "$#" -ne 2 ]; then
+  # Ensure at least two versions (an initial and final version) have been provided
+  if [ "$#" -lt 2 ]; then
       print_help
   fi
 
-  local before_version=$1
-  local after_version=$2
+  # Pull off the initial cluster version
+  local initial_version=$1; shift;
 
-  header "Stand Up Initial $before_version Cluster"
-  standup_before_cluster "$before_version"
+  header "Stand Up Initial $initial_version Cluster"
+  standup_before_cluster "$initial_version"
   echo
 
-  header "Exercise Initial Cluster"
-  exercise_cluster "$before_version"
+  header "Exercise $initial_version Cluster"
+  exercise_cluster "$initial_version"
   echo
 
-  header "Backup and Restore $before_version Cluster"
-  backup_and_restore_cluster "$before_version"
+  header "Backup and Restore $initial_version Cluster"
+  backup_and_restore_cluster "$initial_version"
   echo
 
-  header "Upgrade to $after_version"
-  upgrade_cluster "$after_version"
-  echo
+  # Iterate through the next versions given to upgrade through them
+  for next_version in "$@"
+  do
+    header "Upgrade to $next_version"
+    upgrade_cluster "$next_version"
+    echo
 
-  header "Exercise Upgraded Cluster"
-  exercise_cluster
-  echo
+    header "Exercise $initial_version Cluster"
+    exercise_cluster
+    echo
 
-  header "Backup and Restore $after_version Cluster"
-  backup_and_restore_cluster "$after_version"
-  echo
+    header "Backup and Restore $next_version Cluster"
+    backup_and_restore_cluster "$next_version"
+    echo
 
-  header "Exercise Upgraded and Restored Cluster"
-  exercise_cluster
-  echo
+    header "Exercise Upgraded and Restored $initial_version Cluster"
+    exercise_cluster
+    echo
+  done
 
+  # After the last upgrade, ensure we can handle a failover
   header "Failover Master"
   failover_master
   echo
@@ -62,7 +68,7 @@ function print_help {
 
 An upgrade test automation tool.
 
-Synopsis: bin/upgrade-test <initial-version> <upgrade-version>
+Synopsis: bin/upgrade-test <initial-version> [intermediate-versions...] <final-version>
 EOF
   exit
 }
