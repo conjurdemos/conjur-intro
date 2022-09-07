@@ -1,0 +1,17 @@
+# conjur policy load root groups.yml
+- !group
+  id: admin
+  annotations:
+    description: Conjur administrator group. Permits full access to all resources.
+    editable: "true"
+- !group
+  id: conjur-admins
+  annotations:
+    description: Conjur administrator group. Permits full access to all resources.
+    editable: "true"
+
+- !group
+  id: conjur-auditors
+  annotations:
+    description: Conjur auditors group. Permits read-only access to all resources.
+    editable: "true"
