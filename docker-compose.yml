@@ -22,7 +22,16 @@ services:
      - /tmp/conf/nginx.crt
     volumes:
      - ./conf/tls/:/tmp/conf
-
+  
+  jenkins_server:
+    image: jenkins/jenkins:lts
+    container_name: jenkins_server
+    ports:
+    - 8083:8080
+    volumes:
+    - ./jenkins_custom_volume:/var/jenkins_home
+    restart: always  
+  
   bot_app:
     image: cfmanteiga/alpine-bash-curl-jq
     privileged: true
