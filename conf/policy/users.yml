@@ -1,0 +1,11 @@
+# conjur policy load root users.yml
+  
+# To add users to admin group, update grants.yml policy file
+- !user
+  id: manitheja
+  annotations:
+    first_name: manitheja
+    last_name: yamavaram
+    full_name: manitheja yamavaram
+    email: manitheja.yamavaram@cyberark.com
+    title: IF-TEAM
