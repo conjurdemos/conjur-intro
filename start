@@ -1,0 +1,60 @@
+set +x
+
+rm -rf .env
+docker-compose down -v
+
+docker-compose build
+
+#generate Master key and load master key as env variable
+
+docker-compose run --no-deps --rm conjur data-key generate > data_key
+
+export CONJUR_DATA_KEY="$(< data_key)"
+
+echo $CONJUR_DATA_KEY
+
+docker-compose up -d
+#docker-compose up -d conjur
+#docker-compose up -d proxy
+#docker-compose up -d jenkins_server
+#docker-compose up -d client
+docker-compose exec -T conjur conjurctl wait -r 240
+
+
+#admin_api_key
+#docker-compose exec conjur conjurctl account create myConjurAccount > admin_data
+#admin_api_key=$(docker-compose exec -T conjur conjurctl role retrieve-key myConjurAccount:user:admin | tr -d '\r')
+admin_api_key=$(docker-compose exec conjur conjurctl account create myConjurAccount | awk '/API key for admin/ {print $NF}'| tr '  \n\r' ' '|awk '{$1=$1};1')
+export CONJUR_AUTHN_API_KEY=$admin_api_key
+echo "${CONJUR_AUTHN_API_KEY}"
+
+conjur_host_port=$(docker-compose port conjur 80)
+conjur_port="${conjur_host_port##*:}"
+echo "${conjur_port}"
+
+
+# Remove files from tmp but avoid recreating the folder to
+# avoid cache busting
+mkdir -p tmp
+rm -rf tmp/*
+
+echo "${admin_api_key}" > api_key
+export CONJUR_AUTHN_TOKEN_FILE="/api_key"
+
+cat <<ENV > .env
+CONJUR_APPLIANCE_URL=https://proxy
+CONJUR_ACCOUNT=dev
+CONJUR_AUTHN_LOGIN=admin
+CONJUR_AUTHN_API_KEY=$admin_api_key
+CONJUR_CERT_FILE="/conjur-myConjurAccount.pem"
+CONJUR_AUTHN_TOKEN_FILE="/api_key"
+ENV
+
+source .env
+
+#echo "${admin_api_key}"
+#docker exec -it jenkins_server cat /var/jenkins_home/secrets/initialAdminPassword
+
+#admin_api_key=$(docker-compose exec -T conjur conjurctl role retrieve-key dev:user:admin | tr -d '\r')
+#export CONJUR_AUTHN_API_KEY=$admin_api_key
+#echo $CONJUR_AUTHN_API_KEY
