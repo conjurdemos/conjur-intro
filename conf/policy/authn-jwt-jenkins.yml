@@ -1,3 +1,4 @@
+
 - !policy
   id: conjur/authn-jwt/jenkins
   annotations:
@@ -28,7 +29,7 @@
       id: issuer
       annotations:
         description: JWT Authenticator bases authentication on the JWT issuer. This variable is optional, and is relevant only if there is an iss claim in the JWT. The issuer variable and iss claim values must match.
-    
+
     - !variable
       id: audience
       annotations:
@@ -52,7 +53,7 @@
       annotations:
         description: Allows authentication through authn-jwt/jenkins web service.
         editable: "true"
-    
+
     # Permit the consumers group to authenticate to the authn-jwt/jenkins web service
     - !permit
       role: !group consumers
@@ -69,7 +70,7 @@
       annotations:
         description: Group of users that can check the status of the authn-jwt/jenkins authenticator.
         editable: "true"
-    
+
     # Permit group to check the status of authn-jwt/jenkins
     - !permit
       role: !group operators
