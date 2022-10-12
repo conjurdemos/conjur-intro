@@ -1,0 +1,105 @@
+- !group vault-synchronizer-admin
+
+- !policy
+  id: vault-synchronizer
+  owner: !group vault-synchronizer-admin
+  body:
+    - !group lob-1-admin
+    - !policy
+      id: lob-1
+      owner: !group lob-1-admin
+      body:
+        - !group safe-1-admin
+        - !policy
+          id: safe-1
+          owner: !group safe-1-admin
+          body:
+            - &safe-1-variables
+              - !variable variable-1
+              - !variable variable-2
+              - !variable variable-3
+              - !variable variable-4
+              - !variable variable-5
+
+            - !group consumers
+            - !permit
+              resource: *safe-1-variables
+              privileges: [ read, execute ]
+              role: !group consumers
+
+        - !group safe-2-admin
+        - !policy
+          id: safe-2
+          owner: !group safe-2-admin
+          body:
+            - &safe-2-variables
+              - !variable variable-1
+              - !variable variable-2
+              - !variable variable-3
+              - !variable variable-4
+              - !variable variable-5
+
+            - !group consumers
+            - !permit
+              resource: *safe-2-variables
+              privileges: [ read, execute ]
+              role: !group consumers
+
+    - !group lob-2-admin
+    - !policy
+      id: lob-2
+      owner: !group lob-2-admin
+      body:
+        - !group safe-3-admin
+        - !policy
+          id: safe-3
+          owner: !group safe-3-admin
+          body:
+            - &safe-3-variables
+              - !variable variable-1
+              - !variable variable-2
+              - !variable variable-3
+              - !variable variable-4
+              - !variable variable-5
+
+            - !group consumers
+            - !permit
+              resource: *safe-3-variables
+              privileges: [ read, execute ]
+              role: !group consumers
+
+        - !group safe-4-admin
+        - !policy
+          id: safe-4
+          owner: !group safe-4-admin
+          body:
+            - &safe-4-variables
+              - !variable variable-1
+              - !variable variable-2
+              - !variable variable-3
+              - !variable variable-4
+              - !variable variable-5
+
+            - !group consumers
+            - !permit
+              resource: *safe-4-variables
+              privileges: [ read, execute ]
+              role: !group consumers
+
+        - !group safe-5-admin
+        - !policy
+          id: safe-5
+          owner: !group safe-5-admin
+          body:
+            - &safe-5-variables
+              - !variable variable-1
+              - !variable variable-2
+              - !variable variable-3
+              - !variable variable-4
+              - !variable variable-5
+
+            - !group consumers
+            - !permit
+              resource: *safe-5-variables
+              privileges: [ read, execute ]
+              role: !group consumers

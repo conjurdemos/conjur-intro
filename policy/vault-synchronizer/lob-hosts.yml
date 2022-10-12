@@ -1,0 +1,28 @@
+- !policy
+  id: vault-synchronizer-hosts
+  body:
+    - !host safe-1
+    - !host safe-2
+    - !host safe-3
+    - !host safe-4
+    - !host safe-5
+
+- !grant
+  member: !host vault-synchronizer-hosts/safe-1
+  role: !group vault-synchronizer/lob-1/safe-1/consumers
+
+- !grant
+  member: !host vault-synchronizer-hosts/safe-2
+  role: !group vault-synchronizer/lob-1/safe-2/consumers
+
+- !grant
+  member: !host vault-synchronizer-hosts/safe-3
+  role: !group vault-synchronizer/lob-2/safe-3/consumers
+
+- !grant
+  member: !host vault-synchronizer-hosts/safe-4
+  role: !group vault-synchronizer/lob-2/safe-4/consumers
+
+- !grant
+  member: !host vault-synchronizer-hosts/safe-5
+  role: !group vault-synchronizer/lob-2/safe-5/consumers
