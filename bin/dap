@@ -113,7 +113,7 @@ function _setup_follower {
 
   # Generate Seed file
   _run conjur-master-1.mycompany.local \
-    "evoke seed follower conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed.tar"
+    "evoke seed follower --replication-set replication-set-1 conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed.tar"
 
   # Unpack and Configure
   _run conjur-follower-1.mycompany.local \

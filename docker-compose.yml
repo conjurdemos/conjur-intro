@@ -16,7 +16,8 @@ services:
       - ./files/haproxy/master:/usr/local/etc/haproxy
 
   conjur-master-1.mycompany.local:
-    image: registry.tld/conjur-appliance:${VERSION}
+    image: registry.tld/conjur-appliance:5.16.13-15-20221102175041-e1b68557
+    privileged: true
     networks:
       dap_net:
         ipv4_address: 12.16.23.11
@@ -41,7 +42,7 @@ services:
       - ./files/dhparam.pem:${DHPATH}/dhparam.pem
 
   conjur-master-2.mycompany.local:
-    image: registry.tld/conjur-appliance:${VERSION}
+    image: registry.tld/conjur-appliance:5.16.13-15-20221102175041-e1b68557
     networks:
       dap_net:
         ipv4_address: 12.16.23.12
@@ -63,7 +64,7 @@ services:
       - ./files:/conjur_files
 
   conjur-master-3.mycompany.local:
-    image: registry.tld/conjur-appliance:${VERSION}
+    image: registry.tld/conjur-appliance:5.16.13-15-20221102175041-e1b68557
     networks:
       dap_net:
         ipv4_address: 12.16.23.13
@@ -85,7 +86,7 @@ services:
       - ./files:/conjur_files
 
   conjur-master-4.mycompany.local:
-    image: registry.tld/conjur-appliance:${VERSION}
+    image: registry.tld/conjur-appliance:5.16.13-15-20221102175041-e1b68557
     networks:
       dap_net:
         ipv4_address: 12.16.23.14
@@ -107,7 +108,7 @@ services:
       - ./files:/conjur_files
 
   conjur-master-5.mycompany.local:
-    image: registry.tld/conjur-appliance:${VERSION}
+    image: registry.tld/conjur-appliance:5.16.13-15-20221102175041-e1b68557
     networks:
       dap_net:
         ipv4_address: 12.16.23.15
@@ -135,19 +136,20 @@ services:
         ipv4_address: 12.16.23.15
     ports:
       - "80:80"
-      - "448:443"
+      - "449:443"
       - "7001:7000"
     volumes:
       - follower-certs:/etc/ssl/certs
       - ./files/haproxy/follower:/usr/local/etc/haproxy
 
   conjur-follower-1.mycompany.local:
-    image: registry.tld/conjur-appliance:${VERSION}
+    privileged: true
+    image: registry.tld/conjur-appliance:5.16.13-15-20221102175041-e1b68557
     networks:
       dap_net:
         ipv4_address: 12.16.23.16
     ports:
-      - "449:443"
+      - "450:443"
     expose:
       - "443"
       - "444"
@@ -182,7 +184,7 @@ services:
         ipv4_address: 12.16.23.18
     working_dir:  /src/cli
     environment:
-      CONJUR_APPLIANCE_URL: https://conjur-follower.mycompany.local
+      CONJUR_APPLIANCE_URL: http://conjur-follower.mycompany.local
       CONJUR_ACCOUNT: demo
       CONJUR_AUTHN_LOGIN: admin
     volumes:

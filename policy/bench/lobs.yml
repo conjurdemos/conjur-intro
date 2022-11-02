@@ -1,0 +1,75 @@
+- !group vault-synchronizer-admin
+
+- !policy
+  id: vault-synchronizer
+  owner: !group vault-synchronizer-admin
+  body:
+    - !group lob-1-admin
+    - !policy
+      id: lob-1
+      owner: !group lob-1-admin
+      body:
+        - !group safe-1-admin
+        - !policy
+          id: safe-1
+          owner: !group safe-1-admin
+          body:
+            - &lob-1-safe-1-variables
+              - !variable variable-1
+              - !variable variable-2
+              - !variable variable-3
+              - !variable variable-4
+              - !variable variable-5
+              - !variable variable-6
+              - !variable variable-7
+              - !variable variable-8
+              - !variable variable-9
+              - !variable variable-10
+              - !variable variable-11
+              - !variable variable-12
+              - !variable variable-13
+              - !variable variable-14
+              - !variable variable-15
+              - !variable variable-16
+              - !variable variable-17
+              - !variable variable-18
+              - !variable variable-19
+              - !variable variable-20
+              - !variable variable-21
+              - !variable variable-22
+              - !variable variable-23
+              - !variable variable-24
+              - !variable variable-25
+              - !variable variable-26
+              - !variable variable-27
+              - !variable variable-28
+              - !variable variable-29
+              - !variable variable-30
+              - !variable variable-31
+              - !variable variable-32
+              - !variable variable-33
+              - !variable variable-34
+              - !variable variable-35
+              - !variable variable-36
+              - !variable variable-37
+              - !variable variable-38
+              - !variable variable-39
+              - !variable variable-40
+              - !variable variable-41
+              - !variable variable-42
+              - !variable variable-43
+              - !variable variable-44
+              - !variable variable-45
+              - !variable variable-46
+              - !variable variable-47
+              - !variable variable-48
+              - !variable variable-49
+              - !variable variable-50
+
+            - !group consumers
+            - !permit
+              resource: *safe-1-variables
+              privileges: [ read, execute ]
+              role: !group consumers
+        
+    

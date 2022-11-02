@@ -1,0 +1,47 @@
+- !policy
+  id: example-safe
+  body:
+    - !layer
+    - &hosts
+      - !host host-example-safe-01.local
+      - !host host-example-safe-02.local
+      - !host host-example-safe-03.local
+      - !host host-example-safe-04.local
+      - !host host-example-safe-05.local
+    - !grant
+      role: !layer
+      member: *hosts
+
+    - !group group-example-safe
+    - !user
+      id: user-example-safe
+    - !grant
+      role: !group group-example-safe
+      members:
+        - !user user-example-safe
+
+    - &variables
+      - !variable hex32-1
+      - !variable hex32-2
+      - !variable hex32-3
+      - !variable hex32-4
+      - !variable hex32-5
+      - !variable cert-key-1
+      - !variable cert-key-2
+      - !variable cert-key-3
+      - !variable cert-key-4
+      - !variable cert-key-5
+      - !variable cert-pem-1
+      - !variable cert-pem-2
+      - !variable cert-pem-3
+      - !variable cert-pem-4
+      - !variable cert-pem-5
+
+    - !permit
+      resource: *variables
+      privileges: [ read, execute ]
+      roles: !group group-example-safe
+    - !permit
+      resource: *variables
+      privileges: [ read, execute ]
+      roles: !layer

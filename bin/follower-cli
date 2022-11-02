@@ -1,0 +1,16 @@
+#!/bin/bash -e
+
+# IMPORTANT: this talks directly to a single follower, not the follower LB
+function proxy_command {
+  cmd="$@"
+  docker-compose run --rm -w /src/cli --entrypoint /bin/bash follower-client -c "
+    if [ ! -e /root/conjur-demo.pem ]; then
+      yes 'yes' | conjur init -u https://conjur-follower.mycompany.local -a demo
+    fi
+    conjur authn login -u admin -p MySecretP@ss1
+    hostname -I
+    eval exec \"$cmd\"
+  "
+}
+
+proxy_command "$@"

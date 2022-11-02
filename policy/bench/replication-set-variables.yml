@@ -1,0 +1,8 @@
+[
+    {
+        "replicationSet": "replication-set-1",
+        "safes": [
+            "vault-synchronizer/lob-1/safe-1"
+        ]
+    }
+]
