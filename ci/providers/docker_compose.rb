@@ -22,7 +22,7 @@ module CI
 
       def provision_master(version:, with_load_balancer: true)
         system('cp files/haproxy/master/single/haproxy.cfg files/haproxy/master/haproxy.cfg')
-        system({ 'VERSION' => version }, 'docker-compose up -d --no-deps conjur-master.mycompany.local conjur-master-1.mycompany.local')
+        system({ 'VERSION' => version }, 'docker compose up -d --no-deps conjur-master.mycompany.local conjur-master-1.mycompany.local')
         args = [
           'evoke configure master',
           '--accept-eula',
@@ -31,16 +31,16 @@ module CI
           '--admin-password MySecretP@ss1',
           'demo'
         ].join(' ')
-        system("docker-compose exec conjur-master-1.mycompany.local bash -c '#{args}'")
+        system("docker compose exec conjur-master-1.mycompany.local bash -c '#{args}'")
       end
 
       def provision_follower(version:, with_load_balancer: true)
-        system({ 'VERSION' => version }, 'docker-compose up --no-deps --detach conjur-follower-1.mycompany.local')
-        system('docker-compose exec conjur-master-1.mycompany.local bash -c "evoke seed follower conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed.tar"')
-        system('docker-compose exec conjur-follower-1.mycompany.local bash -c "evoke unpack seed /opt/cyberark/dap/seeds/follower-seed.tar && evoke configure follower"')
+        system({ 'VERSION' => version }, 'docker compose up --no-deps --detach conjur-follower-1.mycompany.local')
+        system('docker compose exec conjur-master-1.mycompany.local bash -c "evoke seed follower conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed.tar"')
+        system('docker compose exec conjur-follower-1.mycompany.local bash -c "evoke unpack seed /opt/cyberark/dap/seeds/follower-seed.tar && evoke configure follower"')
 
         # Start Load Balancer
-        system('docker-compose up -d --no-deps conjur-follower.mycompany.local')
+        system('docker compose up -d --no-deps conjur-follower.mycompany.local')
       end
 
       def reset_environment
@@ -128,7 +128,7 @@ module CI
       end
 
       def last_audit_event
-        last_audit = `docker-compose exec #{current_master} bash -c "tail -n 1 /var/log/conjur/audit.json"`
+        last_audit = `docker compose exec #{current_master} bash -c "tail -n 1 /var/log/conjur/audit.json"`
 
         return JSON.parse(last_audit) unless last_audit.nil?
       end

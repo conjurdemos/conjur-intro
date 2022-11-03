@@ -20,9 +20,9 @@ while true ; do
   esac
 done
 
-docker-compose up -d --no-deps conjur-master.mycompany.local conjur-follower.mycompany.local ldap-server
+docker compose up -d --no-deps conjur-master.mycompany.local conjur-follower.mycompany.local ldap-server
 
-docker-compose exec conjur-master.mycompany.local bash -c "
+docker compose exec conjur-master.mycompany.local bash -c "
   evoke configure master \
   --accept-eula \
   -h conjur-master.mycompany.local \
@@ -32,27 +32,27 @@ docker-compose exec conjur-master.mycompany.local bash -c "
 master_container="$(docker ps -q --filter "name=ldap-integration_conjur-master.mycompany.local_1")"
 master_ip=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $master_container)
 
-docker-compose exec conjur-master.mycompany.local bash -c "
+docker compose exec conjur-master.mycompany.local bash -c "
   evoke seed follower conjur-follower.mycompany.local > /opt/conjur/backup/follower-seed.tar
 "
 
 # Enable LDAP sync service
-docker-compose exec conjur-master.mycompany.local bash -c "
+docker compose exec conjur-master.mycompany.local bash -c "
   rm /etc/service/conjur/ldap-sync/down
   sv start conjur/ldap-sync
 "
 
 # Setup the follower
-docker-compose exec conjur-follower.mycompany.local bash -c "
+docker compose exec conjur-follower.mycompany.local bash -c "
   evoke unpack seed /opt/conjur/backup/follower-seed.tar
 "
-docker-compose exec conjur-follower.mycompany.local bash -c "
+docker compose exec conjur-follower.mycompany.local bash -c "
   evoke configure follower
 "
 
 # Load the LDAP users and groups into OpenLDAP
 LDAP_ADMIN_PASSWORD=ldapsecret
-docker-compose exec ldap-server bash -c "
+docker compose exec ldap-server bash -c "
   ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f /opt/ldap/disable_anon_frontend.ldif
   ldapmodify -Q -Y EXTERNAL -H ldapi:/// -f /opt/ldap//disable_anon_backend.ldif
   ldapadd -Z -x -D cn=admin,dc=example,dc=org -w $LDAP_ADMIN_PASSWORD -f /opt/ldap/test-ldap_users.ldif

@@ -1,15 +1,15 @@
 #!/bin/bash -ex
 
 function finish {
-  docker-compose down -v
+  docker compose down -v
 }
 
 function configure_dap_instance {
   local config
   config="$1"
 
-  docker-compose up -d --no-deps dap
-  docker-compose exec dap bash -c "
+  docker compose up -d --no-deps dap
+  docker compose exec dap bash -c "
     evoke configure master $config -h conjur-master.local -p MySecretP@ss1 --accept-eula demo
   "
 }
@@ -44,7 +44,7 @@ function cleanup {
 }
 
 function run_jmeter_test {
-  docker-compose up --no-deps jmeter
+  docker compose up --no-deps jmeter
 }
 
 function open_results_in_browser {

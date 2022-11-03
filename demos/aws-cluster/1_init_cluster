@@ -51,7 +51,7 @@ EOF
 EOF
 
   # Load policy files
-  docker-compose run -T --entrypoint "/bin/bash" cli -c "
+  docker compose run -T --entrypoint "/bin/bash" cli -c "
   yes 'yes' | conjur init -u "https://$LB_DNS" -a "$CONJUR_ACCOUNT" --force=true
   conjur authn login -u "admin" -p "$CONJUR_ADMIN_PASSWORD"
   conjur policy load root /data/policy/conjur.yml

@@ -12,9 +12,9 @@ while true ; do
 done
 
 echo "Starting server..."
-docker-compose rm -fs server > /dev/null 2>&1
-docker-compose build server > /dev/null 2>&1
-docker-compose up -d server > /dev/null 2>&1
+docker compose rm -fs server > /dev/null 2>&1
+docker compose build server > /dev/null 2>&1
+docker compose up -d server > /dev/null 2>&1
 
 args=""
 
@@ -27,4 +27,4 @@ if [[ $INCLUDE_CLIENT_CERT = true ]]; then
 fi
 
 echo "Connecting client (Certificate Chain=$INCLUDE_CERT_CHAIN, Client Certificate=$INCLUDE_CLIENT_CERT)..."
-docker-compose run --rm client bash -c "curl $args https://server" || true
+docker compose run --rm client bash -c "curl $args https://server" || true

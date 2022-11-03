@@ -1,6 +1,6 @@
 #!/bin/bash -ex
 
-docker-compose down -v
+docker compose down -v
 
 rm -rf cli_cache
 rm -f ./policy/ldap-sync*.yml
