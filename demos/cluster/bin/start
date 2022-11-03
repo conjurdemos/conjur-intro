@@ -40,18 +40,18 @@ done
 export VERSION=$TAG
 
 if [[ $AUTO_FAILOVER = true ]]; then
-  docker-compose up -d --no-deps conjur-master-1.mycompany.local \
+  docker compose up -d --no-deps conjur-master-1.mycompany.local \
                                   conjur-master-2.mycompany.local \
                                   conjur-master-3.mycompany.local \
                                   conjur-master-4.mycompany.local \
                                   conjur-follower.mycompany.local
 else
-  docker-compose up -d --no-deps conjur-master-1.mycompany.local \
+  docker compose up -d --no-deps conjur-master-1.mycompany.local \
                                   conjur-master-2.mycompany.local \
                                   conjur-follower.mycompany.local
 fi
 
-docker-compose exec conjur-master-1.mycompany.local bash -c "
+docker compose exec conjur-master-1.mycompany.local bash -c "
   evoke configure master \
   --accept-eula \
   -h conjur-master-1.mycompany.local \
@@ -64,14 +64,14 @@ if [[ $AUTO_FAILOVER = true ]]; then
 fi
 
 if [[ $CUSTOM_CERTS = true ]]; then
-  docker-compose exec conjur-master-1.mycompany.local bash -c "
+  docker compose exec conjur-master-1.mycompany.local bash -c "
     evoke ca import -r /conjur_files/certs/ca-chain.cert.pem
     evoke ca import -k /conjur_files/certs/conjur-master-1.mycompany.local.key.pem -s /conjur_files/certs/conjur-master-1.mycompany.local.cert.pem
     evoke ca import -k /conjur_files/certs/conjur-master-2.mycompany.local.key.pem /conjur_files/certs/conjur-master-2.mycompany.local.cert.pem
     evoke ca import -k /conjur_files/certs/conjur-follower.mycompany.local.key.pem /conjur_files/certs/conjur-follower.mycompany.local.cert.pem
   "
   if [[ $AUTO_FAILOVER = true ]]; then
-    docker-compose exec conjur-master-1.mycompany.local bash -c "
+    docker compose exec conjur-master-1.mycompany.local bash -c "
       evoke ca import -k /conjur_files/certs/conjur-master-3.mycompany.local.key.pem /conjur_files/certs/conjur-master-3.mycompany.local.cert.pem
       evoke ca import -k /conjur_files/certs/conjur-master-4.mycompany.local.key.pem /conjur_files/certs/conjur-master-4.mycompany.local.cert.pem
     "
@@ -79,7 +79,7 @@ if [[ $CUSTOM_CERTS = true ]]; then
 fi
 
 if [[ $AUTO_FAILOVER = true && $CUSTOM_CERTS = false ]]; then
-  docker-compose exec conjur-master-1.mycompany.local bash -c "
+  docker compose exec conjur-master-1.mycompany.local bash -c "
     evoke ca issue conjur-master-2.mycompany.local
     evoke ca issue conjur-master-3.mycompany.local
     evoke ca issue conjur-master-4.mycompany.local
@@ -87,13 +87,13 @@ if [[ $AUTO_FAILOVER = true && $CUSTOM_CERTS = false ]]; then
 fi
 
 if [[ $CUSTOM_CERTS = false ]]; then
-  docker-compose exec conjur-master-1.mycompany.local bash -c "
+  docker compose exec conjur-master-1.mycompany.local bash -c "
     evoke ca issue conjur-follower.mycompany.local
   "
 fi
 
 if [[ $MASTER_KEY = true ]]; then
-  docker-compose exec conjur-master-1.mycompany.local bash -c "
+  docker compose exec conjur-master-1.mycompany.local bash -c "
     evoke keys encrypt /conjur_files/master-key
     evoke keys unlock /conjur_files/master-key
     sv start conjur
@@ -101,88 +101,88 @@ if [[ $MASTER_KEY = true ]]; then
   "
 fi
 
-docker-compose exec conjur-master-1.mycompany.local bash -c "
+docker compose exec conjur-master-1.mycompany.local bash -c "
   evoke seed standby conjur-master-2.mycompany.local conjur-master-1.mycompany.local > /opt/conjur/backup/standby-seed-2.tar
   evoke seed follower conjur-follower.mycompany.local > /opt/conjur/backup/follower-seed.tar
 "
 if [[ $AUTO_FAILOVER = true ]]; then
-  docker-compose exec conjur-master-1.mycompany.local bash -c "
+  docker compose exec conjur-master-1.mycompany.local bash -c "
     evoke seed standby conjur-master-3.mycompany.local conjur-master-1.mycompany.local > /opt/conjur/backup/standby-seed-3.tar
     evoke seed standby conjur-master-4.mycompany.local conjur-master-1.mycompany.local > /opt/conjur/backup/standby-seed-4.tar
   "
 fi
 
 # Setup the standby
-docker-compose exec conjur-master-2.mycompany.local bash -c "
+docker compose exec conjur-master-2.mycompany.local bash -c "
   evoke unpack seed /opt/conjur/backup/standby-seed-2.tar
 "
 if [[ $MASTER_KEY = true ]]; then
-  docker-compose exec conjur-master-2.mycompany.local bash -c "
+  docker compose exec conjur-master-2.mycompany.local bash -c "
     evoke keys exec -m /conjur_files/master-key -- evoke configure standby
   "
 else
-  docker-compose exec conjur-master-2.mycompany.local bash -c "
+  docker compose exec conjur-master-2.mycompany.local bash -c "
     evoke configure standby
   "
 fi
 
 if [[ $AUTO_FAILOVER = true ]]; then
   # Setup the standby
-  docker-compose exec conjur-master-3.mycompany.local bash -c "
+  docker compose exec conjur-master-3.mycompany.local bash -c "
     evoke unpack seed /opt/conjur/backup/standby-seed-3.tar
   "
   if [[ $MASTER_KEY = true ]]; then
-    docker-compose exec conjur-master-3.mycompany.local bash -c "
+    docker compose exec conjur-master-3.mycompany.local bash -c "
       evoke keys exec -m /conjur_files/master-key -- evoke configure standby
     "
   else
-    docker-compose exec conjur-master-3.mycompany.local bash -c "
+    docker compose exec conjur-master-3.mycompany.local bash -c "
       evoke configure standby
     "
   fi
 
   # Setup the standby
-  docker-compose exec conjur-master-4.mycompany.local bash -c "
+  docker compose exec conjur-master-4.mycompany.local bash -c "
     evoke unpack seed /opt/conjur/backup/standby-seed-4.tar
   "
   if [[ $MASTER_KEY = true ]]; then
-    docker-compose exec conjur-master-4.mycompany.local bash -c "
+    docker compose exec conjur-master-4.mycompany.local bash -c "
       evoke keys exec -m /conjur_files/master-key -- evoke configure standby
     "
   else
-    docker-compose exec conjur-master-4.mycompany.local bash -c "
+    docker compose exec conjur-master-4.mycompany.local bash -c "
       evoke configure standby
     "
   fi
 
-  docker-compose exec conjur-master-1.mycompany.local bash -c "
+  docker compose exec conjur-master-1.mycompany.local bash -c "
     evoke replication sync
   "
 
-  docker-compose exec conjur-master-1.mycompany.local bash -c "
+  docker compose exec conjur-master-1.mycompany.local bash -c "
     evoke cluster enroll -n conjur-master-1.mycompany.local conjur
   "
-  docker-compose exec conjur-master-2.mycompany.local bash -c "
+  docker compose exec conjur-master-2.mycompany.local bash -c "
     evoke cluster enroll -n conjur-master-2.mycompany.local -m conjur-master-1.mycompany.local conjur
   "
-  docker-compose exec conjur-master-3.mycompany.local bash -c "
+  docker compose exec conjur-master-3.mycompany.local bash -c "
     evoke cluster enroll -n conjur-master-3.mycompany.local -m conjur-master-1.mycompany.local conjur
   "
-  docker-compose exec conjur-master-4.mycompany.local bash -c "
+  docker compose exec conjur-master-4.mycompany.local bash -c "
     evoke cluster enroll -n conjur-master-4.mycompany.local -m conjur-master-1.mycompany.local conjur
   "
 fi
 
 # Setup the follower
-docker-compose exec conjur-follower.mycompany.local bash -c "
+docker compose exec conjur-follower.mycompany.local bash -c "
   evoke unpack seed /opt/conjur/backup/follower-seed.tar
 "
 if [[ $MASTER_KEY = true ]]; then
-  docker-compose exec conjur-follower.mycompany.local bash -c "
+  docker compose exec conjur-follower.mycompany.local bash -c "
     evoke keys exec -m /conjur_files/master-key -- evoke configure follower
   "
 else
-  docker-compose exec conjur-follower.mycompany.local bash -c "
+  docker compose exec conjur-follower.mycompany.local bash -c "
     evoke configure follower
   "
 fi
