@@ -1,6 +1,6 @@
-- !policy
-  id: replication-sets
-  body:
+# - !policy
+#   id: replication-sets
+#   body:
   # The host inherits privileges given to the layer, so the variables the
   # layer can 'read' will be replicated. The variable values will only be
   # replicated if the layer or the group or the host has the 'execute'
@@ -15,15 +15,24 @@
   #
   # References:
   # - Grants Example: https://docs.conjur.org/Latest/en/Content/Operations/Policy/statement-ref-grant.htm#Examples.
-  - !policy
-    id: replication-set-1
-    body:
-      - !layer replication-set-1-vault-synchronizer-hosts-lob-1-safe-1-hosts
-      - !grant 
-          role: !layer replication-set-1-vault-synchronizer-hosts-lob-1-safe-1-hosts
-          member: !layer /vault-synchronizer-hosts/lob-1/safe-1/hosts
-      - !grant
-        role: !layer replication-set-1-vault-synchronizer-hosts-lob-1-safe-1-hosts
-        member: !group
-          account: system
-          id: /conjur/replication-sets/replication-set-1/replicated-data
+  # - !policy
+  #   id: replication-set-1
+  #   body:
+  #     - !layer replication-set-1-vault-synchronizer-hosts-lob-1-safe-1-hosts
+  #     - !grant 
+  #         role: !layer replication-set-1-vault-synchronizer-hosts-lob-1-safe-1-hosts
+  #         member: !layer /vault-synchronizer-hosts/lob-1/safe-1/hosts
+
+# ./bin/cli conjur policy load root /src/cli/policy/bench/replication-sets.yml
+- !grant 
+  role: !layer vault-synchronizer-hosts/lob-1/safe-1/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-1/replicated-data
+
+# ./bin/cli conjur policy load vault-synchronizer-hosts/lob-1/safe-1 /src/cli/policy/bench/replication-sets.yml
+# - !grant
+#   role: !layer hosts
+#   member: !group
+#     account: system
+#     id: /conjur/replication-sets/replication-set-1/replicated-data

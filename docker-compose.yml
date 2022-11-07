@@ -16,8 +16,10 @@ services:
       - ./files/haproxy/master:/usr/local/etc/haproxy
 
   conjur-master-1.mycompany.local:
+    # samir's fix
+    image: conjur-appliance:0.0.dev-20221107232244-de6182b4
     # micah's fix, 11/7
-    image: registry.tld/conjur-appliance:5.16.13-4-20221107180402-83303754
+    #image: registry.tld/conjur-appliance:5.16.13-4-20221107180402-83303754
     # latest blocking (also not replicating?)
     #image: registry.tld/conjur-appliance:5.16.13-19-20221103135742-fbc40608
     # with MB's improvements (not replicating?)
@@ -51,8 +53,10 @@ services:
       - ./files/dhparam.pem:${DHPATH}/dhparam.pem
 
   conjur-master-2.mycompany.local:
+    # samir's fix
+    image: conjur-appliance:0.0.dev-20221107232244-de6182b4
     # micah's fix, 11/7
-    image: registry.tld/conjur-appliance:5.16.13-4-20221107180402-83303754
+    #image: registry.tld/conjur-appliance:5.16.13-4-20221107180402-83303754
     # latest blocking (also not replicating?)
     #image: registry.tld/conjur-appliance:5.16.13-19-20221103135742-fbc40608
     # with MB's improvements (not replicating?)
@@ -82,8 +86,10 @@ services:
       - ./files:/conjur_files
 
   conjur-master-3.mycompany.local:
+    # samir's fix
+    image: conjur-appliance:0.0.dev-20221107232244-de6182b4
     # micah's fix, 11/7
-    image: registry.tld/conjur-appliance:5.16.13-4-20221107180402-83303754
+    #image: registry.tld/conjur-appliance:5.16.13-4-20221107180402-83303754
     # latest blocking (also not replicating?)
     #image: registry.tld/conjur-appliance:5.16.13-19-20221103135742-fbc40608
     # with MB's improvements (not replicating?)
@@ -113,8 +119,10 @@ services:
       - ./files:/conjur_files
 
   conjur-master-4.mycompany.local:
+    # samir's fix
+    image: conjur-appliance:0.0.dev-20221107232244-de6182b4
     # micah's fix, 11/7
-    image: registry.tld/conjur-appliance:5.16.13-4-20221107180402-83303754
+    #image: registry.tld/conjur-appliance:5.16.13-4-20221107180402-83303754
     # latest blocking (also not replicating?)
     #image: registry.tld/conjur-appliance:5.16.13-19-20221103135742-fbc40608
     # with MB's improvements (not replicating?)
@@ -144,8 +152,10 @@ services:
       - ./files:/conjur_files
 
   conjur-master-5.mycompany.local:
+    # samir's fix
+    image: conjur-appliance:0.0.dev-20221107232244-de6182b4
     # micah's fix, 11/7
-    image: registry.tld/conjur-appliance:5.16.13-4-20221107180402-83303754
+    #image: registry.tld/conjur-appliance:5.16.13-4-20221107180402-83303754
     # latest blocking (also not replicating?)
     #image: registry.tld/conjur-appliance:5.16.13-19-20221103135742-fbc40608
     # with MB's improvements (not replicating?)
@@ -189,8 +199,10 @@ services:
 
   conjur-follower-1.mycompany.local:
     privileged: true
+    # samir's fix
+    image: conjur-appliance:0.0.dev-20221107232244-de6182b4
     # micah's fix, 11/7
-    image: registry.tld/conjur-appliance:5.16.13-4-20221107180402-83303754
+    #image: registry.tld/conjur-appliance:5.16.13-4-20221107180402-83303754
     # latest blocking (also not replicating?)
     #image: registry.tld/conjur-appliance:5.16.13-19-20221103135742-fbc40608
     # with MB's improvements (not replicating?)

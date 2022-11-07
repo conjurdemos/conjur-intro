@@ -68,8 +68,7 @@
 
             - !group consumers
             - !permit
-              resource: *safe-1-variables
+              resource: *lob-1-safe-1-variables
               privileges: [ read, execute ]
               role: !group consumers
         
-    

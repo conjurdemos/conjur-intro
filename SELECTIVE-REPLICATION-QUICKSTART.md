@@ -4,13 +4,20 @@
 # Run the following from the root of: conjur-intro
 ./bin/dap --provision-master
 ./bin/cli conjur policy load root /src/cli/policy/bench/lobs.yml
+
+# create replication set b/c we have refs to the replication set data group
+docker exec conjur-intro-conjur-master-1.mycompany.local-1 evoke replication-set create "replication-set-1"
+
+./bin/dap --provision-follower
 ./bin/cli conjur policy load root /src/cli/policy/bench/hosts.yml | tee hosts01.json
-./bin/cli conjur policy load root /src/cli/policy/bench/users.yml  | tee users01.json
+
+./bin/cli conjur variable values add "vault-synchronizer/lob-1/safe-1/variable-1" "should-be-replicated"
+#./bin/cli conjur policy load root /src/cli/policy/bench/users.yml  | tee users01.json
+#./bin/cli conjur policy load root /src/cli/policy/bench/example-safe.yml
 # ./bin/cli conjur policy load root /src/cli/policy/bench/15000-secrets/lobs.yml
 # ./bin/cli conjur policy load root /src/cli/policy/bench/15000-secrets/hosts.yml | tee hosts01.json
 # ./bin/cli conjur policy load root /src/cli/policy/bench/15000-secrets/users.yml  | tee users01.json
 # Load an example policy
-./bin/cli conjur policy load root /src/cli/policy/bench/example-safe.yml
 
 # IMPORTANT:
 # - replication-set-1..N must exist prior to loading replication-sets policy
