@@ -16,7 +16,16 @@ services:
       - ./files/haproxy/master:/usr/local/etc/haproxy
 
   conjur-master-1.mycompany.local:
-    image: registry.tld/conjur-appliance:5.16.13-15-20221102175041-e1b68557
+    # micah's fix, 11/7
+    image: registry.tld/conjur-appliance:5.16.13-4-20221107180402-83303754
+    # latest blocking (also not replicating?)
+    #image: registry.tld/conjur-appliance:5.16.13-19-20221103135742-fbc40608
+    # with MB's improvements (not replicating?)
+    #image: registry.tld/conjur-appliance:5.16.13-2-20221104204844-daf096ac
+    # micah's original image?
+    #image: registry.tld/conjur-appliance:5.16.13-15-20221102175041-e1b68557
+    # from 14 days before FRI NOV 4: https://jenkins.conjur.net/blue/organizations/jenkins/conjurinc--appliance/detail/master/3003/pipeline/80
+    #image: registry.tld/conjur-appliance:5.16.13-3003-20221021221714-f4123968
     privileged: true
     networks:
       dap_net:
@@ -42,7 +51,16 @@ services:
       - ./files/dhparam.pem:${DHPATH}/dhparam.pem
 
   conjur-master-2.mycompany.local:
-    image: registry.tld/conjur-appliance:5.16.13-15-20221102175041-e1b68557
+    # micah's fix, 11/7
+    image: registry.tld/conjur-appliance:5.16.13-4-20221107180402-83303754
+    # latest blocking (also not replicating?)
+    #image: registry.tld/conjur-appliance:5.16.13-19-20221103135742-fbc40608
+    # with MB's improvements (not replicating?)
+    #image: registry.tld/conjur-appliance:5.16.13-2-20221104204844-daf096ac
+    # micah's original image?
+    #image: registry.tld/conjur-appliance:5.16.13-15-20221102175041-e1b68557
+    # from
+    #image: registry.tld/conjur-appliance:5.16.13-3003-20221021221714-f4123968
     networks:
       dap_net:
         ipv4_address: 12.16.23.12
@@ -64,7 +82,16 @@ services:
       - ./files:/conjur_files
 
   conjur-master-3.mycompany.local:
-    image: registry.tld/conjur-appliance:5.16.13-15-20221102175041-e1b68557
+    # micah's fix, 11/7
+    image: registry.tld/conjur-appliance:5.16.13-4-20221107180402-83303754
+    # latest blocking (also not replicating?)
+    #image: registry.tld/conjur-appliance:5.16.13-19-20221103135742-fbc40608
+    # with MB's improvements (not replicating?)
+    #image: registry.tld/conjur-appliance:5.16.13-2-20221104204844-daf096ac
+    # micah's original image?
+    #image: registry.tld/conjur-appliance:5.16.13-15-20221102175041-e1b68557
+    # from
+    #image: registry.tld/conjur-appliance:5.16.13-3003-20221021221714-f4123968
     networks:
       dap_net:
         ipv4_address: 12.16.23.13
@@ -86,7 +113,16 @@ services:
       - ./files:/conjur_files
 
   conjur-master-4.mycompany.local:
-    image: registry.tld/conjur-appliance:5.16.13-15-20221102175041-e1b68557
+    # micah's fix, 11/7
+    image: registry.tld/conjur-appliance:5.16.13-4-20221107180402-83303754
+    # latest blocking (also not replicating?)
+    #image: registry.tld/conjur-appliance:5.16.13-19-20221103135742-fbc40608
+    # with MB's improvements (not replicating?)
+    #image: registry.tld/conjur-appliance:5.16.13-2-20221104204844-daf096ac
+    # micah's original image?
+    #image: registry.tld/conjur-appliance:5.16.13-15-20221102175041-e1b68557
+    # from
+    #image: registry.tld/conjur-appliance:5.16.13-3003-20221021221714-f4123968
     networks:
       dap_net:
         ipv4_address: 12.16.23.14
@@ -108,7 +144,16 @@ services:
       - ./files:/conjur_files
 
   conjur-master-5.mycompany.local:
-    image: registry.tld/conjur-appliance:5.16.13-15-20221102175041-e1b68557
+    # micah's fix, 11/7
+    image: registry.tld/conjur-appliance:5.16.13-4-20221107180402-83303754
+    # latest blocking (also not replicating?)
+    #image: registry.tld/conjur-appliance:5.16.13-19-20221103135742-fbc40608
+    # with MB's improvements (not replicating?)
+    #image: registry.tld/conjur-appliance:5.16.13-2-20221104204844-daf096ac
+    # micah's original image?
+    #image: registry.tld/conjur-appliance:5.16.13-15-20221102175041-e1b68557
+    # from
+    #image: registry.tld/conjur-appliance:5.16.13-3003-20221021221714-f4123968
     networks:
       dap_net:
         ipv4_address: 12.16.23.15
@@ -144,7 +189,16 @@ services:
 
   conjur-follower-1.mycompany.local:
     privileged: true
-    image: registry.tld/conjur-appliance:5.16.13-15-20221102175041-e1b68557
+    # micah's fix, 11/7
+    image: registry.tld/conjur-appliance:5.16.13-4-20221107180402-83303754
+    # latest blocking (also not replicating?)
+    #image: registry.tld/conjur-appliance:5.16.13-19-20221103135742-fbc40608
+    # with MB's improvements (not replicating?)
+    #image: registry.tld/conjur-appliance:5.16.13-2-20221104204844-daf096ac
+    # micah's original image?
+    #image: registry.tld/conjur-appliance:5.16.13-15-20221102175041-e1b68557
+    # from
+    #image: registry.tld/conjur-appliance:5.16.13-3003-20221021221714-f4123968
     networks:
       dap_net:
         ipv4_address: 12.16.23.16

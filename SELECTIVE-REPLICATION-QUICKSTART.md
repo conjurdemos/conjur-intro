@@ -6,6 +6,9 @@
 ./bin/cli conjur policy load root /src/cli/policy/bench/lobs.yml
 ./bin/cli conjur policy load root /src/cli/policy/bench/hosts.yml | tee hosts01.json
 ./bin/cli conjur policy load root /src/cli/policy/bench/users.yml  | tee users01.json
+# ./bin/cli conjur policy load root /src/cli/policy/bench/15000-secrets/lobs.yml
+# ./bin/cli conjur policy load root /src/cli/policy/bench/15000-secrets/hosts.yml | tee hosts01.json
+# ./bin/cli conjur policy load root /src/cli/policy/bench/15000-secrets/users.yml  | tee users01.json
 # Load an example policy
 ./bin/cli conjur policy load root /src/cli/policy/bench/example-safe.yml
 
@@ -47,22 +50,33 @@ docker exec conjur-intro-conjur-master-1.mycompany.local-1 evoke replication-set
 ./bin/cli conjur policy load root /src/cli/policy/bench/replication-sets.yml
 
 # List all resources (NOTE: resources under the internal /conjur policy node are not displayed here intentionally!)
-./bin/cli conjur list | conjur-list01.log
+./bin/cli conjur list | tee conjur-list01.log
 
 # To view /conjur policy objects (created internally via Selective Replication
 # config), run the following:
 docker exec -it conjur-intro-conjur-master-1.mycompany.local-1 bash
 su conjur
+psql
 select * from resources WHERE resource_id LIKE '%conjur%';
 
 # Provision a Follower using this replica set (see ./bin/dap for hard-coded change)
 ./bin/dap --provision-follower
+
+# Fetch a replicated secret from the leader (should succeed, http 200)
+./bin/cli conjur variable value vault-synchronizer/lob-1/safe-1/variable-1
+./bin/cli conjur variable value example-safe/hex32-1
 
 # Fetch a replicated secret from the follower (should succeed, http 200)
 ./bin/follower-cli conjur variable value vault-synchronizer/lob-1/safe-1/variable-1
 
 # Fetch a non-replicated secret from follower (should fail, http 404)
 ./bin/follower-cli conjur variable value example-safe/hex32-1
+
+# To view conjur policy objects in the follower:
+docker exec -it conjur-intro-conjur-follower-1.mycompany.local-1 bash
+su conjur
+psql
+select * from resources WHERE resource_id LIKE '%conjur%';
 
 # Cleanup
 ./bin/dap --stop
