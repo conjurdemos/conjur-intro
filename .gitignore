@@ -29,3 +29,4 @@ files/haproxy/master/haproxy.cfg
 
 # Versions plugin backup file (use git history instead)
 **/pom.xml.versionsBackup
+ignore

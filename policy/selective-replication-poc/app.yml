@@ -1,0 +1,20 @@
+# Secret that will only replicate to 'full' Follower
+- !variable full-only
+
+# Secret we expect only to replicate to Followers in the US region
+- !variable us-only
+- !host us-based-app
+
+- !permit
+  resource: !variable us-only
+  role: !host us-based-app
+  privileges: [ read, execute ]
+
+# Secret we expect only to replicate to Followers in the EU region
+- !variable eu-only
+- !host eu-based-app
+
+- !permit
+  resource: !variable eu-only
+  role: !host eu-based-app
+  privileges: [ read, execute ]
