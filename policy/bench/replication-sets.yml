@@ -1,38 +1,1515 @@
-# - !policy
-#   id: replication-sets
-#   body:
-  # The host inherits privileges given to the layer, so the variables the
-  # layer can 'read' will be replicated. The variable values will only be
-  # replicated if the layer or the group or the host has the 'execute'
-  # privilege on them.
-  #
-  # IMPORTANT: GRANTS within a POLICY can only GRANT to a role defined
-  # within the policy.
-  # Therefore, we must define a LAYER X in this policy that GRANTS
-  # membership to a LAYER Y declared outside of this policy
-  # (e.g. LOB Hosts). Finally, we can grant LAYER X
-  # (and LAYER Y via transitivity) access to this replication set.
-  #
-  # References:
-  # - Grants Example: https://docs.conjur.org/Latest/en/Content/Operations/Policy/statement-ref-grant.htm#Examples.
-  # - !policy
-  #   id: replication-set-1
-  #   body:
-  #     - !layer replication-set-1-vault-synchronizer-hosts-lob-1-safe-1-hosts
-  #     - !grant 
-  #         role: !layer replication-set-1-vault-synchronizer-hosts-lob-1-safe-1-hosts
-  #         member: !layer /vault-synchronizer-hosts/lob-1/safe-1/hosts
-
-# ./bin/cli conjur policy load root /src/cli/policy/bench/replication-sets.yml
-- !grant 
+# TODO: just do grants at the  root of this policy, and load this policy over /root
+# The host inherits privileges given to the layer, so the variables the
+# layer can 'read' will be replicated. The variable values will only be
+# replicated if the layer or the group or the host has the 'execute'
+# privilege on them.
+#
+# IMPORTANT: GRANTS within a POLICY can only GRANT to a role defined
+# within the policy.
+# Therefore, we must define a LAYER X in this policy that GRANTS
+# membership to a LAYER Y declared outside of this policy
+# (e.g. LOB Hosts). Finally, we can grant LAYER X
+# (and LAYER Y via transitivity) access to this replication set.
+#
+# References:
+# - Grants Example: https://docs.conjur.org/Latest/en/Content/Operations/Policy/statement-ref-grant.htm#Examples.
+- !grant
   role: !layer vault-synchronizer-hosts/lob-1/safe-1/hosts
   member: !group
     account: system
     id: /conjur/replication-sets/replication-set-1/replicated-data
-
-# ./bin/cli conjur policy load vault-synchronizer-hosts/lob-1/safe-1 /src/cli/policy/bench/replication-sets.yml
-# - !grant
-#   role: !layer hosts
-#   member: !group
-#     account: system
-#     id: /conjur/replication-sets/replication-set-1/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-2/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-1/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-3/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-1/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-4/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-1/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-5/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-1/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-6/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-1/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-7/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-1/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-8/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-1/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-9/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-1/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-10/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-1/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-11/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-1/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-12/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-1/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-13/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-1/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-14/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-1/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-15/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-1/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-16/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-1/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-17/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-1/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-18/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-1/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-19/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-1/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-20/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-1/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-21/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-2/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-22/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-2/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-23/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-2/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-24/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-2/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-25/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-2/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-26/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-2/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-27/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-2/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-28/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-2/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-29/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-2/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-1/safe-30/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-2/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-1/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-2/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-2/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-2/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-3/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-2/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-4/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-2/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-5/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-2/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-6/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-2/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-7/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-2/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-8/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-2/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-9/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-2/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-10/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-2/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-11/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-3/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-12/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-3/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-13/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-3/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-14/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-3/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-15/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-3/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-16/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-3/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-17/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-3/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-18/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-3/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-19/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-3/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-20/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-3/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-21/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-3/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-22/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-3/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-23/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-3/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-24/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-3/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-25/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-3/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-26/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-3/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-27/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-3/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-28/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-3/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-29/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-3/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-2/safe-30/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-3/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-1/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-4/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-2/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-4/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-3/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-4/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-4/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-4/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-5/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-4/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-6/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-4/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-7/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-4/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-8/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-4/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-9/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-4/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-10/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-4/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-11/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-4/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-12/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-4/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-13/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-4/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-14/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-4/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-15/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-4/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-16/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-4/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-17/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-4/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-18/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-4/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-19/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-4/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-20/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-4/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-21/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-5/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-22/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-5/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-23/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-5/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-24/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-5/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-25/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-5/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-26/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-5/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-27/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-5/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-28/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-5/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-29/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-5/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-3/safe-30/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-5/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-1/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-5/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-2/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-5/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-3/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-5/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-4/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-5/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-5/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-5/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-6/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-5/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-7/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-5/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-8/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-5/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-9/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-5/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-10/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-5/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-11/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-6/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-12/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-6/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-13/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-6/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-14/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-6/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-15/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-6/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-16/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-6/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-17/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-6/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-18/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-6/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-19/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-6/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-20/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-6/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-21/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-6/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-22/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-6/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-23/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-6/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-24/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-6/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-25/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-6/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-26/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-6/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-27/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-6/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-28/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-6/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-29/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-6/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-4/safe-30/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-6/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-1/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-7/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-2/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-7/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-3/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-7/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-4/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-7/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-5/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-7/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-6/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-7/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-7/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-7/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-8/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-7/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-9/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-7/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-10/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-7/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-11/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-7/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-12/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-7/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-13/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-7/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-14/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-7/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-15/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-7/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-16/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-7/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-17/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-7/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-18/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-7/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-19/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-7/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-20/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-7/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-21/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-8/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-22/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-8/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-23/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-8/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-24/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-8/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-25/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-8/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-26/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-8/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-27/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-8/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-28/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-8/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-29/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-8/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-5/safe-30/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-8/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-1/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-8/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-2/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-8/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-3/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-8/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-4/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-8/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-5/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-8/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-6/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-8/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-7/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-8/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-8/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-8/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-9/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-8/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-10/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-8/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-11/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-9/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-12/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-9/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-13/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-9/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-14/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-9/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-15/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-9/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-16/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-9/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-17/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-9/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-18/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-9/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-19/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-9/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-20/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-9/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-21/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-9/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-22/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-9/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-23/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-9/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-24/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-9/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-25/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-9/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-26/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-9/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-27/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-9/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-28/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-9/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-29/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-9/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-6/safe-30/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-9/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-1/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-10/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-2/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-10/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-3/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-10/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-4/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-10/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-5/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-10/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-6/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-10/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-7/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-10/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-8/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-10/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-9/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-10/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-10/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-10/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-11/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-10/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-12/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-10/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-13/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-10/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-14/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-10/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-15/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-10/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-16/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-10/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-17/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-10/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-18/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-10/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-19/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-10/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-20/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-10/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-21/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-11/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-22/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-11/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-23/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-11/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-24/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-11/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-25/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-11/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-26/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-11/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-27/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-11/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-28/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-11/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-29/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-11/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-7/safe-30/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-11/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-1/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-11/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-2/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-11/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-3/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-11/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-4/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-11/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-5/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-11/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-6/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-11/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-7/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-11/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-8/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-11/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-9/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-11/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-10/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-11/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-11/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-12/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-12/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-12/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-13/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-12/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-14/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-12/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-15/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-12/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-16/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-12/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-17/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-12/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-18/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-12/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-19/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-12/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-20/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-12/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-21/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-12/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-22/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-12/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-23/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-12/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-24/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-12/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-25/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-12/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-26/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-12/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-27/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-12/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-28/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-12/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-29/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-12/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-8/safe-30/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-12/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-1/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-13/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-2/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-13/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-3/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-13/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-4/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-13/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-5/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-13/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-6/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-13/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-7/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-13/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-8/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-13/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-9/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-13/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-10/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-13/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-11/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-13/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-12/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-13/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-13/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-13/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-14/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-13/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-15/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-13/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-16/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-13/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-17/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-13/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-18/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-13/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-19/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-13/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-20/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-13/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-21/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-14/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-22/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-14/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-23/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-14/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-24/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-14/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-25/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-14/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-26/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-14/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-27/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-14/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-28/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-14/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-29/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-14/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-9/safe-30/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-14/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-1/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-14/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-2/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-14/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-3/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-14/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-4/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-14/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-5/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-14/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-6/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-14/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-7/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-14/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-8/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-14/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-9/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-14/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-10/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-14/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-11/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-15/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-12/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-15/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-13/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-15/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-14/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-15/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-15/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-15/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-16/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-15/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-17/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-15/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-18/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-15/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-19/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-15/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-20/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-15/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-21/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-15/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-22/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-15/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-23/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-15/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-24/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-15/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-25/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-15/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-26/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-15/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-27/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-15/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-28/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-15/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-29/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-15/replicated-data
+- !grant
+  role: !layer vault-synchronizer-hosts/lob-10/safe-30/hosts
+  member: !group
+    account: system
+    id: /conjur/replication-sets/replication-set-15/replicated-data

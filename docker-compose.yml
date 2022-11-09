@@ -29,7 +29,9 @@ services:
     # micah's original image?
     #image: registry.tld/conjur-appliance:5.16.13-15-20221102175041-e1b68557
     # micah's step-by-step (everything works)
-    image: conjur-appliance:5.16.13.dev.1
+    #image: conjur-appliance:5.16.13.dev.1
+    # the final fix??? Permissions in docker
+    image: registry.tld/conjur-appliance:5.16.13-25-20221109200126-0fc29ed9
     # micah's updated image that he said works (11/9/2022):
     #image: registry.tld/conjur-appliance:5.16.13-20-20221109170755-73eef581
     # some random commit 1e0f33ff after implementing selective replication secrets did not replicate
@@ -74,7 +76,9 @@ services:
     # micah's original image?
     #image: registry.tld/conjur-appliance:5.16.13-15-20221102175041-e1b68557
     # micah's step-by-step (everything works)
-    image: conjur-appliance:5.16.13.dev.1
+    #image: conjur-appliance:5.16.13.dev.1
+    # the final fix??? Permissions in docker
+    image: registry.tld/conjur-appliance:5.16.13-25-20221109200126-0fc29ed9
     # micah's updated image that he said works (11/9/2022):
     #image: registry.tld/conjur-appliance:5.16.13-20-20221109170755-73eef581
     # some random commit 1e0f33ff after implementing selective replication secrets did not replicate
@@ -115,7 +119,9 @@ services:
     # micah's original image?
     #image: registry.tld/conjur-appliance:5.16.13-15-20221102175041-e1b68557
     # micah's step-by-step (everything works)
-    image: conjur-appliance:5.16.13.dev.1
+    #image: conjur-appliance:5.16.13.dev.1
+    # the final fix??? Permissions in docker
+    image: registry.tld/conjur-appliance:5.16.13-25-20221109200126-0fc29ed9
     # micah's updated image that he said works (11/9/2022):
     #image: registry.tld/conjur-appliance:5.16.13-20-20221109170755-73eef581
     # some random commit 1e0f33ff after implementing selective replication secrets did not replicate
@@ -156,7 +162,9 @@ services:
     # micah's original image?
     #image: registry.tld/conjur-appliance:5.16.13-15-20221102175041-e1b68557
     # micah's step-by-step (everything works)
-    image: conjur-appliance:5.16.13.dev.1
+    #image: conjur-appliance:5.16.13.dev.1
+    # the final fix??? Permissions in docker
+    image: registry.tld/conjur-appliance:5.16.13-25-20221109200126-0fc29ed9
     # micah's updated image that he said works (11/9/2022):
     #image: registry.tld/conjur-appliance:5.16.13-20-20221109170755-73eef581
     # some random commit 1e0f33ff after implementing selective replication secrets did not replicate
@@ -197,7 +205,9 @@ services:
     # micah's original image?
     #image: registry.tld/conjur-appliance:5.16.13-15-20221102175041-e1b68557
     # micah's step-by-step (everything works)
-    image: conjur-appliance:5.16.13.dev.1
+    #image: conjur-appliance:5.16.13.dev.1
+    # the final fix??? Permissions in docker
+    image: registry.tld/conjur-appliance:5.16.13-25-20221109200126-0fc29ed9
     # micah's updated image that he said works (11/9/2022):
     #image: registry.tld/conjur-appliance:5.16.13-20-20221109170755-73eef581
     # some random commit 1e0f33ff after implementing selective replication secrets did not replicate
@@ -252,7 +262,9 @@ services:
     # micah's original image?
     #image: registry.tld/conjur-appliance:5.16.13-15-20221102175041-e1b68557
     # micah's step-by-step (everything works)
-    image: conjur-appliance:5.16.13.dev.1
+    #image: conjur-appliance:5.16.13.dev.1
+    # the final fix??? Permissions in docker
+    image: registry.tld/conjur-appliance:5.16.13-25-20221109200126-0fc29ed9
     # micah's updated image that he said works (11/9/2022):
     #image: registry.tld/conjur-appliance:5.16.13-20-20221109170755-73eef581
     # some random commit 1e0f33ff after implementing selective replication secrets did not replicate

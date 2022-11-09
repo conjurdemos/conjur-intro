@@ -50,12 +50,27 @@ Uses the same image, different policy...
 ```bash
 ./bin/dap --provision-master
 ./bin/cli conjur policy load root /src/cli/policy/bench/lobs.yml
+./bin/cli conjur policy load root /src/cli/policy/bench/hosts.yml | tee hosts01.json
 
 docker exec conjur-intro-conjur-master-1.mycompany.local-1 evoke replication-set create "replication-set-1"
+docker exec conjur-intro-conjur-master-1.mycompany.local-1 evoke replication-set create "replication-set-2"
+docker exec conjur-intro-conjur-master-1.mycompany.local-1 evoke replication-set create "replication-set-3"
+docker exec conjur-intro-conjur-master-1.mycompany.local-1 evoke replication-set create "replication-set-4"
+docker exec conjur-intro-conjur-master-1.mycompany.local-1 evoke replication-set create "replication-set-5"
+docker exec conjur-intro-conjur-master-1.mycompany.local-1 evoke replication-set create "replication-set-6"
+docker exec conjur-intro-conjur-master-1.mycompany.local-1 evoke replication-set create "replication-set-7"
+docker exec conjur-intro-conjur-master-1.mycompany.local-1 evoke replication-set create "replication-set-8"
+docker exec conjur-intro-conjur-master-1.mycompany.local-1 evoke replication-set create "replication-set-9"
+docker exec conjur-intro-conjur-master-1.mycompany.local-1 evoke replication-set create "replication-set-10"
+docker exec conjur-intro-conjur-master-1.mycompany.local-1 evoke replication-set create "replication-set-11"
+docker exec conjur-intro-conjur-master-1.mycompany.local-1 evoke replication-set create "replication-set-12"
+docker exec conjur-intro-conjur-master-1.mycompany.local-1 evoke replication-set create "replication-set-13"
+docker exec conjur-intro-conjur-master-1.mycompany.local-1 evoke replication-set create "replication-set-14"
+docker exec conjur-intro-conjur-master-1.mycompany.local-1 evoke replication-set create "replication-set-15"
 
 # Load selective replication policies
-# This includes replication sets => hosts
-./bin/cli conjur policy load root /src/cli/policy/bench/hosts.yml | tee hosts01.json
+./bin/cli conjur policy load root /src/cli/policy/bench/replication-sets.yml
+
 # This is a safe that is NOT included ein a replica set
 ./bin/cli conjur policy load root /src/cli/policy/bench/example-safe-1.yml | tee hosts02.json
 
@@ -75,6 +90,9 @@ docker exec conjur-intro-conjur-master-1.mycompany.local-1 evoke replication-set
 ./bin/follower-cli conjur variable value example-safe-1/variable-1
 # should succeed
 ./bin/follower-cli conjur variable value vault-synchronizer/lob-1/safe-1/variable-1
+
+# verify trigger works (check logs)
+./bin/cli conjur policy load root /src/cli/policy/bench/example-safe-2.yml | tee hosts03.json
 
 # Cleanup
 ./bin/dap --stop
