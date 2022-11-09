@@ -231,10 +231,16 @@ function _setup_follower {
 
   docker-compose rm --stop --force conjur-follower-1.mycompany.local
   docker-compose up --no-deps --detach conjur-follower-1.mycompany.local
-
+  local replication_set_args=''
+  if [ -n "${REPLICATION_SET}" ]; then
+      replication_set_args="--replication-set $REPLICATION_SET"
+      echo "Configuring Follower with replication set args: $replication_set_args"
+  fi
   # Generate Seed file
+  # _run conjur-master-1.mycompany.local \
+  #   "evoke seed follower --replication-set replication-set-1 conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed.tar"
   _run conjur-master-1.mycompany.local \
-    "evoke seed follower conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed.tar"
+      "evoke seed follower $replication_set_args conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed.tar"
 
   # Unpack and Configure
   _run conjur-follower-1.mycompany.local \
@@ -600,6 +606,7 @@ while true ; do
     --enable-auto-failover ) CMD='_enable_autofailover' ; shift ;;
     --provision-follower ) CMD='_setup_follower' ; shift ;;
     --upgrade-master ) shift ; CMD="_upgrade_via_backup_restore $1" ; shift ;;
+    --replication-set ) shift ; REPLICATION_SET=$1 ; shift ;;
     --version ) shift ; TAG=$1 ; shift ;;
     --standby-count ) shift; STANDBY_COUNT=$1 ; shift ;;
     --dry-run ) DRY_RUN=true ; shift ;;

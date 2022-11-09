@@ -1,0 +1,10 @@
+# policy/permit-eu-replication.yaml
+
+# This policy is an example of adding a role to a replication set, which
+# cascades to any secrets this role has permissions to.
+
+- !grant
+  role: !host eu-based-app
+  member: !group
+    account: system
+    id: conjur/replication-sets/eu/replicated-data

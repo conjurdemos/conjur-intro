@@ -1,0 +1,29 @@
+- !policy
+  id: example-safe-2
+  body:
+    - !layer
+    - &hosts
+      - !host host-1
+    - !grant
+      role: !layer
+      member: *hosts
+
+    - !group consumers
+    - !user
+      id: user-1
+    - !grant
+      role: !group consumers
+      members:
+        - !user user-1
+
+    - &variables
+      - !variable variable-1
+
+    - !permit
+      resource: *variables
+      privileges: [ read, execute ]
+      roles: !group consumers
+    - !permit
+      resource: *variables
+      privileges: [ read, execute ]
+      roles: !layer

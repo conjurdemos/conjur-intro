@@ -1,0 +1,10 @@
+# This policy is an example of adding a secret directly to a replication
+# set. 'read' permission replicates the metadata (e.g. name, annotations),
+# 'execute' permission replicates the encrypted secret value.
+
+- !permit
+  resource: !variable us-only
+  role: !group
+    account: system
+    id: conjur/replication-sets/us/replicated-data
+  privileges: [ read, execute ]

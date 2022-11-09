@@ -1,0 +1,49 @@
+- !policy
+  id: cucumber
+  body:
+    - !variable should-replicate1
+    - !variable should-replicate2
+    - !variable should-replicate3
+    - !host test-server
+    - !group consumers
+    - !layer my-app
+    - !grant
+      role: !group consumers
+      member: !host test-server
+    - !grant
+      role: !layer my-app
+      member: !group consumers
+    # The replication set is explicitly permitted the 'read' privilege on
+    # this variable, so it will be replicated. The variable's value will
+    # only be replicated if the replication set has the 'execute' privilege
+    # on it.
+    - !permit
+      role: !group
+        account: system
+        id: /conjur/replication-sets/cucumber/replicated-data
+      privileges: [ read, execute ]
+      resource: !variable should-replicate1
+    # The host is explicitly included in the replication set, so the
+    # variables it can 'read' will be replicated. The variable values will
+    # only be replicated if the host has the 'execute' privilege on them.
+    - !grant
+      role: !host test-server
+      member: !group
+        account: system
+        id: /conjur/replication-sets/cucumber/replicated-data
+    - !permit
+      role: !host test-server
+      privileges: [ read, execute ]
+      resources: !variable should-replicate2
+    # The host inherits privileges given to the layer, so the variables the
+    # layer can 'read' will be replicated. The variable values will only be
+    # replicated if the layer or the group or the host has the 'execute'
+    # privilege on them.
+    - !permit
+      role: !layer my-app
+      privilege: read
+      resources: !variable should-replicate3
+    - !permit
+      role: !group consumers
+      privilege: execute
+      resources: !variable should-replicate3

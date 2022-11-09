@@ -1,0 +1,23 @@
+- !policy
+  id: vault-synchronizer-users
+  body:
+    - !policy
+      id: lob-1
+      owner: !group /vault-synchronizer/lob-1-admin
+      body:
+        - !policy
+          id: safe-1
+          owner: !group /vault-synchronizer/lob-1/safe-1-admin
+          body:
+          - !group users
+          - &lob-1-safe-1-users
+            - !user user-1
+          - !grant
+            role: !group users
+            members: *lob-1-safe-1-users
+        
+    
+- !grant
+  role: !group vault-synchronizer/lob-1/safe-1/consumers
+  members: !group vault-synchronizer-users/lob-1/safe-1/users
+  
