@@ -13,24 +13,62 @@ Synopsis: bin/dap [command options]
 
 Usage: bin/dap [options]:
 
-    --create-backup               Creates a backup|Requires configured master
-    --dry-run                     Print configuration commands with executing
-    --enable-auto-failover        Configures Master cluster with auto-failover (Requires configured master and standbys)
-    --generate-dh                 Don't mount pre-generated DH params into the appliance containers (will cause a _lot_ more CPU consumption)
-    --h, --help                   Shows this help message
-    --import-custom-certificates  Imports pre-generated 3rd-party certificates (Requires configured master)
-    --promote-standby             Stops the current master and promotes a standby (Requires configured standbys and no auto-failover)
-    --provision-follower          Configures follower behind a Layer 7 load balancer (Requires configured master)
-    --provision-master            Configures a DAP Master with account `demo` and password `MySecretP@ss1` behind a Layer 4 load balancer
-    --provision-standbys          Deploys and configures two standbys (Requires configured master)
-    --restore-from-backup         Restores a master from backup|Requires a previously created backup
-    --stop                        Stops all containers and cleans up cached files
-    --trigger-failover            Stops current master (Requires an auto-failover cluster)
-    --trust-follower-proxy        Adds Follower load balancer as a trusted proxy (Requires a configured follower)
-    --upgrade-master <version>    Restores master from backup (Requires configured master)
-    --wait-for-master             Blocks until the Master is healthy
-    --version <version>           Version of DAP to use (defaults to latest build)
-    --standby-count <count>       Number of Standbys to deploy (defaults to 2)
+    --create-backup                                           Creates a backup (Requires configured master).
+
+    --dry-run                                                 Print configuration commands with executing.
+
+    --enable-auto-failover                                    Configures Master cluster with auto-failover
+                                                                (Requires configured master and standbys).
+
+    --generate-dh                                             Don't mount pre-generated DH params into the
+                                                                appliance containers (will cause a _lot_ more
+                                                                CPU consumption).
+
+    --h, --help                                               Shows this help message.
+
+    --import-custom-certificates                              Imports pre-generated 3rd-party certificates
+                                                                (Requires configured master).
+
+    --promote-standby                                         Stops the current master and promotes a standby
+                                                                (Requires configured standbys and no auto-failover).
+
+    --provision-follower                                      Configures follower behind a Layer 7 load balancer
+                                                                (Requires configured master).
+
+    --provision-master                                        Configures a DAP Master with account `demo` and
+                                                                password `MySecretP@ss1` behind a Layer 4 load
+                                                                balancer.
+
+    --provision-standbys                                      Deploys and configures two standbys (Requires
+                                                                configured master).
+
+    --reenroll-failed-leader <old-leader-id> <new-leader-id>  Performs a re-enroll of the previous master
+                                                                following a failover event.
+
+    --restore-from-backup                                     Restores a master from backup|Requires a previously
+                                                                created backup.
+
+    --rotate-custom-certificates                              Regenerates custom certificates and applies the new
+                                                                certificates to each node.
+
+    --standby-count <count>                                   Number of Standbys to deploy (defaults to 2).
+
+    --stop                                                    Stops all containers and cleans up cached files.
+
+    --trigger-failover                                        Stops current master (Requires an auto-failover
+                                                                cluster).
+
+    --trust-follower-proxy                                    Adds Follower load balancer as a trusted proxy
+                                                                (Requires a configured follower).
+
+    --upgrade-master <version>                                Restores master from backup (Requires configured
+                                                                master).
+
+    --wait-for-master                                         Blocks until the Master is healthy.
+
+    --version <version>                                       Version of DAP to use (defaults to latest build).
+
+    --wait-for-master                                         Waits for Conjur Master to become healthy.
 
 
 EOF
@@ -468,6 +506,33 @@ function _trigger_master_failover_failover {
   echo 'Auto-failover takes about a minute to complete.'
 }
 
+function _reenroll_failed_leader {
+  old_leader_number=$1
+  new_leader_number=$2
+
+  _run "conjur-master-$new_leader_number.mycompany.local" "evoke cluster member remove conjur-master-$old_leader_number.mycompany.local"
+  docker-compose rm --stop --force conjur-master-$old_leader_number.mycompany.local
+
+  docker-compose up --no-deps --detach "conjur-master-$old_leader_number.mycompany.local"
+
+  # Generate a Seed File
+  _run "conjur-master-$new_leader_number.mycompany.local" \
+    "evoke seed standby conjur-master-$old_leader_number.mycompany.local conjur-master-$new_leader_number.mycompany.local > /opt/cyberark/dap/seeds/standby-seed-$old_leader_number.tar"
+
+  # Unpack and Configure
+  _run "conjur-master-$old_leader_number.mycompany.local" \
+    "evoke unpack seed /opt/cyberark/dap/seeds/standby-seed-1.tar && evoke configure standby"
+
+  _run "conjur-master-$new_leader_number.mycompany.local" \
+    "evoke cluster member add conjur-master-$old_leader_number.mycompany.local"
+
+  _run "conjur-master-$old_leader_number.mycompany.local" \
+    "evoke cluster enroll --reenroll --cluster-machine-name conjur-master-$old_leader_number.mycompany.local --master-name conjur-master-$new_leader_number.mycompany.local production"
+
+  _run "conjur-master-$new_leader_number.mycompany.local" \
+    "evoke replication sync start"
+}
+
 function _import_certificates {
   bin/generate-certs
 
@@ -603,25 +668,26 @@ STANDBY_COUNT=2
 
 while true ; do
   case "$1" in
-    --provision-master ) CMD='_single_master' ; shift ;;
-    --promote-standby ) CMD='_perform_promotion' ; shift ;;
-    --import-custom-certificates ) CMD='_import_certificates' ; shift ;;
-    --rotate-custom-certificates ) CMD='_rotate_certificates' ; shift ;;
-    --provision-standbys ) CMD='_setup_standbys' ; shift ;;
+    --create-backup ) CMD='_create_backup' ; shift ;;
+    --dry-run ) DRY_RUN=true ; shift ;;
     --enable-auto-failover ) CMD='_enable_autofailover' ; shift ;;
+    --generate-dh ) export DHPATH=/tmp ; shift ;;
+    -h | --help ) _print_help ; shift ;;
+    --import-custom-certificates ) CMD='_import_certificates' ; shift ;;
+    --promote-standby ) CMD='_perform_promotion' ; shift ;;
     --provision-follower ) CMD='_setup_follower' ; shift ;;
+    --provision-master ) CMD='_single_master' ; shift ;;
+    --provision-standbys ) CMD='_setup_standbys' ; shift ;;
+    --reenroll-failed-leader ) shift ; CMD="_reenroll_failed_leader $1 $2" ; shift ; shift ;;
+    --restore-from-backup ) CMD='_restore_from_backup' ; shift ;;
+    --rotate-custom-certificates ) CMD='_rotate_certificates' ; shift ;;
+    --standby-count ) shift; STANDBY_COUNT=$1 ; shift ;;
+    --stop ) _stop ; shift ;;
+    --trigger-failover ) CMD='_trigger_master_failover_failover' ; shift ;;
+    --trust-follower-proxy ) CMD='_add_follower_proxy' ; shift ;;
     --upgrade-master ) shift ; CMD="_upgrade_via_backup_restore $1" ; shift ;;
     --version ) shift ; TAG=$1 ; shift ;;
-    --standby-count ) shift; STANDBY_COUNT=$1 ; shift ;;
-    --dry-run ) DRY_RUN=true ; shift ;;
-    -h | --help ) _print_help ; shift ;;
-    --trigger-failover ) CMD='_trigger_master_failover_failover' ; shift ;;
-    --create-backup ) CMD='_create_backup' ; shift ;;
-    --restore-from-backup ) CMD='_restore_from_backup' ; shift ;;
-    --trust-follower-proxy ) CMD='_add_follower_proxy' ; shift ;;
     --wait-for-master ) CMD='_wait_for_master' ; shift ;;
-    --generate-dh ) export DHPATH=/tmp ; shift ;;
-    --stop ) _stop ; shift ;;
      * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
   esac
 done
