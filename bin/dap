@@ -183,9 +183,7 @@ function _start_master {
       docker-compose pull
     fi
 
-    _set_master_single_node_proxy_config
-    docker-compose up -d --no-deps conjur-master.mycompany.local \
-                                    conjur-master-1.mycompany.local
+    docker-compose up -d --no-deps conjur-master-1.mycompany.local
   fi
 }
 
@@ -196,6 +194,9 @@ function _start_l7_load_balancer {
 }
 
 function _configure_master {
+  # Copy DH Param
+  docker-compose cp files/dhparam.pem conjur-master-1.mycompany.local:${DHPATH}/dhparam.pem
+
   _cmd="evoke configure master"
   _cmd="$_cmd --accept-eula"
   _cmd="$_cmd --hostname conjur-master.mycompany.local"
@@ -261,6 +262,13 @@ function _perform_promotion {
     "evoke replication rebase conjur-master-2.mycompany.local"
 }
 
+function deploy_proxy {
+  _set_master_single_node_proxy_config
+  # Copy Conjur generated certificates to HAProxy
+  docker-compose cp conjur-master-1.mycompany.local:/opt/conjur/etc/ssl ./system/haproxy/certs
+  docker-compose up -d --no-deps conjur-master.mycompany.local
+}
+
 function _single_master {
   _start_master
   _configure_master
@@ -299,6 +307,7 @@ function _stop {
   _command rm -rf cli_cache
   _command rm -rf system/backup
   _command rm -rf system/logs
+  _command rm -rf system/haproxy/certs
   _command rm files/haproxy/master/haproxy.cfg || true
   echo "stopped"
   exit
@@ -353,6 +362,8 @@ _set_cluster_policy_file() {
   cat << EOF > policy/cluster.yml
 - !policy
   id: production
+  annotations:
+    ttl: 30
   body:
     - !layer
 
