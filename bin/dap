@@ -310,6 +310,7 @@ function deploy_proxy {
 function _single_master {
   _start_master
   _configure_master
+  deploy_proxy
   echo "DAP instance available at: 'https://localhost'"
   echo "Login using with the username/password: 'admin'/'$_admin_password'"
 }
