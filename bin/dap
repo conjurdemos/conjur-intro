@@ -244,6 +244,8 @@ function _configure_master {
 
   _run conjur-master-1.mycompany.local \
     "$_cmd"
+
+  deploy_proxy
 }
 
 function _setup_standby {
