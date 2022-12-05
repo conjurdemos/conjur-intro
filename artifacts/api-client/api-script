@@ -12,7 +12,8 @@ Usage: bin/api [options]
     --enable-seed-service               Enables Seed Service for Standbys and Followers
     --fetch-secrets                     Fetches previously set variables (use '--against-master' if only master is available)
     -h, --help                          Shows this help message
-    --load-policy
+    --host-factory-demo                 Provisions a layer with a host factory and enrolls a new host using a Host Factory
+    --load-policy <namespace> <policy>  Loads a policy into the provided namespace
     --load-sample-policy                Loads a default set of policies to mimic a customer experience
     --load-sample-policy-and-values     Loads policy and sets variable values (equivalent to running '--load-policy' and '--set-secrets')
     -p, --password <password>           Password used for authentication (default is 'MySecretP@ss1')
@@ -173,6 +174,33 @@ enable_seed_service() {
   load_policy 'conjur' 'policy/seed-service/seed.yml'
 }
 
+demonstrate_host_factory_enrollement() {
+  load_policy 'root' 'policy/sychronizer/synchronizer.yml'
+  local token=$(authenticate_user $USER $PASSWORD $URL)
+  # echo "token: $token"
+  local timestamp=$(date +"%Y-%m-%dT%H:%M:%S%:z" -d "+1 day")
+  # echo "timestamp: '$timestamp'"
+  local hf_token=$(curl \
+        --header "Authorization: Token token=\"$token\"" \
+        --insecure \
+        --request POST \
+        --data-urlencode "expiration=${timestamp}" \
+        --data-urlencode "host_factory=demo:host_factory:synchronizers" \
+        "$master_url/host_factory_tokens" | jq -r .[0].token)
+  # echo "HF: '$hf_token'"
+
+  local host_name="new-host-$RANDOM"
+  # echo "host name: '$host_name'"
+  local host=$(curl \
+        --header "Authorization: Token token=\"$hf_token\"" \
+        --insecure \
+        --request POST \
+        --data-urlencode "id=$host_name" \
+        "$master_url/host_factories/hosts" | jq .)
+  echo "host: $host"
+}
+
+
 follower_url='http://conjur-follower.mycompany.local'
 master_url='https://conjur-master.mycompany.local'
 URL=$follower_url
@@ -198,6 +226,7 @@ while true ; do
     --view-roles ) cmd="view_roles" ; shift ;;
     --rotate-api-key ) cmd="rotate_api_key" ;;
     --enable-seed-service ) shift ; cmd='enable_seed_service' ;;
+    --host-factory-demo ) shift ; cmd='demonstrate_host_factory_enrollement' ;;
      * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
   esac
 done

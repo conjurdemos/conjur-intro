@@ -1,0 +1,7 @@
+- !policy
+  id: synchronizers
+  body:
+  - !layer
+
+  - !host-factory
+    layer: [ !layer ]
