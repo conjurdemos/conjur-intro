@@ -233,7 +233,7 @@ function _start_l7_load_balancer {
 
 function _configure_master {
   # Copy DH Param
-  docker-compose cp files/dhparam.pem conjur-master-1.mycompany.local:${DHPATH}/dhparam.pem
+  docker cp files/dhparam.pem "$(docker-compose ps -q conjur-master-1.mycompany.local)":${DHPATH}/dhparam.pem
 
   _cmd="evoke configure master"
   _cmd="$_cmd --accept-eula"
@@ -303,7 +303,8 @@ function _perform_promotion {
 function deploy_proxy {
   _set_master_single_node_proxy_config
   # Copy Conjur generated certificates to HAProxy
-  docker-compose cp conjur-master-1.mycompany.local:/opt/conjur/etc/ssl ./system/haproxy/certs
+  mkdir -p ./system/haproxy/certs
+  docker cp "$(docker-compose ps -q conjur-master-1.mycompany.local)":/opt/conjur/etc/ssl/. ./system/haproxy/certs
   docker-compose up -d --no-deps conjur-master.mycompany.local
 }
 
