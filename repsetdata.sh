@@ -55,7 +55,7 @@ print_help() {
   cat <<EOF
 Generates a csv of replication sets and the variables that belong to them.
 Usage: repsetdata.sh <appliance-container> [options]
-    --podman          Indicates container is Podman
+    --podman          Indicates container runtime is Podman
     -h, --help        Shows this help message.
 EOF
   exit
