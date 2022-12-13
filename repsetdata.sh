@@ -1,6 +1,6 @@
 #!/bin/bash
 
-OUTPUT_NAME="variables-by-replaication-set-$(date +"%Y_%m_%d_%I_%M_%s").csv" 
+OUTPUT_NAME="variables-by-replication-set-$(date +"%Y_%m_%d_%I_%M_%s").csv" 
 SELECT_STATEMENT=$(cat <<EOF
         SELECT  
           RTRIM(LTRIM(REPLACE(CAST(replication_sets AS varchar), '{}', 'Full' ), '{'),'}') AS "ReplicationSets", 
