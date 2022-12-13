@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 OUTPUT_NAME="variables-by-replication-set-$(date +"%Y_%m_%d_%I_%M_%s").csv" 
 SELECT_STATEMENT=$(cat <<EOF
         SELECT  
