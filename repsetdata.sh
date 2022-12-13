@@ -9,8 +9,10 @@ SELECT_STATEMENT=$(cat <<EOF
           kind(resource_id) as "Kind",
           identifier(resource_id) as "Variable"
         FROM resources 
-          WHERE policy_id NOT LIKE 'system%'
-          AND resource_id LIKE '%:variable:%'
+          WHERE 
+            policy_id NOT LIKE 'system%'
+          AND 
+            resource_id LIKE '%:variable:%'
         ORDER BY replication_sets, resource_id ASC
 EOF
 )
@@ -51,7 +53,7 @@ parse_parameters() {
 
 print_help() {
   cat <<EOF
-Runs the acceptance tests for the appliance.
+Generates a csv of replication sets and the variables that belong to them.
 Usage: repsetdata.sh <appliance-container> [options]
     --podman          Indicates container is Podman
     -h, --help        Shows this help message.
