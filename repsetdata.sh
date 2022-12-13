@@ -66,9 +66,8 @@ main() {
   parse_parameters "$@"
   CONTAINERS_PLATFORM="${CONTAINERS_PLATFORM:-docker}"
   CONTAINER_NAME="${CONTAINER_NAME:-ERROR}"
-  "$CONTAINERS_PLATFORM" exec --user conjur "$CONTAINER_NAME" psql -c "COPY ($SELECT_STATEMENT) TO STDOUT CSV HEADER" > $OUTPUT_NAME && {
-    echo "Saved to $OUTPUT_NAME"
-  }
+  "$CONTAINERS_PLATFORM" exec --user conjur "$CONTAINER_NAME" psql -c "COPY ($SELECT_STATEMENT) TO STDOUT CSV HEADER" > $OUTPUT_NAME
+  echo "Saved to $OUTPUT_NAME"
 }
 
 
