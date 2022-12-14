@@ -46,8 +46,8 @@ parse_parameters() {
   if [ ${#POSITIONAL_ARGS[@]} -eq 1 ]; then
     CONTAINER_NAME=${POSITIONAL_ARGS[0]}
   else
-    echo "There must be exacly one positional argument. Run $0 for more information."
-    exit 1
+    echo "There must be exacly one positional argument."
+    print_help
   fi
 }
 
