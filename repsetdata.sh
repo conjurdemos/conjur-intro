@@ -7,7 +7,7 @@ SELECT_STATEMENT=$(cat <<EOF
         SELECT  
           RTRIM(LTRIM(REPLACE(CAST(replication_sets AS varchar), '{}', 'Full' ), '{'),'}') AS "ReplicationSets", 
           policy_id AS "Policy",
-          identifier(resource_id) as "Variable",
+          identifier(resource_id) as "Variable"
         FROM resources 
           WHERE 
             policy_id NOT LIKE 'system%'
