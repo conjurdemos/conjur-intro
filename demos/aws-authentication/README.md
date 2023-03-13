@@ -81,13 +81,13 @@ IAM Role
 
 * Load Policy (locally, after setting the `host` variable in the `./cli` file)
   ```
-  ./cli conjur policy load --replace root policy/users.yml
-  ./cli conjur policy load root policy/policy.yml
-  ./cli conjur policy load root policy/staging-iam-policy.yml
-  ./cli conjur policy load root policy/staging-myapp.yml
-  ./cli conjur policy load staging policy/database.yml
-  ./cli conjur policy load root policy/entitlements.yml
-  ./cli conjur variable values add staging/postgres-database/url test-url
+  ./cli conjur policy replace -b root -f policy/users.yml
+  ./cli conjur policy load -b root -f policy/policy.yml
+  ./cli conjur policy load -b root -f policy/staging-iam-policy.yml
+  ./cli conjur policy load -b root -f policy/staging-myapp.yml
+  ./cli conjur policy load -b staging -f policy/database.yml
+  ./cli conjur policy load -b root -f policy/entitlements.yml
+  ./cli conjur variable set -i staging/postgres-database/url -v test-url
   ```
 
 Launch a remote node
@@ -123,7 +123,7 @@ require 'conjur-api'
 Conjur.configuration.account = 'demo'
 Conjur.configuration.appliance_url = 'https://ec2-34-224-2-198.compute-1.amazonaws.com'
 Conjur.configuration.authn_url = Conjur.configuration.appliance_url +  '/authn-iam/staging'
-Conjur.configuration.cert_file = '/home/ubuntu/conjur-demo.pem'
+Conjur.configuration.cert_file = '/home/ubuntu/conjur-server.pem'
 Conjur.configuration.apply_cert_config!
 
 # conjur = Conjur::API.new_from_key 'host/myapp/011915987442/MyApp', request.to_json
@@ -138,7 +138,7 @@ print("\nUsername: #{username}  Password: #{password}\n\n")
 
 # Conjur.configuration.account = 'demo'
 # Conjur.configuration.appliance_url = 'https://ec2-34-224-2-198.compute-1.amazonaws.com'
-# Conjur.configuration.cert_file = '/home/ubuntu/conjur-demo.pem'
+# Conjur.configuration.cert_file = '/home/ubuntu/conjur-server.pem'
 # Conjur.configuration.apply_cert_config!
 
 # conjur = Conjur::API.new_from_key('host/staging-myapp/F888977921603/staging-myapp-ec2', request.to_json)

@@ -138,16 +138,16 @@ yes
 $ACCOUNT_NAME
 y
 "
-    oc exec -it "$CONJUR_CLI_POD" conjur authn login < policy/authnInput
+    oc exec -it "$CONJUR_CLI_POD" conjur login < policy/authnInput
 	
-    oc exec -it "$CONJUR_CLI_POD" conjur policy load root policy/policy-hosts-to-authenticate.yaml
-    oc exec -it "$CONJUR_CLI_POD" conjur policy load root policy/policy-for-webservice.yaml
-    oc exec -it "$CONJUR_CLI_POD" conjur policy load root policy/policy-for-variables.yaml
-    oc exec -it "$CONJUR_CLI_POD" conjur variable values add variables/mypassword 123
+    oc exec -it "$CONJUR_CLI_POD" conjur policy load -b root -f policy/policy-hosts-to-authenticate.yaml
+    oc exec -it "$CONJUR_CLI_POD" conjur policy load -b root -f policy/policy-for-webservice.yaml
+    oc exec -it "$CONJUR_CLI_POD" conjur policy load -b root -f policy/policy-for-variables.yaml
+    oc exec -it "$CONJUR_CLI_POD" conjur variable set -i variables/mypassword -v 123
 
   echo "Create certificate"
   oc exec -it "$CONJUR_CLI_POD" ./conjur_scripts/cert_script.sh $ACCOUNT_NAME $AUTHENTICATOR
-  oc exec -it "$CONJUR_CLI_POD" cat /root/conjur-$ACCOUNT_NAME.pem > conjur-cert.pem
+  oc exec -it "$CONJUR_CLI_POD" cat /root/conjur-server.pem > conjur-cert.pem
   oc delete --ignore-not-found=true configmap conjur-cert
   ssl_certificate=$(cat conjur-cert.pem )
   oc create configmap conjur-cert --from-literal=ssl-certificate="$ssl_certificate"

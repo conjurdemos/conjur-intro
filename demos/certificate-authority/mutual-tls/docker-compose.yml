@@ -50,7 +50,7 @@ services:
       POSTGRES_HOST_AUTH_METHOD: trust
 
   cli:
-    image: cyberark/conjur-cli:5
+    image: cyberark/conjur-cli:8
     working_dir: /src/cli
     entrypoint: bash
     environment:

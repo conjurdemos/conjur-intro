@@ -19,7 +19,7 @@ spec:
       serviceAccountName: default
       containers:
       - name: conjur-cli
-        image: cyberark/conjur-cli:5-latest
+        image: cyberark/conjur-cli:8
         imagePullPolicy: IfNotPresent
         command: ["sleep"]
         args: ["infinity"]

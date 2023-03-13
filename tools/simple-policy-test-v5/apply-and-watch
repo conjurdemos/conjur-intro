@@ -26,4 +26,4 @@ docker run --rm \
            -e ACCOUNT \
            -e ADMIN_API_KEY \
            --entrypoint bash \
-           cyberark/conjur-cli:5 -c "$CLI_CMD"
+           cyberark/conjur-cli:8 -c "$CLI_CMD"

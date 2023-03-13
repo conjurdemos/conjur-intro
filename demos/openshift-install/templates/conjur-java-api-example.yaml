@@ -22,8 +22,6 @@ spec:
         imagePullPolicy: IfNotPresent
         name: authenticator
         env:
-          - name: CONJUR_VERSION
-            value: "5"
           - name: CONTAINER_MODE
             value: sidecar
           - name: MY_POD_NAME

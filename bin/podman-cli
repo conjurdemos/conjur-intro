@@ -14,13 +14,13 @@ function proxy_command {
   -e CONJUR_ACCOUNT=demo \
   -e CONJUR_AUTHN_LOGIN=admin \
   -w /src/cli \
-  --entrypoint /bin/bash \
-  cyberark/conjur-cli:5 \
+  --entrypoint /bin/sh \
+  cyberark/conjur-cli:8 \
   -c "
-    if [ ! -e /root/conjur-demo.pem ]; then
-      yes 'yes' | conjur init -u https://conjur-master.mycompany.local -a demo
+    if [ ! -e /root/conjur-server.pem ]; then
+      echo y | conjur init -u https://conjur-master.mycompany.local -a demo --self-signed --force
     fi
-    conjur authn login -u admin -p MySecretP@ss1
+    conjur login -i admin -p MySecretP@ss1
     hostname -I
     eval exec \"$cmd\"
   "

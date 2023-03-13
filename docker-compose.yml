@@ -158,7 +158,7 @@ services:
       - ./files:/conjur_files
 
   client:
-    image: cyberark/conjur-cli:5
+    image: cyberark/conjur-cli:8
     networks:
       dap_net:
         ipv4_address: 12.16.23.18
@@ -172,7 +172,7 @@ services:
       - ./cli_cache/master:/root
 
   follower-client:
-    image: cyberark/conjur-cli:5
+    image: cyberark/conjur-cli:8
     networks:
       dap_net:
         ipv4_address: 12.16.23.19
