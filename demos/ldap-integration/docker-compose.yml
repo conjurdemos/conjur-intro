@@ -28,7 +28,7 @@ services:
       - ldap-server
 
   client:
-    image: cyberark/conjur-cli:5
+    image: cyberark/conjur-cli:8
     working_dir:  -w /src/cli
     environment:
       CONJUR_APPLIANCE_URL: https://conjur-master.mycompany.local

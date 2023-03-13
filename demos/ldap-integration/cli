@@ -17,11 +17,11 @@ exit
 
 function proxy_command {
   cmd="$@"
-  docker-compose run --rm -w /src/cli --entrypoint /bin/bash client -c "
-    if [ ! -e /root/conjur-demo.pem ]; then
-      yes 'yes' | conjur init -u https://conjur-master.mycompany.local -a demo
+  docker-compose run --rm -w /src/cli --entrypoint /bin/sh client -c "
+    if [ ! -e /root/conjur-server.pem ]; then
+      echo y | conjur init -u https://conjur-master.mycompany.local -a demo --self-signed
     fi
-    conjur authn login -u admin -p secret
+    conjur login -i admin -p secret
     eval exec \"$cmd\"
   "
 }

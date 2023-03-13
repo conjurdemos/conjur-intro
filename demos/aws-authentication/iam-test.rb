@@ -14,7 +14,7 @@ request = Aws::Sigv4::Signer.new(
 Conjur.configuration.account = 'demo'
 Conjur.configuration.appliance_url = 'https://ec2-34-224-2-198.compute-1.amazonaws.com'
 Conjur.configuration.authn_url = Conjur.configuration.appliance_url +  '/authn-iam/staging'
-Conjur.configuration.cert_file = '/home/ubuntu/conjur-demo.pem'
+Conjur.configuration.cert_file = '/home/ubuntu/conjur-server.pem'
 Conjur.configuration.apply_cert_config!
 
 # conjur = Conjur::API.new_from_key 'host/myapp/011915987442/MyApp', request.to_json

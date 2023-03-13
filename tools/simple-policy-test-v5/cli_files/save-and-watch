@@ -32,21 +32,21 @@ conjur_login() {
   local HOSTNAME="$1"
    echo "Initializing CLI ($ACCOUNT@https://$HOSTNAME)..."
 
-   echo "yes" | conjur init --force=yes \
-                            -u "https://$HOSTNAME" \
-                            -a "$ACCOUNT"
+   echo y | conjur init --force --self-signed \
+                        -u "https://$HOSTNAME" \
+                        -a "$ACCOUNT"
 
    echo "Logging in..."
-   conjur authn login -u admin -p "$ADMIN_API_KEY"
-   conjur authn whoami
+   conjur login -i admin -p "$ADMIN_API_KEY"
+   conjur whoami
 }
 
 conjur_login "$MASTER_HOSTNAME"
 echo "Loading policy..."
-conjur policy load --replace root "$1"
+conjur policy replace -b root -v "$1"
 
 echo "Persisting variable value ('$CREDENTIAL_VALUE' -> $CREDENTIAL_ID)..."
-conjur variable values add "$CREDENTIAL_ID" "$CREDENTIAL_VALUE"
+conjur variable set -i "$CREDENTIAL_ID" -v "$CREDENTIAL_VALUE"
 
 echo "Credential $CREDENTIAL_ID set to $CREDENTIAL_VALUE!"
 
@@ -56,6 +56,6 @@ fi
 
 echo "Fetching value ($CREDENTIAL_ID)..."
 while true; do
-  echo $(date): $(conjur variable value "$CREDENTIAL_ID")
+  echo $(date): $(conjur variable get -i "$CREDENTIAL_ID")
   sleep 2
 done

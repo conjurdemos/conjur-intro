@@ -95,7 +95,7 @@ services:
       - ./files:/conjur_files
 
   client:
-    image: cyberark/conjur-cli:5
+    image: cyberark/conjur-cli:8
     working_dir:  /src/cli
     environment:
       CONJUR_APPLIANCE_URL: https://conjur-master-1.mycompany.local
@@ -106,7 +106,7 @@ services:
       - ./cli_cache/master:/root
 
   follower-client:
-    image: cyberark/conjur-cli:5
+    image: cyberark/conjur-cli:8
     working_dir:  /src/cli
     environment:
       CONJUR_APPLIANCE_URL: https://conjur-follower.mycompany.local

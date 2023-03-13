@@ -59,24 +59,24 @@ docker-compose exec ldap-server bash -c "
   ldapadd -Z -x -D cn=admin,dc=example,dc=org -w $LDAP_ADMIN_PASSWORD -f /opt/ldap//test-ldap_groups.ldif
   "
 
-./cli conjur policy load --replace root policy/01_root.yml
+./cli conjur policy replace -b root -f policy/01_root.yml
 
 # Load policy for LDAP sync
-./cli conjur policy load conjur/ldap-sync policy/02_ldap_sync.yml
+./cli conjur policy load -b conjur/ldap-sync -f policy/02_ldap_sync.yml
 
 # Store the LDAP bind password
-./cli conjur variable values add conjur/ldap-sync/bind-password/default $LDAP_ADMIN_PASSWORD
+./cli conjur variable set -i conjur/ldap-sync/bind-password/default -v $LDAP_ADMIN_PASSWORD
 
-cat certs/ca.crt | ./cli conjur variable values add conjur/ldap-sync/tls-ca-cert/default
+cat certs/ca.crt | ./cli conjur variable set -i conjur/ldap-sync/tls-ca-cert/default -v -
 
 # Generate sync policy
 ./cli conjur ldap-sync policy show | tail -n +2 > ./policy/ldap-sync-default.yml
-./cli conjur policy load root policy/ldap-sync-default.yml
+./cli conjur policy load -b root -f policy/ldap-sync-default.yml
 
 # Load policy for authn LDAP
-./cli conjur policy load conjur/authn-ldap policy/03_authn_ldap.yml
-./cli conjur policy load root policy/04_authn_ldap_entitlements.yml
+./cli conjur policy load -b conjur/authn-ldap -f policy/03_authn_ldap.yml
+./cli conjur policy load -b root -f policy/04_authn_ldap_entitlements.yml
 
 # Store the LDAP bind password and CA cert chain
-./cli conjur variable values add conjur/authn-ldap/ldap-server/bind-password $LDAP_ADMIN_PASSWORD
-cat certs/ca.crt | ./cli conjur variable values add conjur/authn-ldap/ldap-server/tls-ca-cert
+./cli conjur variable set -i conjur/authn-ldap/ldap-server/bind-password -v $LDAP_ADMIN_PASSWORD
+cat certs/ca.crt | ./cli conjur variable set -i conjur/authn-ldap/ldap-server/tls-ca-cert -v -

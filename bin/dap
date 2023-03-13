@@ -371,12 +371,12 @@ function _cli {
   echo "Loading Policy '$_policy':"
   cat $_policy
   echo ''
-  echo "with command: 'conjur policy load $_namespace $_policy'"
+  echo "with command: 'conjur policy load -b $_namespace -f $_policy'"
   echo ''
   echo ''
 
   if [[ $DRY_RUN = false ]]; then
-    bin/cli conjur policy load $_namespace $_policy
+    bin/cli conjur policy load -b $_namespace -f $_policy
   fi
 }
 
