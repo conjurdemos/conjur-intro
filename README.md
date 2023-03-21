@@ -6,7 +6,6 @@ Tools and scripts  utilities that make it easier to make, manage, and run demos
 - [AWS Cluster](demos/aws-cluster/README.md)
 - [Conjur Cluster](demos/cluster/README.md)
 - [Certificate Authority](demos/certificate-authority/mutual-tls/README.md)
-- [LDAP Sync and Authentication](demos/ldap-integration/README.md)
 
 ## Tools
 - [Generate Signed Certificates](tools/simple-certificates/)

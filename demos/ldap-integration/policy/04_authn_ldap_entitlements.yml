@@ -1,3 +1,0 @@
-- !grant
-  role: !group conjur/authn-ldap/ldap-server/clients
-  member: !group All Users
