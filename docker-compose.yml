@@ -6,7 +6,7 @@ services:
       dap_net:
         ipv4_address: 12.16.23.10
     ports:
-      - "443:443"
+      - "${CONJUR_MASTER_PORT:-443}:443"
       - "7000:7000"
     expose:
       - "1999"
@@ -29,6 +29,7 @@ services:
       - "5432"
     environment:
       TRUSTED_PROXIES: 123.123.1.1,123.5.1.1
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
     security_opt:
         - "seccomp:unconfined"
     volumes:
@@ -140,10 +141,12 @@ services:
       dap_net:
         ipv4_address: 12.16.23.17
     ports:
-      - "450:443"
+      - "${CONJUR_FOLLOWER_PORT:-450}:443"
     expose:
       - "443"
       - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
     security_opt:
         - "seccomp:unconfined"
     volumes:
@@ -155,7 +158,7 @@ services:
       - ./files:/conjur_files
 
   client:
-    image: cyberark/conjur-cli:5
+    image: cyberark/conjur-cli:8
     networks:
       dap_net:
         ipv4_address: 12.16.23.18
@@ -169,7 +172,7 @@ services:
       - ./cli_cache/master:/root
 
   follower-client:
-    image: cyberark/conjur-cli:5
+    image: cyberark/conjur-cli:8
     networks:
       dap_net:
         ipv4_address: 12.16.23.19

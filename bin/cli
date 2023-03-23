@@ -1,12 +1,20 @@
 #!/bin/bash -e
 
+# Always work from repo root directory
+cd "$(dirname ${0})/..";
+
+source ./bin/utils.sh
+
+# Make sure .env envvars are available
+dotenv > /dev/null 2>&1 || true
+
 function proxy_command {
   cmd="$@"
-  docker-compose run --rm -w /src/cli --entrypoint /bin/bash client -c "
-    if [ ! -e /root/conjur-demo.pem ]; then
-      yes 'yes' | conjur init -u https://conjur-master.mycompany.local -a demo
+  docker-compose run --rm -w /src/cli --entrypoint /bin/sh client -c "
+    if [ ! -e /root/conjur-server.pem ]; then
+      echo y | conjur init -u https://conjur-master.mycompany.local -a demo --self-signed --force
     fi
-    conjur authn login -u admin -p MySecretP@ss1
+    conjur login -i admin -p MySecretP@ss1
     hostname -I
     eval exec \"$cmd\"
   "

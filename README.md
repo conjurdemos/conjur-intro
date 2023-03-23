@@ -6,7 +6,6 @@ Tools and scripts  utilities that make it easier to make, manage, and run demos
 - [AWS Cluster](demos/aws-cluster/README.md)
 - [Conjur Cluster](demos/cluster/README.md)
 - [Certificate Authority](demos/certificate-authority/mutual-tls/README.md)
-- [LDAP Sync and Authentication](demos/ldap-integration/README.md)
 
 ## Tools
 - [Generate Signed Certificates](tools/simple-certificates/)
@@ -168,20 +167,20 @@ Usage: bin/dap single [options]
 #### Loading policy
 The policy folder contains sample policy which can be loaded with:
 ```sh
-$ bin/cli conjur policy load --replace root policy/users.yml
-$ bin/cli conjur policy load root policy/policy.yml
-$ bin/cli conjur policy load staging policy/apps/myapp.yml
-$ bin/cli conjur policy load production policy/apps/myapp.yml
-$ bin/cli conjur policy load root policy/application_grants.yml
-$ bin/cli conjur policy load root policy/hosts.yml
+$ bin/cli conjur policy replace -b root -f policy/users.yml
+$ bin/cli conjur policy load -b root -f policy/policy.yml
+$ bin/cli conjur policy load -b staging -f policy/apps/myapp.yml
+$ bin/cli conjur policy load -b production -f policy/apps/myapp.yml
+$ bin/cli conjur policy load -b root -f policy/application_grants.yml
+$ bin/cli conjur policy load -b root -f policy/hosts.yml
 ```
 
 #### Setting/Retrieving a Variable
 ```
-bin/cli conjur variable values add production/myapp/database/username my-username
-bin/cli conjur variable values add production/myapp/database/password my-password
-bin/cli conjur variable values add production/myapp/database/url https://my-database.mycompany.com
-bin/cli conjur variable values add production/myapp/database/port 5432
+bin/cli conjur variable set -i production/myapp/database/username -v my-username
+bin/cli conjur variable set -i production/myapp/database/password -v my-password
+bin/cli conjur variable set -i production/myapp/database/url -v https://my-database.mycompany.com
+bin/cli conjur variable set -i production/myapp/database/port -v 5432
 ```
 
 #### Validating Packages

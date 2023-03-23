@@ -182,7 +182,6 @@ files = [
   "demos/cluster/files/certs/*", # sample certs for demos
   "demos/simple-cluster/files/certs/*", # sample certs for demos
   "demos/aws-authentication/jason-conjur-test.pem", # sample cert for aws auth
-  "demos/ldap-integration/certs/*" # sample certs for ldap demo
 ]
 regexes = [
 ]

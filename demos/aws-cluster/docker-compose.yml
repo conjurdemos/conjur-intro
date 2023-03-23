@@ -1,7 +1,7 @@
 version: "3"
 services:
   cli:
-    image: cyberark/conjur-cli:5
+    image: cyberark/conjur-cli:8
     entrypoint: bash
     volumes:
       - ./tmp/cli:/root
