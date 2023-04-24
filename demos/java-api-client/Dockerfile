@@ -1,4 +1,4 @@
-FROM maven:3-openjdk-8
+FROM maven:3-amazoncorretto-19-debian
 MAINTAINER Cyberark Inc.
 
 ADD . .
