@@ -9,7 +9,7 @@ RUN set -x && \
 RUN git clone https://github.com/cloudflare/cfssl.git && \
     cd cfssl && make
 
-FROM alpine:3.11
+FROM alpine:3.14
 COPY --from=builder /workdir/cfssl /etc/cfssl
 COPY --from=builder /workdir/cfssl/bin/ /usr/bin
 
