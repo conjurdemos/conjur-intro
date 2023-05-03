@@ -1,5 +1,5 @@
 # inspired by https://hub.docker.com/r/justb4/jmeter
-FROM alpine:3.10
+FROM alpine:3.14
 
 MAINTAINER Just van den Broecke<just@justobjects.nl>
 
