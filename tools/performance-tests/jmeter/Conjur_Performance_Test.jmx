@@ -1,0 +1,2319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.5">
+  <hashTree>
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="DAP_Performance_Test" enabled="true">
+      <stringProp name="TestPlan.comments"></stringProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+      <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
+      <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+        <collectionProp name="Arguments.arguments"/>
+      </elementProp>
+      <stringProp name="TestPlan.user_define_classpath"></stringProp>
+    </TestPlan>
+    <hashTree>
+      <Arguments guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+        <collectionProp name="Arguments.arguments">
+          <elementProp name="host" elementType="Argument">
+            <stringProp name="Argument.name">host</stringProp>
+            <stringProp name="Argument.value">conjur</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+            <stringProp name="Argument.desc">Change this value to jmeter.apache.org</stringProp>
+          </elementProp>
+          <elementProp name="safecount" elementType="Argument">
+            <stringProp name="Argument.name">safecount</stringProp>
+            <stringProp name="Argument.value">500</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <elementProp name="threadCount" elementType="Argument">
+            <stringProp name="Argument.name">threadCount</stringProp>
+            <stringProp name="Argument.value">8</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <elementProp name="server" elementType="Argument">
+            <stringProp name="Argument.name">server</stringProp>
+            <stringProp name="Argument.value">conjur-master.mycompany.local</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <elementProp name="conjurAccount" elementType="Argument">
+            <stringProp name="Argument.name">conjurAccount</stringProp>
+            <stringProp name="Argument.value">demo</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <elementProp name="password" elementType="Argument">
+            <stringProp name="Argument.name">password</stringProp>
+            <stringProp name="Argument.value">Basic YWRtaW46TXlTZWNyZXRQQHNzMQ==</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <elementProp name="key" elementType="Argument">
+            <stringProp name="Argument.name">key</stringProp>
+            <stringProp name="Argument.value">null</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+        </collectionProp>
+      </Arguments>
+      <hashTree/>
+      <SetupThreadGroup guiclass="SetupThreadGroupGui" testclass="SetupThreadGroup" testname="setUp Thread Group" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">stoptest</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">1</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">1</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">1</stringProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <stringProp name="ThreadGroup.duration"></stringProp>
+        <stringProp name="ThreadGroup.delay"></stringProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+      </SetupThreadGroup>
+      <hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Login" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" enabled="true">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                <stringProp name="Argument.value"></stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+                <boolProp name="HTTPArgument.use_equals">true</boolProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${server}</stringProp>
+          <stringProp name="HTTPSampler.port">443</stringProp>
+          <stringProp name="HTTPSampler.protocol">https</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/authn/${conjurAccount}/login</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.implementation">HttpClient4</stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Authorization</stringProp>
+                <stringProp name="Header.value">${password}</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+          <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="Set BaseDate" enabled="true">
+            <stringProp name="scriptLanguage">groovy</stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="script">vars.put(&quot;BaseDate&quot;, new Date().getTime().toString());</stringProp>
+          </JSR223PreProcessor>
+          <hashTree/>
+          <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="JSR223 PostProcessor" enabled="true">
+            <stringProp name="scriptLanguage">groovy</stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="script">vars.put(&quot;response&quot;, prev.getResponseDataAsString());
+</stringProp>
+          </JSR223PostProcessor>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Authenticate" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">${response}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${server}</stringProp>
+          <stringProp name="HTTPSampler.port"></stringProp>
+          <stringProp name="HTTPSampler.protocol">https</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/authn/${conjurAccount}/admin/authenticate</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.implementation">HttpClient4</stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="JSR223 PostProcessor" enabled="true">
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="script">import org.apache.commons.codec.binary.Base64;
+log.info(&quot;response: &quot; + vars.getObject(&quot;response&quot;));
+log.info(&quot;class: &quot; + vars.getObject(&quot;response&quot;).getClass());
+vars.put(&quot;token&quot;, Base64.encodeBase64String(prev.getResponseDataAsString().getBytes()));</stringProp>
+            <stringProp name="scriptLanguage">groovy</stringProp>
+          </JSR223PostProcessor>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="update root policy: users.yml" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">- !group security_ops&#xd;
+- !group team_leads&#xd;
+- !group developers&#xd;
+&#xd;
+- !user&#xd;
+  id: jason.vanderhoof&#xd;
+  annotations:&#xd;
+    first_name: Jason&#xd;
+    last_name: Vanderhoof&#xd;
+    email: jason.vanderhoof@cyberark.com&#xd;
+&#xd;
+- !user&#xd;
+  id: marcel.calisto&#xd;
+  annotations:&#xd;
+    first_name: Marcel&#xd;
+    last_name: Calisto&#xd;
+    email: marcel.calisto@cyberark.com&#xd;
+&#xd;
+- !user&#xd;
+  id: ernest.alvin&#xd;
+  annotations:&#xd;
+    first_name: Ernest&#xd;
+    last_name: Alvin&#xd;
+    email: ernest.alvin@cyberark.com&#xd;
+&#xd;
+- !user&#xd;
+  id: victoria.nandita&#xd;
+  annotations:&#xd;
+    first_name: Victoria&#xd;
+    last_name: Nandita&#xd;
+    email: victoria.nandita@cyberark.com&#xd;
+&#xd;
+- !user&#xd;
+  id: sophie.madelon&#xd;
+  annotations:&#xd;
+    first_name: Sophie&#xd;
+    last_name: Madelon&#xd;
+    email: sophie.madelon@cyberark.com&#xd;
+&#xd;
+- !user&#xd;
+  id: terrance.blake&#xd;
+  annotations:&#xd;
+    first_name: Terrance&#xd;
+    last_name: Blake&#xd;
+    email: terrance.blake@cyberark.com&#xd;
+&#xd;
+- !grant&#xd;
+  role: !group developers&#xd;
+  members:&#xd;
+    - !user marcel.calisto&#xd;
+    - !user ernest.alvin&#xd;
+    - !user sophie.madelon&#xd;
+&#xd;
+- !grant&#xd;
+  role: !group team_leads&#xd;
+  members:&#xd;
+    - !user jason.vanderhoof&#xd;
+    - !user victoria.nandita&#xd;
+&#xd;
+- !grant&#xd;
+  role: !group security_ops&#xd;
+  members:&#xd;
+    - !user terrance.blake&#xd;
+&#xd;
+# Grant the less-powerful groups to the more-powerful groups&#xd;
+- !grant&#xd;
+  member: !group team_leads&#xd;
+  role: !group developers&#xd;
+&#xd;
+- !grant&#xd;
+  member: !group security_ops&#xd;
+  role: !group team_leads</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${server}</stringProp>
+          <stringProp name="HTTPSampler.port">443</stringProp>
+          <stringProp name="HTTPSampler.protocol">https</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/policies/${conjurAccount}/policy/root</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.implementation">HttpClient4</stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+          <stringProp name="TestPlan.comments">Created from cURL on 2019-12-26T16:35:05.26213</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="Authorization" elementType="Header">
+                <stringProp name="Header.name">Authorization</stringProp>
+                <stringProp name="Header.value">Token token=&quot;${token}&quot;</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Append root policy: policy.yml" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value"># Top-level policy file&#xd;
+- !group team_leads&#xd;
+- !group security_ops&#xd;
+&#xd;
+# Define &quot;staging&quot; namespace, owned by the &quot;team_leads&quot;&#xd;
+- !policy&#xd;
+  id: staging&#xd;
+  owner: !group team_leads&#xd;
+&#xd;
+# Define &quot;production&quot; namespace, owned by the &quot;security_ops&quot; team&#xd;
+- !policy&#xd;
+  id: production&#xd;
+  owner: !group security_ops&#xd;
+</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${server}</stringProp>
+          <stringProp name="HTTPSampler.port">443</stringProp>
+          <stringProp name="HTTPSampler.protocol">https</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/policies/${conjurAccount}/policy/root</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="Authorization" elementType="Header">
+                <stringProp name="Header.name">Authorization</stringProp>
+                <stringProp name="Header.value">Token token=&quot;${token}&quot;</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Append staging policy: myapp.yml" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">- !policy&#xd;
+  id: myapp&#xd;
+  body:&#xd;
+  - &amp;variables&#xd;
+    - !variable&#xd;
+      id: database/url&#xd;
+      annotations:&#xd;
+        description: Database URL&#xd;
+    - !variable&#xd;
+      id: database/port&#xd;
+      annotations:&#xd;
+        description: Database port&#xd;
+    - !variable&#xd;
+      id: database/username&#xd;
+      annotations:&#xd;
+        description: Application database username&#xd;
+    - !variable&#xd;
+      id: database/password&#xd;
+      annotations:&#xd;
+        description: Application database password&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-1&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-2&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-3&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-4&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-5&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-6&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-7&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-8&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-9&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-10&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-11&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-12&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-13&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-14&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-15&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-16&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-17&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-18&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-19&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-20&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-21&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-22&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-23&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-24&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-25&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-26&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-27&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-28&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-29&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-30&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-31&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-32&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-33&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-34&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-35&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-36&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-37&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-38&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-39&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-40&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-41&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-42&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-43&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-44&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-45&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-46&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-47&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-48&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-49&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-50&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-51&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-52&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-53&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-54&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-55&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-56&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-57&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-58&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-59&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-60&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-61&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-62&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-63&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-64&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-65&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-66&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-67&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-68&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-69&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-70&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-71&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-72&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-73&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-74&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-75&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-76&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-77&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-78&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-79&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-80&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-81&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-82&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-83&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-84&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-85&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-86&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-87&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-88&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-89&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-90&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-91&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-92&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-93&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-94&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-95&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-96&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-97&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-98&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-99&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+  - !layer&#xd;
+&#xd;
+  - !host-factory&#xd;
+    layer: [ !layer ]&#xd;
+&#xd;
+  - !group secrets-users&#xd;
+  - !group secrets-managers&#xd;
+&#xd;
+  # secrets-users can read and execute&#xd;
+  - !permit&#xd;
+    resource: *variables&#xd;
+    privileges: [ read, execute ]&#xd;
+    role: !group secrets-users&#xd;
+&#xd;
+  # secrets-managers can update (and read and execute, via role grant)&#xd;
+  - !permit&#xd;
+    resource: *variables&#xd;
+    privileges: [ update ]&#xd;
+    role: !group secrets-managers&#xd;
+&#xd;
+  # secrets-managers has role secrets-users&#xd;
+  - !grant&#xd;
+    member: !group secrets-managers&#xd;
+    role: !group secrets-users&#xd;
+&#xd;
+  # Application layer has the secrets-users role&#xd;
+  - !grant&#xd;
+    member: !layer&#xd;
+    role: !group secrets-users</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${server}</stringProp>
+          <stringProp name="HTTPSampler.port">443</stringProp>
+          <stringProp name="HTTPSampler.protocol">https</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/policies/${conjurAccount}/policy/staging</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="Authorization" elementType="Header">
+                <stringProp name="Header.name">Authorization</stringProp>
+                <stringProp name="Header.value">Token token=&quot;${token}&quot;</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Append production policy: myapp.yml" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">- !policy&#xd;
+  id: myapp&#xd;
+  body:&#xd;
+  - &amp;variables&#xd;
+    - !variable&#xd;
+      id: database/url&#xd;
+      annotations:&#xd;
+        description: Database URL&#xd;
+    - !variable&#xd;
+      id: database/port&#xd;
+      annotations:&#xd;
+        description: Database port&#xd;
+    - !variable&#xd;
+      id: database/username&#xd;
+      annotations:&#xd;
+        description: Application database username&#xd;
+    - !variable&#xd;
+      id: database/password&#xd;
+      annotations:&#xd;
+        description: Application database password&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-1&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-2&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-3&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-4&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-5&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-6&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-7&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-8&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-9&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-10&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-11&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-12&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-13&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-14&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-15&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-16&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-17&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-18&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-19&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-20&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-21&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-22&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-23&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-24&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-25&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-26&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-27&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-28&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-29&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-30&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-31&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-32&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-33&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-34&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-35&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-36&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-37&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-38&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-39&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-40&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-41&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-42&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-43&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-44&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-45&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-46&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-47&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-48&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-49&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-50&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-51&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-52&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-53&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-54&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-55&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-56&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-57&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-58&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-59&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-60&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-61&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-62&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-63&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-64&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-65&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-66&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-67&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-68&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-69&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-70&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-71&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-72&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-73&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-74&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-75&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-76&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-77&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-78&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-79&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-80&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-81&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-82&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-83&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-84&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-85&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-86&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-87&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-88&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-89&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-90&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-91&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-92&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-93&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-94&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-95&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-96&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-97&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-98&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+    - !variable&#xd;
+      id: secret-99&#xd;
+      annotations:&#xd;
+        description: Application secret&#xd;
+&#xd;
+  - !layer&#xd;
+&#xd;
+  - !host-factory&#xd;
+    layer: [ !layer ]&#xd;
+&#xd;
+  - !group secrets-users&#xd;
+  - !group secrets-managers&#xd;
+&#xd;
+  # secrets-users can read and execute&#xd;
+  - !permit&#xd;
+    resource: *variables&#xd;
+    privileges: [ read, execute ]&#xd;
+    role: !group secrets-users&#xd;
+&#xd;
+  # secrets-managers can update (and read and execute, via role grant)&#xd;
+  - !permit&#xd;
+    resource: *variables&#xd;
+    privileges: [ update ]&#xd;
+    role: !group secrets-managers&#xd;
+&#xd;
+  # secrets-managers has role secrets-users&#xd;
+  - !grant&#xd;
+    member: !group secrets-managers&#xd;
+    role: !group secrets-users&#xd;
+&#xd;
+  # Application layer has the secrets-users role&#xd;
+  - !grant&#xd;
+    member: !layer&#xd;
+    role: !group secrets-users</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${server}</stringProp>
+          <stringProp name="HTTPSampler.port">443</stringProp>
+          <stringProp name="HTTPSampler.protocol">https</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/policies/${conjurAccount}/policy/production</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="Authorization" elementType="Header">
+                <stringProp name="Header.name">Authorization</stringProp>
+                <stringProp name="Header.value">Token token=&quot;${token}&quot;</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Append root policy: application_grants.yml" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value"># Grant the team_leads permission to read+write the &quot;myapp&quot; variables in production&#xd;
+- !grant&#xd;
+  member: !group developers&#xd;
+  role: !group staging/myapp/secrets-users</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${server}</stringProp>
+          <stringProp name="HTTPSampler.port">443</stringProp>
+          <stringProp name="HTTPSampler.protocol">https</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/policies/${conjurAccount}/policy/root</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="Authorization" elementType="Header">
+                <stringProp name="Header.name">Authorization</stringProp>
+                <stringProp name="Header.value">Token token=&quot;${token}&quot;</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Append root policy: hosts.yml" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">- !host test-host-1&#xd;
+&#xd;
+- !grant&#xd;
+  role: !layer production/myapp&#xd;
+  member: !host test-host-1</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${server}</stringProp>
+          <stringProp name="HTTPSampler.port">443</stringProp>
+          <stringProp name="HTTPSampler.protocol">https</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/policies/${conjurAccount}/policy/root</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="Authorization" elementType="Header">
+                <stringProp name="Header.name">Authorization</stringProp>
+                <stringProp name="Header.value">Token token=&quot;${token}&quot;</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+          <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="JSON Extractor" enabled="true">
+            <stringProp name="JSONPostProcessor.referenceNames">key</stringProp>
+            <stringProp name="JSONPostProcessor.jsonPathExprs">$.created_roles.demo:host:test-host-1.api_key</stringProp>
+            <stringProp name="JSONPostProcessor.match_numbers">1</stringProp>
+          </JSONPostProcessor>
+          <hashTree/>
+          <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="Set Property key" enabled="true">
+            <stringProp name="scriptLanguage">groovy</stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="script">import org.apache.jmeter.util.JMeterUtils;
+
+if(vars.getObject(&quot;key&quot;)){
+	JMeterUtils.setProperty(&quot;key&quot;, vars.getObject(&quot;key&quot;));
+	log.info(&quot;Set key property: &quot; + vars.getObject(&quot;key&quot;));
+}</stringProp>
+          </JSR223PostProcessor>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Rotate Host API Key" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" enabled="true">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${server}</stringProp>
+          <stringProp name="HTTPSampler.port">443</stringProp>
+          <stringProp name="HTTPSampler.protocol">https</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/authn/${conjurAccount}/api_key?role=host:test-host-1</stringProp>
+          <stringProp name="HTTPSampler.method">PUT</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="Authorization" elementType="Header">
+                <stringProp name="Header.name">Authorization</stringProp>
+                <stringProp name="Header.value">Token token=&quot;${token}&quot;</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+          <BeanShellPostProcessor guiclass="TestBeanGUI" testclass="BeanShellPostProcessor" testname="BeanShell PostProcessor" enabled="true">
+            <stringProp name="filename"></stringProp>
+            <stringProp name="parameters"></stringProp>
+            <boolProp name="resetInterpreter">false</boolProp>
+            <stringProp name="script">import org.apache.jmeter.util.JMeterUtils;
+
+//vars.put(&quot;key&quot;, );
+JMeterUtils.setProperty(&quot;key&quot;,prev.getResponseDataAsString());</stringProp>
+          </BeanShellPostProcessor>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Set Secret: production/myapp/database/username" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">alice</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${server}</stringProp>
+          <stringProp name="HTTPSampler.port">443</stringProp>
+          <stringProp name="HTTPSampler.protocol">https</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/secrets/${conjurAccount}/variable/production/myapp/database/username</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="Authorization" elementType="Header">
+                <stringProp name="Header.name">Authorization</stringProp>
+                <stringProp name="Header.value">Token token=&quot;${token}&quot;</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Set Secret: production/myapp/database/password" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">wonderland</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${server}</stringProp>
+          <stringProp name="HTTPSampler.port">443</stringProp>
+          <stringProp name="HTTPSampler.protocol">https</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/secrets/${conjurAccount}/variable/production/myapp/database/password</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="Authorization" elementType="Header">
+                <stringProp name="Header.name">Authorization</stringProp>
+                <stringProp name="Header.value">Token token=&quot;${token}&quot;</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Set Secret: production/myapp/database/url" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">https://oxfordshire.wonder.com</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${server}</stringProp>
+          <stringProp name="HTTPSampler.port">443</stringProp>
+          <stringProp name="HTTPSampler.protocol">https</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/secrets/${conjurAccount}/variable/production/myapp/database/url</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="Authorization" elementType="Header">
+                <stringProp name="Header.name">Authorization</stringProp>
+                <stringProp name="Header.value">Token token=&quot;${token}&quot;</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Set Secret: production/myapp/database/port" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">1951</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${server}</stringProp>
+          <stringProp name="HTTPSampler.port">443</stringProp>
+          <stringProp name="HTTPSampler.protocol">https</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/secrets/${conjurAccount}/variable/production/myapp/database/port</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="Authorization" elementType="Header">
+                <stringProp name="Header.name">Authorization</stringProp>
+                <stringProp name="Header.value">Token token=&quot;${token}&quot;</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Set Secret: production/myapp/database/port" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">1951</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${server}</stringProp>
+          <stringProp name="HTTPSampler.port">443</stringProp>
+          <stringProp name="HTTPSampler.protocol">https</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/secrets/${conjurAccount}/variable/production/myapp/database/port</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="Authorization" elementType="Header">
+                <stringProp name="Header.name">Authorization</stringProp>
+                <stringProp name="Header.value">Token token=&quot;${token}&quot;</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+        </hashTree>
+      </hashTree>
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Thread Group 1" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">2</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">20</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">1</stringProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <stringProp name="ThreadGroup.duration"></stringProp>
+        <stringProp name="ThreadGroup.delay"></stringProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+      </ThreadGroup>
+      <hashTree>
+        <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="Set BaseDate" enabled="true">
+          <stringProp name="scriptLanguage">groovy</stringProp>
+          <stringProp name="parameters"></stringProp>
+          <stringProp name="filename"></stringProp>
+          <stringProp name="cacheKey">true</stringProp>
+          <stringProp name="script">vars.put(&quot;BaseDate&quot;, new Date().getTime().toString());</stringProp>
+        </JSR223PreProcessor>
+        <hashTree/>
+        <UserParameters guiclass="UserParametersGui" testclass="UserParameters" testname="User Parameters" enabled="true">
+          <collectionProp name="UserParameters.names">
+            <stringProp name="-172355018">threadGroupMultiplier</stringProp>
+          </collectionProp>
+          <collectionProp name="UserParameters.thread_values">
+            <collectionProp name="85106">
+              <stringProp name="49">1</stringProp>
+            </collectionProp>
+          </collectionProp>
+          <boolProp name="UserParameters.per_iteration">false</boolProp>
+        </UserParameters>
+        <hashTree/>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Authenticate" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">${__P(key)}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${server}</stringProp>
+          <stringProp name="HTTPSampler.port"></stringProp>
+          <stringProp name="HTTPSampler.protocol">https</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">authn/${conjurAccount}/host%2Ftest-host-1/authenticate</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.implementation">HttpClient4</stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="Set token" enabled="true">
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="script">import org.apache.commons.codec.binary.Base64;
+
+vars.put(&quot;token&quot;, Base64.encodeBase64String(prev.getResponseDataAsString().getBytes()));
+</stringProp>
+            <stringProp name="scriptLanguage">groovy</stringProp>
+          </JSR223PostProcessor>
+          <hashTree/>
+          <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="Calculate loop safe iterations" enabled="true">
+            <stringProp name="scriptLanguage">groovy</stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="script">int loopSafeIterations = ${safecount} / ${threadCount};
+
+vars.put(&quot;loopSafeIterations&quot;, loopSafeIterations.toString());</stringProp>
+          </JSR223PostProcessor>
+          <hashTree/>
+        </hashTree>
+        <LoopController guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Safes secrets " enabled="true">
+          <boolProp name="LoopController.continue_forever">true</boolProp>
+          <stringProp name="LoopController.loops">${loopSafeIterations}</stringProp>
+        </LoopController>
+        <hashTree>
+          <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="Set DateNow" enabled="true">
+            <stringProp name="scriptLanguage">groovy</stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="script">vars.put(&quot;DateNow&quot;, new Date().getTime().toString());</stringProp>
+          </JSR223PreProcessor>
+          <hashTree/>
+          <IfController guiclass="IfControllerPanel" testclass="IfController" testname="If Controller" enabled="true">
+            <stringProp name="IfController.condition">(${DateNow}-${BaseDate})&gt;360000</stringProp>
+            <boolProp name="IfController.evaluateAll">false</boolProp>
+          </IfController>
+          <hashTree>
+            <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Authenticate" enabled="true">
+              <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+              <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+                <collectionProp name="Arguments.arguments">
+                  <elementProp name="" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                    <stringProp name="Argument.value">${__P(key)}</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </elementProp>
+              <stringProp name="HTTPSampler.domain">${server}</stringProp>
+              <stringProp name="HTTPSampler.port">443</stringProp>
+              <stringProp name="HTTPSampler.protocol">https</stringProp>
+              <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+              <stringProp name="HTTPSampler.path">/authn/${conjurAccount}/host%2Ftest-host-1/authenticate</stringProp>
+              <stringProp name="HTTPSampler.method">POST</stringProp>
+              <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+              <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+              <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+              <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+              <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+              <stringProp name="HTTPSampler.implementation">HttpClient4</stringProp>
+              <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+              <stringProp name="HTTPSampler.response_timeout"></stringProp>
+              <stringProp name="TestPlan.comments">Created from cURL on 2019-12-26T16:33:44.235664</stringProp>
+            </HTTPSamplerProxy>
+            <hashTree>
+              <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="Set token" enabled="true">
+                <stringProp name="cacheKey">true</stringProp>
+                <stringProp name="filename"></stringProp>
+                <stringProp name="parameters"></stringProp>
+                <stringProp name="script">import org.apache.commons.codec.binary.Base64;
+
+vars.put(&quot;token&quot;, Base64.encodeBase64String(prev.getResponseDataAsString().getBytes()));</stringProp>
+                <stringProp name="scriptLanguage">groovy</stringProp>
+              </JSR223PostProcessor>
+              <hashTree/>
+              <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="Set BaseDate" enabled="true">
+                <stringProp name="scriptLanguage">groovy</stringProp>
+                <stringProp name="parameters"></stringProp>
+                <stringProp name="filename"></stringProp>
+                <stringProp name="cacheKey">true</stringProp>
+                <stringProp name="script">vars.put(&quot;BaseDate&quot;, new Date().getTime().toString());</stringProp>
+              </JSR223PostProcessor>
+              <hashTree/>
+            </hashTree>
+          </hashTree>
+          <CounterConfig guiclass="CounterConfigGui" testclass="CounterConfig" testname="Safe Counter" enabled="true">
+            <stringProp name="CounterConfig.start">1</stringProp>
+            <stringProp name="CounterConfig.end">500</stringProp>
+            <stringProp name="CounterConfig.incr">1</stringProp>
+            <stringProp name="CounterConfig.name">safeNum</stringProp>
+            <stringProp name="CounterConfig.format"></stringProp>
+            <boolProp name="CounterConfig.per_user">false</boolProp>
+          </CounterConfig>
+          <hashTree/>
+          <LoopController guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Accounts" enabled="true">
+            <boolProp name="LoopController.continue_forever">true</boolProp>
+            <stringProp name="LoopController.loops">20</stringProp>
+          </LoopController>
+          <hashTree>
+            <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="Set DateNow" enabled="true">
+              <stringProp name="scriptLanguage">groovy</stringProp>
+              <stringProp name="parameters"></stringProp>
+              <stringProp name="filename"></stringProp>
+              <stringProp name="cacheKey">true</stringProp>
+              <stringProp name="script">vars.put(&quot;DateNow&quot;, new Date().getTime().toString());</stringProp>
+            </JSR223PreProcessor>
+            <hashTree/>
+            <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Individually Retrieve Secrets" enabled="true">
+              <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" enabled="true">
+                <collectionProp name="Arguments.arguments"/>
+              </elementProp>
+              <stringProp name="HTTPSampler.domain">${server}</stringProp>
+              <stringProp name="HTTPSampler.port">443</stringProp>
+              <stringProp name="HTTPSampler.protocol">https</stringProp>
+              <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+              <stringProp name="HTTPSampler.path">/secrets/demo/variable/production/myapp/database/username</stringProp>
+              <stringProp name="HTTPSampler.method">GET</stringProp>
+              <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+              <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+              <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+              <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+              <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+              <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+              <stringProp name="HTTPSampler.response_timeout"></stringProp>
+            </HTTPSamplerProxy>
+            <hashTree/>
+            <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
+              <collectionProp name="HeaderManager.headers">
+                <elementProp name="Authorization" elementType="Header">
+                  <stringProp name="Header.name">Authorization</stringProp>
+                  <stringProp name="Header.value">Token token=&quot;${token}&quot;</stringProp>
+                </elementProp>
+              </collectionProp>
+              <stringProp name="TestPlan.comments">Created from cURL on 2019-12-26T16:35:05.262234</stringProp>
+            </HeaderManager>
+            <hashTree/>
+          </hashTree>
+        </hashTree>
+      </hashTree>
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Thread Group 2 - Bulk  Retrieval " enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">2</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">20</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">1</stringProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <stringProp name="ThreadGroup.duration"></stringProp>
+        <stringProp name="ThreadGroup.delay"></stringProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+      </ThreadGroup>
+      <hashTree>
+        <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="Set BaseDate" enabled="true">
+          <stringProp name="scriptLanguage">groovy</stringProp>
+          <stringProp name="parameters"></stringProp>
+          <stringProp name="filename"></stringProp>
+          <stringProp name="cacheKey">true</stringProp>
+          <stringProp name="script">vars.put(&quot;BaseDate&quot;, new Date().getTime().toString());</stringProp>
+        </JSR223PreProcessor>
+        <hashTree/>
+        <UserParameters guiclass="UserParametersGui" testclass="UserParameters" testname="User Parameters" enabled="true">
+          <collectionProp name="UserParameters.names">
+            <stringProp name="-172355018">threadGroupMultiplier</stringProp>
+          </collectionProp>
+          <collectionProp name="UserParameters.thread_values">
+            <collectionProp name="85106">
+              <stringProp name="49">1</stringProp>
+            </collectionProp>
+          </collectionProp>
+          <boolProp name="UserParameters.per_iteration">false</boolProp>
+        </UserParameters>
+        <hashTree/>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Authenticate" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">${__P(key)}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${server}</stringProp>
+          <stringProp name="HTTPSampler.port"></stringProp>
+          <stringProp name="HTTPSampler.protocol">https</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">authn/${conjurAccount}/host%2Ftest-host-1/authenticate</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.implementation">HttpClient4</stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="Set token" enabled="true">
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="script">import org.apache.commons.codec.binary.Base64;
+
+vars.put(&quot;token&quot;, Base64.encodeBase64String(prev.getResponseDataAsString().getBytes()));
+</stringProp>
+            <stringProp name="scriptLanguage">groovy</stringProp>
+          </JSR223PostProcessor>
+          <hashTree/>
+          <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="Calculate loop safe iterations" enabled="true">
+            <stringProp name="scriptLanguage">groovy</stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="script">int loopSafeIterations = ${safecount} / ${threadCount};
+
+vars.put(&quot;loopSafeIterations&quot;, loopSafeIterations.toString());</stringProp>
+          </JSR223PostProcessor>
+          <hashTree/>
+        </hashTree>
+        <LoopController guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Safes secrets " enabled="true">
+          <boolProp name="LoopController.continue_forever">true</boolProp>
+          <stringProp name="LoopController.loops">${loopSafeIterations}</stringProp>
+        </LoopController>
+        <hashTree>
+          <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="Set DateNow" enabled="true">
+            <stringProp name="scriptLanguage">groovy</stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="script">vars.put(&quot;DateNow&quot;, new Date().getTime().toString());</stringProp>
+          </JSR223PreProcessor>
+          <hashTree/>
+          <IfController guiclass="IfControllerPanel" testclass="IfController" testname="If Controller" enabled="true">
+            <stringProp name="IfController.condition">(${DateNow}-${BaseDate})&gt;360000</stringProp>
+            <boolProp name="IfController.evaluateAll">false</boolProp>
+          </IfController>
+          <hashTree>
+            <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Authenticate" enabled="true">
+              <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+              <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+                <collectionProp name="Arguments.arguments">
+                  <elementProp name="" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                    <stringProp name="Argument.value">${__P(key)}</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </elementProp>
+              <stringProp name="HTTPSampler.domain">${server}</stringProp>
+              <stringProp name="HTTPSampler.port">443</stringProp>
+              <stringProp name="HTTPSampler.protocol">https</stringProp>
+              <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+              <stringProp name="HTTPSampler.path">/authn/${conjurAccount}/host%2Ftest-host-1/authenticate</stringProp>
+              <stringProp name="HTTPSampler.method">POST</stringProp>
+              <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+              <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+              <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+              <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+              <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+              <stringProp name="HTTPSampler.implementation">HttpClient4</stringProp>
+              <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+              <stringProp name="HTTPSampler.response_timeout"></stringProp>
+              <stringProp name="TestPlan.comments">Created from cURL on 2019-12-26T16:33:44.235664</stringProp>
+            </HTTPSamplerProxy>
+            <hashTree>
+              <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="Set token" enabled="true">
+                <stringProp name="cacheKey">true</stringProp>
+                <stringProp name="filename"></stringProp>
+                <stringProp name="parameters"></stringProp>
+                <stringProp name="script">import org.apache.commons.codec.binary.Base64;
+
+vars.put(&quot;token&quot;, Base64.encodeBase64String(prev.getResponseDataAsString().getBytes()));</stringProp>
+                <stringProp name="scriptLanguage">groovy</stringProp>
+              </JSR223PostProcessor>
+              <hashTree/>
+              <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="Set BaseDate" enabled="true">
+                <stringProp name="scriptLanguage">groovy</stringProp>
+                <stringProp name="parameters"></stringProp>
+                <stringProp name="filename"></stringProp>
+                <stringProp name="cacheKey">true</stringProp>
+                <stringProp name="script">vars.put(&quot;BaseDate&quot;, new Date().getTime().toString());</stringProp>
+              </JSR223PostProcessor>
+              <hashTree/>
+            </hashTree>
+          </hashTree>
+          <CounterConfig guiclass="CounterConfigGui" testclass="CounterConfig" testname="Safe Counter" enabled="true">
+            <stringProp name="CounterConfig.start">1</stringProp>
+            <stringProp name="CounterConfig.end">500</stringProp>
+            <stringProp name="CounterConfig.incr">1</stringProp>
+            <stringProp name="CounterConfig.name">safeNum</stringProp>
+            <stringProp name="CounterConfig.format"></stringProp>
+            <boolProp name="CounterConfig.per_user">false</boolProp>
+          </CounterConfig>
+          <hashTree/>
+          <LoopController guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Accounts" enabled="true">
+            <boolProp name="LoopController.continue_forever">true</boolProp>
+            <stringProp name="LoopController.loops">20</stringProp>
+          </LoopController>
+          <hashTree>
+            <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="Set DateNow" enabled="true">
+              <stringProp name="scriptLanguage">groovy</stringProp>
+              <stringProp name="parameters"></stringProp>
+              <stringProp name="filename"></stringProp>
+              <stringProp name="cacheKey">true</stringProp>
+              <stringProp name="script">vars.put(&quot;DateNow&quot;, new Date().getTime().toString());</stringProp>
+            </JSR223PreProcessor>
+            <hashTree/>
+            <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Batch Retrieve Secrets" enabled="true">
+              <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" enabled="true">
+                <collectionProp name="Arguments.arguments"/>
+              </elementProp>
+              <stringProp name="HTTPSampler.domain">${server}</stringProp>
+              <stringProp name="HTTPSampler.port">443</stringProp>
+              <stringProp name="HTTPSampler.protocol">https</stringProp>
+              <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+              <stringProp name="HTTPSampler.path">/secrets?variable_ids=demo:variable:production%2Fmyapp%2Fdatabase%2Fusername,demo:variable:production%2Fmyapp%2Fdatabase%2Fpassword,demo:variable:production%2Fmyapp%2Fdatabase%2Fport,demo:variable:production%2Fmyapp%2Fdatabase%2Furl</stringProp>
+              <stringProp name="HTTPSampler.method">GET</stringProp>
+              <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+              <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+              <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+              <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+              <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+              <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+              <stringProp name="HTTPSampler.response_timeout"></stringProp>
+            </HTTPSamplerProxy>
+            <hashTree/>
+            <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP HeaderManager" enabled="true">
+              <collectionProp name="HeaderManager.headers">
+                <elementProp name="Authorization" elementType="Header">
+                  <stringProp name="Header.name">Authorization</stringProp>
+                  <stringProp name="Header.value">Token token=&quot;${token}&quot;</stringProp>
+                </elementProp>
+              </collectionProp>
+              <stringProp name="TestPlan.comments">Created from cURL on 2019-12-26T16:35:05.262234</stringProp>
+            </HeaderManager>
+            <hashTree/>
+          </hashTree>
+        </hashTree>
+      </hashTree>
+      <ResultCollector guiclass="StatGraphVisualizer" testclass="ResultCollector" testname="Aggregate Graph" enabled="true">
+        <boolProp name="ResultCollector.error_logging">false</boolProp>
+        <objProp>
+          <name>saveConfig</name>
+          <value class="SampleSaveConfiguration">
+            <time>true</time>
+            <latency>true</latency>
+            <timestamp>true</timestamp>
+            <success>true</success>
+            <label>true</label>
+            <code>true</code>
+            <message>true</message>
+            <threadName>true</threadName>
+            <dataType>true</dataType>
+            <encoding>false</encoding>
+            <assertions>true</assertions>
+            <subresults>true</subresults>
+            <responseData>false</responseData>
+            <samplerData>false</samplerData>
+            <xml>false</xml>
+            <fieldNames>true</fieldNames>
+            <responseHeaders>false</responseHeaders>
+            <requestHeaders>false</requestHeaders>
+            <responseDataOnError>false</responseDataOnError>
+            <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+            <assertionsResultsToSave>0</assertionsResultsToSave>
+            <bytes>true</bytes>
+            <sentBytes>true</sentBytes>
+            <url>true</url>
+            <threadCounts>true</threadCounts>
+            <idleTime>true</idleTime>
+            <connectTime>true</connectTime>
+          </value>
+        </objProp>
+        <stringProp name="filename">/Users/hartzi/Desktop/DAP_Performance_Results.jtl</stringProp>
+      </ResultCollector>
+      <hashTree/>
+      <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="Aggregate Report" enabled="true">
+        <boolProp name="ResultCollector.error_logging">false</boolProp>
+        <objProp>
+          <name>saveConfig</name>
+          <value class="SampleSaveConfiguration">
+            <time>true</time>
+            <latency>true</latency>
+            <timestamp>true</timestamp>
+            <success>true</success>
+            <label>true</label>
+            <code>true</code>
+            <message>true</message>
+            <threadName>true</threadName>
+            <dataType>true</dataType>
+            <encoding>false</encoding>
+            <assertions>true</assertions>
+            <subresults>true</subresults>
+            <responseData>false</responseData>
+            <samplerData>false</samplerData>
+            <xml>false</xml>
+            <fieldNames>true</fieldNames>
+            <responseHeaders>true</responseHeaders>
+            <requestHeaders>true</requestHeaders>
+            <responseDataOnError>false</responseDataOnError>
+            <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+            <assertionsResultsToSave>0</assertionsResultsToSave>
+            <bytes>true</bytes>
+            <sentBytes>true</sentBytes>
+            <url>true</url>
+            <threadCounts>true</threadCounts>
+            <idleTime>true</idleTime>
+            <connectTime>true</connectTime>
+          </value>
+        </objProp>
+        <stringProp name="filename">/Users/hartzi/Desktop/DAP_Performance_Results.jtl</stringProp>
+      </ResultCollector>
+      <hashTree/>
+      <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
+        <boolProp name="ResultCollector.error_logging">false</boolProp>
+        <objProp>
+          <name>saveConfig</name>
+          <value class="SampleSaveConfiguration">
+            <time>true</time>
+            <latency>true</latency>
+            <timestamp>true</timestamp>
+            <success>true</success>
+            <label>true</label>
+            <code>true</code>
+            <message>true</message>
+            <threadName>true</threadName>
+            <dataType>true</dataType>
+            <encoding>false</encoding>
+            <assertions>true</assertions>
+            <subresults>true</subresults>
+            <responseData>false</responseData>
+            <samplerData>false</samplerData>
+            <xml>false</xml>
+            <fieldNames>true</fieldNames>
+            <responseHeaders>false</responseHeaders>
+            <requestHeaders>true</requestHeaders>
+            <responseDataOnError>false</responseDataOnError>
+            <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+            <assertionsResultsToSave>0</assertionsResultsToSave>
+            <bytes>true</bytes>
+            <sentBytes>true</sentBytes>
+            <url>true</url>
+            <threadCounts>true</threadCounts>
+            <idleTime>true</idleTime>
+            <connectTime>true</connectTime>
+          </value>
+        </objProp>
+        <stringProp name="filename"></stringProp>
+      </ResultCollector>
+      <hashTree/>
+    </hashTree>
+  </hashTree>
+</jmeterTestPlan>
