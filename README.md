@@ -204,11 +204,41 @@ $ docker-compose exec conjur-master-1.mycompany.local ls -a /opt/conjur/possum/
 ```
 
 ## Performance Tests
+
+Conjur Intro includes support for running a simple load test against a running instance.
+
+```sh
+# Start Conjur
+$ bin/dap --provision-master
+
+# Optionally, load 150k secrets
+$ bin/api --load-large-secrets-sample
+
+# Run load test
+$ bin/load-test --name 2023-05-05
 ```
-# Start tests
-$ ./performance_test/start.sh
+
+The above test generates a report in the folder:
+
+`tools/performance-tests/jmeter/jmeter_reports/2023-05-05`
+
+Load is applied using JMeter. The JMeter file is located at:
+
+`tools/performance-tests/Conjur_Performance_Test.jmx`
+
+If changes are required, the easiest way is to use the JMeter UI.
+
+```sh
+# Install JMeter UI
+$ brew install jmeter
+
+# Open UI
+$ jmeter
 ```
-More information can be found [here](./performance_test/README.md#jmeter-performance-test)
+
+Once the JMeter UI is open. Open the above script and make your desired changes. It's
+important to note that the UI does not automatically save changes.  Make sure you save
+before attempting to re-run the script.
 
 ## Contributing
 

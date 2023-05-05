@@ -1,0 +1,52 @@
+#!/bin/bash -ex
+
+
+function print_help() {
+  cat << EOF
+NAME
+    Runs a load test against the configured Conjur Enterprise deployment.
+
+SYNOPSIS
+    load [global options]
+
+GLOBAL OPTIONS
+    -h, --help                          - Show this message
+
+    --name <folder-name>                - Target folder to export the report to. If the folder exists
+                                          the contents will be over-written.
+
+EOF
+exit
+}
+
+function run_jmeter_test {
+  local folder="$1"
+  local local_folder="tools/performance-tests/jmeter/jmeter_reports/$folder"
+  rm -rf "$local_folder" || true
+  mkdir -p "$local_folder"
+  docker-compose run --no-deps --rm jmeter jmeter -Jkey=null -n -t /opt/jmeter_data/Conjur_Performance_Test.jmx -l /opt/jmeter_data/jmeter_reports/$folder/Performance_Results.csv -e -o /opt/jmeter_data/jmeter_reports/$folder
+}
+
+function open_results_in_browser {
+  local folder="$1"
+  echo "\nReport is available at: 'tools/performance-tests/jmeter/jmeter_reports/$folder'\n"
+  open "tools/performance-tests/jmeter/jmeter_reports/$folder/index.html"
+}
+
+function main {
+  local folder="$1"
+  run_jmeter_test "$folder"
+  open_results_in_browser "$folder"
+}
+
+report_folder='default'
+
+while true ; do
+  case "$1" in
+    --name ) shift ; report_folder=$1 ; shift ;;
+    -h | --help ) print_help ;;
+     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+  esac
+done
+
+main "$report_folder"

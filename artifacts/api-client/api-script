@@ -12,7 +12,8 @@ Usage: bin/api [options]
     --enable-seed-service               Enables Seed Service for Standbys and Followers
     --fetch-secrets                     Fetches previously set variables (use '--against-master' if only master is available)
     -h, --help                          Shows this help message
-    --load-policy
+    --load-large-secrets-sample         Loads 150k variables with secrets
+    --load-policy <namespace> <policy>  Loads the provided policy into the provied namespace
     --load-sample-policy                Loads a default set of policies to mimic a customer experience
     --load-sample-policy-and-values     Loads policy and sets variable values (equivalent to running '--load-policy' and '--set-secrets')
     -p, --password <password>           Password used for authentication (default is 'MySecretP@ss1')
@@ -26,19 +27,22 @@ EOF
   exit
 }
 
+# General Helper Functions. Any of these functions that communicate with the API should
+# accept an auth token as an input. This greatly increases performance when dealing
+# with multiple API calls.
 retrieve_authentication_token() {
   local user="$1"
   # Allow hosts to be used instead of just users
   user=$(echo "$user" | sed -e "s/\//%2F/g")
   local api_key="$2"
   local url="${3:-$URL}"
-  raw_token="$(curl \
+  token="$(curl \
       --silent \
       --insecure \
+      --header "Accept-Encoding: base64" \
       --request POST \
-      --data $api_key \
+      --data "$api_key" \
       "$url/authn/demo/$user/authenticate")"
-  token=$(echo -n $raw_token | base64 | tr -d '\r\n')
   echo "$token"
 }
 
@@ -49,17 +53,17 @@ authenticate_user() {
   api_key="$(curl \
       --silent \
       --insecure \
-      --user $user:$password \
+      --user "$user:$password" \
       "$url/authn/demo/login")"
-  token=$(retrieve_authentication_token $user $api_key $url)
+  token=$(retrieve_authentication_token "$user" "$api_key" "$url")
   echo "$token"
 }
 
-load_policy() {
+apply_policy() {
   local namespace="$1"
   local policy="$2"
-  local method="${3:-POST}"
-  local token=$(authenticate_user $USER $PASSWORD $master_url)
+  local token="$3"
+  local method="${4:-POST}"
   curl --header "Authorization: Token token=\"$token\"" \
         --write-out "\n" \
         --insecure \
@@ -68,10 +72,20 @@ load_policy() {
      "$master_url/policies/demo/policy/$namespace"
 }
 
+load_policy() {
+  local namespace="$1"
+  local policy="$2"
+  local method="${3:-POST}"
+  local
+  token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
+
+  apply_policy "$namespace" "$policy" "$token" "$method"
+}
+
 set_variable() {
   local variable="$1"
   local value="$2"
-  local token=$(authenticate_user $USER $PASSWORD $master_url)
+  local token="$3"
 
   curl --header "Authorization: Token token=\"$token\"" \
         --insecure \
@@ -79,53 +93,41 @@ set_variable() {
         "$master_url/secrets/demo/variable/$variable"
 }
 
-load_default_policy() {
+apply_default_policy() {
   local environments='staging production'
   local numbers='1 2 3 4 5 6'
+  local token="$token"
 
-  load_policy 'root' 'policy/modular/root.yml'
+  apply_policy 'root' 'policy/modular/root.yml' "$token"
 
   for environment in $environments; do
-    load_policy $environment 'policy/modular/apps/applications.yml'
+    apply_policy "$environment" 'policy/modular/apps/applications.yml' "$token"
     for num in $numbers; do
-      load_policy "$environment/my-app-$num" 'policy/modular/apps/generic-application.yml'
-      load_policy "$environment/my-app-$num" 'policy/modular/services/pg-database.yml'
-      load_policy "$environment/my-app-$num" 'policy/modular/pg-entitlement.yml'
+      apply_policy "$environment/my-app-$num" 'policy/modular/apps/generic-application.yml' "$token"
+      apply_policy "$environment/my-app-$num" 'policy/modular/services/pg-database.yml' "$token"
+      apply_policy "$environment/my-app-$num" 'policy/modular/pg-entitlement.yml' "$token"
     done
   done
-
-  load_policy 'root' 'policy/delete_policy/base.yml'
-  load_policy 'delete_branch' 'policy/delete_policy/first_level.yml' 'PUT'
-  load_policy 'delete_branch/first-level' 'policy/delete_policy/second_level.yml'
 }
 
-delete_policy() {
-  load_policy 'delete_branch/first-level' 'policy/delete_policy/delete.yml' 'PATCH'
-}
-
-set_secret() {
-  local variable_path="$1"
-  local variable_value="$2"
-  set_variable "$variable_path" "$variable_value"
-}
-
-load_default_values() {
+apply_default_values() {
+  local token="$1"
   local environments='staging production'
   local numbers='1 2 3 4 5 6'
 
   for environment in $environments; do
     for num in $numbers; do
-      set_variable "$environment/my-app-$num/postgres-database/url" "$environment.my-app-$num.staging.mycompany-postgres.com/my-app"
-      set_variable "$environment/my-app-$num/postgres-database/port" "5432"
-      set_variable "$environment/my-app-$num/postgres-database/username" "my-app-$num"
-      set_variable "$environment/my-app-$num/postgres-database/password" "secret-p@ssword-$environment-my-app-$num"
+      set_variable "$environment/my-app-$num/postgres-database/url" "$environment.my-app-$num.staging.mycompany-postgres.com/my-app" "$token"
+      set_variable "$environment/my-app-$num/postgres-database/port" "5432" "$token"
+      set_variable "$environment/my-app-$num/postgres-database/username" "my-app-$num" "$token"
+      set_variable "$environment/my-app-$num/postgres-database/password" "secret-p@ssword-$environment-my-app-$num" "$token"
     done
   done
 }
 
 fetch_secrets() {
   local variables="$1"
-  local token=$(authenticate_user $USER $PASSWORD $URL)
+  local token="$2"
   curl --header "Authorization: Token token=\"$token\"" \
         --write-out "\n" \
         --insecure \
@@ -133,45 +135,106 @@ fetch_secrets() {
         "$master_url/secrets?variable_ids=$variables"
 }
 
+# The following functions are called directly from the CLI using flags. These functions
+# need to retrieve a token to be passed to the functions interacting directly with
+# the Conjur API
+load_default_policy() {
+  local token
+  token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
+  apply_default_policy "$token"
+}
+
+delete_policy() {
+  local token
+  token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
+  apply_policy 'delete_branch/first-level' 'policy/delete_policy/delete.yml' "$token" 'PATCH'
+}
+
+set_secret() {
+  local variable_path="$1"
+  local variable_value="$2"
+  local token
+  token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
+  set_variable "$variable_path" "$variable_value" "$token"
+}
+
+load_default_values() {
+  local token
+  token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
+  apply_default_values "$token"
+}
+
 retrieve_variables() {
+  local token
+  token=$(authenticate_user "$USER" "$PASSWORD" "$URL")
   secrets="demo:variable:staging/my-app-1/postgres-database/url,demo:variable:staging/my-app-1/postgres-database/port,demo:variable:staging/my-app-1/postgres-database/username,demo:variable:staging/my-app-1/postgres-database/password"
-  fetch_secrets $secrets
+  fetch_secrets $secrets "$token" | jq .
 }
 
 load_policy_and_set_variables() {
-  load_default_policy
-  load_default_values
-}
-
-view_policy_members() {
-  local token=$(authenticate_user $USER $PASSWORD $URL)
-  curl --header "Authorization: Token token=\"$token\"" \
-        --write-out "\n" \
-        --insecure \
-        --request GET \
-        "$master_url/roles/demo/policy/production?members"
+  local token
+  token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
+  apply_default_policy "$token"
+  apply_default_values "$token"
 }
 
 view_roles() {
-  local token=$(authenticate_user $USER $PASSWORD $URL)
+  local token
+  token=$(authenticate_user "$USER" "$PASSWORD" "$URL")
   curl --header "Authorization: Token token=\"$token\"" \
         --write-out "\n" \
         --insecure \
         --request GET \
-        "$master_url/resources/demo" | jq .
+        "$URL/resources/demo" | jq .
 }
 
-rotate_api_key() {
+view_policy_members() {
+  local token
+  token=$(authenticate_user "$USER" "$PASSWORD" "$URL")
   curl --header "Authorization: Token token=\"$token\"" \
+        --write-out "\n" \
         --insecure \
         --request GET \
-        "$master_url/resources/demo"
+        "$master_url/roles/demo/policy/production?members" | jq .
+}
+
+load_large_policy_and_secrets() {
+  local token
+  token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
+  apply_policy 'root' 'policy/large-policy/root.yml' "$token"
+  for i in $(seq 1 150)
+  do
+    apply_policy "staging-$i" 'policy/large-policy/variables.yml' "$token"
+    if [ $((i%10)) = 0 ]; then
+      token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
+    fi
+    for j in $(seq 1 100)
+    do
+      set_variable "staging-$i/myapp/secret-$j" "super-secret-value!!!" "$token"
+    done
+    echo "loaded $i of 150"
+  done
 }
 
 enable_seed_service() {
-  load_policy 'root' 'policy/seed-service/default.yml'
-  load_policy 'conjur' 'policy/seed-service/seed.yml'
+  local token
+  token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
+  apply_policy 'root' 'policy/seed-service/default.yml' "$token"
+  apply_policy 'conjur' 'policy/seed-service/seed.yml' "$token"
 }
+
+rotate_api_key() {
+  local user="$1"
+  local token
+  token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
+  curl --header "Authorization: Token token=\"$token\"" \
+        --write-out "\n" \
+        --insecure \
+        --request PUT \
+        "$master_url/authn/demo/api_key?role=user:$user"
+}
+
+# -- End functions called directly from CLI --
 
 follower_url='http://conjur-follower.mycompany.local'
 master_url='https://conjur-master.mycompany.local'
@@ -185,18 +248,19 @@ while true ; do
     -u | --user ) shift ; USER=$1 ; shift ;;
     -p | --password ) shift ; PASSWORD=$1 ; shift ;;
     --authenticate-user ) shift ; cmd="authenticate_user $USER $PASSWORD" ;;
-    -h | --help ) _print_help ; shift ;;
+    -h | --help ) _print_help ;;
     --patch-policy ) shift ; cmd="load_policy $1 $2 PATCH" ; shift ; shift ;;
     --load-policy ) shift ; cmd="load_policy $1 $2" ; shift ; shift ;;
     --load-sample-policy-and-values ) shift ; cmd="load_policy_and_set_variables" ;;
     --load-sample-policy ) shift ; cmd='load_default_policy' ;;
+    --load-large-secrets-sample ) shift ; cmd='load_large_policy_and_secrets' ;;
     --delete-policy ) shift; cmd='delete_policy' ;;
     --set-secrets ) shift ; cmd='load_default_values' ;;
-    --set-secret-value) shift ; cmd="set_secret $1 $2"; shift ; shift ;;
+    --set-secret-value ) shift ; cmd="set_secret $1 $2"; shift ; shift ;;
     --against-master ) shift ; URL=$master_url ;;
     --fetch-secrets ) shift ; cmd="retrieve_variables" ;;
     --view-roles ) cmd="view_roles" ; shift ;;
-    --rotate-api-key ) cmd="rotate_api_key" ;;
+    --rotate-api-key ) shift ; cmd="rotate_api_key $1" ; shift ;;
     --enable-seed-service ) shift ; cmd='enable_seed_service' ;;
      * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
   esac
