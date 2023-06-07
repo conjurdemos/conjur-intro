@@ -202,6 +202,15 @@ services:
     volumes:
       - ./system/configuration/certificates:/src/certificates
 
+  jmeter:
+    build:
+      context: ./tools/performance-tests
+    volumes:
+      - ./tools/performance-tests/jmeter:/opt/jmeter_data
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.21
+
 volumes:
   seeds:
   follower-certs:

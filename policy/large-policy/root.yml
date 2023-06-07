@@ -1,0 +1,613 @@
+# Top-level policy file
+- !group team_leads
+- !group security_ops
+
+# Define "staging" namespace, owned by the "team_leads"
+- !policy
+  id: staging
+  owner: !group team_leads
+
+# Define "production" namespace, owned by the "security_ops" team
+- !policy
+  id: production
+  owner: !group security_ops
+
+- !policy
+  id: staging-1
+  owner: !group team_leads
+
+- !policy
+  id: staging-2
+  owner: !group team_leads
+
+- !policy
+  id: staging-3
+  owner: !group team_leads
+
+- !policy
+  id: staging-4
+  owner: !group team_leads
+
+- !policy
+  id: staging-5
+  owner: !group team_leads
+
+- !policy
+  id: staging-6
+  owner: !group team_leads
+
+- !policy
+  id: staging-7
+  owner: !group team_leads
+
+- !policy
+  id: staging-8
+  owner: !group team_leads
+
+- !policy
+  id: staging-9
+  owner: !group team_leads
+
+- !policy
+  id: staging-10
+  owner: !group team_leads
+
+- !policy
+  id: staging-11
+  owner: !group team_leads
+
+- !policy
+  id: staging-12
+  owner: !group team_leads
+
+- !policy
+  id: staging-13
+  owner: !group team_leads
+
+- !policy
+  id: staging-14
+  owner: !group team_leads
+
+- !policy
+  id: staging-15
+  owner: !group team_leads
+
+- !policy
+  id: staging-16
+  owner: !group team_leads
+
+- !policy
+  id: staging-17
+  owner: !group team_leads
+
+- !policy
+  id: staging-18
+  owner: !group team_leads
+
+- !policy
+  id: staging-19
+  owner: !group team_leads
+
+- !policy
+  id: staging-20
+  owner: !group team_leads
+
+- !policy
+  id: staging-21
+  owner: !group team_leads
+
+- !policy
+  id: staging-22
+  owner: !group team_leads
+
+- !policy
+  id: staging-23
+  owner: !group team_leads
+
+- !policy
+  id: staging-24
+  owner: !group team_leads
+
+- !policy
+  id: staging-25
+  owner: !group team_leads
+
+- !policy
+  id: staging-26
+  owner: !group team_leads
+
+- !policy
+  id: staging-27
+  owner: !group team_leads
+
+- !policy
+  id: staging-28
+  owner: !group team_leads
+
+- !policy
+  id: staging-29
+  owner: !group team_leads
+
+- !policy
+  id: staging-30
+  owner: !group team_leads
+
+- !policy
+  id: staging-31
+  owner: !group team_leads
+
+- !policy
+  id: staging-32
+  owner: !group team_leads
+
+- !policy
+  id: staging-33
+  owner: !group team_leads
+
+- !policy
+  id: staging-34
+  owner: !group team_leads
+
+- !policy
+  id: staging-35
+  owner: !group team_leads
+
+- !policy
+  id: staging-36
+  owner: !group team_leads
+
+- !policy
+  id: staging-37
+  owner: !group team_leads
+
+- !policy
+  id: staging-38
+  owner: !group team_leads
+
+- !policy
+  id: staging-39
+  owner: !group team_leads
+
+- !policy
+  id: staging-40
+  owner: !group team_leads
+
+- !policy
+  id: staging-41
+  owner: !group team_leads
+
+- !policy
+  id: staging-42
+  owner: !group team_leads
+
+- !policy
+  id: staging-43
+  owner: !group team_leads
+
+- !policy
+  id: staging-44
+  owner: !group team_leads
+
+- !policy
+  id: staging-45
+  owner: !group team_leads
+
+- !policy
+  id: staging-46
+  owner: !group team_leads
+
+- !policy
+  id: staging-47
+  owner: !group team_leads
+
+- !policy
+  id: staging-48
+  owner: !group team_leads
+
+- !policy
+  id: staging-49
+  owner: !group team_leads
+
+- !policy
+  id: staging-50
+  owner: !group team_leads
+
+- !policy
+  id: staging-51
+  owner: !group team_leads
+
+- !policy
+  id: staging-52
+  owner: !group team_leads
+
+- !policy
+  id: staging-53
+  owner: !group team_leads
+
+- !policy
+  id: staging-54
+  owner: !group team_leads
+
+- !policy
+  id: staging-55
+  owner: !group team_leads
+
+- !policy
+  id: staging-56
+  owner: !group team_leads
+
+- !policy
+  id: staging-57
+  owner: !group team_leads
+
+- !policy
+  id: staging-58
+  owner: !group team_leads
+
+- !policy
+  id: staging-59
+  owner: !group team_leads
+
+- !policy
+  id: staging-60
+  owner: !group team_leads
+
+- !policy
+  id: staging-61
+  owner: !group team_leads
+
+- !policy
+  id: staging-62
+  owner: !group team_leads
+
+- !policy
+  id: staging-63
+  owner: !group team_leads
+
+- !policy
+  id: staging-64
+  owner: !group team_leads
+
+- !policy
+  id: staging-65
+  owner: !group team_leads
+
+- !policy
+  id: staging-66
+  owner: !group team_leads
+
+- !policy
+  id: staging-67
+  owner: !group team_leads
+
+- !policy
+  id: staging-68
+  owner: !group team_leads
+
+- !policy
+  id: staging-69
+  owner: !group team_leads
+
+- !policy
+  id: staging-70
+  owner: !group team_leads
+
+- !policy
+  id: staging-71
+  owner: !group team_leads
+
+- !policy
+  id: staging-72
+  owner: !group team_leads
+
+- !policy
+  id: staging-73
+  owner: !group team_leads
+
+- !policy
+  id: staging-74
+  owner: !group team_leads
+
+- !policy
+  id: staging-75
+  owner: !group team_leads
+
+- !policy
+  id: staging-76
+  owner: !group team_leads
+
+- !policy
+  id: staging-77
+  owner: !group team_leads
+
+- !policy
+  id: staging-78
+  owner: !group team_leads
+
+- !policy
+  id: staging-79
+  owner: !group team_leads
+
+- !policy
+  id: staging-80
+  owner: !group team_leads
+
+- !policy
+  id: staging-81
+  owner: !group team_leads
+
+- !policy
+  id: staging-82
+  owner: !group team_leads
+
+- !policy
+  id: staging-83
+  owner: !group team_leads
+
+- !policy
+  id: staging-84
+  owner: !group team_leads
+
+- !policy
+  id: staging-85
+  owner: !group team_leads
+
+- !policy
+  id: staging-86
+  owner: !group team_leads
+
+- !policy
+  id: staging-87
+  owner: !group team_leads
+
+- !policy
+  id: staging-88
+  owner: !group team_leads
+
+- !policy
+  id: staging-89
+  owner: !group team_leads
+
+- !policy
+  id: staging-90
+  owner: !group team_leads
+
+- !policy
+  id: staging-91
+  owner: !group team_leads
+
+- !policy
+  id: staging-92
+  owner: !group team_leads
+
+- !policy
+  id: staging-93
+  owner: !group team_leads
+
+- !policy
+  id: staging-94
+  owner: !group team_leads
+
+- !policy
+  id: staging-95
+  owner: !group team_leads
+
+- !policy
+  id: staging-96
+  owner: !group team_leads
+
+- !policy
+  id: staging-97
+  owner: !group team_leads
+
+- !policy
+  id: staging-98
+  owner: !group team_leads
+
+- !policy
+  id: staging-99
+  owner: !group team_leads
+
+- !policy
+  id: staging-100
+  owner: !group team_leads
+
+- !policy
+  id: staging-101
+  owner: !group team_leads
+
+- !policy
+  id: staging-102
+  owner: !group team_leads
+
+- !policy
+  id: staging-103
+  owner: !group team_leads
+
+- !policy
+  id: staging-104
+  owner: !group team_leads
+
+- !policy
+  id: staging-105
+  owner: !group team_leads
+
+- !policy
+  id: staging-106
+  owner: !group team_leads
+
+- !policy
+  id: staging-107
+  owner: !group team_leads
+
+- !policy
+  id: staging-108
+  owner: !group team_leads
+
+- !policy
+  id: staging-109
+  owner: !group team_leads
+
+- !policy
+  id: staging-110
+  owner: !group team_leads
+
+- !policy
+  id: staging-111
+  owner: !group team_leads
+
+- !policy
+  id: staging-112
+  owner: !group team_leads
+
+- !policy
+  id: staging-113
+  owner: !group team_leads
+
+- !policy
+  id: staging-114
+  owner: !group team_leads
+
+- !policy
+  id: staging-115
+  owner: !group team_leads
+
+- !policy
+  id: staging-116
+  owner: !group team_leads
+
+- !policy
+  id: staging-117
+  owner: !group team_leads
+
+- !policy
+  id: staging-118
+  owner: !group team_leads
+
+- !policy
+  id: staging-119
+  owner: !group team_leads
+
+- !policy
+  id: staging-120
+  owner: !group team_leads
+
+- !policy
+  id: staging-121
+  owner: !group team_leads
+
+- !policy
+  id: staging-122
+  owner: !group team_leads
+
+- !policy
+  id: staging-123
+  owner: !group team_leads
+
+- !policy
+  id: staging-124
+  owner: !group team_leads
+
+- !policy
+  id: staging-125
+  owner: !group team_leads
+
+- !policy
+  id: staging-126
+  owner: !group team_leads
+
+- !policy
+  id: staging-127
+  owner: !group team_leads
+
+- !policy
+  id: staging-128
+  owner: !group team_leads
+
+- !policy
+  id: staging-129
+  owner: !group team_leads
+
+- !policy
+  id: staging-130
+  owner: !group team_leads
+
+- !policy
+  id: staging-131
+  owner: !group team_leads
+
+- !policy
+  id: staging-132
+  owner: !group team_leads
+
+- !policy
+  id: staging-133
+  owner: !group team_leads
+
+- !policy
+  id: staging-134
+  owner: !group team_leads
+
+- !policy
+  id: staging-135
+  owner: !group team_leads
+
+- !policy
+  id: staging-136
+  owner: !group team_leads
+
+- !policy
+  id: staging-137
+  owner: !group team_leads
+
+- !policy
+  id: staging-138
+  owner: !group team_leads
+
+- !policy
+  id: staging-139
+  owner: !group team_leads
+
+- !policy
+  id: staging-140
+  owner: !group team_leads
+
+- !policy
+  id: staging-141
+  owner: !group team_leads
+
+- !policy
+  id: staging-142
+  owner: !group team_leads
+
+- !policy
+  id: staging-143
+  owner: !group team_leads
+
+- !policy
+  id: staging-144
+  owner: !group team_leads
+
+- !policy
+  id: staging-145
+  owner: !group team_leads
+
+- !policy
+  id: staging-146
+  owner: !group team_leads
+
+- !policy
+  id: staging-147
+  owner: !group team_leads
+
+- !policy
+  id: staging-148
+  owner: !group team_leads
+
+- !policy
+  id: staging-149
+  owner: !group team_leads
+
+- !policy
+  id: staging-150
+  owner: !group team_leads

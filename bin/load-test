@@ -1,0 +1,76 @@
+#!/bin/bash -ex
+
+
+function print_help() {
+  cat << EOF
+NAME
+    Runs a load test against the configured Conjur Enterprise deployment.
+
+SYNOPSIS
+    load [global options]
+
+GLOBAL OPTIONS
+    -h, --help                - Show this message.
+    --headless                - Won't attempt to open the report in browser.
+    --name <folder-name>      - Target folder to export the report to. If the folder exists
+                                the contents will be over-written.
+    --with-follower           - Runs the variable request portion of the test against the
+                                Follower.
+
+EOF
+exit
+}
+
+function run_jmeter_test() {
+  local folder="$1"
+  local local_folder="tools/performance-tests/jmeter/jmeter_reports/$folder"
+
+  rm -rf "$local_folder" || true
+  mkdir -p "$local_folder"
+
+  local jmeter_file='Conjur_Performance_Test'
+  if [ "$USE_FOLLOWER" = 'true' ]; then
+    jmeter_file='Conjur_Performance_Test_With_Follower'
+  fi
+  docker-compose run \
+    --no-deps \
+    --rm \
+    jmeter \
+      jmeter \
+        -Jkey=null \
+        -n \
+        -t "/opt/jmeter_data/$jmeter_file.jmx" \
+        -l "/opt/jmeter_data/jmeter_reports/$folder/Performance_Results.csv" \
+        -e \
+        -o "/opt/jmeter_data/jmeter_reports/$folder"
+}
+
+function open_results_in_browser {
+  local folder="$1"
+  echo "\nReport is available at: 'tools/performance-tests/jmeter/jmeter_reports/$folder'\n"
+  if [ "$HEADLESS" = 'false' ]; then
+    open "tools/performance-tests/jmeter/jmeter_reports/$folder/index.html"
+  fi
+}
+
+function main {
+  local folder="$1"
+  run_jmeter_test "$folder"
+  open_results_in_browser "$folder"
+}
+
+report_folder='default'
+USE_FOLLOWER='false'
+HEADLESS='false'
+
+while true ; do
+  case "$1" in
+    --name ) shift ; report_folder=$1 ; shift ;;
+    --headless ) shift ; HEADLESS="true" ;;
+    --with-follower ) shift ; USE_FOLLOWER="true" ;;
+    -h | --help ) print_help ;;
+     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+  esac
+done
+
+main "$report_folder"
