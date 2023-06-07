@@ -69,6 +69,7 @@ apply_policy() {
         --insecure \
         --request "$method" \
         --data "$(cat $policy)" \
+        --silent \
      "$master_url/policies/demo/policy/$namespace"
 }
 
@@ -90,6 +91,7 @@ set_variable() {
   curl --header "Authorization: Token token=\"$token\"" \
         --insecure \
         --data "$value" \
+        --silent \
         "$master_url/secrets/demo/variable/$variable"
 }
 
@@ -198,21 +200,30 @@ view_policy_members() {
         "$master_url/roles/demo/policy/production?members" | jq .
 }
 
+# Note: the root policies must be defined in policy/large-policy/root.yml
+# prior to attempting to load the provided safe (variables.yml) onto a given
+# policy branch.
 load_large_policy_and_secrets() {
   local token
+  local total_safes
+  total_safes=1500
   token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
   apply_policy 'root' 'policy/large-policy/root.yml' "$token"
-  for i in $(seq 1 150)
+  
+  for i in $(seq 1 $total_safes)
   do
+    echo "Loading policy: staging-$i"
     apply_policy "staging-$i" 'policy/large-policy/variables.yml' "$token"
     if [ $((i%10)) = 0 ]; then
+      echo "Reauthneticating..."
       token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
     fi
     for j in $(seq 1 100)
     do
+      echo "Populating secret: staging-$i/myapp/secret-$j"
       set_variable "staging-$i/myapp/secret-$j" "super-secret-value!!!" "$token"
     done
-    echo "loaded $i of 150"
+    echo "loaded $i of $total_safes"
   done
 }
 
