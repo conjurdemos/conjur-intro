@@ -200,7 +200,7 @@ The install script will install the package into the running Conjur appliance an
 You can view the contents of this package by running:
 
 ```
-$ docker-compose exec conjur-master-1.mycompany.local ls -a /opt/conjur/possum/
+$ docker compose exec conjur-master-1.mycompany.local ls -a /opt/conjur/possum/
 ```
 
 ## Performance Tests

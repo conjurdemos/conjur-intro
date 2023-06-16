@@ -17,7 +17,7 @@ exit
 
 function proxy_command {
   cmd="$@"
-  docker-compose run --rm -w /src/cli --entrypoint /bin/sh client -c "
+  docker compose run --rm -w /src/cli --entrypoint /bin/sh client -c "
     if [ ! -e /root/conjur-server.pem ]; then
       echo y | conjur init -i https://conjur-master-1.mycompany.local -a demo --self-signed
     fi

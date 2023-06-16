@@ -64,7 +64,7 @@ function install {
 
   TOKEN=$( oc whoami -t )
 
-  DATA_KEY=$( docker-compose run --no-deps --rm conjur data-key generate )
+  DATA_KEY=$( docker compose run --no-deps --rm conjur data-key generate )
 
   oc get is
   echo "Installing Conjur OSS application on OpenShift"
