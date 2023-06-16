@@ -218,7 +218,7 @@ function _run {
   echo "Running Command (on $_node_name): docker exec cyberark-dap $_args"
 
   if [[ $DRY_RUN = false ]]; then
-    docker-compose exec -T $_node_name bash -c "
+    docker compose exec -T $_node_name bash -c "
       $_args
     "
   fi
@@ -228,22 +228,22 @@ function _start_master {
   if [[ $DRY_RUN = false ]]; then
 
     if [[ "$PULL_IMAGES" = "true" ]]; then
-      docker-compose pull
+      docker compose pull
     fi
 
-    docker-compose up -d --no-deps conjur-master-1.mycompany.local
+    docker compose up -d --no-deps conjur-master-1.mycompany.local
   fi
 }
 
 function _start_l7_load_balancer {
   if [[ $DRY_RUN = false ]]; then
-    docker-compose up -d --no-deps conjur-follower.mycompany.local
+    docker compose up -d --no-deps conjur-follower.mycompany.local
   fi
 }
 
 function _configure_master {
   # Copy DH Param
-  docker cp files/dhparam.pem "$(docker-compose ps -q conjur-master-1.mycompany.local)":${DHPATH}/dhparam.pem
+  docker cp files/dhparam.pem "$(docker compose ps -q conjur-master-1.mycompany.local)":${DHPATH}/dhparam.pem
 
   _cmd="evoke configure master"
   _cmd="$_cmd --accept-eula"
@@ -259,8 +259,8 @@ function _configure_master {
 function _setup_standby {
   local _standby_number=$1
 
-  docker-compose rm --stop --force "conjur-master-$_standby_number.mycompany.local"
-  docker-compose up --no-deps --detach "conjur-master-$_standby_number.mycompany.local"
+  docker compose rm --stop --force "conjur-master-$_standby_number.mycompany.local"
+  docker compose up --no-deps --detach "conjur-master-$_standby_number.mycompany.local"
 
   # Generate a Seed File
   _run conjur-master-1.mycompany.local \
@@ -278,8 +278,8 @@ function _start_standby_synchronization {
 
 function _setup_follower {
 
-  docker-compose rm --stop --force conjur-follower-1.mycompany.local
-  docker-compose up --no-deps --detach conjur-follower-1.mycompany.local
+  docker compose rm --stop --force conjur-follower-1.mycompany.local
+  docker compose up --no-deps --detach conjur-follower-1.mycompany.local
 
   # Generate Seed file
   _run conjur-master-1.mycompany.local \
@@ -299,7 +299,7 @@ function _setup_follower {
 function _perform_promotion {
   # Stop current master
   if [[ $DRY_RUN = false ]]; then
-    docker-compose stop conjur-master-1.mycompany.local
+    docker compose stop conjur-master-1.mycompany.local
   fi
 
   # Promote Standby to Master
@@ -315,8 +315,8 @@ function deploy_proxy {
   _set_master_single_node_proxy_config
   # Copy Conjur generated certificates to HAProxy
   mkdir -p ./system/haproxy/certs
-  docker cp "$(docker-compose ps -q conjur-master-1.mycompany.local)":/opt/conjur/etc/ssl/. ./system/haproxy/certs
-  docker-compose up -d --no-deps conjur-master.mycompany.local
+  docker cp "$(docker compose ps -q conjur-master-1.mycompany.local)":/opt/conjur/etc/ssl/. ./system/haproxy/certs
+  docker compose up -d --no-deps conjur-master.mycompany.local
 }
 
 function _single_master {
@@ -329,8 +329,8 @@ function _single_master {
 
 function _reload_container {
   name="$1"
-  docker-compose rm --stop --force $name
-  docker-compose up --no-deps --detach $name
+  docker compose rm --stop --force $name
+  docker compose up --no-deps --detach $name
 
 }
 
@@ -352,7 +352,7 @@ function _command {
 
 function _stop {
   echo "stopping...."
-  docker-compose down -v
+  docker compose down -v
   docker network remove dap_net || true
 
   _command rm -rf cli_cache
@@ -453,7 +453,7 @@ function _stop_replication {
 function _stop_and_rename {
   local container_name="$1"
   local rename_to="$2"
-  docker-compose stop $container_name
+  docker compose stop $container_name
   image_id=$(docker ps --all --quiet --filter "name=$container_name")
   docker rename $image_id $rename_to
 }
@@ -470,7 +470,7 @@ function _upgrade_via_backup_restore {
 }
 
 function _stop_and_remove_master {
-  docker-compose rm --stop --force conjur-master-1.mycompany.local
+  docker compose rm --stop --force conjur-master-1.mycompany.local
 }
 
 function _restore_from_backup {
@@ -524,9 +524,9 @@ function _reenroll_failed_leader {
   new_leader_number=$2
 
   _run "conjur-master-$new_leader_number.mycompany.local" "evoke cluster member remove conjur-master-$old_leader_number.mycompany.local"
-  docker-compose rm --stop --force conjur-master-$old_leader_number.mycompany.local
+  docker compose rm --stop --force conjur-master-$old_leader_number.mycompany.local
 
-  docker-compose up --no-deps --detach "conjur-master-$old_leader_number.mycompany.local"
+  docker compose up --no-deps --detach "conjur-master-$old_leader_number.mycompany.local"
 
   # Generate a Seed File
   _run "conjur-master-$new_leader_number.mycompany.local" \

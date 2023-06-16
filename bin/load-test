@@ -32,7 +32,7 @@ function run_jmeter_test() {
   if [ "$USE_FOLLOWER" = 'true' ]; then
     jmeter_file='Conjur_Performance_Test_With_Follower'
   fi
-  docker-compose run \
+  docker compose run \
     --no-deps \
     --rm \
     jmeter \
