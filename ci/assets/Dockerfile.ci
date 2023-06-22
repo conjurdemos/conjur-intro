@@ -1,12 +1,7 @@
 FROM ruby:2.7-alpine
 
-RUN apk update && apk add --no-cache docker-cli git libffi-dev build-base bash jq curl
-
 # Install Docker-Compose
-RUN apk add --no-cache docker-cli python3 py3-pip && \
-    apk add --no-cache --virtual .docker-compose-deps python3-dev libffi-dev openssl-dev gcc libc-dev make && \
-    pip3 install docker-compose && \
-    apk del .docker-compose-deps
+RUN apk add --no-cache docker-cli docker-cli-compose build-base bash jq curl libffi-dev
 
 RUN mkdir -p /src
 WORKDIR /src

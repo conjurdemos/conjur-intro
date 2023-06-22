@@ -9,4 +9,4 @@ source ./bin/utils.sh
 dotenv > /dev/null 2>&1 || true
 
 export VERSION='5.0-stable'
-docker-compose run --no-deps --rm api-client bin/api "$@"
+docker compose run --no-deps --rm api-client bin/api "$@"

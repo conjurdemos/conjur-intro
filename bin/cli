@@ -10,7 +10,7 @@ dotenv > /dev/null 2>&1 || true
 
 function proxy_command {
   cmd="$@"
-  docker-compose run --rm -w /src/cli --entrypoint /bin/sh client -c "
+  docker compose run --rm -w /src/cli --entrypoint /bin/sh client -c "
     if [ ! -e /root/conjur-server.pem ]; then
       echo y | conjur init -u https://conjur-master.mycompany.local -a demo --self-signed --force
     fi
