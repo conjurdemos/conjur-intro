@@ -556,6 +556,11 @@ function _import_certificates {
     "evoke ca import --force --key $cert_path/dap_master/dap-master-key.pem --set $cert_path/dap_master/dap-master.pem"
   _run conjur-master-1.mycompany.local \
     "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
+
+  # set -x
+  # _run conjur-master-1.mycompany.local \
+  #   "sv restart selective-replication-leader"
+  # set +x
 }
 
 function _rotate_certificates {
@@ -626,7 +631,8 @@ function _wait_for_master {
 
   # Wait for 10 successful connections in a row
   local COUNTER=0
-  while [ $COUNTER -lt 10 ]; do
+  local retry_count=0
+  while [[ $COUNTER -lt 10 && retry_count -lt 20 ]]; do
     local response
     response=$(curl -k --silent --head "$master_url/health" || true)
 
@@ -639,7 +645,23 @@ function _wait_for_master {
 
     sleep 1
     echo "Successful Health Checks: $COUNTER"
+    retry_count=$((retry_count+1))
   done
+
+  if [[ $COUNTER -lt 10 ]]; then
+    echo "DAP Master failed to start."
+
+    set +e
+    # docker logs "$(docker-compose ps -q conjur-master-1.mycompany.local)"
+    curl -vvv "$master_url/health"
+    curl -vvv -k "$master_url/health"
+
+    _run conjur-master-1.mycompany.local \
+      "curl -vvv localhost/health"
+    set -e
+
+    exit 1
+  fi
 }
 
 _standby_altnames() {
