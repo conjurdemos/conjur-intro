@@ -15,7 +15,7 @@ function proxy_command {
       echo y | conjur init -u https://conjur-master.mycompany.local -a demo --self-signed --force
     fi
     conjur login -i admin -p MySecretP@ss1
-    hostname -I
+    hostname -i
     eval exec \"$cmd\"
   "
 }
