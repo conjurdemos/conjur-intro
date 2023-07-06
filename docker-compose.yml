@@ -1,7 +1,7 @@
 version: "3"
 services:
   conjur-master.mycompany.local:
-    image: haproxy:2.1-alpine
+    image: haproxy:2.8.1-alpine
     networks:
       dap_net:
         ipv4_address: 12.16.23.10
@@ -123,7 +123,7 @@ services:
       - ./files:/conjur_files
 
   conjur-follower.mycompany.local:
-    image: haproxy:2.1-alpine
+    image: haproxy:2.8.1-alpine
     networks:
       dap_net:
         ipv4_address: 12.16.23.16
