@@ -1,7 +1,7 @@
 version: "3"
 services:
   conjur-master.mycompany.local:
-    image: haproxy:2.1-alpine
+    image: haproxy:2.2-alpine
     networks:
       dap_net:
         ipv4_address: 12.16.23.10
@@ -38,6 +38,7 @@ services:
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
       - ./system/logs/master-1:/var/log/conjur:Z
       - ./files:/conjur_files
+
   conjur-master-2.mycompany.local:
     image: registry.tld/conjur-appliance:${VERSION}
     networks:
@@ -123,7 +124,7 @@ services:
       - ./files:/conjur_files
 
   conjur-follower.mycompany.local:
-    image: haproxy:2.1-alpine
+    image: haproxy:2.2-alpine
     networks:
       dap_net:
         ipv4_address: 12.16.23.16
