@@ -11,8 +11,7 @@ services:
       - ../logs:/var/log/conjur:z
 
   jmeter:
-    build:
-      context: .
+    image: alpine/jmeter:latest
     volumes:
       - ./jmeter:/opt/jmeter_data
     command: jmeter -Jkey=null -n -t /opt/jmeter_data/DAP_Performance_Test.jmx -l /opt/jmeter_data/jmeter_reports/${DAP_VERSION}/DAP_Performance_Results.csv -e -o /opt/jmeter_data/jmeter_reports/${DAP_VERSION}
