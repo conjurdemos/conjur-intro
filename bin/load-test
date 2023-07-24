@@ -36,7 +36,6 @@ function run_jmeter_test() {
     --no-deps \
     --rm \
     jmeter \
-      jmeter \
         -Jkey=null \
         -n \
         -t "/opt/jmeter_data/$jmeter_file.jmx" \

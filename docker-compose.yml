@@ -204,8 +204,7 @@ services:
       - ./system/configuration/certificates:/src/certificates
 
   jmeter:
-    build:
-      context: ./tools/performance-tests
+    image: alpine/jmeter:latest
     volumes:
       - ./tools/performance-tests/jmeter:/opt/jmeter_data
     networks:
