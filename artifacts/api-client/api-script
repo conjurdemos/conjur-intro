@@ -198,6 +198,23 @@ view_policy_members() {
         "$master_url/roles/demo/policy/production?members" | jq .
 }
 
+set_thousand_variables() {
+  local i="$1"
+  local value="$2"
+  local token="$3"
+  local urls=""
+  for j in $(seq 1 1000); do
+    urls="$master_url/secrets/demo/variable/staging-$i/myapp/secret-$j $urls"
+  done
+  curl --header "Authorization: Token token=\"$token\"" \
+        --parallel \
+        --parallel-immediate \
+        --parallel-max "$(nproc --all)" \
+        --insecure \
+        --data "$value" \
+        $urls
+}
+
 load_large_policy_and_secrets() {
   local auth_token
   local iterations
@@ -213,10 +230,7 @@ load_large_policy_and_secrets() {
       auth_token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
     fi
     auth_token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
-    for j in $(seq 1 1000)
-    do
-      set_variable "staging-$i/myapp/secret-$j" "super-secret-value!!!" "$auth_token"
-    done
+    set_thousand_variables "$i" "super-secret-value!!!" "$auth_token"
     echo "loaded $i of $iterations"
   done
 }
@@ -272,3 +286,4 @@ while true ; do
 done
 
 eval $cmd
+
