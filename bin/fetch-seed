@@ -1,0 +1,31 @@
+#!/usr/bin/env sh
+
+main() {
+
+  local user="host/conjur/master-2"
+  local api_key=""
+
+  # Configure CLI
+  echo y | conjur init -u https://conjur-master.mycompany.local -a demo --self-signed --force
+
+  # Authenticate with API key
+  conjur login \
+    --id "$user" \
+    --password "$api_key"
+
+  # Get access key
+  access_header=$(conjur authenticate --header)
+  echo "$access_header"
+
+  local post_data="follower_hostnames=conjur-follower.mycompany.local&master_name=conjur-master.mycompany.local"
+
+  # Fetch seed
+  wget \
+    --post-data \
+       "$post_data" \
+    --header "$access_header" \
+    -O "follower-seed.tar" \
+    "https://conjur-master.mycompany.local/configuration/demo/seed/follower"
+}
+
+main "$@"
