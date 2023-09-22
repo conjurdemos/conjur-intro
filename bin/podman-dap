@@ -59,7 +59,7 @@ function _start_master {
   if [[ $DRY_RUN = false ]]; then
 
     if [[ "$PULL_IMAGES" = "true" ]]; then
-      podman pull haproxy:2.1-alpine
+      podman pull haproxy:alpine
       podman pull registry.tld/conjur-appliance:$VERSION
     fi
 
@@ -74,7 +74,7 @@ function _start_master {
     --network dap_net \
     --volume master-certs:/etc/ssl/certs:Z \
     --volume ./files/haproxy/master:/usr/local/etc/haproxy:Z \
-    haproxy:2.1-alpine
+    haproxy:alpine
 
     mkdir -p ./system/backup
     mkdir -p ./system/logs/master-1
@@ -111,7 +111,7 @@ function _start_l7_load_balancer {
     --network dap_net \
     --volume follower-certs:/etc/ssl/certs:Z \
     --volume ./files/haproxy/follower:/usr/local/etc/haproxy:Z \
-    haproxy:2.1-alpine
+    haproxy:alpine
   fi
 }
 
@@ -243,7 +243,7 @@ function _setup_standbys {
   --network dap_net \
   --volume master-certs:/etc/ssl/certs:Z \
   --volume ./files/haproxy/master:/usr/local/etc/haproxy:Z \
-  haproxy:2.1-alpine
+  haproxy:alpine
 }
 
 function _command {
