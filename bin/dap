@@ -291,6 +291,8 @@ function _setup_follower {
   # Copy certs for HAProxy
   _run conjur-follower-1.mycompany.local \
     "cp /opt/conjur/etc/ssl/conjur-follower.mycompany.local.key /opt/conjur/etc/ssl/conjur-follower.mycompany.local.pem.key"
+  _run conjur-follower-1.mycompany.local \
+    "chown 99:99 /opt/conjur/etc/ssl/conjur-follower.mycompany.local.pem.key"
 
   _start_l7_load_balancer
   echo "DAP Follower instance available at: 'https://localhost:${CONJUR_FOLLOWER_PORT}'"
