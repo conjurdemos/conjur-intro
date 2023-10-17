@@ -519,8 +519,7 @@ function _add_follower_proxy {
 }
 
 function _trigger_master_failover_failover {
-  _run conjur-master-1.mycompany.local \
-    "sv stop conjur"
+  docker compose kill conjur-master-1.mycompany.local
   echo 'Auto-failover takes about a minute to complete.'
 }
 
