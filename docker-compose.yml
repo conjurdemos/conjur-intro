@@ -38,6 +38,8 @@ services:
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
       - ./system/logs/master-1:/var/log/conjur:Z
       - ./files:/conjur_files
+      - postgres-socket:/var/run/postgresql
+      - audit-share:/src/audit
 
   conjur-master-2.mycompany.local:
     image: registry.tld/conjur-appliance:${VERSION}
@@ -211,9 +213,21 @@ services:
       dap_net:
         ipv4_address: 12.16.23.21
 
+  audit-data:
+    build:
+      context: ./tools/audit-data
+    volumes:
+      - postgres-socket:/var/run/postgresql
+      - audit-share:/src/audit
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.22
+
 volumes:
   seeds:
   follower-certs:
+  postgres-socket:
+  audit-share:
 
 networks:
   dap_net:

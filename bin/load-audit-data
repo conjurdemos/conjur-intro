@@ -1,0 +1,28 @@
+#!/bin/bash -ex
+
+CONTAINER=$(docker ps -aqf "name=master-1.mycompany.local")
+
+function cleanup() {
+    # Stop and remove the container, if it exists
+    docker rm -f audit-data-run &>/dev/null
+}
+
+function build_binary() {
+    docker exec $CONTAINER rm -f /src/audit/load-audit
+    # Stop and remove the container, if it exists
+    docker rm -f audit-data-run &>/dev/null
+    docker compose run --no-deps --build --rm --name audit-data-run -d audit-data
+}
+
+function run_audit_data() {
+  echo "Running audit data"
+  docker exec $CONTAINER setuser conjur-audit /src/audit/load-audit "$@"
+}
+
+function main {
+  build_binary
+  run_audit_data "$@"
+  cleanup
+}
+
+main "$@"
