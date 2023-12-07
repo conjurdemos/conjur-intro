@@ -1,4 +1,4 @@
-FROM maven:3-amazoncorretto-8-debian
+FROM maven:3.9.5-amazoncoretto-21
 MAINTAINER Cyberark Inc.
 
 ADD . .
