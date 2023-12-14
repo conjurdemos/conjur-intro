@@ -182,12 +182,16 @@ files = [
   "demos/cluster/files/certs/*", # sample certs for demos
   "demos/simple-cluster/files/certs/*", # sample certs for demos
   "demos/aws-authentication/jason-conjur-test.pem", # sample cert for aws auth
+  "curl_examples/check", # example script with demo credentials
+  "demos/certificate-authority/mutual-tls/README.md", # tutorial with example output
 ]
 regexes = [
 ]
 commits = [
   "406dc7268f9b014bb8bc8acc7854a18114ac5346", # old commit with vagrant priv key
-  "6e9dcb3698a8a339c7112cf395cf7c2389d4150d" # old commit with vagrant priv key
+  "6e9dcb3698a8a339c7112cf395cf7c2389d4150d", # old commit with vagrant priv key
+  "4fb1c3251079b8d38b15459b17204be87243cf0b", # original commit with demo files (Pin cfssl build)
+  "c643a869a8b044cea6f50cff8086e6b2b076beb6" # rewritten commit (replaced 4fb1c32)
 ]
 
 # Additional Examples
