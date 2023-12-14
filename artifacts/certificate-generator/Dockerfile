@@ -1,4 +1,9 @@
-FROM golang:alpine as builder
+# The pinned golang/alpine verison is to address a build issue here:
+# https://github.com/mattn/go-sqlite3/issues/1164
+#
+# Once the upstream issue is resolved, the base image should be reverted to:
+# golang:alpine
+FROM golang:1.21.5-alpine3.18 as builder
 
 WORKDIR /workdir
 COPY . /workdir
