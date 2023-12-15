@@ -1,4 +1,4 @@
-FROM maven:3-amazoncoretto-8-debian-bookworm
+FROM maven:3-amazoncorretto-8-debian-bookworm
 MAINTAINER Cyberark Inc.
 
 ADD . .
