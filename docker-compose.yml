@@ -1,7 +1,13 @@
 version: "3"
 services:
   conjur-master.mycompany.local:
-    image: haproxy:alpine
+    # we need to pin version of haproxy to 2.9.0 since the 2.9.1
+    # is consuming enormous amount of CPU affecting the results
+    # of performance tests
+    # https://ca-il-jira.il.cyber-ark.com:8443/browse/CNJR-3477
+    # this should be unpinned to the latest-alpine once the issue
+    # is resolved
+    image: haproxy:2.9.0-alpine
     networks:
       dap_net:
         ipv4_address: 12.16.23.10
@@ -124,7 +130,7 @@ services:
       - ./files:/conjur_files
 
   conjur-follower.mycompany.local:
-    image: haproxy:alpine
+    image: haproxy:2.9.0-alpine
     networks:
       dap_net:
         ipv4_address: 12.16.23.16
