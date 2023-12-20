@@ -48,7 +48,6 @@ function validate {
   validate_app helm
   validate_app oc
   validate_app docker
-  validate_app docker-compose
   validate_app awk
   validate_app openssl
   validate_app keytool
