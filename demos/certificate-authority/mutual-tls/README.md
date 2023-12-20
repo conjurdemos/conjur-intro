@@ -17,7 +17,7 @@ other using mutual TLS.
 ### Prerequisites
 
 1. docker
-2. docker-compose
+2. Docker Compose
 
 ### Getting Started
 

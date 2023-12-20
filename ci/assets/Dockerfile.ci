@@ -1,6 +1,6 @@
 FROM ruby:3
 
-# Install Docker-Compose
+# Install Docker Compose
 RUN apk add --no-cache docker-cli docker-cli-compose build-base bash jq curl libffi-dev
 
 RUN mkdir -p /src
