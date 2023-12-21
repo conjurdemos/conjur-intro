@@ -117,6 +117,7 @@ apply_default_values() {
 
   for environment in $environments; do
     for num in $numbers; do
+      echo "test"
       set_variable "$environment/my-app-$num/postgres-database/url" "$environment.my-app-$num.staging.mycompany-postgres.com/my-app" "$token"
       set_variable "$environment/my-app-$num/postgres-database/port" "5432" "$token"
       set_variable "$environment/my-app-$num/postgres-database/username" "my-app-$num" "$token"

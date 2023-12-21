@@ -1,0 +1,102 @@
+#!/bin/bash
+
+echo "Clearing cluster settings..."
+evoke cluster clear --force
+
+echo "Stopping services"
+# Some services we just need shut down to reset the db
+sv stop conjur nginx seed health info usage selective-replication-leader
+
+# Disable these services
+touch /etc/runit/runsvdir/default/conjur/down
+touch /etc/runit/runsvdir/default/nginx/down
+touch /etc/runit/runsvdir/default/selective-replication-leader/down
+touch /etc/runit/runsvdir/default/pg/audit/down
+touch /etc/runit/runsvdir/default/pg/main/down
+
+echo "Waiting for a standby to promote"
+sleep 60
+
+echo "Dropping main clusters"
+sv stop pg/audit pg/main
+
+pg_ctlcluster 15 main stop
+pg_ctlcluster 15 audit stop
+
+pg_dropcluster 15 audit
+pg_dropcluster 15 main
+
+echo "Re-creating main cluster"
+pg_createcluster 15 main
+
+echo "Setting base appliance Postgres configs"
+cat <<-EOF > /etc/postgresql/15/main/postgresql.conf
+# PostgreSQL configuration file
+
+# Please refer to the PostgreSQL documentation for details on
+# configuration settings.
+
+data_directory = '/var/lib/postgresql/15/main'
+datestyle = 'iso, mdy'
+external_pid_file = '/var/run/postgresql/15-main.pid'
+hba_file = '/etc/postgresql/15/main/pg_hba.conf'
+hot_standby = on
+ident_file = '/etc/postgresql/15/main/pg_ident.conf'
+listen_addresses = '0.0.0.0'
+log_destination = 'syslog'
+log_line_prefix = ''
+max_connections = 100
+max_wal_senders = 16
+node.default_text_search_config = 'pg_catalog.english'
+port = 5432
+shared_buffers = '24MB'
+ssl = on
+ssl_ciphers = 'TLSv1.2:!aNULL:!eNULL'
+ssl_ca_file = '/opt/conjur/etc/ssl/ca.pem'
+ssl_cert_file = '/opt/conjur/etc/ssl/conjur.pem'
+ssl_key_file = '/opt/conjur/etc/ssl/conjur.key'
+unix_socket_directories = '/var/run/postgresql'
+wal_keep_size = 128
+wal_level = 'hot_standby'
+EOF
+
+cat <<-EOF > /etc/postgresql/15/main/pg_hba.conf
+# PostgreSQL Client Authentication Configuration File
+# ===================================================
+#
+# Refer to the "Client Authentication" section in the PostgreSQL
+# documentation for a complete description of this file.
+
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+###########
+# Other authentication configurations taken from chef node defaults:
+###########
+
+hostssl replication     all             all                     cert
+
+# When the selective replication feature is enabled, followers connect to
+# the leader using their specific follower user, which is a member of the
+# follower group. K8s followers need to be able to connect to all databases in
+# order to perform a full schema dump.
+hostssl all             +follower       all                     cert
+
+hostssl conjur          +auditor        all                     cert
+
+hostssl conjur          +audit_injector all                     cert
+
+hostssl conjur          conjur          all                     cert map=ssl
+
+hostssl synchronizer    +synchronizer   all                     scram-sha-256
+
+# "local" is for Unix domain socket connections only
+local   all             all                                     peer
+EOF
+
+echo -n "manual" > /etc/postgresql/15/main/start.conf
+
+echo "Removing chef config files"
+rm /etc/cinc/solo.json /opt/conjur/etc/role
+
+# These should all be up for default conjur
+sv start health info usage pg

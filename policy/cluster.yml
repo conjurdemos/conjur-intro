@@ -1,15 +1,15 @@
 - !policy
   id: production
+  annotations:
+    ttl: 30
   body:
     - !layer
 
-    # Host nodes to be enrolled in the `production` auto-failover cluster
+    # Host nodes to be enrolled in the  auto-failover cluster
     - &hosts
       - !host conjur-master-1.mycompany.local
       - !host conjur-master-2.mycompany.local
       - !host conjur-master-3.mycompany.local
-      - !host conjur-master-4.mycompany.local
-      - !host conjur-master-5.mycompany.local
 
     - !grant
       role: !layer
