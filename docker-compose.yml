@@ -7,7 +7,7 @@ services:
     # https://ca-il-jira.il.cyber-ark.com:8443/browse/CNJR-3477
     # this should be unpinned to the latest-alpine once the issue
     # is resolved
-    image: haproxy:2.9.0-alpine
+    image: haproxy:alpine
     networks:
       dap_net:
         ipv4_address: 12.16.23.10
@@ -130,7 +130,7 @@ services:
       - ./files:/conjur_files
 
   conjur-follower.mycompany.local:
-    image: haproxy:2.9.0-alpine
+    image: haproxy:alpine
     networks:
       dap_net:
         ipv4_address: 12.16.23.16
