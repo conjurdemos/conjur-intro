@@ -1,0 +1,168 @@
+#!/bin/bash -e
+
+#
+# This script will load policy from a given predefined set of policies using
+# k6. The use of k6 is only to measure how long each HTTP request takes.
+# Otherwise, it is used to publish policy via HTTP with an extended timeout,
+# as the conjur cli will timeout if loading large policy.
+#
+# TODO: also support deploying telegraf to listen to docker socket, if load
+#       testing locally?
+#
+
+
+# shellcheck disable=SC1090,SC1091
+source "$(git rev-parse --show-toplevel)/bin/functions"
+
+CONFIGURE_REPLICATION=${CONFIGURE_REPLICATION:-"false"}
+POLICY_SET=${POLICY_SET:-"secrets"}
+
+
+print_help() {
+    cat << EOF
+load-policy-set(1)
+
+NAME
+load-policy-set
+
+SYNOPSIS
+load-policy-set [--policy-set]
+
+DESCRIPTION
+
+This script is intended to be called by summon. It will not run if required
+environment variables are not set.
+
+This script will load policy from a given predefined set of policies using
+k6. The use of k6 is only to measure how long each HTTP request takes.
+Otherwise, it is used to publish policy via HTTP with an extended timeout,
+as the conjur cli will timeout if loading large policy.
+
+FYI: even if the conjur cli times out, conjur should still continue processing
+the policy.
+
+The following options are available:
+
+  --policy-set            This defaults to secrets. This value corresponds
+                          to the directory name under
+                          files/conjur/policy/<POLICY_SET>. The policies for that policy set will be loaded
+                          into conjur.
+
+The examples below assume you are running the tests from the root directory
+of this repository.
+
+EXAMPLE: Run policy load with with defaults
+
+summon -e k6_leader_local ./bin/load-policy-set
+
+EXAMPLE: Run policy load with a specific policy set
+
+summon -e k6_leader_local ./bin/load-policy-set --policy-set 50-secrets
+
+EOF
+}
+
+#
+# This function will perform the following actions:
+#
+# - [x] Load policies
+#
+# The contents of each policy load will be logged and parsed into a json file
+# under the local tmp/ directory.
+#
+load_policy_set(){
+  # Set CONJUR_ADMIN_API_KEY
+  export CONJUR_ADMIN_API_KEY=$(./bin/cli conjur user rotate-api-key | tail -n 1 | tr -d '[:space:]')
+
+  check_env "APPLIANCE_URL"
+  check_env "CONFIGURE_REPLICATION"
+  check_env "CONJUR_ADMIN_API_KEY"
+  check_env "POLICY_SET"
+
+  LOG_DIR="$(log_dir)/$(timestamp)-load-policy-set-$POLICY_SET"
+  policy_set_dir="$(repo_root)/files/conjur/policy"
+  test_plan_file="$(repo_root)/files/k6/load-policy.js"
+  policy_application_grants_log_file="$LOG_DIR/policy-application_grants"
+  policy_hosts_log_file="$LOG_DIR/policy-hosts"
+  policy_myapp_log_file="$LOG_DIR/policy-myapp"
+  policy_myapp_staging_log_file="$LOG_DIR/policy-myapp_staging"
+  policy_policy_log_file="$LOG_DIR/policy-policy"
+  policy_users_log_file="$LOG_DIR/policy-users"
+
+  if [ ! -d "$policy_set_dir" ]; then
+    echo "FATAL: the policy set directory for '$POLICY_SET' does not exist at '$policy_set_dir'."
+    exit 1
+  fi
+
+  mkdir -p "$LOG_DIR"
+
+  # Load users
+  POLICY_FILE="$policy_set_dir/$POLICY_SET/users.yml" \
+    "$(repo_root)/bin/k6" run "$test_plan_file" \
+      --insecure-skip-tls-verify 2>&1 | tee -a "${policy_users_log_file}.log"
+
+  # Load policy
+  POLICY_FILE="$policy_set_dir/$POLICY_SET/policy.yml" \
+    "$(repo_root)/bin/k6" run "$test_plan_file" \
+      --insecure-skip-tls-verify 2>&1 | tee -a "${policy_policy_log_file}.log"
+
+  # Load myApp staging policy
+  POLICY_ID=staging POLICY_FILE="$policy_set_dir/$POLICY_SET/myapp_staging.yml" \
+    "$(repo_root)/bin/k6" run "$test_plan_file" \
+      --insecure-skip-tls-verify 2>&1 | tee -a "${policy_myapp_staging_log_file}.log"
+
+  # Load myApp policy
+  POLICY_ID=production POLICY_FILE="$policy_set_dir/$POLICY_SET/myapp.yml" \
+    "$(repo_root)/bin/k6" run "$test_plan_file" \
+      --insecure-skip-tls-verify 2>&1 | tee -a "${policy_myapp_log_file}.log"
+
+  # Load application grants
+    POLICY_FILE="$policy_set_dir/$POLICY_SET/application_grants.yml" \
+      "$(repo_root)/bin/k6" run "$test_plan_file" \
+        --insecure-skip-tls-verify 2>&1 | tee -a "${policy_application_grants_log_file}.log"
+
+  # Load Hosts
+    POLICY_FILE="$policy_set_dir/$POLICY_SET/hosts.yml" \
+      "$(repo_root)/bin/k6" run "$test_plan_file" \
+        --insecure-skip-tls-verify 2>&1 | tee -a "${policy_hosts_log_file}.log"
+
+  # Parse policy response bodies from the above logs
+  parse_policy_response -i "${policy_users_log_file}.log" -o "${policy_users_log_file}.json"
+  parse_policy_response -i "${policy_policy_log_file}.log" -o "${policy_policy_log_file}.json"
+  parse_policy_response -i "${policy_myapp_staging_log_file}.log" -o "${policy_myapp_staging_log_file}.json"
+  parse_policy_response -i "${policy_myapp_log_file}.log" -o "${policy_myapp_log_file}.json"
+  parse_policy_response -i "${policy_application_grants_log_file}.log" -o "${policy_application_grants_log_file}.json"
+  parse_policy_response -i "${policy_hosts_log_file}.log" -o "${policy_hosts_log_file}.json"
+
+  echo "Writing secrets"
+  "$(repo_root)/bin/k6" run "$(repo_root)/files/k6/load-secrets.js" --insecure-skip-tls-verify
+}
+
+main() {
+    while test $# -gt 0; do
+    case "$1" in
+        -h | --help)
+            print_help
+            exit 0
+            ;;
+        --policy-set)
+            POLICY_SET="$2"
+            shift 2
+            ;;
+        --) shift; 
+            break 
+            ;;
+        -?*)
+            printf 'WARN: Unknown option (ignored): %s\n' "$1" >&2
+            ;;
+        *)  # Default case: No more options, so break out of the loop.
+            break
+            ;;
+    esac
+    done
+
+    load_policy_set
+    echo "DONE."
+}
+
+main "$@"

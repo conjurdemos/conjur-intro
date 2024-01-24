@@ -1,5 +1,22 @@
-#!/bin/bash -ex
+#!/bin/bash
+set -e
 
+source "$(git rev-parse --show-toplevel)/bin/functions"
+source "$(repo_root)/bin/influxdb-client"
+
+# Debug mode skips test runs (displays script output, incl. phase info)
+# DEBUG_MODE interferes with underlying system dependencies, so do not use.
+DEBUG_LEVEL="false"
+ENABLE_INFLUXDB=${ENABLE_INFLUXDB:-"true"}
+# For querying InfluxDB.
+INFLUX_URL=${INFLUX_URL:-$INFLUXDB_URL}
+INFLUX_TOKEN=${INFLUX_TOKEN:-$K6_INFLUXDB_TOKEN}
+INFLUX_ORG=${INFLUX_ORG:-$K6_INFLUXDB_ORGANIZATION}
+# The number of times to run a test.
+NUM_PHASES=1
+
+# The Conjur Account.
+ORGANIZATION=${ORGANIZATION:-"cyberark"}
 
 function print_help() {
   cat << EOF
@@ -11,7 +28,6 @@ SYNOPSIS
 
 GLOBAL OPTIONS
     -h, --help                - Show this message.
-    --headless                - Won't attempt to open the report in browser.
     --name <folder-name>      - Target folder to export the report to. If the folder exists
                                 the contents will be over-written.
     --with-follower           - Runs the variable request portion of the test against the
@@ -21,55 +37,219 @@ EOF
 exit
 }
 
-function run_jmeter_test() {
-  local folder="$1"
-  local local_folder="tools/performance-tests/jmeter/jmeter_reports/$folder"
+print_settings() {
+    announce "Load Test - Script Settings and Enviroment Variables"
+    echo "DEBUG LEVEL                 : $DEBUG_LEVEL"
+    echo "INFLUX_TOKEN (chars)        : redacted"
+    echo "INFLUX_HOST                 : $INFLUX_HOST"
+    echo "INFLUX_ORG                  : $INFLUX_ORG"
+    echo "NUM_PHASES                  : $NUM_PHASES"
+    echo "MULTIPLY_CONNECTIONS / PHASE: $MULTIPLY_CONNECTIONS"
+    echo "TEST_NAME                   : $TEST_NAME"
+    announce "K6 Settings"
+    echo "APPLIANCE_URL               : $APPLIANCE_URL"
+    echo "CONJUR_ADMIN_API_KEY:       : redacted"
+    echo ""
+    echo "Load test and system metrics reports can be found at: $LOG_ROOT/*"
+}
 
-  rm -rf "$local_folder" || true
-  mkdir -p "$local_folder"
+run_influx_system_queries() {
+    if [ "$ENABLE_INFLUXDB" = "false" ]; then
+      echo "WARNING: ENABLE_INFLUXDB is set to false, skipping querying InfluxDB!"
+      return
+    fi
 
-  local jmeter_file='Conjur_Performance_Test'
-  if [ "$USE_FOLLOWER" = 'true' ]; then
-    jmeter_file='Conjur_Performance_Test_With_Follower'
+    check_env "INFLUX_URL"
+    check_env "INFLUX_TOKEN"
+    check_env "INFLUX_ORG"
+    check_env "LOG_ROOT"
+
+    local delimiter=","
+    local start_time="$1"; shift
+    local end_time="$1"; shift
+    local log_dir="${1:-$LOG_ROOT}"; shift
+    local influxdb_files_dir
+
+    influxdb_files_dir="$(files_dir)/influxdb/load-testing-queries"
+
+    # ensure log dir exists
+    mkdir -p "$log_dir" > /dev/null 2>&1
+
+    # tuples <query name,template file>
+    queries=()
+    queries+=("stats-cpu${delimiter}${influxdb_files_dir}/stats-cpu.flux")
+    queries+=("stats-diskio${delimiter}${influxdb_files_dir}/stats-diskio.flux")
+    queries+=("stats-memory${delimiter}${influxdb_files_dir}/stats-memory.flux")
+    queries+=("stats-memory-roc${delimiter}${influxdb_files_dir}/stats-memory-roc.flux")
+    queries+=("stats-network${delimiter}${influxdb_files_dir}/stats-network.flux")
+    queries+=("stats-replication-lag${delimiter}${influxdb_files_dir}/stats-replication-lag.flux")
+    queries+=("stats-replication-state${delimiter}${influxdb_files_dir}/stats-replication-state.flux")
+    queries+=("stats-replication-threshold${delimiter}${influxdb_files_dir}/stats-replication-threshold.flux")
+    queries+=("k6-avg-successful-rps${delimiter}${influxdb_files_dir}/k6-avg-successful-rps.flux")
+
+    for tuple in "${queries[@]}"; do
+        local name
+        local query_file
+        local query_log_file
+        local query_output_file
+
+        name=$(echo "$tuple" | awk -F"," '{print $1}')
+        query_file=$(echo "$tuple" | awk -F"," '{print $2}')
+        query_output_dir="$log_dir/query-results"
+        query_log_dir="$log_dir/query"
+        query_output_file="$query_output_dir/$name.csv"
+        query_log_file="$query_log_dir/$name.flux.log"
+
+        mkdir -p "$query_output_dir"
+        mkdir -p "$query_log_dir"
+
+        echo "Query location                : $query_file"
+        echo "Rendered query output location: $query_log_file"
+        echo "Query CSV results location    : $query_output_file"
+
+        # template the file contents
+        if test -f "$query_file"; then
+            # render the query
+            query=$(sed "s/{{ START_TIME }}/$start_time/;s/{{ END_TIME }}/$end_time/" "$query_file")
+            echo "$query" > "$query_log_file"
+
+            debug_cmd echo "DEBUG: Displaying rendered query"
+            debug_cmd echo "$query"
+
+            # execute the query
+            query_influx "$query" "$query_output_file"
+        else
+            echo "ERROR: the query file does not exist at: $query_file"
+            echo "--SKIPPING!"
+        fi
+    done
+}
+
+test_k6() {
+  # Set CONJUR_ADMIN_API_KEY
+  export CONJUR_ADMIN_API_KEY=$(./bin/cli conjur user rotate-api-key | tail -n 1 | tr -d '[:space:]')
+
+  # If InfluxDB is enabled, set INFLUX_TOKEN
+  if [ "$ENABLE_INFLUXDB" = "true" ]; then
+      echo "Configuring k6 to report load testing data points to InfluxDB at: $INFLUXDB_URL"
+      #TODO: delete later, K6_INFLUXDB_TOKEN value should be added to secrets.yml
+      export K6_INFLUXDB_TOKEN=$(cat "$(repo_root)/INFLUX_TOKEN")
+      INFLUX_TOKEN=$K6_INFLUXDB_TOKEN
   fi
-  docker compose run \
-    --no-deps \
-    --rm \
-    jmeter \
-        -Jkey=null \
-        -n \
-        -t "/opt/jmeter_data/$jmeter_file.jmx" \
-        -l "/opt/jmeter_data/jmeter_reports/$folder/Performance_Results.csv" \
-        -e \
-        -o "/opt/jmeter_data/jmeter_reports/$folder"
+
+  check_env "APPLIANCE_URL"
+  check_env "CONJUR_ADMIN_API_KEY"
+
+  # The name of the test plan file (no extension)
+  TEST_PLAN=$(basename -s .js "$TEST_FILE")
+  # The name of this test (for logging purposes)
+  TEST_NAME="k6-$(basename "$TEST_PLAN")"
+  # The current timestamp
+  SCRIPT_RUN_TIMESTAMP=$(timestamp)
+  # Using the above forms the log directory for this test run
+  LOG_ROOT="$(log_dir)/$SCRIPT_RUN_TIMESTAMP-$TEST_NAME"
+  # Log for the script settings
+  LOG_FILE_INFO="$LOG_ROOT/$TEST_NAME.log"
+
+  # Ensure log output dir exists
+  mkdir -p "$LOG_ROOT"
+
+  # Display debug information
+  print_settings | tee "$LOG_FILE_INFO"
+
+  # Load policy sets for tests
+#  summon -e k6_leader_local ./bin/load-policy-set --policy-set secrets
+
+  # Run K6 test in phases
+  run_k6_test_phases
 }
 
-function open_results_in_browser {
-  local folder="$1"
-  echo "\nReport is available at: 'tools/performance-tests/jmeter/jmeter_reports/$folder'\n"
-  if [ "$HEADLESS" = 'false' ]; then
-    open "tools/performance-tests/jmeter/jmeter_reports/$folder/index.html"
+run_k6_test_phases() {
+    check_env "APPLIANCE_URL"
+    check_env "LOG_ROOT"
+    check_env "TEST_PLAN"
+    check_env "TEST_NAME"
+    check_env "SLEEP_DURATION"
+
+    announce "Begin the load test..."
+    echo "Testing will proceed in [$NUM_PHASES] phase(s)..."
+
+    for (( i=0; i<NUM_PHASES; i++ ))
+    do
+        local phase=$((i+1))
+        local test_start
+        local test_end
+        local log_dir="$LOG_ROOT/p$phase"
+
+        # Maintain a unique log per phase
+        mkdir -p "$log_dir"
+
+        # Clone the test plan that was used
+        cp "$TEST_FILE" "$LOG_ROOT/p$phase/$TEST_PLAN.js"
+
+        announce "Begin phase $phase / $NUM_PHASES"
+
+        # Note: the inserting "T" between date/timestamp is required for
+        # InfluxDB to recongize the RFC339 timestamp .
+        test_start=$(date_timestamp | sed 's/ /T/g')
+        echo "Starting test at: $test_start"
+
+        # Run K6 test
+        cmd run_k6_test
+
+        echo "The test has completed!"
+        echo "Sleeping for ${SLEEP_DURATION}s to create a time buffer between InfluxDB queries. This gives the system time to recover..."
+        echo "Will resume at: $(date_second_offset "$SLEEP_DURATION")"
+        cmd sleep "$SLEEP_DURATION"
+
+        # Stop the clock after the call to sleep
+        # Too short a time window in a query results in: "error in building plan while starting program: cannot query an empty range"
+        test_end=$(date_timestamp | sed 's/ /T/g')
+
+        # echo "Running InfluxDB queries..."
+        cmd run_influx_system_queries "$test_start" "$test_end" "$log_dir"
+
+        echo "Phase $phase / $NUM_PHASES completed at: $test_end"
+    done
+}
+
+run_k6_test() {
+  local log_file="$log_dir/k6.log"
+
+  echo "Starting k6 test in quiet mode, summary will be printed when completed..."
+  echo "See log file at: $log_file"
+
+  if [ "$ENABLE_INFLUXDB" = "true" ]; then
+    echo "Configuring k6 to report load testing data points to InfluxDB at: $INFLUXDB_URL"
+    check_env "INFLUX_TOKEN"
+
+    "$(repo_root)/bin/k6" run "$TEST_FILE" \
+      -o xk6-influxdb="$INFLUXDB_URL" \
+      --insecure-skip-tls-verify \
+      --quiet 2>&1 | tee "$log_file"
+  else
+    "$(repo_root)/bin/k6" run "$TEST_FILE" \
+      --insecure-skip-tls-verify \
+      --quiet 2>&1 | tee "$log_file"
   fi
 }
 
-function main {
-  local folder="$1"
-  run_jmeter_test "$folder"
-  open_results_in_browser "$folder"
-}
-
-report_folder='default'
+REPORT_FOLDER='default'
 USE_FOLLOWER='false'
-HEADLESS='false'
+SLEEP_DURATION=1
 
-while true ; do
-  case "$1" in
-    --name ) shift ; report_folder=$1 ; shift ;;
-    --headless ) shift ; HEADLESS="true" ;;
-    --with-follower ) shift ; USE_FOLLOWER="true" ;;
-    -h | --help ) print_help ;;
-     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
-  esac
-done
+main() {
+  while true ; do
+    case "$1" in
+      --name ) shift ; REPORT_FOLDER=$1 ; shift ;;
+      --sleep) SLEEP_DURATION="$2" shift 2 ;;
+      --with-follower ) shift ; USE_FOLLOWER="true" ;;
+      -h | --help ) print_help ;;
+       * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+    esac
+  done
 
-main "$report_folder"
+  eval "test_k6"
+}
+
+main "$@"

@@ -13,10 +13,6 @@ logs/*
 *.sw[po]
 vm/.vagrant
 
-# JMeter results
-tools/performance-tests/jmeter/jmeter_reports/*
-tools/performance-tests/jmeter/jmeter.log
-
 **/backup/*
 
 files/haproxy/master/haproxy.cfg
