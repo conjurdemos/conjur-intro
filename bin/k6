@@ -1,0 +1,64 @@
+#!/bin/bash -e
+
+#
+# This script will use the k6 binary in your PATH, or fall back to a docker
+# container. You should take care to verify that your APPLIANCE_* environment
+# variables are pointing to the correct URL if you're hosting your Appliance
+# locally. Depending on whether or not k6 is running in docker, the path to
+# the Appliance will be different!
+#
+
+source "$(git rev-parse --show-toplevel)/bin/functions"
+
+compose_file="$(repo_root)/docker-compose.yml"
+
+USE_DOCKER=${USE_DOCKER:-"false"}
+
+# Globals for downstream processes
+export POLICY_ID=${POLICY_ID:-"root"}
+# Default for reading random secrets
+export K6_CUSTOM_ARRIVAL_RATE=${K6_CUSTOM_ARRIVAL_RATE:-"50"}
+export K6_CUSTOM_DURATION=${K6_CUSTOM_DURATION:-"30s"}
+export K6_CUSTOM_GRACEFUL_STOP=${K6_CUSTOM_GRACEFUL_STOP:-"30s"}
+export K6_CUSTOM_PRE_ALLOCATED_VUS=${K6_CUSTOM_PRE_ALLOCATED_VUS:-"50"}
+export K6_CUSTOM_TIME_UNIT=${K6_CUSTOM_TIME_UNIT:-"1s"}
+export K6_CUSTOM_MAX_VUS=${K6_CUSTOM_MAX_VUS:-"50"}
+# The interval to pause between policy loads (resync-related tests)
+export RESYNC_INTERVAL=${RESYNC_INTERVAL:-"30"}
+export RESYNC_ITERATIONS=${RESYNC_ITERATIONS:-"1"}
+# Default scope to: lob-1/safe-1/variable-1 to lob-1/safe-1/variable-50
+
+if command -v k6 > /dev/null && [ "$USE_DOCKER" = "false" ]; then
+  echo "INFO: using k6 from your PATH... be sure to check your APPLIANCE_* environment variables!"
+else
+  echo "WARNING: k6 is not found in your PATH, or you specified USE_DOCKER=true. Using docker container instead... be sure to check your APPLIANCE_* environment variables!"
+
+  k6() {
+    cmd="$@"
+
+    docker-compose -f "$compose_file" run --rm \
+      -e APPLIANCE_URL \
+      -e CONJUR_ADMIN_API_KEY \
+      -e CONJUR_ACCOUNT \
+      -e CONJUR_IDENTITY \
+      -e K6_CUSTOM_ARRIVAL_RATE \
+      -e K6_CUSTOM_DURATION \
+      -e K6_CUSTOM_GRACEFUL_STOP \
+      -e K6_CUSTOM_PRE_ALLOCATED_VUS \
+      -e K6_CUSTOM_TIME_UNIT \
+      -e K6_CUSTOM_MAX_VUS \
+      -e K6_INFLUXDB_ORGANIZATION \
+      -e K6_INFLUXDB_BUCKET \
+      -e K6_INFLUXDB_TOKEN \
+      -e POLICY_FILE \
+      -e POLICY_ID \
+      -e RESYNC_INTERVAL \
+      --entrypoint /bin/bash k6 -c "
+      eval exec \"k6 $cmd\"
+    "
+  }
+fi
+
+# Include default values as to not pollute the global namespace.
+k6 version
+k6 "$@"
