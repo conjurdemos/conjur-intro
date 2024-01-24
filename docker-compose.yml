@@ -212,17 +212,57 @@ services:
     volumes:
       - ./system/configuration/certificates:/src/certificates
 
-  jmeter:
-    image: alpine/jmeter:latest
-    volumes:
-      - ./tools/performance-tests/jmeter:/opt/jmeter_data
+  k6:
+    build:
+      context: ./
+      dockerfile: ./files/k6/Dockerfile
     networks:
       dap_net:
-        ipv4_address: 12.16.23.21
+        ipv4_address: 12.16.23.29
+    volumes:
+      - ./files/k6:/files/k6
+      - ./files/conjur:/files/conjur
+
+  influxdb:
+    image: influxdb:2.1.1
+    volumes:
+      - influxdb-storage:/var/lib/influxdb2:rw
+      - ./files/influxdb/backups:/backups
+    env_file:
+      - .env
+    restart: on-failure:10
+    ports:
+      - ${DOCKER_INFLUXDB_INIT_PORT}:8086
+
+  grafana:
+    image: grafana/grafana-oss:8.4.3
+    env_file:
+      - .env
+    volumes:
+      - grafana-storage:/var/lib/grafana:rw
+      - ./files/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - ./files/grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
+      - ./files/grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - influxdb
+    ports:
+      - ${GRAFANA_PORT}:3000
+
+  telegraf:
+    image: telegraf:1.24.4
+    env_file:
+      - .env
+    volumes:
+      - ./files/influxdb/telegraf/docker-telegraf.conf:/etc/telegraf/telegraf.conf
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - influxdb
 
 volumes:
   seeds:
   follower-certs:
+  grafana-storage:
+  influxdb-storage:
 
 networks:
   dap_net:
