@@ -78,7 +78,8 @@ Usage: bin/dap [options]:
 
     --version <version>                                       Version of DAP to use (defaults to latest build).
 
-    --wait-for-master                                         Waits for Conjur Master to become healthy.
+    --follower-to-master-connection <on|off>                  Pauses or unpauses the follower to master connection.
+                                                                (Requires a configured master).
 
 
 EOF
@@ -646,6 +647,19 @@ function _wait_for_master {
   done
 }
 
+function _follower_to_master_connection {
+  if [ "$1" == "on" ]; then
+      local action="unpause"
+  elif [ "$1" == "off" ]; then
+      local action="pause"
+  else
+      echo "Invalid action. Use either 'on' or 'off'"
+      exit 1
+  fi
+
+  docker container $action conjur-intro-conjur-master-1.mycompany.local-1
+}
+
 _standby_altnames() {
 
   declare -a standby_altnames
@@ -705,6 +719,7 @@ while true ; do
     --upgrade-master ) shift ; CMD="_upgrade_via_backup_restore $1" ; shift ;;
     --version ) shift ; TAG=$1 ; shift ;;
     --wait-for-master ) CMD='_wait_for_master' ; shift ;;
+    --follower-to-master-connection ) shift ; CMD="_follower_to_master_connection $1" ; shift ;;
      * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
   esac
 done
