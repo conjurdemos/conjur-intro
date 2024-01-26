@@ -51,6 +51,15 @@ and finally, validate:
 $ bin/api --fetch-secrets
 ```
 
+Follower could be also deployed using Kind into Kubernetes cluster:
+
+```sh
+$ bin/dap --provision-k8s-follower
+```
+
+More information about way of how the Follower is deployed into Kubernetes
+cluster can be found in [README.md](artifacts/k8s-follower-orchestrator/README.md)
+
 ### Working with Podman
 
 The project is enabled to work with Podman instead of Docker.
@@ -81,6 +90,7 @@ To connect to the UI in the browser, use ports 10443(through HA proxy) or 10444(
 |--import-custom-certificates|action|• Imports pre-generated 3rd-party certificates|Requires configured master|
 |--promote-standby|action|• Stops the current master<br>• Promotes a standby| Requires configured standbys and no auto-failover|
 |--provision-follower|action|• Removes follower if present<br>• Starts a DAP container and a Layer 7 load balancer<br>• Generates a follower seed<br>• Configures follower|Requires configured master|
+|--provision-k8s-follower|action|• Removes follower if present<br>• Configures follower inside kubernetes cluster ran by kind|Requires configured master|
 |--provision-master|action|• Starts a DAP container and Layer 4 load balancer<br>• Configures with account `demo` and password `MySecretP@ss1`||
 |--provision-standbys|action|• Removes standbys if present<br>• Starts two DAP containers<br>• Generates standby seed files<br>• Configures standbys<br>• Enable Synchronous Standby|Requires configured master|
 |--restore-from-backup|action|• Removes auto-failover (if enabled)<br>• Stops and renames master<br>• Starts new DAP container<br>• Restores master from backup|Requires a previously created backup|
@@ -89,6 +99,7 @@ To connect to the UI in the browser, use ports 10443(through HA proxy) or 10444(
 |--trust-follower-proxy|action|• Adds Follower load balancer as a trusted proxy|Requires configured follower|
 |--upgrade-master `<version>`|action|• Removes auto-failover (if enabled)<br>• Generates a backup<br>• Stops and removes master<br>• Starts new DAP container<br>• Restores master from backup|Requires configured master|
 |--version `<version>`|configuration|Version of DAP to use (defaults to latest)|
+|--version `<version>`|configuration|Version of K8S-Follower to use (defaults to latest)|
 
 ### bin/api
 
@@ -144,21 +155,23 @@ The following flags are available:
 ```
 Usage: bin/dap single [options]
 
-    --create-backup               Creates a backup|Requires configured master
-    --dry-run                     Print configuration commands with executing
-    --enable-auto-failover        Configures Master cluster with auto-failover (Requires configured master and standbys)
-    --h, --help                   Shows this help message
-    --import-custom-certificates  Imports pre-generated 3rd-party certificates (Requires configured master)
-    --promote-standby             Stops the current master and promotes a standby (Requires configured standbys and no auto-failover)
-    --provision-follower          Configures follower behind a Layer 7 load balancer (Requires configured master)
-    --provision-master            Configures a DAP Master with account `demo` and password `MySecretP@ss1` behind a Layer 4 load balancer
-    --provision-standbys          Deploys and configures two standbys (Requires configured master)
-    --restore-from-backup         Restores a master from backup|Requires a previously created backup
-    --stop                        Stops all containers and cleans up cached files
-    --trigger-failover            Stops current master (Requires an auto-failover cluster)
-    --trust-follower-proxy        Adds Follower load balancer as a trusted proxy (Requires a configured follower)
-    --upgrade-master <version>    Restores master from backup (Requires configured master)
-    --version <version>           Version of DAP to use (defaults to latest build)
+    --create-backup                   Creates a backup|Requires configured master
+    --dry-run                         Print configuration commands with executing
+    --enable-auto-failover            Configures Master cluster with auto-failover (Requires configured master and standbys)
+    --h, --help                       Shows this help message
+    --import-custom-certificates      Imports pre-generated 3rd-party certificates (Requires configured master)
+    --promote-standby                 Stops the current master and promotes a standby (Requires configured standbys and no auto-failover)
+    --provision-follower              Configures follower behind a Layer 7 load balancer (Requires configured master)
+    --provision-k8s-follower          Configures follower inside kubernetes cluster ran by kind (Requires configured master)
+    --provision-master                Configures a DAP Master with account `demo` and password `MySecretP@ss1` behind a Layer 4 load balancer
+    --provision-standbys              Deploys and configures two standbys (Requires configured master)
+    --restore-from-backup             Restores a master from backup|Requires a previously created backup
+    --stop                            Stops all containers and cleans up cached files
+    --trigger-failover                Stops current master (Requires an auto-failover cluster)
+    --trust-follower-proxy            Adds Follower load balancer as a trusted proxy (Requires a configured follower)
+    --upgrade-master <version>        Restores master from backup (Requires configured master)
+    --version <version>               Version of DAP to use (defaults to latest build)
+    --k8s-follower-version <version>  Version of K8S-Follower to use (defaults to latest build)
 ```
 
 ### `bin/cli`

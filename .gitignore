@@ -4,6 +4,7 @@ cli_cache/*
 
 tools/simple-certificates/certificates/*
 .DS_Store
+.idea
 
 logs/*
 **/logs/*
@@ -32,5 +33,7 @@ files/haproxy/master/haproxy.cfg
 
 # Ignore HAProxy SSL files
 system/haproxy/certs/**
+
+kubeconfig
 
 .env

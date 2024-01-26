@@ -45,6 +45,9 @@ Usage: bin/dap [options]:
     --provision-follower                                      Configures follower behind a Layer 7 load balancer
                                                                 (Requires configured master).
 
+    --provision-k8s-follower                                  Configures follower inside kubernetes cluster ran by kind
+                                                                (Requires configured master).
+
     --provision-master                                        Configures a DAP Master with account `demo` and
                                                                 password `MySecretP@ss1` behind a Layer 4 load
                                                                 balancer.
@@ -77,6 +80,8 @@ Usage: bin/dap [options]:
     --wait-for-master                                         Blocks until the Master is healthy.
 
     --version <version>                                       Version of DAP to use (defaults to latest build).
+
+    --k8s-follower-version <version>                          Version of K8S-Follower to use (defaults to latest build).
 
     --wait-for-master                                         Waits for Conjur Master to become healthy.
 
@@ -223,6 +228,24 @@ function _run {
   fi
 }
 
+# Each command will be executed with KUBE_OPTS environment variable
+# which is defined to point to the k8s-follower-orchestrator cluster.
+# The KUBE_OPTS variable should be then used in the command to interact with the k8s-follower-orchestrator cluster.
+# For example:
+# _run_in_kind "kubectl \$KUBE_OPTS get pods"
+function _run_in_kind {
+  local _args=("$@")
+
+  if [[ $DRY_RUN = false ]]; then
+    # shellcheck disable=SC2128
+    docker compose exec -T k8s-follower-orchestrator ash -c "
+      API_SERVER_URL=\$(kind get --name conjur-intro-k8s-follower kubeconfig | grep server | awk '{print \$2}' | sed 's/127.0.0.1/host.docker.internal/'); \
+      KUBE_OPTS=\"--insecure-skip-tls-verify --server=\$API_SERVER_URL --context kind-conjur-intro-k8s-follower\"; \
+      $_args
+    "
+  fi
+}
+
 function _start_master {
   if [[ $DRY_RUN = false ]]; then
 
@@ -298,6 +321,79 @@ function _setup_follower {
   echo "DAP Follower instance available at: 'https://localhost:${CONJUR_FOLLOWER_PORT}'"
 }
 
+function _setup_k8s_follower {
+  # Create a kubeconfig file to be used by the k8s-follower-orchestrator cluster
+  touch kubeconfig
+  # Setup k8s-follower-orchestrator cluster
+  docker compose build --build-arg K8S_FOLLOWER_TAG="$K8S_FOLLOWER_TAG" k8s-follower-orchestrator
+  docker compose up -d --no-deps k8s-follower-orchestrator
+
+  # Wait a little bit to create k8s-follower-orchestrator cluster
+  while true; do
+    if _run_in_kind "kubectl \$KUBE_OPTS get nodes | grep -q \"Ready\"" &> /dev/null; then
+      echo "The conjur-intro-k8s-follower cluster is created."
+      break
+    else
+      echo "Waiting for the conjur-intro-k8s-follower cluster to be created..."
+      sleep 1
+    fi
+  done
+
+  # Discover Kubernetes resources
+  jwks=$(_run_in_kind "kubectl \$KUBE_OPTS get --raw \$(kubectl \$KUBE_OPTS get --raw /.well-known/openid-configuration | jq -r '.jwks_uri')")
+  policy_value="{\"type\":\"jwks\",\"value\":$jwks}"
+
+  # Define the JWT Authenticator in Conjur
+  bin/cli conjur policy load -b root -f artifacts/k8s-follower-orchestrator/jwt-authenticator-webservice-policy.yaml
+  # Populate the policy variables
+  curl -k -X POST \
+    -H "$(bin/cli conjur authenticate -H | tail -n1)" \
+    --data "$policy_value" \
+    "https://localhost/secrets/demo/variable/conjur%2Fauthn-jwt%2Fdev-cluster%2Fpublic-keys"
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster/issuer -v https://kubernetes.default.svc.cluster.local
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster/token-app-property -v "sub"
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster/identity-path -v apps
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster/audience -v "https://host.docker.internal"
+  # Enable the JWT Authenticator in Conjur
+  _run conjur-master-1.mycompany.local \
+    "evoke variable set CONJUR_AUTHENTICATORS authn-jwt/dev-cluster,authn"
+
+  # Pull the Conjur Kubernetes Follower images on host,
+  # tag them as docker.io images as load into k8s-follower-orchestrator cluster
+  pull_k8s_follower_images
+
+  # Deploy the Conjur Kubernetes Follower
+  _run_in_kind "kubectl \$KUBE_OPTS apply -f /manifests/operator"
+  bin/cli conjur policy load -f artifacts/k8s-follower-orchestrator/seed-generation-policy.yaml -b root
+  bin/cli conjur policy load -f artifacts/k8s-follower-orchestrator/conjur-kubernetes-follower-policy.yaml -b root
+  _run_in_kind "kubectl \$KUBE_OPTS create configmap -n cyberark-conjur conjur-cert --from-file=/etc/ssl/certs/conjur-master.mycompany.local.pem"
+  _run_in_kind "kubectl \$KUBE_OPTS apply -f /manifests/samples"
+
+  echo "K8S Follower instance deployed."
+}
+
+function pull_k8s_follower_images {
+  local images=(
+    "conjur-kubernetes-follower-operator"
+    "conjur-kubernetes-follower-configurator"
+    "conjur-kubernetes-follower-conjur"
+    "conjur-kubernetes-follower-info"
+    "conjur-kubernetes-follower-nginx"
+    "conjur-kubernetes-follower-postgres"
+    "conjur-kubernetes-follower-syslog-ng"
+    "conjur-kubernetes-follower-failover-rebaser"
+  )
+
+  for image in "${images[@]}"; do
+    img="registry.tld/cyberark/${image}:${K8S_FOLLOWER_TAG}"
+    img_without_registry="cyberark/${image}:${K8S_FOLLOWER_TAG}"
+
+    docker pull "${img}"
+    docker tag "${img}" "${img_without_registry}"
+    _run_in_kind "kind load docker-image ${img_without_registry} --name conjur-intro-k8s-follower"
+  done
+}
+
 #
 ## Failover & Promotion
 #
@@ -365,6 +461,7 @@ function _stop {
   _command rm -rf system/logs
   _command rm -rf system/haproxy/certs
   _command rm files/haproxy/master/haproxy.cfg || true
+  _command rm kubeconfig || true
   echo "stopped"
   exit
 }
@@ -677,6 +774,7 @@ create_docker_network() {
 }
 
 TAG=5.0-stable
+K8S_FOLLOWER_TAG=edge
 DRY_RUN=false
 PULL_IMAGES=false
 CMD=""
@@ -693,6 +791,7 @@ while true ; do
     --import-custom-certificates ) CMD='_import_certificates' ; shift ;;
     --promote-standby ) CMD='_perform_promotion' ; shift ;;
     --provision-follower ) CMD='_setup_follower' ; shift ;;
+    --provision-k8s-follower ) CMD='_setup_k8s_follower' ; shift ;;
     --provision-master ) CMD='_single_master' ; shift ;;
     --provision-standbys ) CMD='_setup_standbys' ; shift ;;
     --reenroll-failed-leader ) shift ; CMD="_reenroll_failed_leader $1 $2" ; shift ; shift ;;
@@ -704,6 +803,7 @@ while true ; do
     --trust-follower-proxy ) CMD='_add_follower_proxy' ; shift ;;
     --upgrade-master ) shift ; CMD="_upgrade_via_backup_restore $1" ; shift ;;
     --version ) shift ; TAG=$1 ; shift ;;
+    --k8s-follower-version ) shift ; K8S_FOLLOWER_TAG=$1 ; shift ;;
     --wait-for-master ) CMD='_wait_for_master' ; shift ;;
      * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
   esac
