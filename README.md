@@ -100,6 +100,7 @@ To connect to the UI in the browser, use ports 10443(through HA proxy) or 10444(
 |--upgrade-master `<version>`|action|• Removes auto-failover (if enabled)<br>• Generates a backup<br>• Stops and removes master<br>• Starts new DAP container<br>• Restores master from backup|Requires configured master|
 |--version `<version>`|configuration|Version of DAP to use (defaults to latest)|
 |--version `<version>`|configuration|Version of K8S-Follower to use (defaults to latest)|
+|--follower-to-master-connection `<on/off>`|action|Pauses or unpauses follower connection to master|Requires a configured master|
 
 ### bin/api
 
