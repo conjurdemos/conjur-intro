@@ -89,6 +89,7 @@ To connect to the UI in the browser, use ports 10443(through HA proxy) or 10444(
 |--trust-follower-proxy|action|• Adds Follower load balancer as a trusted proxy|Requires configured follower|
 |--upgrade-master `<version>`|action|• Removes auto-failover (if enabled)<br>• Generates a backup<br>• Stops and removes master<br>• Starts new DAP container<br>• Restores master from backup|Requires configured master|
 |--version `<version>`|configuration|Version of DAP to use (defaults to latest)|
+|--follower-to-master-connection `<on/off>`|action|Pauses or unpauses follower connection to master|Requires a configured master|
 
 ### bin/api
 
