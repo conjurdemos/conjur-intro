@@ -224,6 +224,9 @@ Conjur Intro includes support for running a simple load test against a running i
 # Start Conjur
 $ bin/dap --provision-master
 
+# Build k6 image (if running in docker)
+$ ./bin/build
+
 # Locally run metrics server (influxdb and grafana)
 summon -e common ./bin/metrics  --start
 
