@@ -36,7 +36,7 @@ else
   k6() {
     cmd="$@"
 
-    docker-compose -f "$compose_file" run --rm \
+    docker compose -f "$compose_file" run --rm \
       -e APPLIANCE_URL \
       -e CONJUR_ADMIN_API_KEY \
       -e CONJUR_ACCOUNT \
