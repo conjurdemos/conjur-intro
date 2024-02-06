@@ -1,0 +1,16 @@
+#!/bin/bash -e
+
+#
+# This script will build the images with the load testing binaries (if needed).
+#
+
+
+# shellcheck disable=SC1090,SC1091
+source "$(git rev-parse --show-toplevel)/bin/functions"
+
+main(){
+  "$(repo_root)/bin/retrieve_cyberark_ca_cert"
+  docker compose build k6 --no-cache
+}
+
+main "$@"
