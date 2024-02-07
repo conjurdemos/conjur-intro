@@ -414,6 +414,16 @@ function _enable_autofailover {
   fi
 }
 
+function _enable_server_key_encryption() {
+  _run "conjur-master-1.mycompany.local" "evoke keys lock"
+
+  _run "conjur-master-1.mycompany.local" "openssl rand 32 > /secrets/master.key"
+
+  _run "conjur-master-1.mycompany.local" "evoke keys encrypt /secrets/master.key"
+
+  _run "conjur-master-1.mycompany.local" "evoke keys unlock /secrets/master.key"
+}
+
 _set_cluster_policy_file() {
   cat << EOF > policy/cluster.yml
 - !policy
@@ -486,7 +496,7 @@ function _restore_from_backup {
   _run conjur-master-1.mycompany.local 'evoke unpack backup --key /opt/conjur/backup/key /opt/conjur/backup/$(ls -1t /opt/conjur/backup | grep gpg | head -1)'
 
   # Configure the new master with docker exec <container> evoke restore master
-  _run conjur-master-1.mycompany.local "evoke restore --accept-eula"
+  _run conjur-master-1.mycompany.local "evoke keys exec -m /secrets/master.key -- evoke restore --accept-eula"
 }
 
 function _upgrade_master_via_backup_restore {
@@ -688,6 +698,7 @@ while true ; do
     --create-backup ) CMD='_create_backup' ; shift ;;
     --dry-run ) DRY_RUN=true ; shift ;;
     --enable-auto-failover ) CMD='_enable_autofailover' ; shift ;;
+    --enable-server-key-encryption ) CMD='_enable_server_key_encryption' ; shift ;;
     --generate-dh ) export DHPATH=/tmp ; shift ;;
     -h | --help ) _print_help ; shift ;;
     --import-custom-certificates ) CMD='_import_certificates' ; shift ;;

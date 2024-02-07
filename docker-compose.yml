@@ -38,6 +38,7 @@ services:
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
       - ./system/logs/master-1:/var/log/conjur:Z
       - ./files:/conjur_files
+      - secrets:/secrets
 
   conjur-master-2.mycompany.local:
     image: registry.tld/conjur-appliance:${VERSION}
@@ -59,6 +60,7 @@ services:
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
       - ./system/logs/master-2:/var/log/conjur:Z
       - ./files:/conjur_files
+      - secrets:/secrets
 
   conjur-master-3.mycompany.local:
     image: registry.tld/conjur-appliance:${VERSION}
@@ -80,6 +82,7 @@ services:
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
       - ./system/logs/master-3:/var/log/conjur:Z
       - ./files:/conjur_files
+      - secrets:/secrets
 
   conjur-master-4.mycompany.local:
     image: registry.tld/conjur-appliance:${VERSION}
@@ -101,6 +104,7 @@ services:
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
       - ./system/logs/master-4:/var/log/conjur:Z
       - ./files:/conjur_files
+      - secrets:/secrets
 
   conjur-master-5.mycompany.local:
     image: registry.tld/conjur-appliance:${VERSION}
@@ -122,6 +126,7 @@ services:
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
       - ./system/logs/master-5:/var/log/conjur:Z
       - ./files:/conjur_files
+      - secrets:/secrets
 
   conjur-follower.mycompany.local:
     image: haproxy:alpine
@@ -171,6 +176,7 @@ services:
     volumes:
       - .:/src/cli
       - ./cli_cache/master:/root
+      - secrets:/secrets
 
   follower-client:
     image: cyberark/conjur-cli:8
@@ -214,6 +220,7 @@ services:
 volumes:
   seeds:
   follower-certs:
+  secrets:
 
 networks:
   dap_net:
