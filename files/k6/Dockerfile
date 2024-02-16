@@ -11,12 +11,14 @@ WORKDIR /src
 COPY ./bin/build_ca_certificate /usr/local/share/ca-certificates/
 RUN update-ca-certificates
 
-# Install k6 with influxdb output plugin
-# This plugin introduces support for influxdb v2 output, and is not a part of
+RUN apk update && apk add git
+
+# Install k6 with statsd output plugin
+# This plugin introduces support for statsd output, and is not a part of
 # k6 by default due to introducing breaking changes to the core product.
-# See: https://github.com/grafana/xk6-output-influxdb
+# See: https://github.com/grafana/xk6-output-statsd
 RUN go install go.k6.io/xk6/cmd/xk6@latest
-RUN xk6 build --with github.com/grafana/xk6-output-influxdb
+RUN xk6 build --with github.com/LeonAdato/xk6-output-statsd
 
 FROM alpine:latest
 

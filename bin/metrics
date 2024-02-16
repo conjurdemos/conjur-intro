@@ -1,124 +1,42 @@
 #!/bin/bash -e
 
-#
-# This script is used to initialize and maintain the state of a local
-# InfluxDB v2 instance. This is primarily to be used to ingest k6 summary
-# reports.
-#
-# TODO: also support deploying telegraf to listen to docker socket, if load
-#       testing locally?
-#
-
-
 # shellcheck disable=SC1090,SC1091
 source "$(git rev-parse --show-toplevel)/bin/functions"
 
-env_source_file="$(repo_root)/.env-example"
-env_dest_file="$(repo_root)/.env"
-influx_token_file="$(repo_root)/INFLUX_TOKEN"
+ENABLE_GRAPHITE=${ENABLE_GRAPHITE:-"false"}
+# Default for statsd
+export K6_STATSD_PORT=${K6_STATSD_PORT:-"8125"}
+export K6_STATSD_ADDR=${K6_STATSD_ADDR:-"12.16.23.22:$K6_STATSD_PORT"}
 
-create_influxdb_env_file(){
-  # if the .env file does not exist, generate it and the influxdb credentials
-  if [ ! -f "$env_dest_file" ]
-  then
-    local DOCKER_INFLUXDB_INIT_PASSWORD
-    local DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
+function print_help() {
+  cat << EOF
+NAME
+    Runs metric services.
 
-    DOCKER_INFLUXDB_INIT_PASSWORD=$(openssl rand -hex 32)
-    DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=$(openssl rand -hex 32)
+SYNOPSIS
+    metrics [global options]
 
-    cp "$env_source_file" "$env_dest_file"
-    sudo chmod 600 "$env_dest_file"
-    
-   sed_in_place "s/{{DOCKER_INFLUXDB_INIT_PASSWORD}}/$DOCKER_INFLUXDB_INIT_PASSWORD/" "$env_dest_file"
-   sed_in_place "s/{{DOCKER_INFLUXDB_INIT_ADMIN_TOKEN}}/$DOCKER_INFLUXDB_INIT_ADMIN_TOKEN/" "$env_dest_file"
+GLOBAL OPTIONS
+    -h, --help                - Show this message.
+    --graphite                - Runs graphite service (at port 81) for data visualization.
+    --start                   - Starts all the metric services.
+    --stop                    - Stops metric services and performs cleanup.
+
+EOF
+exit
+}
+
+start() {
+  # start metrics services
+  docker compose up --no-deps --detach statsd
+  if [ "$ENABLE_GRAPHITE" == "true" ]; then
+    docker compose up --no-deps --detach graphite
   fi
 }
 
-start(){
-  #
-  # WARNING: in order for telegraf to be able to monitor the docker socket,
-  # the GID of the docker socket is mapped to the telegraf container's user
-  # (telegraf). Once the telegraf container is running with the docker socket
-  # mounted, the file permissions on the socket are also modified with 666
-  # permissions.
-  #
-  local docker_socket_path="/var/run/docker.sock"
-  local token_response
-  local token
-  check_env "K6_INFLUXDB_BUCKET"
-
-  # init src/influxdb/.env it does not exist
-  create_influxdb_env_file
-
-  # start metrics services
-  docker-compose run --rm --no-deps --detach --service-ports --use-aliases influxdb
-  docker-compose run --rm --no-deps --detach --service-ports --use-aliases grafana
-
-  # load environment variables from .env
-  # WARNING: this not exactly portable, but it'll have to do for now ;)
-  source "$env_dest_file"
-  check_env "K6_INFLUXDB_BUCKET"
-  check_env "DOCKER_INFLUXDB_INIT_ADMIN_TOKEN"
-  check_env "DOCKER_INFLUXDB_INIT_ORG"
-  check_env "DOCKER_INFLUXDB_INIT_PORT"
-  check_env "DOCKER_INFLUXDB_INIT_RETENTION"
-
-  # init k6 bucket
-  echo "Creating k6 bucket..."
-  wait_for_it 30 curl -s -o /dev/null -k "127.0.0.1:$DOCKER_INFLUXDB_INIT_PORT/health"
-  docker-compose exec influxdb influx bucket create \
-    -n "$K6_INFLUXDB_BUCKET" \
-    -o "$DOCKER_INFLUXDB_INIT_ORG" \
-    --token "$DOCKER_INFLUXDB_INIT_ADMIN_TOKEN" \
-    --retention "$DOCKER_INFLUXDB_INIT_RETENTION"
-
-  # init a token for this org's buckets
-  echo "Creating k6 token..."
-  token_response=$(docker compose exec influxdb influx auth create \
-    --description "$DOCKER_INFLUXDB_INIT_ORG" \
-    --org "$DOCKER_INFLUXDB_INIT_ORG" \
-    --read-buckets \
-    --token "$DOCKER_INFLUXDB_INIT_ADMIN_TOKEN" \
-    --write-buckets)
-  token=$(echo -n "$token_response" | tail -1 | awk '{print $3}' )
-  echo "$token" | tee "$influx_token_file"
-
-  # start telegraf
-  echo "Starting the telegraf container (monitors the docker socket, gid: $DOCKER_SOCKET_GID)..."
-  docker-compose run --rm \
-    --no-deps \
-    --detach \
-    --service-ports \
-    --use-aliases \
-    --user "telegraf:$(file_stat "$docker_socket_path")" \
-    --env INFLUX_TOKEN="$token" \
-    telegraf
-
-  # ensure telegraf can talk to the docker socket
-  docker-compose exec -u root -it telegraf /bin/sh -c "chmod 666 $docker_socket_path"
-
-  echo "============================="
-  echo "IMPORTANT: Place the token above into secrets.yml under the 'K6_INFLUXDB_TOKEN' environment variable before attempting to output k6 data points into InfluxDB!"
-  echo "============================="
-  echo "Use InfluxDB to dig into raw data metrics. Use Grafana to use"
-  echo "pre-provisioned dashboards for real-time viewing."
-  echo ""
-  echo "By default, InfluxDB is available at:"
-  echo "    Outside Docker  : http://localhost:$DOCKER_INFLUXDB_INIT_PORT"
-  echo "    Inside Docker   : http://influxdb:$DOCKER_INFLUXDB_INIT_PORT"
-  echo "    With credentials: admin / $DOCKER_INFLUXDB_INIT_PASSWORD"
-  echo "    InfluxDB Token  : $token"
-  echo "                      This token is persisted at: $influx_token_file"
-  echo "Grafana is available at:"
-  echo "    Outside Docker  : http://localhost:$GRAFANA_PORT"
-  echo "    Inside Docker   : http://grafana:$GRAFANA_PORT"
-  echo "    With credentials: admin / admin"
-  echo "    K6 Dashboard    : http://localhost:$GRAFANA_PORT/d/cLFbBtF4z/k6-summary?orgId=1"
-}
-
-stop(){
-  docker-compose down --volumes --remove-orphans
+stop() {
+  # stop metrics services
+  docker compose down graphite statsd
 }
 
 main() {
@@ -134,6 +52,10 @@ main() {
             ;;
         --stop)
             CMD="stop"
+            shift 1
+            ;;
+        --graphite)
+            ENABLE_GRAPHITE="true"
             shift 1
             ;;
         --) shift; 
