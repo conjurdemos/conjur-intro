@@ -29,7 +29,7 @@ export RESYNC_ITERATIONS=${RESYNC_ITERATIONS:-"1"}
 k6() {
   cmd="$@"
 
-  docker-compose -f "$compose_file" run --rm \
+  docker compose -f "$compose_file" run --rm \
     -e APPLIANCE_URL \
     -e CONJUR_ADMIN_API_KEY \
     -e CONJUR_ACCOUNT \
@@ -40,9 +40,7 @@ k6() {
     -e K6_CUSTOM_PRE_ALLOCATED_VUS \
     -e K6_CUSTOM_TIME_UNIT \
     -e K6_CUSTOM_MAX_VUS \
-    -e K6_INFLUXDB_ORGANIZATION \
-    -e K6_INFLUXDB_BUCKET \
-    -e K6_INFLUXDB_TOKEN \
+    -e K6_STATSD_ADDR \
     -e POLICY_FILE \
     -e POLICY_ID \
     -e RESYNC_INTERVAL \

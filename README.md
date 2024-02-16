@@ -227,14 +227,14 @@ $ bin/dap --provision-master
 # Build k6 image (if running in docker)
 $ ./bin/build
 
-# Locally run metrics server (influxdb and grafana)
-summon -e common ./bin/metrics  --start
+# Locally run metrics server (statsd only or with graphite visualization)
+$ ./bin/metrics --start [--graphite]
 
 # Load policies and secrets
-$ summon -e k6_leader_local ./bin/load-policy-set --policy-set secrets
+$ ./bin/load-policy-set --policy-set secrets
 
 # Run load test
-$ TEST_FILE=files/k6/conjur-performance-test.js summon -e k6_leader_local "./bin/load-test"
+$ TEST_FILE=files/k6/conjur-performance-test.js ./bin/load-test
 ```
 
 The above test generates a report in the folder:
