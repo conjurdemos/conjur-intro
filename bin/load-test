@@ -1,20 +1,18 @@
 #!/bin/bash
-set -e
+set -eo pipefail
 
-source "$(git rev-parse --show-toplevel)/bin/functions"
+source "$(git rev-parse --show-toplevel)/tools/performance-tests/k6/bin/functions"
 
-# Debug mode skips test runs (displays script output, incl. phase info)
-# DEBUG_MODE interferes with underlying system dependencies, so do not use.
-DEBUG_LEVEL="false"
 ENABLE_STATSD=${ENABLE_STATSD:-"true"}
 # Default for statsd
 export K6_STATSD_PORT=${K6_STATSD_PORT:-"8125"}
-export K6_STATSD_ADDR=${K6_STATSD_ADDR:-"12.16.23.22:$K6_STATSD_PORT"}
-# The number of times to run a test.
-NUM_PHASES=1
+export K6_STATSD_ADDR=${K6_STATSD_ADDR:-"statsd:$K6_STATSD_PORT"}
 
-# The Conjur Account.
-ORGANIZATION=${ORGANIZATION:-"cyberark"}
+# Appliance URL
+export APPLIANCE_MASTER_URL=${APPLIANCE_MASTER_URL:-"https://conjur-master.mycompany.local:443"}
+export APPLIANCE_FOLLOWER_URL=${APPLIANCE_FOLLOWER_URL:-"https://conjur-follower.mycompany.local:443"}
+export CONJUR_ACCOUNT=${CONJUR_ACCOUNT:-"demo"}
+export CONJUR_IDENTITY=${CONJUR_IDENTITY:-"admin"}
 
 function print_help() {
   cat << EOF
@@ -26,10 +24,6 @@ SYNOPSIS
 
 GLOBAL OPTIONS
     -h, --help                - Show this message.
-    --name <folder-name>      - Target folder to export the report to. If the folder exists
-                                the contents will be over-written.
-    --with-follower           - Runs the variable request portion of the test against the
-                                Follower.
 
 EOF
 exit
@@ -37,13 +31,13 @@ exit
 
 print_settings() {
     announce "Load Test - Script Settings and Enviroment Variables"
-    echo "DEBUG LEVEL                 : $DEBUG_LEVEL"
-    echo "NUM_PHASES                  : $NUM_PHASES"
-    echo "MULTIPLY_CONNECTIONS / PHASE: $MULTIPLY_CONNECTIONS"
     echo "TEST_NAME                   : $TEST_NAME"
     announce "K6 Settings"
-    echo "APPLIANCE_URL               : $APPLIANCE_URL"
+    echo "APPLIANCE_MASTER_URL        : $APPLIANCE_MASTER_URL"
+    echo "APPLIANCE_FOLLOWER_URL      : $APPLIANCE_FOLLOWER_URL"
     echo "CONJUR_ADMIN_API_KEY:       : redacted"
+    echo "CONJUR_ACCOUNT              : $CONJUR_ACCOUNT"
+    echo "CONJUR_IDENTITY             : $CONJUR_IDENTITY"
     echo ""
     echo "Load test and system metrics reports can be found at: $LOG_ROOT/*"
 }
@@ -52,7 +46,10 @@ test_k6() {
   # Set CONJUR_ADMIN_API_KEY
   export CONJUR_ADMIN_API_KEY=$(./bin/cli conjur user rotate-api-key | tail -n 1 | tr -d '[:space:]')
 
-  check_env "APPLIANCE_URL"
+  check_env "APPLIANCE_MASTER_URL"
+  check_env "APPLIANCE_FOLLOWER_URL"
+  check_env "CONJUR_ACCOUNT"
+  check_env "CONJUR_IDENTITY"
   check_env "CONJUR_ADMIN_API_KEY"
 
   # The name of the test plan file (no extension)
@@ -72,52 +69,25 @@ test_k6() {
   # Display debug information
   print_settings | tee "$LOG_FILE_INFO"
 
-  # Run K6 test in phases
-  run_k6_test_phases
-}
+  # build K6 image
+  "$(repo_root)/bin/retrieve_cyberark_ca_cert"
+  docker compose build k6 --no-cache
 
-run_k6_test_phases() {
-    check_env "APPLIANCE_URL"
-    check_env "LOG_ROOT"
-    check_env "TEST_PLAN"
-    check_env "TEST_NAME"
-    check_env "SLEEP_DURATION"
+  # Start the clock
+  test_start=$(date_timestamp | sed 's/ /T/g')
+  echo "Starting test at: $test_start"
 
-    announce "Begin the load test..."
-    echo "Testing will proceed in [$NUM_PHASES] phase(s)..."
+  # Run K6 test
+  run_k6_test
 
-    for (( i=0; i<NUM_PHASES; i++ ))
-    do
-        local phase=$((i+1))
-        local test_start
-        local test_end
-        local log_dir="$LOG_ROOT/p$phase"
+  echo "The test has completed!"
 
-        # Maintain a unique log per phase
-        mkdir -p "$log_dir"
-
-        # Clone the test plan that was used
-        cp "$TEST_FILE" "$LOG_ROOT/p$phase/$TEST_PLAN.js"
-
-        announce "Begin phase $phase / $NUM_PHASES"
-
-        # Start the clock
-        test_start=$(date_timestamp | sed 's/ /T/g')
-        echo "Starting test at: $test_start"
-
-        # Run K6 test
-        cmd run_k6_test
-
-        echo "The test has completed!"
-
-        # Stop the clock
-        test_end=$(date_timestamp | sed 's/ /T/g')
-        echo "Phase $phase / $NUM_PHASES completed at: $test_end"
-    done
+  # Stop the clock
+  test_end=$(date_timestamp | sed 's/ /T/g')
 }
 
 run_k6_test() {
-  local log_file="$log_dir/k6.log"
+  local log_file="$LOG_ROOT/k6.log"
 
   echo "Starting k6 test in quiet mode, summary will be printed when completed..."
   echo "See log file at: $log_file"
@@ -125,28 +95,20 @@ run_k6_test() {
   if [ "$ENABLE_STATSD" = "true" ]; then
     echo "Configuring k6 to report load testing data points to StatsD"
 
-    echo $K6_STATSD_ADDR
-    "$(repo_root)/bin/k6" run "$TEST_FILE" \
+    "$(repo_root)/tools/performance-tests/k6/bin/k6" run "$TEST_FILE" \
       -o output-statsd \
       --insecure-skip-tls-verify \
       --quiet 2>&1 | tee "$log_file"
   else
-    "$(repo_root)/bin/k6" run "$TEST_FILE" \
+    "$(repo_root)/tools/performance-tests/k6/bin/k6" run "$TEST_FILE" \
       --insecure-skip-tls-verify \
       --quiet 2>&1 | tee "$log_file"
   fi
 }
 
-REPORT_FOLDER='default'
-USE_FOLLOWER='false'
-SLEEP_DURATION=1
-
 main() {
   while true ; do
     case "$1" in
-      --name ) shift ; REPORT_FOLDER=$1 ; shift ;;
-      --sleep) SLEEP_DURATION="$2" shift 2 ;;
-      --with-follower ) shift ; USE_FOLLOWER="true" ;;
       -h | --help ) print_help ;;
        * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
     esac

@@ -40,13 +40,13 @@ export function authenticate(client, data, exitOnFailure=false) {
 
 export function load_policy(client, data, policy_id, policy_body) {
   const {
-    applianceUrl,
+    applianceMasterUrl,
     conjurAccount,
     token
   } = data;
   const headers = { 'Authorization': `Token token="${token}"` }
   const res = client.post(
-    `${applianceUrl}/policies/${conjurAccount}/policy/${policy_id}`,
+    `${applianceMasterUrl}/policies/${conjurAccount}/policy/${policy_id}`,
     policy_body,
     {
       headers,
@@ -59,7 +59,7 @@ export function load_policy(client, data, policy_id, policy_body) {
 
 export function write_secret(client, data, identity, body) {
   const {
-    applianceUrl,
+    applianceMasterUrl,
     conjurAccount,
     token
   } = data;
@@ -67,7 +67,7 @@ export function write_secret(client, data, identity, body) {
   const headers = { 'Authorization': `Token token="${token}"` }
 
   const res = client.post(
-    `${applianceUrl}/secrets/${conjurAccount}/variable/${encodeURIComponent(identity)}`,
+    `${applianceMasterUrl}/secrets/${conjurAccount}/variable/${encodeURIComponent(identity)}`,
     body,
     {
       headers,
@@ -80,13 +80,13 @@ export function write_secret(client, data, identity, body) {
 
 export function read_secret(client, data, identity) {
   const {
-    applianceUrl,
+    applianceFollowerUrl,
     conjurAccount,
     token
   } = data;
 
   const headers = { 'Authorization': `Token token="${token}"` };
-  const url = `${applianceUrl}/secrets/${conjurAccount}/variable/${encodeURIComponent(identity)}`;
+  const url = `${applianceFollowerUrl}/secrets/${conjurAccount}/variable/${encodeURIComponent(identity)}`;
 
   const res = client.get(
     url,
@@ -101,12 +101,12 @@ export function read_secret(client, data, identity) {
 
 export function get(client, data, path) {
   const {
-    applianceUrl,
+    applianceFollowerUrl,
     token
   } = data;
 
   const headers = { 'Authorization': `Token token="${token}"` };
-  const url = `${applianceUrl}/${path}`;
+  const url = `${applianceFollowerUrl}/${path}`;
 
   const res = client.get(
       url,

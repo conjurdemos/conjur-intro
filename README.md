@@ -9,7 +9,7 @@ Tools and scripts  utilities that make it easier to make, manage, and run demos
 
 ## Tools
 - [Generate Signed Certificates](tools/simple-certificates/)
-- [K6 Performance Tests](files/k6/)
+- [K6 Performance Tests](tools/performance-tests/k6/)
 
 ## CLI Tools
 
@@ -223,18 +223,13 @@ Conjur Intro includes support for running a simple load test against a running i
 ```sh
 # Start Conjur
 $ bin/dap --provision-master
-
-# Build k6 image (if running in docker)
-$ ./bin/build
+$ bin/dap --provision-follower
 
 # Locally run metrics server (statsd only or with graphite visualization)
-$ ./bin/metrics --start [--graphite]
-
-# Load policies and secrets
-$ ./bin/load-policy-set --policy-set secrets
+$ ./tools/performance-tests/k6/bin/metrics --start [--graphite]
 
 # Run load test
-$ TEST_FILE=files/k6/conjur-performance-test.js ./bin/load-test
+$ TEST_FILE=tools/performance-tests/k6/conjur-performance-test.js ./bin/load-test
 ```
 
 The above test generates a report in the folder:
@@ -243,7 +238,7 @@ The above test generates a report in the folder:
 
 Load is applied using k6. The k6 files are located at:
 
-`files/k6`
+`tools/performance-tests/k6`
 
 ## Contributing
 
