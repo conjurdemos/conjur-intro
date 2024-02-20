@@ -215,12 +215,12 @@ services:
   k6:
     build:
       context: ./
-      dockerfile: ./files/k6/Dockerfile
+      dockerfile: ./tools/performance-tests/k6/Dockerfile
     networks:
       dap_net:
         ipv4_address: 12.16.23.21
     volumes:
-      - ./files/k6:/files/k6
+      - ./tools/performance-tests/k6:/tools/performance-tests/k6
       - ./files/conjur:/files/conjur
 
   statsd:

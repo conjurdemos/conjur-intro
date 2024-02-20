@@ -9,10 +9,6 @@ timestamp() {
   date +"%Y_%m_%d_%I_%M_%s"
 }
 
-files_dir() {
-  echo "$(repo_root)/files"
-}
-
 log_dir() {
   echo "$(repo_root)/tmp"
 }
@@ -127,8 +123,4 @@ file_stat(){
   else
     stat -f '%g' "$file_path"
   fi
-}
-
-parse_policy_response() {
-  python3 "$(repo_root)/bin/parse_policy_response.py" "$@"
 }
