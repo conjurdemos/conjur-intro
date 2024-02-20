@@ -172,6 +172,15 @@ services:
       - .:/src/cli
       - ./cli_cache/master:/root
 
+  k8s-follower-orchestrator:
+    build:
+      context: artifacts/k8s-follower-orchestrator
+    privileged: true
+    volumes:
+      - ./kubeconfig:/root/.kube/config
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./system/haproxy/certs:/etc/ssl/certs
+
   follower-client:
     image: cyberark/conjur-cli:8
     networks:
