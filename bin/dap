@@ -12,6 +12,7 @@ dotenv > /dev/null 2>&1 || true
 
 CONJUR_MASTER_PORT=${CONJUR_MASTER_PORT:-443}
 CONJUR_FOLLOWER_PORT=${CONJUR_FOLLOWER_PORT:-450}
+CONJUR_K8S_FOLLOWER_PORT=${CONJUR_K8S_FOLLOWER_PORT:-451}
 _admin_password="MySecretP@ss1"
 
 function _print_help {
@@ -325,7 +326,10 @@ function _setup_k8s_follower {
   # Create a kubeconfig file to be used by the k8s-follower-orchestrator cluster
   touch kubeconfig
   # Setup k8s-follower-orchestrator cluster
-  docker compose build --build-arg K8S_FOLLOWER_TAG="$K8S_FOLLOWER_TAG" k8s-follower-orchestrator
+  docker compose build \
+    --build-arg K8S_FOLLOWER_TAG="$K8S_FOLLOWER_TAG" \
+    --build-arg CONJUR_K8S_FOLLOWER_PORT="$CONJUR_K8S_FOLLOWER_PORT" \
+    k8s-follower-orchestrator
   docker compose up -d --no-deps k8s-follower-orchestrator
 
   # Wait a little bit to create k8s-follower-orchestrator cluster
@@ -369,7 +373,13 @@ function _setup_k8s_follower {
   _run_in_kind "kubectl \$KUBE_OPTS create configmap -n cyberark-conjur conjur-cert --from-file=/etc/ssl/certs/conjur-master.mycompany.local.pem"
   _run_in_kind "kubectl \$KUBE_OPTS apply -f /manifests/samples"
 
-  echo "K8S Follower instance deployed."
+  echo "Waiting for the conjur-follower deployment to be running..."
+  _run_in_kind "kubectl \$KUBE_OPTS wait --namespace=cyberark-conjur --for=condition=available --timeout=60s deployment/conjur-follower"
+
+  # Deploy NodePort that will expose Conjur Follower endpoint
+  _run_in_kind "kubectl \$KUBE_OPTS apply -f conjur-follower-node-port.yaml"
+
+  echo "K8S Follower instance deployed and available at https://localhost:${CONJUR_K8S_FOLLOWER_PORT}"
 }
 
 function pull_k8s_follower_images {
