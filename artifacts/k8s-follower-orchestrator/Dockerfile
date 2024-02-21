@@ -5,13 +5,17 @@ FROM registry.tld/cyberark/conjur-kubernetes-follower-operator-manifests:$K8S_FO
 FROM golang:alpine
 
 ARG K8S_FOLLOWER_TAG
+ARG CONJUR_K8S_FOLLOWER_PORT
 
 RUN apk add docker-cli kubectl curl jq && \
     go install sigs.k8s.io/kind@v0.20.0
 
 WORKDIR /
 
-COPY kind-config.yaml entrypoint.sh ./
+COPY kind-config.yaml entrypoint.sh conjur-follower-node-port.yaml ./
+
+# Replace port forwarded from K8S-Follower to host
+RUN sed -i "s/hostPort: 451/hostPort: ${CONJUR_K8S_FOLLOWER_PORT}/g" kind-config.yaml
 
 COPY --from=operator-manifests /manifests /manifests/operator
 # Replace image version in form <version-tag> with either specified by user or default (edge)
