@@ -229,6 +229,9 @@ $ bin/dap --provision-follower
 # Locally run metrics server (statsd only or with graphite visualization)
 $ ./tools/performance-tests/k6/bin/metrics --start [--graphite]
 
+# Optionally, load policies and secrets
+$ ./bin/load-benchmark-data --accounts_per_safe 200 --safes 40 --hosts 200 --users 100
+
 # Run load test
 $ TEST_FILE=tools/performance-tests/k6/conjur-performance-test.js ./bin/load-test
 ```

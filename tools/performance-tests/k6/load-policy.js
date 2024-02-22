@@ -31,6 +31,7 @@ export const options = {
 
 export default function () {
   const settings = lib.parse_env();
+  settings.applianceUrl = settings.applianceMasterUrl
   let authRes;
 
   // authn to obtain token

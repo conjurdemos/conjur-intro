@@ -13,6 +13,7 @@ source "$(git rev-parse --show-toplevel)/tools/performance-tests/k6/bin/function
 compose_file="$(repo_root)/docker-compose.yml"
 
 # Globals for downstream processes
+export POLICY_ID=${POLICY_ID:-"root"}
 # Default for reading random secrets
 export K6_CUSTOM_GRACEFUL_STOP=${K6_CUSTOM_GRACEFUL_STOP:-"30s"}
 export K6_CUSTOM_VUS=${K6_CUSTOM_VUS:-"11"}

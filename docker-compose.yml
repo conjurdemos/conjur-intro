@@ -212,6 +212,12 @@ services:
     volumes:
       - ./system/configuration/certificates:/src/certificates
 
+  policy-generator:
+    build:
+      context: ./artifacts/policy-generator
+    volumes:
+      - ./tools/performance-tests/k6/data:/data
+
   k6:
     build:
       context: ./

@@ -1,0 +1,41 @@
+- !policy
+  id: vault-synchronizer-hosts
+  body:
+    {%- for lob in lobs %}
+    {%- set parent_index = loop.index0 %}
+    - !policy
+      id: {{lob}}
+      owner: !group /vault-synchronizer/{{lob}}-admin
+      body:
+        {%- for safe in safes %}
+        - !policy
+          id: {{safe}}
+          owner: !group /vault-synchronizer/{{lob}}/{{safe}}-admin
+          {%- if (parent_index * safes|length + loop.index <= leftover_hosts|length) or hosts[0] %}
+          body:
+          - !layer hosts
+          - &{{lob}}-{{safe}}-hosts
+            {%- for host in hosts %}
+            - !host {{host}}
+            {%- endfor %}
+            {%- if parent_index * safes|length + loop.index <= leftover_hosts|length %}
+            - !host {{leftover_hosts[0]}}
+            {%- endif %}
+          - !grant
+            role: !layer hosts
+            members: *{{lob}}-{{safe}}-hosts
+          {%- endif %}
+        {%- endfor %}
+    {%- endfor %}
+
+
+{%- for lob in lobs %}
+{%- set parent_index = loop.index0 %}
+  {%- for safe in safes %}
+  {%- if (parent_index * safes|length + loop.index <= leftover_hosts|length) or hosts[0] %}
+- !grant
+  role: !group vault-synchronizer/{{lob}}/{{safe}}/delegation/viewers
+  members: !layer vault-synchronizer-hosts/{{lob}}/{{safe}}/hosts
+  {%- endif %}
+  {%- endfor %}
+{%- endfor %}

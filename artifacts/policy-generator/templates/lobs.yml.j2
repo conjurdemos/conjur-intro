@@ -1,0 +1,37 @@
+- !group vault-synchronizer-admin
+
+- !policy
+  id: vault-synchronizer
+  owner: !group vault-synchronizer-admin
+  body:
+    - !group {{lob_iteration}}-admin
+    - !policy
+      id: {{lob_iteration}}
+      owner: !group {{lob_iteration}}-admin
+      body:
+        {%- for safe in safes %}
+        - !group {{safe}}-admin
+        - !policy
+          id: {{safe}}/delegation
+          owner: !group {{safe}}-admin
+          body:
+            - !group consumers
+            - !group viewers
+        - !policy
+          id: {{safe}}
+          body:
+            {%- for account in accounts %}
+            - &{{lob_iteration}}-{{safe}}-{{account}}-variables
+              {%- for var in secrets %}
+              - !variable {{account}}/{{var}}
+              {%- endfor %}
+            - !permit
+              resource: *{{lob_iteration}}-{{safe}}-{{account}}-variables
+              privileges: [ read, execute ]
+              role: !group /vault-synchronizer/{{lob_iteration}}/{{safe}}/delegation/consumers
+            - !permit
+              resource: *{{lob_iteration}}-{{safe}}-{{account}}-variables
+              privileges: [ read ]
+              role: !group /vault-synchronizer/{{lob_iteration}}/{{safe}}/delegation/viewers
+            {%- endfor %}
+        {%- endfor %}
