@@ -13,15 +13,15 @@ logs/*
 *.sw[po]
 vm/.vagrant
 
-# JMeter results
-tools/performance-tests/jmeter/jmeter_reports/*
-tools/performance-tests/jmeter/jmeter.log
+#K6 results
+tools/performance-tests/k6/tmp/**
 
 **/backup/*
 
 files/haproxy/master/haproxy.cfg
 
 # Generated Certificates
+bin/build_ca_certificate/cyberark_root.crt
 **/certificates/ca-chain.pem
 **/certificates/dap_follower/
 **/certificates/dap_master/

@@ -1,0 +1,13 @@
+# Top-level policy file
+- !group team_leads
+- !group security_ops
+
+# Define &quot;staging&quot; namespace, owned by the &quot;team_leads&quot;
+- !policy
+  id: staging
+  owner: !group team_leads
+
+# Define &quot;production&quot; namespace, owned by the &quot;security_ops&quot; team
+- !policy
+  id: production
+  owner: !group security_ops

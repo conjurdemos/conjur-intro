@@ -212,13 +212,35 @@ services:
     volumes:
       - ./system/configuration/certificates:/src/certificates
 
-  jmeter:
-    image: alpine/jmeter:latest
-    volumes:
-      - ./tools/performance-tests/jmeter:/opt/jmeter_data
+  k6:
+    build:
+      context: ./
+      dockerfile: ./tools/performance-tests/k6/Dockerfile
     networks:
       dap_net:
         ipv4_address: 12.16.23.21
+    volumes:
+      - ./tools/performance-tests/k6:/tools/performance-tests/k6
+      - ./files/conjur:/files/conjur
+
+  statsd:
+    image: statsd/statsd
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.22
+    ports:
+      - "${K6_STATSD_PORT}:8125/udp"
+      - "8126:8126"
+
+  graphite:
+    image: graphiteapp/graphite-statsd
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.23
+    ports:
+      - "81:80"
+      - "2003-2004:2003-2004"
+      - "2023-2024:2023-2024"
 
 volumes:
   seeds:

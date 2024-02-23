@@ -9,7 +9,7 @@ Tools and scripts  utilities that make it easier to make, manage, and run demos
 
 ## Tools
 - [Generate Signed Certificates](tools/simple-certificates/)
-- [JMeter Performance Tests](tools/performance-tests/)
+- [K6 Performance Tests](tools/performance-tests/k6/)
 
 ## CLI Tools
 
@@ -223,35 +223,22 @@ Conjur Intro includes support for running a simple load test against a running i
 ```sh
 # Start Conjur
 $ bin/dap --provision-master
+$ bin/dap --provision-follower
 
-# Optionally, load 150k secrets
-$ bin/api --load-large-secrets-sample
+# Locally run metrics server (statsd only or with graphite visualization)
+$ ./tools/performance-tests/k6/bin/metrics --start [--graphite]
 
 # Run load test
-$ bin/load-test --name 2023-05-05
+$ TEST_FILE=tools/performance-tests/k6/conjur-performance-test.js ./bin/load-test
 ```
 
 The above test generates a report in the folder:
 
-`tools/performance-tests/jmeter/jmeter_reports/2023-05-05`
+`tmp/{TIMESTAMP}-test-name`
 
-Load is applied using JMeter. The JMeter file is located at:
+Load is applied using k6. The k6 files are located at:
 
-`tools/performance-tests/Conjur_Performance_Test.jmx`
-
-If changes are required, the easiest way is to use the JMeter UI.
-
-```sh
-# Install JMeter UI
-$ brew install jmeter
-
-# Open UI
-$ jmeter
-```
-
-Once the JMeter UI is open. Open the above script and make your desired changes. It's
-important to note that the UI does not automatically save changes.  Make sure you save
-before attempting to re-run the script.
+`tools/performance-tests/k6`
 
 ## Contributing
 

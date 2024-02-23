@@ -1,0 +1,126 @@
+#!/bin/bash
+
+repo_root() {
+  git rev-parse --show-toplevel
+}
+
+# A date timestamp separated by underscors, ideal for file names.
+timestamp() {
+  date +"%Y_%m_%d_%I_%M_%s"
+}
+
+log_dir() {
+  echo "$(repo_root)/tmp"
+}
+
+check_env(){
+  # evaluate given variable name to get its value
+  eval temp_var="\$$1"
+
+  # verify it has a non-empty value
+  if [ -z "${temp_var}" ]; then
+    echo "ENV VAR \"$1\" must be set. Try using summon and running this command again."
+    exit 1
+  fi
+}
+
+# Returns 0 if is gnu sed, otherwise it returns 1.
+is_gnu_sed() {
+  sed --version >/dev/null 2>&1
+}
+
+sed_in_place() {
+  if is_gnu_sed; then
+    sed -i "$@"
+  else
+    sed -i '' "$@"
+  fi
+}
+
+announce(){
+  echo "------------------------------------"
+  echo "$1"
+  echo "------------------------------------"
+}
+
+# Runs a given command if debug is off.
+cmd() {
+    if [ "$DEBUG_LEVEL" = "false" ]; then
+        "$@"
+    fi
+}
+
+# Runs a given command if debug is on.
+debug_cmd() {
+    if [ "$DEBUG_LEVEL" = "true" ]; then
+        "$@"
+    fi
+}
+
+is_gnu_date() {
+  date --version >/dev/null 2>&1
+}
+
+# Outputs time in UTC, including the timezone offset (needed for
+# InfluxDB queries).
+date_timestamp() {
+  if is_gnu_date; then
+    echo "$(date '+%Y-%m-%d %T')+00:00"
+  else
+    echo "$(date -u "+%Y-%m-%d %T")+00:00"
+  fi
+}
+
+date_second_offset() {
+  local seconds="$1"
+
+  if is_gnu_date; then
+    date --date="+$seconds seconds" '+%Y-%m-%d %T'
+  else
+    date -u -v "+${seconds}S" "+%Y-%m-%d %T"
+  fi
+}
+
+function wait_for_it() {
+  local timeout=$1
+  local spacer=2
+  shift
+
+  if ! [ "$timeout" = '-1' ]; then
+    local times_to_run=$((timeout / spacer))
+
+    echo "Waiting for '$*' up to $timeout s"
+    for _ in $(seq $times_to_run); do
+      # shellcheck disable=SC2068,SC2294
+      eval $@ > /dev/null && echo 'Success!' && return 0
+      echo -n .
+      sleep $spacer
+    done
+
+    # Last run evaluated. If this fails we return an error exit code to caller
+    # shellcheck disable=SC2068,SC2294
+    eval $@
+  else
+    echo "Waiting for '$*' forever"
+
+    while ! "$@" > /dev/null; do
+      echo -n .
+      sleep $spacer
+    done
+    echo 'Success!'
+  fi
+}
+
+is_gnu_stat (){
+  stat --version >/dev/null 2>&1
+}
+
+file_stat(){
+  local file_path="$1"
+
+  if is_gnu_stat; then
+    stat -c '%g' "$file_path"
+  else
+    stat -f '%g' "$file_path"
+  fi
+}

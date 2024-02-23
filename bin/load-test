@@ -1,5 +1,18 @@
-#!/bin/bash -ex
+#!/bin/bash
+set -eo pipefail
 
+source "$(git rev-parse --show-toplevel)/tools/performance-tests/k6/bin/functions"
+
+ENABLE_STATSD=${ENABLE_STATSD:-"true"}
+# Default for statsd
+export K6_STATSD_PORT=${K6_STATSD_PORT:-"8125"}
+export K6_STATSD_ADDR=${K6_STATSD_ADDR:-"statsd:$K6_STATSD_PORT"}
+
+# Appliance URL
+export APPLIANCE_MASTER_URL=${APPLIANCE_MASTER_URL:-"https://conjur-master.mycompany.local:443"}
+export APPLIANCE_FOLLOWER_URL=${APPLIANCE_FOLLOWER_URL:-"https://conjur-follower.mycompany.local:443"}
+export CONJUR_ACCOUNT=${CONJUR_ACCOUNT:-"demo"}
+export CONJUR_IDENTITY=${CONJUR_IDENTITY:-"admin"}
 
 function print_help() {
   cat << EOF
@@ -11,65 +24,97 @@ SYNOPSIS
 
 GLOBAL OPTIONS
     -h, --help                - Show this message.
-    --headless                - Won't attempt to open the report in browser.
-    --name <folder-name>      - Target folder to export the report to. If the folder exists
-                                the contents will be over-written.
-    --with-follower           - Runs the variable request portion of the test against the
-                                Follower.
 
 EOF
 exit
 }
 
-function run_jmeter_test() {
-  local folder="$1"
-  local local_folder="tools/performance-tests/jmeter/jmeter_reports/$folder"
+print_settings() {
+    announce "Load Test - Script Settings and Enviroment Variables"
+    echo "TEST_NAME                   : $TEST_NAME"
+    announce "K6 Settings"
+    echo "APPLIANCE_MASTER_URL        : $APPLIANCE_MASTER_URL"
+    echo "APPLIANCE_FOLLOWER_URL      : $APPLIANCE_FOLLOWER_URL"
+    echo "CONJUR_ADMIN_API_KEY:       : redacted"
+    echo "CONJUR_ACCOUNT              : $CONJUR_ACCOUNT"
+    echo "CONJUR_IDENTITY             : $CONJUR_IDENTITY"
+    echo ""
+    echo "Load test and system metrics reports can be found at: $LOG_ROOT/*"
+}
 
-  rm -rf "$local_folder" || true
-  mkdir -p "$local_folder"
+test_k6() {
+  # Set CONJUR_ADMIN_API_KEY
+  export CONJUR_ADMIN_API_KEY=$(./bin/cli conjur user rotate-api-key | tail -n 1 | tr -d '[:space:]')
 
-  local jmeter_file='Conjur_Performance_Test'
-  if [ "$USE_FOLLOWER" = 'true' ]; then
-    jmeter_file='Conjur_Performance_Test_With_Follower'
+  check_env "APPLIANCE_MASTER_URL"
+  check_env "APPLIANCE_FOLLOWER_URL"
+  check_env "CONJUR_ACCOUNT"
+  check_env "CONJUR_IDENTITY"
+  check_env "CONJUR_ADMIN_API_KEY"
+
+  # The name of the test plan file (no extension)
+  TEST_PLAN=$(basename -s .js "$TEST_FILE")
+  # The name of this test (for logging purposes)
+  TEST_NAME="k6-$(basename "$TEST_PLAN")"
+  # The current timestamp
+  SCRIPT_RUN_TIMESTAMP=$(timestamp)
+  # Using the above forms the log directory for this test run
+  LOG_ROOT="$(log_dir)/$SCRIPT_RUN_TIMESTAMP-$TEST_NAME"
+  # Log for the script settings
+  LOG_FILE_INFO="$LOG_ROOT/$TEST_NAME.log"
+
+  # Ensure log output dir exists
+  mkdir -p "$LOG_ROOT"
+
+  # Display debug information
+  print_settings | tee "$LOG_FILE_INFO"
+
+  # build K6 image
+  "$(repo_root)/bin/retrieve_cyberark_ca_cert"
+  docker compose build k6 --no-cache
+
+  # Start the clock
+  test_start=$(date_timestamp | sed 's/ /T/g')
+  echo "Starting test at: $test_start"
+
+  # Run K6 test
+  run_k6_test
+
+  echo "The test has completed!"
+
+  # Stop the clock
+  test_end=$(date_timestamp | sed 's/ /T/g')
+}
+
+run_k6_test() {
+  local log_file="$LOG_ROOT/k6.log"
+
+  echo "Starting k6 test in quiet mode, summary will be printed when completed..."
+  echo "See log file at: $log_file"
+
+  if [ "$ENABLE_STATSD" = "true" ]; then
+    echo "Configuring k6 to report load testing data points to StatsD"
+
+    "$(repo_root)/tools/performance-tests/k6/bin/k6" run "$TEST_FILE" \
+      -o output-statsd \
+      --insecure-skip-tls-verify \
+      --quiet 2>&1 | tee "$log_file"
+  else
+    "$(repo_root)/tools/performance-tests/k6/bin/k6" run "$TEST_FILE" \
+      --insecure-skip-tls-verify \
+      --quiet 2>&1 | tee "$log_file"
   fi
-  docker compose run \
-    --no-deps \
-    --rm \
-    jmeter \
-        -Jkey=null \
-        -n \
-        -t "/opt/jmeter_data/$jmeter_file.jmx" \
-        -l "/opt/jmeter_data/jmeter_reports/$folder/Performance_Results.csv" \
-        -e \
-        -o "/opt/jmeter_data/jmeter_reports/$folder"
 }
 
-function open_results_in_browser {
-  local folder="$1"
-  echo "\nReport is available at: 'tools/performance-tests/jmeter/jmeter_reports/$folder'\n"
-  if [ "$HEADLESS" = 'false' ]; then
-    open "tools/performance-tests/jmeter/jmeter_reports/$folder/index.html"
-  fi
+main() {
+  while true ; do
+    case "$1" in
+      -h | --help ) print_help ;;
+       * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+    esac
+  done
+
+  eval "test_k6"
 }
 
-function main {
-  local folder="$1"
-  run_jmeter_test "$folder"
-  open_results_in_browser "$folder"
-}
-
-report_folder='default'
-USE_FOLLOWER='false'
-HEADLESS='false'
-
-while true ; do
-  case "$1" in
-    --name ) shift ; report_folder=$1 ; shift ;;
-    --headless ) shift ; HEADLESS="true" ;;
-    --with-follower ) shift ; USE_FOLLOWER="true" ;;
-    -h | --help ) print_help ;;
-     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
-  esac
-done
-
-main "$report_folder"
+main "$@"

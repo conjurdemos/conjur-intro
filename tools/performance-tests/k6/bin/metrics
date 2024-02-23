@@ -1,0 +1,77 @@
+#!/bin/bash -e
+
+# shellcheck disable=SC1090,SC1091
+source "$(git rev-parse --show-toplevel)/tools/performance-tests/k6/bin/functions"
+
+ENABLE_GRAPHITE=${ENABLE_GRAPHITE:-"false"}
+# Default for statsd
+export K6_STATSD_PORT=${K6_STATSD_PORT:-"8125"}
+export K6_STATSD_ADDR=${K6_STATSD_ADDR:-"statsd:$K6_STATSD_PORT"}
+
+function print_help() {
+  cat << EOF
+NAME
+    Runs metric services.
+
+SYNOPSIS
+    metrics [global options]
+
+GLOBAL OPTIONS
+    -h, --help                - Show this message.
+    --graphite                - Runs graphite service (at port 81) for data visualization.
+    --start                   - Starts all the metric services.
+    --stop                    - Stops metric services and performs cleanup.
+
+EOF
+exit
+}
+
+start() {
+  # start metrics services
+  docker compose up --no-deps --detach statsd
+  if [ "$ENABLE_GRAPHITE" == "true" ]; then
+    docker compose up --no-deps --detach graphite
+  fi
+}
+
+stop() {
+  # stop metrics services
+  docker compose down graphite statsd
+}
+
+main() {
+    while test $# -gt 0; do
+    case "$1" in
+        -h | --help)
+            CMD="print_help"
+            shift
+            ;;
+        --start)
+            CMD="start"
+            shift 1
+            ;;
+        --stop)
+            CMD="stop"
+            shift 1
+            ;;
+        --graphite)
+            ENABLE_GRAPHITE="true"
+            shift 1
+            ;;
+        --) shift; 
+            break 
+            ;;
+        -?*)
+            printf 'WARN: Unknown option (ignored): %s\n' "$1" >&2
+            ;;
+        *)  # Default case: No more options, so break out of the loop.
+            break
+            ;;
+    esac
+    done
+
+    eval $CMD
+    echo "DONE."
+}
+
+main "$@"
