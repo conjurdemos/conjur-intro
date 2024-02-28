@@ -1,37 +1,40 @@
-- !group vault-synchronizer-admin
+- !group AutomationVault-admins
 
 - !policy
-  id: vault-synchronizer
-  owner: !group vault-synchronizer-admin
+  id: AutomationVault
+  owner: !group AutomationVault-admins
   body:
-    - !group {{lob_iteration}}-admin
+    - !group {{lob_iteration}}-admins
     - !policy
       id: {{lob_iteration}}
-      owner: !group {{lob_iteration}}-admin
+      owner: !group {{lob_iteration}}-admins
       body:
-        {%- for safe in safes %}
-        - !group {{safe}}-admin
+        - !group {{safe_iteration}}-admins
         - !policy
-          id: {{safe}}/delegation
-          owner: !group {{safe}}-admin
+          id: {{safe_iteration}}/delegation
+          owner: !group {{safe_iteration}}-admins
           body:
             - !group consumers
             - !group viewers
         - !policy
-          id: {{safe}}
+          id: {{safe_iteration}}
           body:
             {%- for account in accounts %}
-            - &{{lob_iteration}}-{{safe}}-{{account}}-variables
+            - &{{lob_iteration}}-{{safe_iteration}}-{{account}}-variables
               {%- for var in secrets %}
-              - !variable {{account}}/{{var}}
+              - !variable
+                id: {{account}}/{{var}}
+                annotations:
+                  cyberark-vault: 'true'
+                  cyberark-vault/accounts: AutomationVault/{{safe_iteration}}/{{account}}
               {%- endfor %}
+
             - !permit
-              resource: *{{lob_iteration}}-{{safe}}-{{account}}-variables
+              resource: *{{lob_iteration}}-{{safe_iteration}}-{{account}}-variables
               privileges: [ read, execute ]
-              role: !group /vault-synchronizer/{{lob_iteration}}/{{safe}}/delegation/consumers
+              role: !group /AutomationVault/{{lob_iteration}}/{{safe_iteration}}/delegation/consumers
             - !permit
-              resource: *{{lob_iteration}}-{{safe}}-{{account}}-variables
+              resource: *{{lob_iteration}}-{{safe_iteration}}-{{account}}-variables
               privileges: [ read ]
-              role: !group /vault-synchronizer/{{lob_iteration}}/{{safe}}/delegation/viewers
+              role: !group /AutomationVault/{{lob_iteration}}/{{safe_iteration}}/delegation/viewers
             {%- endfor %}
-        {%- endfor %}

@@ -92,19 +92,19 @@ load_policy_set() {
   LOG_DIR="$(repo_root)/tools/performance-tests/k6/tmp/$(timestamp)-load-policy-set-$POLICY_SET"
   policy_set_dir="/tools/performance-tests/k6/data/policy"
   test_plan_file="/tools/performance-tests/k6/load-policy.js"
-  policy_lobs_log_file="$LOG_DIR/policy-lobs"
+  policy_lobs_log_file="$LOG_DIR/policy-lob"
   policy_hosts_log_file="$LOG_DIR/policy-hosts"
   policy_users_log_file="$LOG_DIR/policy-users"
 
   mkdir -p "$LOG_DIR"
 
   # Load LOBs, Safes, and Variables
-  for (( i=1; i<=LOB_COUNT; i++ ))
-  do
-    POLICY_FILE="$policy_set_dir/$POLICY_SET/lobs-$i.yml" \
-    "$(repo_root)/tools/performance-tests/k6/bin/k6" run "$test_plan_file" \
-      "$K6_FLAGS" 2>&1 | tee -a "${policy_lobs_log_file}_$i.log"
-  done
+  "$(repo_root)/tools/performance-tests/k6/bin/k6" run \
+    -e POLICY_DIRECTORY="$policy_set_dir/$POLICY_SET" \
+    -e SAFE_COUNT=$SAFES_COUNT \
+    -e LOB_COUNT=$LOB_COUNT \
+    "/tools/performance-tests/k6/load-synchronizer-policies.js" \
+      "$K6_FLAGS" 2>&1 | tee -a "${policy_lobs_log_file}.log"
 
   # Load Hosts
   POLICY_FILE="$policy_set_dir/$POLICY_SET/hosts.yml" \

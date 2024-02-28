@@ -1,11 +1,11 @@
 import argparse
 from jinja2 import Template
 import json
-import os
+import os, shutil
 import re
 
-VAULT_SYNCHRONIZER_POLICY_ID = "vault-synchronizer"
-VAULT_SYNCHRONIZER_HOSTS_POLICY_ID = "vault-synchronizer-hosts"
+VAULT_SYNCHRONIZER_POLICY_ID = "AutomationVault"
+VAULT_SYNCHRONIZER_HOSTS_POLICY_ID = "AutomationVault-hosts"
 VAULT_SYNCHRONIZER_HOSTS_GROUP_ID = "/hosts"
 VAULT_SYNCHRONIZER_VARIABLE_ID = "/variable"
 
@@ -20,18 +20,20 @@ OUTPUT_FILE_USER_POLICIES = os.path.join(POLICY_DIR, "users.yml")
 OUTPUT_FILE_HOST_POLICIES = os.path.join(POLICY_DIR, "hosts.yml")
 OUTPUT_FILE_SAFE_MANIFEST = os.path.join(POLICY_DIR, "safes.json")
 
-def create_lob_policy_file(context, iteration):
+
+def create_lob_policy_file(context, lob_number, safe_number):
     """
     This writes a legal Conjur Policy YAML/MAML file that can be loaded
     immediately into Conjur. This contains a given number of LOBs and Safes.
     Each safe contains given a number of secrets and consumer group that is
     permitted to read/execute.
     """
-    context['lob_iteration'] = 'lob-' + str(iteration)
+    context['lob_iteration'] = 'lob-' + str(lob_number)
+    context['safe_iteration'] = 'safe-' + str(safe_number)
 
     with open(INPUT_FILE_LOBS) as t:
         template = Template(t.read())
-    output_file = f"{POLICY_DIR}/lobs-{iteration}.yml"
+    output_file = f"{POLICY_DIR}/lob-{lob_number}_safe-{safe_number}.yml"
     with open(output_file, 'w') as t:
         print("Writing LOBs Policy to: ", output_file)
         t.write(template.render(**context))
@@ -88,8 +90,8 @@ def get_unique_safes(policy_id):
         for j in range(SAFE_COUNT):
             safes.append("{id}/lob-{i}/safe-{j}".format(
                 id=policy_id,
-                i=i+1,
-                j=j+1,
+                i=i + 1,
+                j=j + 1,
             ))
     return safes
 
@@ -110,31 +112,33 @@ def generate_policy():
     """
     Outputs generated Conjur policy to: the same directory of this script.
     """
-    users_per_safe = USER_COUNT//(LOB_COUNT*SAFE_COUNT)
-    hosts_per_safe = HOST_COUNT//(LOB_COUNT*SAFE_COUNT)
+    users_per_safe = USER_COUNT // (LOB_COUNT * SAFE_COUNT)
+    hosts_per_safe = HOST_COUNT // (LOB_COUNT * SAFE_COUNT)
     context = {
-        'lobs': [f'lob-{x+1}' for x in range(LOB_COUNT)],
-        'safes': [f'safe-{x+1}' for x in range(SAFE_COUNT)],
-        'accounts': [f'account-{x+1}' for x in range(ACCOUNT_COUNT)],
-        'secrets': [f'variable-{x+1}' for x in range(SECRETS_PER_ACCOUNT)],
-        'users': [f'user-{x+1}' for x in range(users_per_safe)],
-        'hosts': [f'host-{x+1}' for x in range(hosts_per_safe)],
-        'leftover_users': [f'user-{x+users_per_safe+1}' for x in range(USER_COUNT - (LOB_COUNT*SAFE_COUNT*users_per_safe))],
-        'leftover_hosts': [f'host-{x+hosts_per_safe+1}' for x in range(HOST_COUNT - (LOB_COUNT*SAFE_COUNT*hosts_per_safe))]
+        'lobs': [f'lob-{x + 1}' for x in range(LOB_COUNT)],
+        'safes': [f'safe-{x + 1}' for x in range(SAFE_COUNT)],
+        'accounts': [f'account-{x + 1}' for x in range(ACCOUNT_COUNT)],
+        'secrets': [f'variable-{x + 1}' for x in range(SECRETS_PER_ACCOUNT)],
+        'users': [f'user-{x + 1}' for x in range(users_per_safe)],
+        'hosts': [f'host-{x + 1}' for x in range(hosts_per_safe)],
+        'leftover_users': [f'user-{x + users_per_safe + 1}' for x in
+                           range(USER_COUNT - (LOB_COUNT * SAFE_COUNT * users_per_safe))],
+        'leftover_hosts': [f'host-{x + hosts_per_safe + 1}' for x in
+                           range(HOST_COUNT - (LOB_COUNT * SAFE_COUNT * hosts_per_safe))]
     }
 
     create_policy_files(context)
 
 
 def create_policy_files(context):
-    if not os.path.exists(POLICY_DIR):
-      try:
-          os.mkdir(POLICY_DIR)
-      except OSError as error:
-          print(f"Creation of the directory {POLICY_DIR} failed: {error}")
+    if os.path.exists(POLICY_DIR):
+        shutil.rmtree(POLICY_DIR)
+
+    os.makedirs(POLICY_DIR)
 
     for i in range(1, LOB_COUNT + 1):
-      create_lob_policy_file(context, i)
+        for j in range(1, SAFE_COUNT + 1):
+            create_lob_policy_file(context, i, j)
     create_users_policy_file(context)
     create_hosts_policy_file(context)
 
@@ -149,7 +153,7 @@ def main():
     parser.add_argument('--user_count', type=int, required=True, help='Number of users')
     args = parser.parse_args()
 
-    global LOB_COUNT, ACCOUNT_COUNT ,SECRETS_PER_ACCOUNT, SAFE_COUNT, HOST_COUNT, USER_COUNT, TOTAL_SECRETS
+    global LOB_COUNT, ACCOUNT_COUNT, SECRETS_PER_ACCOUNT, SAFE_COUNT, HOST_COUNT, USER_COUNT, TOTAL_SECRETS
 
     LOB_COUNT = args.lob_count
     ACCOUNT_COUNT = args.account_count
@@ -174,6 +178,7 @@ def main():
         safe_variables,
         indent=4
     ))
+
 
 if __name__ == '__main__':
     main()
