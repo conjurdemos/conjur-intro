@@ -226,8 +226,8 @@ Conjur Intro includes support for running a simple load test against a running i
 $ bin/dap --provision-master
 $ bin/dap --provision-follower
 
-# Locally run metrics server (statsd only or with graphite visualization)
-$ ./tools/performance-tests/k6/bin/metrics --start [--graphite]
+# Locally run metrics server (statsd with graphite visualization)
+$ ./tools/performance-tests/k6/bin/metrics --start
 
 # Optionally, load policies and secrets
 $ ./bin/load-benchmark-data --accounts_per_safe 200 --safes 40 --hosts 200 --users 100

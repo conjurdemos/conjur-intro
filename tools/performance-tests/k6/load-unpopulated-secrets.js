@@ -1,23 +1,22 @@
 import http from "k6/http";
 import papaparse from './modules/papaparse.min.js';
-import { check } from "k6";
-import { SharedArray } from 'k6/data';
-import { randomString } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
+import {check} from "k6";
+import {SharedArray} from 'k6/data';
+import {randomString} from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 import * as conjurApi from "./modules/api.js";
 import * as lib from "./modules/lib.js";
 
 /**
  * PURPOSE:
- * 
+ *
  * This test leverages an input CSV that is obtained using the
- * `get-unpopulated-secrets` bash script, or the `get-unpopulated-secrets.yaml`
- * playbook. When these are run, the CSV is dumped into
+ * `load-benchmark-data` bash script. When script is run, the CSV is dumped into
  * ./data/unpopulated-secrets.csv, relative to this file.
- * 
+ *
  * This scenario is designed to source that CSV when writing secrets, as
  * opposed to trying to shape logic around the policy structure. This allows
  * us to write to 100% of the secrets with minimal overlap.
- * 
+ *
  */
 
 const MAX_RPS = 300;
@@ -26,7 +25,7 @@ const CSV_FILE_PATH = './data/unpopulated-secrets.csv';
 
 const csvData = new SharedArray('Unpopulated Secrets', function () {
   // Load CSV file and parse it using Papa Parse
-  return papaparse.parse(open(CSV_FILE_PATH), { header: true }).data;
+  return papaparse.parse(open(CSV_FILE_PATH), {header: true}).data;
 });
 
 // Define test options
@@ -49,7 +48,7 @@ export const options = {
 // (the same VU will get the same subset).
 function getSlice(data, n) {
   let partSize = Math.floor(data.length / n);
-  return data.slice(partSize*(__VU-1), partSize*(__VU-1)+partSize);
+  return data.slice(partSize * (__VU - 1), partSize * (__VU - 1) + partSize);
 }
 
 export default function () {
@@ -59,16 +58,16 @@ export default function () {
     applianceUrl,
     conjurAccount
   } = env;
-  let slice 
+  let slice
 
   // Get a slice of data equal to csv length / # VUs
   // If the CSV is short, do not split the data between VUs at all. This
   // may result in duplicate writes, but ensures that a CSV size indivisible
   // by the number of VUs actually ensures that the remaining secrets are
   // written.
-  if(csvData.length < 50) {
+  if (csvData.length < 50) {
     slice = csvData.slice(0, csvData.length - 1);
-  }else{
+  } else {
     slice = getSlice(csvData, K6_VUS);
   }
 
@@ -79,12 +78,12 @@ export default function () {
 
   let reqs = [];
   const maxBatchSize = 50;
-  while(slice.length > 0){
-    while(reqs.length < maxBatchSize){
-      if(slice.length){
+  while (slice.length > 0) {
+    while (reqs.length < maxBatchSize) {
+      if (slice.length) {
         const item = slice.pop();
         // The value to write
-        const secretIdentity = item.resource_id.replace(`${conjurAccount}:variable:`,'');
+        const secretIdentity = item.resource_id.replace(`${conjurAccount}:variable:`, '');
         const body = randomString(32);
 
         // Authn to obtain token
@@ -98,7 +97,7 @@ export default function () {
         });
 
         const token = authRes.body;
-        const headers = { 'Authorization': `Token token="${token}"` }
+        const headers = {'Authorization': `Token token="${token}"`}
 
         const r = {
           method: 'POST',
@@ -109,12 +108,11 @@ export default function () {
           },
         }
         reqs.push(r);
-      }
-      else {
+      } else {
         break;
       }
     }
-    
+
     const responses = http.batch(reqs);
 
     check(responses[0], {

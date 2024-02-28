@@ -15,6 +15,7 @@ vm/.vagrant
 
 #K6 results
 tools/performance-tests/k6/tmp/**
+tmp/**
 
 **/backup/*
 

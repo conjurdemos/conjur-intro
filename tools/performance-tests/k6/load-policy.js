@@ -1,5 +1,5 @@
 import http from "k6/http";
-import { check } from "k6";
+import {check} from "k6";
 import * as conjurApi from "./modules/api.js";
 import * as lib from "./modules/lib.js";
 
@@ -11,7 +11,7 @@ const requiredEnvVars = [
   "POLICY_ID"
 ];
 
-lib.checkRequiredEnvironmetVariables(requiredEnvVars)
+lib.checkRequiredEnvironmentVariables(requiredEnvVars)
 
 const policyFile = lib.get_env_var("POLICY_FILE")
 const policyId = lib.get_env_var("POLICY_ID")
