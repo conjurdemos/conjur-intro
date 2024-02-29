@@ -11,18 +11,18 @@ import {SharedArray} from 'k6/data';
  *  Init stage
  */
 const requiredEnvVars = [
-  "K6_CUSTOM_GRACEFUL_STOP",
-  "K6_CUSTOM_VUS",
-  "K6_CUSTOM_ITERATIONS"
+  "K6_CUSTOM_GRACEFUL_STOP"
 ];
 
 // These are custom k6 metrics that will be reported in the k6 summary.
-const authenticateTrend = new Trend('http_req_duration_post_authn');
+const authenticateTrend = new Trend('http_req_duration_post_authn', true);
 const authenticateFailRate = new Rate('http_req_failed_post_authn');
-const readSecretsIndividuallyTrend = new Trend('http_req_duration_get_secrets_individually');
+const readSecretsIndividuallyTrend = new Trend('http_req_duration_get_secrets_individually', true);
 const readSecretsIndividuallyFailRate = new Rate('http_req_failed_get_secrets_individually');
-const readSecretsBatchTrend = new Trend('http_req_duration_get_secrets_batch');
-const readSecretsBatchFailRate = new Rate('http_req_failed_get_secrets_batch');
+const readTwoSecretsBatchTrend = new Trend('http_req_duration_get_two_secrets_batch', true);
+const readTwoSecretsBatchFailRate = new Rate('http_req_failed_get_two_secrets_batch');
+const readFourSecretsBatchTrend = new Trend('http_req_duration_get_four_secrets_batch', true);
+const readFourSecretsBatchFailRate = new Rate('http_req_failed_get_four_secrets_batch');
 
 lib.checkRequiredEnvironmetVariables(requiredEnvVars);
 const gracefulStop = lib.get_env_var("K6_CUSTOM_GRACEFUL_STOP");
@@ -52,7 +52,7 @@ export const options = {
     individual1: {
       executor: 'per-vu-iterations',
       maxDuration: "1h",
-      vus: 5,
+      vus: 4,
       iterations: 6200, // 5 * 20 * 62 (from previous jmeter tests)
       exec: "individually_retrieve_secrets",
       gracefulStop
@@ -60,7 +60,7 @@ export const options = {
     individual2: {
       executor: 'per-vu-iterations',
       maxDuration: "1h",
-      vus: 5,
+      vus: 4,
       iterations: 6200, // 5 * 20 * 62 (from previous jmeter tests)
       exec: "individually_retrieve_secrets",
       gracefulStop
@@ -81,36 +81,68 @@ export const options = {
       exec: "individually_retrieve_secrets",
       gracefulStop
     },
-    batch1: {
+    batch_2_secrets_1: {
       executor: 'per-vu-iterations',
       maxDuration: "1h",
       vus: 1,
       iterations: 1240, // 20 * 62 (from previous jmeter tests)
-      exec: "batch_retrieve_secrets",
+      exec: "batch_retrieve_two_secrets",
       gracefulStop
     },
-    batch2: {
+    batch_2_secrets_2: {
       executor: 'per-vu-iterations',
       maxDuration: "1h",
       vus: 1,
       iterations: 1240, // 20 * 62 (from previous jmeter tests)
-      exec: "batch_retrieve_secrets",
+      exec: "batch_retrieve_two_secrets",
       gracefulStop
     },
-    batch3: {
+    batch_2_secrets_3: {
       executor: 'per-vu-iterations',
       maxDuration: "1h",
-      vus: 5,
+      vus: 3,
       iterations: 6200, // 5 * 20 * 62 (from previous jmeter tests)
-      exec: "batch_retrieve_secrets",
+      exec: "batch_retrieve_two_secrets",
       gracefulStop
     },
-    batch4: {
+    batch_2_secrets_4: {
       executor: 'per-vu-iterations',
       maxDuration: "1h",
-      vus: 5,
+      vus: 3,
       iterations: 6200, // 5 * 20 * 62 (from previous jmeter tests)
-      exec: "batch_retrieve_secrets",
+      exec: "batch_retrieve_two_secrets",
+      gracefulStop
+    },
+    batch_4_secrets_1: {
+      executor: 'per-vu-iterations',
+      maxDuration: "1h",
+      vus: 1,
+      iterations: 1240, // 20 * 62 (from previous jmeter tests)
+      exec: "batch_retrieve_four_secrets",
+      gracefulStop
+    },
+    batch_4_secrets_2: {
+      executor: 'per-vu-iterations',
+      maxDuration: "1h",
+      vus: 1,
+      iterations: 1240, // 20 * 62 (from previous jmeter tests)
+      exec: "batch_retrieve_four_secrets",
+      gracefulStop
+    },
+    batch_4_secrets_3: {
+      executor: 'per-vu-iterations',
+      maxDuration: "1h",
+      vus: 3,
+      iterations: 6200, // 5 * 20 * 62 (from previous jmeter tests)
+      exec: "batch_retrieve_four_secrets",
+      gracefulStop
+    },
+    batch_4_secrets_4: {
+      executor: 'per-vu-iterations',
+      maxDuration: "1h",
+      vus: 3,
+      iterations: 6200, // 5 * 20 * 62 (from previous jmeter tests)
+      exec: "batch_retrieve_four_secrets",
       gracefulStop
     },
   }, thresholds: {
@@ -230,7 +262,7 @@ export function individually_retrieve_secrets() {
   });
 }
 
-export function batch_retrieve_secrets() {
+export function batch_retrieve_two_secrets() {
   if (__ITER == 0) {
     env.applianceUrl = env.applianceFollowerUrl
     authn();
@@ -244,8 +276,33 @@ export function batch_retrieve_secrets() {
   const path = `/secrets?variable_ids=demo:variable:production%2Fmyapp%2Fdatabase%2Fusername,demo:variable:production%2Fmyapp%2Fdatabase%2Fpassword`
   const res = conjurApi.get(http, env, path);
 
-  readSecretsBatchTrend.add(res.timings.duration);
-  readSecretsBatchFailRate.add(res.status !== 200);
+  readTwoSecretsBatchTrend.add(res.timings.duration);
+  readTwoSecretsBatchFailRate.add(res.status !== 200);
+
+  check(res, {
+    "status is 200": (r) => r.status === 200,
+    "status is not 404": (r) => r.status !== 404,
+    "status is not 401": (r) => r.status !== 401,
+    "status is not 500": (r) => r.status !== 500
+  });
+}
+
+export function batch_retrieve_four_secrets() {
+  if (__ITER == 0) {
+    env.applianceUrl = env.applianceFollowerUrl
+    authn();
+  }
+  let now = new Date()
+  // if 6 minutes elapsed, renew authentication
+  if (now.getTime() - start.getTime() > 360000) {
+    start.setTime(now.getTime())
+    authn();
+  }
+  const path = `/secrets?variable_ids=demo:variable:production%2Fmyapp%2Fdatabase%2Fusername,demo:variable:production%2Fmyapp%2Fdatabase%2Fpassword,demo:variable:production%2Fmyapp%2Fdatabase%2Fport,demo:variable:production%2Fmyapp%2Fdatabase%2Furl`
+  const res = conjurApi.get(http, env, path);
+
+  readFourSecretsBatchTrend.add(res.timings.duration);
+  readFourSecretsBatchFailRate.add(res.status !== 200);
 
   check(res, {
     "status is 200": (r) => r.status === 200,
