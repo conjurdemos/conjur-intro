@@ -5,6 +5,7 @@
 import http from "k6/http";
 import {check, fail} from "k6";
 import * as conjurApi from "./api.js";
+import {uuidv4} from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
 
 export const requiredEnvVars = [
   "APPLIANCE_MASTER_URL",
@@ -95,5 +96,103 @@ export function parse_env() {
     endLobSafe: parseInt(get_env_var("END_LOB_SAFE")),
     endLobSafeSecret: parseInt(get_env_var("END_LOB_SAFE_SECRET")),
     policyFile: get_env_var("POLICY_FILE"),
+    policyId: get_env_var("POLICY_ID"),
   }
+}
+
+export function uuid() {
+  return uuidv4();
+}
+
+// Generating policy for one LOB and one safe (with two variables)
+export function create_lobs_policy(identifier) {
+  return `- !group AutomationVault-admins
+
+- !policy
+  id: AutomationVault
+  owner: !group AutomationVault-admins
+  body:
+    - !group lob-1-admins
+    - !policy
+      id: lob-1-${identifier}
+      owner: !group lob-1-admins
+      body:
+        - !group safe-1-admins
+        - !policy
+          id: safe-1-${identifier}/delegation
+          owner: !group safe-1-admins
+          body:
+            - !group consumers
+            - !group viewers
+        - !policy
+          id: safe-1-${identifier}
+          body:
+            - &lob-1-safe-1-account-1-variables
+              - !variable
+                id: account-1/variable-1
+                annotations:
+                  cyberark-vault: 'true'
+                  cyberark-vault/accounts: AutomationVault/safe-1-${identifier}/account-1
+              - !variable
+                id: account-1/variable-2
+                annotations:
+                  cyberark-vault: 'true'
+                  cyberark-vault/accounts: AutomationVault/safe-1-${identifier}/account-1
+
+            - !permit
+              resource: *lob-1-safe-1-account-1-variables
+              privileges: [ read, execute ]
+              role: !group /AutomationVault/lob-1-${identifier}/safe-1-${identifier}/delegation/consumers
+            - !permit
+              resource: *lob-1-safe-1-account-1-variables
+              privileges: [ read ]
+              role: !group /AutomationVault/lob-1-${identifier}/safe-1-${identifier}/delegation/viewers`
+}
+
+// Generating policy for one host
+export function create_hosts_policy(identifier) {
+  return `- !policy
+  id: AutomationVault-hosts
+  body:
+    - !policy
+      id: lob-1-${identifier}
+      owner: !group /AutomationVault/lob-1-admins
+      body:
+        - !policy
+          id: safe-1-${identifier}
+          owner: !group /AutomationVault/lob-1-${identifier}/safe-1-admins
+          body:
+          - !layer hosts
+          - &lob-1-safe-1-hosts
+            - !host host-1-${identifier}
+          - !grant
+            role: !layer hosts
+            members: *lob-1-safe-1-hosts
+- !grant
+  role: !group AutomationVault/lob-1-${identifier}/safe-1-${identifier}/delegation/viewers
+  members: !layer AutomationVault-hosts/lob-1-${identifier}/safe-1-${identifier}/hosts`;
+}
+
+// Generating policy for one user
+export function create_users_policy(identifier) {
+  return `- !policy
+  id: AutomationVault-users
+  body:
+    - !policy
+      id: lob-1-${identifier}
+      owner: !group /AutomationVault/lob-1-admins
+      body:
+        - !policy
+          id: safe-1-${identifier}
+          owner: !group /AutomationVault/lob-1-${identifier}/safe-1-admins
+          body:
+          - !group users
+          - &lob-1-safe-1-users
+            - !user user-1-${identifier}
+          - !grant
+            role: !group users
+            members: *lob-1-safe-1-users
+- !grant
+  role: !group AutomationVault/lob-1-${identifier}/safe-1-${identifier}/delegation/consumers
+  members: !group AutomationVault-users/lob-1-${identifier}/safe-1-${identifier}/users`;
 }
