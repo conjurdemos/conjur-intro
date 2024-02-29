@@ -1,5 +1,6 @@
 import http from "k6/http";
-import {sleep, check, group} from "k6";
+import {sleep, check} from "k6";
+import exec from 'k6/execution';
 import {Trend, Rate} from 'k6/metrics';
 import * as conjurApi from "./modules/api.js";
 import * as lib from "./modules/lib.js";
@@ -22,6 +23,8 @@ const readSecretsIndividuallyTrend = new Trend('http_req_duration_get_secrets_in
 const readSecretsIndividuallyFailRate = new Rate('http_req_failed_get_secrets_individually');
 const readSecretsBatchTrend = new Trend('http_req_duration_get_secrets_batch', true);
 const readSecretsBatchFailRate = new Rate('http_req_failed_get_secrets_batch');
+const writeSecretsTrend = new Trend('http_req_duration_write_secrets', true);
+const writeSecretsFailRate = new Rate('http_req_failed_write_secrets');
 const individuallyCreatePolicyTrend = new Trend('http_req_duration_individually_create_policy', true);
 const individuallyCreatePolicyFailRate = new Rate('http_req_failed_individually_create_policy');
 
@@ -36,6 +39,10 @@ const csvData = new SharedArray('Secrets', function () {
   // Load CSV file and parse it using Papa Parse
   return papaparse.parse(open("./data/secrets.csv"), {header: true}).data;
 });
+const writeSecretsData = new SharedArray('WriteSecrets', function () {
+  // Load CSV file and parse it using Papa Parse
+  return papaparse.parse(open("./data/test-variable-secrets.csv"), {header: true, skipEmptyLines: true}).data;
+});
 
 const usersPolicy = open("./data/policy/users.yml");
 const policy = open("./data/policy/policy.yml");
@@ -43,6 +50,7 @@ const myAppStagingPolicy = open("./data/policy/myapp_staging.yml");
 const myAppPolicy = open("./data/policy/myapp.yml");
 const applicationGrantsPolicy = open("./data/policy/application_grants.yml");
 const hostsPolicy = open("./data/policy/hosts.yml");
+const testVariablePolicy = open("./data/policy/test-variable.yml");
 
 let start = new Date()
 
@@ -123,6 +131,14 @@ export const options = {
       exec: "individually_create_policy",
       gracefulStop
     },
+    write_secrets: {
+      executor: 'shared-iterations',
+      maxDuration: "1h",
+      vus: vus,
+      iterations: writeSecretsData.length,
+      exec: "write_secrets",
+      gracefulStop
+    },
   }, thresholds: {
     // TODO: To be set later after benchmark tests are fully refactored
     // http_reqs: ['rate > 75']
@@ -198,6 +214,7 @@ export function setup() {
   loadPolicy(applicationGrantsPolicy, "root")
   loadPolicy(hostsPolicy, "root")
   loadSecrets()
+  loadPolicy(testVariablePolicy, "root")
 }
 
 export function authn() {
@@ -314,6 +331,38 @@ export function individually_create_policy() {
   });
   check(usersPolicyRes, {
     "status is 201": (r) => r.status === 201,
+    "status is not 500": (r) => r.status !== 500
+  });
+}
+
+export function write_secrets() {
+  if (__ITER == 0) {
+    env.applianceUrl = env.applianceMasterUrl
+    authn();
+  }
+  let now = new Date()
+  // if 6 minutes elapsed, renew authentication
+  if (now.getTime() - start.getTime() > 360000) {
+    start.setTime(now.getTime())
+    authn();
+  }
+
+  const variable = writeSecretsData[exec.scenario.iterationInTest];
+  const resourceId = encodeURIComponent(variable.resource_id);
+  const resourceBody = variable.resource_body;
+
+  const response = conjurApi.write_secret(
+    http,
+    env,
+    resourceId,
+    resourceBody
+  );
+
+  writeSecretsTrend.add(response.timings.duration);
+  writeSecretsFailRate.add(response.status !== 201 && response.status !== 201);
+
+  check(response, {
+    "status is 201": (r) => r.status === 200 || r.status === 201,
     "status is not 500": (r) => r.status !== 500
   });
 }

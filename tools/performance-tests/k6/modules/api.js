@@ -95,6 +95,26 @@ export function read_secret(client, data, identity) {
   )
 }
 
+export function write_secret(client, data, resourceId, resourceBody) {
+  const {
+    applianceMasterUrl,
+    conjurAccount,
+    token
+  } = data;
+
+  const headers = {'Authorization': `Token token="${token}"`};
+
+  return client.post(
+    `${applianceMasterUrl}/secrets/${conjurAccount}/variable/${resourceId}`,
+    resourceBody,
+    {
+      headers,
+      timeout: '10s',
+      tags: {endpoint: 'PostSecretsURL'},
+    }
+  );
+}
+
 export function get(client, data, path) {
   const {
     applianceFollowerUrl,
