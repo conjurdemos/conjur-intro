@@ -152,7 +152,7 @@ main() {
       shift 2
       ;;
     --all-properties-synchronized)
-      ALL_PROPERTIES_SYNCHRONIZED="false"
+      ALL_PROPERTIES_SYNCHRONIZED="true"
       shift 1
       ;;
     --hosts)
