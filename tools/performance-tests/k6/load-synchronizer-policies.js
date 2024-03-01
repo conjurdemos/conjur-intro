@@ -11,10 +11,10 @@ const requiredEnvVars = [
 
 lib.checkRequiredEnvironmentVariables(requiredEnvVars)
 
-const policyDirectory = lib.get_env_var("POLICY_DIRECTORY")
-const policyId = lib.get_env_var("POLICY_ID")
-const lobCount = parseInt(lib.get_env_var("LOB_COUNT"))
-const safeCount = parseInt(lib.get_env_var("SAFE_COUNT"))
+const policyDirectory = lib.getEnvVar("POLICY_DIRECTORY")
+const policyId = lib.getEnvVar("POLICY_ID")
+const lobCount = parseInt(lib.getEnvVar("LOB_COUNT"))
+const safeCount = parseInt(lib.getEnvVar("SAFE_COUNT"))
 
 let policyFiles = [];
 for (let lobNumber = 1; lobNumber <= lobCount; lobNumber++) {
@@ -38,7 +38,7 @@ export const options = {
 };
 
 export default function () {
-    const settings = lib.parse_env();
+    const settings = lib.parseEnv();
     settings.applianceUrl = settings.applianceMasterUrl
 
     for (let i = 0; i < policyContents.length; i++) {
@@ -58,7 +58,7 @@ export default function () {
         settings.token = authRes.body
 
         // create policy
-        const lobsPolicyRes = conjurApi.load_policy(
+        const lobsPolicyRes = conjurApi.loadPolicy(
             http,
             settings,
             policyId,

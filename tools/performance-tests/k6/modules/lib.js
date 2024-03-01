@@ -27,7 +27,7 @@ export const requiredEnvVars = [
  */
 export function setup() {
   // TODO: get these from env vars
-  const env = parse_env();
+  const env = parseEnv();
 
   // authn to obtain token
   const authRes = conjurApi.authenticate(
@@ -58,45 +58,45 @@ function isEnvironmentVariableUnset(name) {
  * Exits the test process if a required environment variable is unset.
  */
 export function checkRequiredEnvironmentVariables(vars) {
-  let should_fail = false;
+  let shouldFail = false;
 
   // This logic will determine if any required environment variables are
   // missing. It will display all missing environment variables (if any).
   for (const name of vars) {
     const tmp = isEnvironmentVariableUnset(name);
-    if (!should_fail) {
-      should_fail = tmp
+    if (!shouldFail) {
+      shouldFail = tmp
     }
   }
 
   // Will force an exit if at least one required environment variable is unset.
-  if (should_fail) {
+  if (shouldFail) {
     fail("A required environment variable(s) is undefined.");
   }
 }
 
-export function get_env_var(name) {
+export function getEnvVar(name) {
   return __ENV[name] ? __ENV[name].trim() : null
 }
 
-export function parse_env() {
+export function parseEnv() {
   checkRequiredEnvironmentVariables(requiredEnvVars);
 
   return {
-    apiKey: get_env_var("CONJUR_ADMIN_API_KEY"),
-    applianceMasterUrl: get_env_var("APPLIANCE_MASTER_URL"),
-    applianceFollowerUrl: get_env_var("APPLIANCE_FOLLOWER_URL"),
-    conjurAccount: get_env_var("CONJUR_ACCOUNT"),
-    conjurIdentity: encodeURIComponent(get_env_var("CONJUR_IDENTITY")),
-    secretIdentity: get_env_var("SECRET_IDENTITY"),
-    startLobs: parseInt(get_env_var("START_LOBS")),
-    startLobSafe: parseInt(get_env_var("START_LOB_SAFE")),
-    startLobSafeSecret: parseInt(get_env_var("START_LOB_SAFE_SECRET")),
-    endLobs: parseInt(get_env_var("END_LOBS")),
-    endLobSafe: parseInt(get_env_var("END_LOB_SAFE")),
-    endLobSafeSecret: parseInt(get_env_var("END_LOB_SAFE_SECRET")),
-    policyFile: get_env_var("POLICY_FILE"),
-    policyId: get_env_var("POLICY_ID"),
+    apiKey: getEnvVar("CONJUR_ADMIN_API_KEY"),
+    applianceMasterUrl: getEnvVar("APPLIANCE_MASTER_URL"),
+    applianceFollowerUrl: getEnvVar("APPLIANCE_FOLLOWER_URL"),
+    conjurAccount: getEnvVar("CONJUR_ACCOUNT"),
+    conjurIdentity: encodeURIComponent(getEnvVar("CONJUR_IDENTITY")),
+    secretIdentity: getEnvVar("SECRET_IDENTITY"),
+    startLobs: parseInt(getEnvVar("START_LOBS")),
+    startLobSafe: parseInt(getEnvVar("START_LOB_SAFE")),
+    startLobSafeSecret: parseInt(getEnvVar("START_LOB_SAFE_SECRET")),
+    endLobs: parseInt(getEnvVar("END_LOBS")),
+    endLobSafe: parseInt(getEnvVar("END_LOB_SAFE")),
+    endLobSafeSecret: parseInt(getEnvVar("END_LOB_SAFE_SECRET")),
+    policyFile: getEnvVar("POLICY_FILE"),
+    policyId: getEnvVar("POLICY_ID"),
   }
 }
 
@@ -105,7 +105,7 @@ export function uuid() {
 }
 
 // Generating policy for one LOB and one safe (with two variables)
-export function create_lobs_policy(identifier) {
+export function createLobsPolicy(identifier) {
   return `- !group AutomationVault-admins
 
 - !policy
@@ -150,7 +150,7 @@ export function create_lobs_policy(identifier) {
 }
 
 // Generating policy for one host
-export function create_hosts_policy(identifier) {
+export function createHostsPolicy(identifier) {
   return `- !policy
   id: AutomationVault-hosts
   body:
@@ -174,7 +174,7 @@ export function create_hosts_policy(identifier) {
 }
 
 // Generating policy for one user
-export function create_users_policy(identifier) {
+export function createUsersPolicy(identifier) {
   return `- !policy
   id: AutomationVault-users
   body:

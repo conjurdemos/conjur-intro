@@ -38,7 +38,7 @@ export function authenticate(client, data, exitOnFailure = false) {
   return res
 }
 
-export function load_policy(client, data, policy_id, policy_body) {
+export function loadPolicy(client, data, policy_id, policy_body) {
   const {
     applianceMasterUrl,
     conjurAccount,
@@ -57,7 +57,7 @@ export function load_policy(client, data, policy_id, policy_body) {
   )
 }
 
-export function update_policy(client, data, policy_id, policy_body) {
+export function updatePolicy(client, data, policy_id, policy_body) {
   const {
     applianceMasterUrl,
     conjurAccount,
@@ -76,7 +76,7 @@ export function update_policy(client, data, policy_id, policy_body) {
   )
 }
 
-export function read_secret(client, data, identity) {
+export function readSecret(client, data, identity) {
   const {
     applianceFollowerUrl,
     conjurAccount,
@@ -87,15 +87,15 @@ export function read_secret(client, data, identity) {
   const url = `${applianceFollowerUrl}/secrets/${conjurAccount}/variable/${encodeURIComponent(identity)}`;
 
   return client.get(
-    url,
-    {
-      headers,
-      tags: {endpoint: 'GetSecretsURL'}
-    }
+      url,
+      {
+        headers,
+        tags: {endpoint: 'GetSecretsURL'}
+      }
   )
 }
 
-export function write_secret(client, data, resourceId, resourceBody) {
+export function writeSecret(client, data, resourceId, resourceBody) {
   const {
     applianceMasterUrl,
     conjurAccount,

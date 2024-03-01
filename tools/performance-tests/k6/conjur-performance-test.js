@@ -29,11 +29,11 @@ const individuallyCreatePolicyTrend = new Trend('http_req_duration_individually_
 const individuallyCreatePolicyFailRate = new Rate('http_req_failed_individually_create_policy');
 
 lib.checkRequiredEnvironmentVariables(requiredEnvVars);
-const gracefulStop = lib.get_env_var("K6_CUSTOM_GRACEFUL_STOP");
-const vus = lib.get_env_var("K6_CUSTOM_VUS")
-const iterations = lib.get_env_var("K6_CUSTOM_ITERATIONS")
+const gracefulStop = lib.getEnvVar("K6_CUSTOM_GRACEFUL_STOP");
+const vus = lib.getEnvVar("K6_CUSTOM_VUS")
+const iterations = lib.getEnvVar("K6_CUSTOM_ITERATIONS")
 
-const env = lib.parse_env();
+const env = lib.parseEnv();
 
 const csvData = new SharedArray('Secrets', function () {
   // Load CSV file and parse it using Papa Parse
@@ -63,7 +63,7 @@ export const options = {
       maxDuration: "1h",
       vus: 5,
       iterations: 6200, // 5 * 20 * 62 (from previous jmeter tests)
-      exec: "individually_retrieve_secrets",
+      exec: "individuallyRetrieveSecrets",
       gracefulStop
     },
     individual2: {
@@ -71,7 +71,7 @@ export const options = {
       maxDuration: "1h",
       vus: 5,
       iterations: 6200, // 5 * 20 * 62 (from previous jmeter tests)
-      exec: "individually_retrieve_secrets",
+      exec: "individuallyRetrieveSecrets",
       gracefulStop
     },
     individual3: {
@@ -79,7 +79,7 @@ export const options = {
       maxDuration: "1h",
       vus: 1,
       iterations: 1240, // 20 * 62 (from previous jmeter tests)
-      exec: "individually_retrieve_secrets",
+      exec: "individuallyRetrieveSecrets",
       gracefulStop
     },
     individual4: {
@@ -87,7 +87,7 @@ export const options = {
       maxDuration: "1h",
       vus: 1,
       iterations: 1240, // 20 * 62 (from previous jmeter tests)
-      exec: "individually_retrieve_secrets",
+      exec: "individuallyRetrieveSecrets",
       gracefulStop
     },
     batch1: {
@@ -95,7 +95,7 @@ export const options = {
       maxDuration: "1h",
       vus: 1,
       iterations: 1240, // 20 * 62 (from previous jmeter tests)
-      exec: "batch_retrieve_secrets",
+      exec: "batchRetrieveSecrets",
       gracefulStop
     },
     batch2: {
@@ -103,7 +103,7 @@ export const options = {
       maxDuration: "1h",
       vus: 1,
       iterations: 1240, // 20 * 62 (from previous jmeter tests)
-      exec: "batch_retrieve_secrets",
+      exec: "batchRetrieveSecrets",
       gracefulStop
     },
     batch3: {
@@ -111,7 +111,7 @@ export const options = {
       maxDuration: "1h",
       vus: 5,
       iterations: 6200, // 5 * 20 * 62 (from previous jmeter tests)
-      exec: "batch_retrieve_secrets",
+      exec: "batchRetrieveSecrets",
       gracefulStop
     },
     batch4: {
@@ -119,7 +119,7 @@ export const options = {
       maxDuration: "1h",
       vus: 5,
       iterations: 6200, // 5 * 20 * 62 (from previous jmeter tests)
-      exec: "batch_retrieve_secrets",
+      exec: "batchRetrieveSecrets",
       gracefulStop
     },
     individually_create_policy: {
@@ -128,7 +128,7 @@ export const options = {
       // We can only create one policy at a time (409 Conflict can occur because all policies are loaded into the same root policy)
       vus: 1,
       iterations: 500,
-      exec: "individually_create_policy",
+      exec: "individuallyCreatePolicy",
       gracefulStop
     },
     write_secrets: {
@@ -136,7 +136,7 @@ export const options = {
       maxDuration: "1h",
       vus: vus,
       iterations: writeSecretsData.length,
-      exec: "write_secrets",
+      exec: "writeSecrets",
       gracefulStop
     },
   }, thresholds: {
@@ -190,7 +190,7 @@ export function loadSecrets() {
 
 export function loadPolicy(policyContent, policyId) {
   // create policy
-  const lobsPolicyRes = conjurApi.load_policy(
+  const lobsPolicyRes = conjurApi.loadPolicy(
     http,
     env,
     policyId,
@@ -233,7 +233,7 @@ export function authn() {
   env.token = res.body;
 }
 
-export function individually_retrieve_secrets() {
+export function individuallyRetrieveSecrets() {
   if (__ITER == 0) {
     env.applianceUrl = env.applianceFollowerUrl
     authn();
@@ -245,7 +245,7 @@ export function individually_retrieve_secrets() {
     authn();
   }
   const identity = `production/myapp/database/username`
-  const res = conjurApi.read_secret(http, env, identity);
+  const res = conjurApi.readSecret(http, env, identity);
 
   readSecretsIndividuallyTrend.add(res.timings.duration);
   readSecretsIndividuallyFailRate.add(res.status !== 200);
@@ -258,7 +258,7 @@ export function individually_retrieve_secrets() {
   });
 }
 
-export function batch_retrieve_secrets() {
+export function batchRetrieveSecrets() {
   if (__ITER == 0) {
     env.applianceUrl = env.applianceFollowerUrl
     authn();
@@ -283,7 +283,7 @@ export function batch_retrieve_secrets() {
   });
 }
 
-export function individually_create_policy() {
+export function individuallyCreatePolicy() {
   env.applianceUrl = env.applianceMasterUrl
   if (__ITER == 0) {
     authn();
@@ -299,23 +299,23 @@ export function individually_create_policy() {
   const identifier = `${__VU}-${__ITER}-${lib.uuid()}`;
   const {policyId} = env;
 
-  const lobsPolicyRes = conjurApi.load_policy(
+  const lobsPolicyRes = conjurApi.loadPolicy(
     http,
     env,
     policyId,
-    lib.create_lobs_policy(identifier)
+    lib.createLobsPolicy(identifier)
   );
-  const hostsPolicyRes = conjurApi.load_policy(
+  const hostsPolicyRes = conjurApi.loadPolicy(
     http,
     env,
     policyId,
-    lib.create_hosts_policy(identifier)
+    lib.createHostsPolicy(identifier)
   );
-  const usersPolicyRes = conjurApi.load_policy(
+  const usersPolicyRes = conjurApi.loadPolicy(
     http,
     env,
     policyId,
-    lib.create_users_policy(identifier)
+    lib.createUsersPolicy(identifier)
   );
 
   individuallyCreatePolicyTrend.add(lobsPolicyRes.timings.duration + hostsPolicyRes.timings.duration + usersPolicyRes.timings.duration);
@@ -335,7 +335,7 @@ export function individually_create_policy() {
   });
 }
 
-export function write_secrets() {
+export function writeSecrets() {
   if (__ITER == 0) {
     env.applianceUrl = env.applianceMasterUrl
     authn();
@@ -351,7 +351,7 @@ export function write_secrets() {
   const resourceId = encodeURIComponent(variable.resource_id);
   const resourceBody = variable.resource_body;
 
-  const response = conjurApi.write_secret(
+  const response = conjurApi.writeSecret(
     http,
     env,
     resourceId,

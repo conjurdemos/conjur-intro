@@ -52,7 +52,7 @@ function getSlice(data, n) {
 }
 
 export default function () {
-  const env = lib.parse_env();
+  const env = lib.parseEnv();
   env.applianceUrl = env.applianceMasterUrl
   const {
     applianceUrl,
