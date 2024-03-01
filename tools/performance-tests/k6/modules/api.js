@@ -87,11 +87,11 @@ export function readSecret(client, data, identity) {
   const url = `${applianceFollowerUrl}/secrets/${conjurAccount}/variable/${encodeURIComponent(identity)}`;
 
   return client.get(
-      url,
-      {
-        headers,
-        tags: {endpoint: 'GetSecretsURL'}
-      }
+    url,
+    {
+      headers,
+      tags: {endpoint: 'GetSecretsURL'}
+    }
   )
 }
 
