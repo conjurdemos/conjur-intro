@@ -99,7 +99,7 @@ To connect to the UI in the browser, use ports 10443(through HA proxy) or 10444(
 |--trust-follower-proxy|action|• Adds Follower load balancer as a trusted proxy|Requires configured follower|
 |--upgrade-master `<version>`|action|• Removes auto-failover (if enabled)<br>• Generates a backup<br>• Stops and removes master<br>• Starts new DAP container<br>• Restores master from backup|Requires configured master|
 |--version `<version>`|configuration|Version of DAP to use (defaults to latest)|
-|--version `<version>`|configuration|Version of K8S-Follower to use (defaults to latest)|
+|--k8s-follower-version `<version>`|configuration|Version of K8S-Follower to use (defaults to latest)|
 |--follower-to-master-connection `<on/off>`|action|Pauses or unpauses follower connection to master|Requires a configured master|
 
 ### bin/api
@@ -229,8 +229,8 @@ $ bin/dap --provision-follower
 # Locally run metrics server (statsd with graphite visualization)
 $ ./tools/performance-tests/k6/bin/metrics --start
 
-# Optionally, load policies and secrets
-$ ./bin/load-benchmark-data --accounts_per_safe 200 --safes 40 --hosts 200 --users 100
+# Optionally, load policies and 150k secrets (this might take around an hour)
+$ ./bin/load-benchmark-data --accounts_per_safe 500 --safes 15 --hosts 300 --users 150
 
 # Run load test
 $ TEST_FILE=tools/performance-tests/k6/conjur-performance-test.js ./bin/load-test

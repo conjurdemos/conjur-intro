@@ -65,10 +65,9 @@ The following options are available:
   --all-properties-synchronized   If this flag is specified, this will create data
                                   equivalent to what Synchronizer would push to
                                   Conjur when synchronizing an account with
-                                  username, password, address, port, certificate
-                                  where certificate is a large string. This will
-                                  result in 25000 secrets being pushed to Conjur
-                                  if using default accounts and safe values.
+                                  five properties. This will result in 25000 secrets
+                                  being pushed to Conjur if using default accounts
+                                  and safes values.
 
 EOF
 }

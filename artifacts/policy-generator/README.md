@@ -27,6 +27,7 @@ Total Users:  200
 ```
 
 ## Calculating final number of secrets
+
 Total number of secrets is simply a product of all these parameters:
 * lob_count
 * safe_count
@@ -34,11 +35,13 @@ Total number of secrets is simply a product of all these parameters:
 * secrets_per_account
 
 ## Creating big sets of data
+
 When creating a lot of secrets you need to keep in mind that policy-generator will generate many temporary files.
 The higher the number of LOBs and Safes, the more temporary files will be created. And the higher the number of
 accounts and secrets per account the bigger the files will be.
 
 Exemplary command to generate a million of secrets could look like this:
+
 ```bash
 docker compose run --build --rm policy-generator python3 policy-generator.py \
 --account_count 500 \
@@ -52,6 +55,7 @@ docker compose run --build --rm policy-generator python3 policy-generator.py \
 ## Limitations
 
 ### Conjur policy size
+
 Due to the Conjur limit on the size of a single policy load each generated *.yml file can't exceed 10MB.
 This translates to an upper limit of around 20k secrets (e.g. 10k accounts and 2 secret per account)
 declared in a single lob-{lob_id}_safe-{safe_id}.yml file.

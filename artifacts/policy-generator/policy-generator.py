@@ -5,9 +5,6 @@ import os, shutil
 import re
 
 VAULT_SYNCHRONIZER_POLICY_ID = "AutomationVault"
-VAULT_SYNCHRONIZER_HOSTS_POLICY_ID = "AutomationVault-hosts"
-VAULT_SYNCHRONIZER_HOSTS_GROUP_ID = "/hosts"
-VAULT_SYNCHRONIZER_VARIABLE_ID = "/variable"
 
 TEMPLATES_DIR = os.path.join(os.sep, "policy-generator", "templates")
 
