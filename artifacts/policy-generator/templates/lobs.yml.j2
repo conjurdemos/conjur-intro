@@ -1,0 +1,40 @@
+- !group AutomationVault-admins
+
+- !policy
+  id: AutomationVault
+  owner: !group AutomationVault-admins
+  body:
+    - !group {{lob_iteration}}-admins
+    - !policy
+      id: {{lob_iteration}}
+      owner: !group {{lob_iteration}}-admins
+      body:
+        - !group {{safe_iteration}}-admins
+        - !policy
+          id: {{safe_iteration}}/delegation
+          owner: !group {{safe_iteration}}-admins
+          body:
+            - !group consumers
+            - !group viewers
+        - !policy
+          id: {{safe_iteration}}
+          body:
+            {%- for account in accounts %}
+            - &{{lob_iteration}}-{{safe_iteration}}-{{account}}-variables
+              {%- for var in secrets %}
+              - !variable
+                id: {{account}}/{{var}}
+                annotations:
+                  cyberark-vault: 'true'
+                  cyberark-vault/accounts: AutomationVault/{{safe_iteration}}/{{account}}
+              {%- endfor %}
+
+            - !permit
+              resource: *{{lob_iteration}}-{{safe_iteration}}-{{account}}-variables
+              privileges: [ read, execute ]
+              role: !group /AutomationVault/{{lob_iteration}}/{{safe_iteration}}/delegation/consumers
+            - !permit
+              resource: *{{lob_iteration}}-{{safe_iteration}}-{{account}}-variables
+              privileges: [ read ]
+              role: !group /AutomationVault/{{lob_iteration}}/{{safe_iteration}}/delegation/viewers
+            {%- endfor %}

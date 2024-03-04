@@ -15,6 +15,7 @@ vm/.vagrant
 
 #K6 results
 tools/performance-tests/k6/tmp/**
+tmp/**
 
 **/backup/*
 
@@ -37,3 +38,7 @@ system/haproxy/certs/**
 kubeconfig
 
 .env
+
+# Files created by policy-generator
+tools/performance-tests/k6/data/unpopulated-secrets.csv
+tools/performance-tests/k6/data/policy/secrets

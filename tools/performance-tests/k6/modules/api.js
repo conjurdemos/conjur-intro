@@ -1,7 +1,7 @@
-import { check, fail } from "k6";
+import {check, fail} from "k6";
 
 // Returns an http response. This allows assertions on the response to be made.
-export function authenticate(client, data, exitOnFailure=false) {
+export function authenticate(client, data, exitOnFailure = false) {
   const {
     applianceUrl,
     conjurAccount,
@@ -11,13 +11,13 @@ export function authenticate(client, data, exitOnFailure=false) {
     authenticateFailRate
   } = data;
 
-  const headers = { 'Accept-Encoding': 'base64' }
+  const headers = {'Accept-Encoding': 'base64'}
   const res = client.post(
     `${applianceUrl}/authn/${conjurAccount}/${conjurIdentity}/authenticate`,
     apiKey,
     {
       headers,
-      tags: { endpoint: 'PostAuthnURL' },
+      tags: {endpoint: 'PostAuthnURL'},
       // timeout: "500s" // Changes k6 status 0 error_code 1050 to HTTP 504
     }
   )
@@ -27,10 +27,10 @@ export function authenticate(client, data, exitOnFailure=false) {
   authenticateFailRate ? authenticateFailRate.add(res.status !== 200) : null;
 
   // Fail if the authn request did not return a token
-  if(exitOnFailure){
-    if ( !check(res, {
+  if (exitOnFailure) {
+    if (!check(res, {
       "status is 200": (r) => r.status === 200,
-    })){
+    })) {
       fail(`Authn request failed with status '${res.status}' and status_text: '${res.status_text}'. Stopping this iteration.`)
     }
   }
@@ -38,65 +38,81 @@ export function authenticate(client, data, exitOnFailure=false) {
   return res
 }
 
-export function load_policy(client, data, policy_id, policy_body) {
+export function loadPolicy(client, data, policy_id, policy_body) {
   const {
     applianceMasterUrl,
     conjurAccount,
     token
   } = data;
-  const headers = { 'Authorization': `Token token="${token}"` }
-  const res = client.post(
+  const headers = {'Authorization': `Token token="${token}"`}
+
+  return client.post(
     `${applianceMasterUrl}/policies/${conjurAccount}/policy/${policy_id}`,
     policy_body,
     {
       headers,
       timeout: '1h',
-      tags: { endpoint: 'PostPoliciesURL' },
+      tags: {endpoint: 'PostPoliciesURL'},
     }
   )
-  return res
 }
 
-export function write_secret(client, data, identity, body) {
+export function updatePolicy(client, data, policy_id, policy_body) {
   const {
     applianceMasterUrl,
     conjurAccount,
     token
   } = data;
+  const headers = {'Authorization': `Token token="${token}"`}
 
-  const headers = { 'Authorization': `Token token="${token}"` }
-
-  const res = client.post(
-    `${applianceMasterUrl}/secrets/${conjurAccount}/variable/${encodeURIComponent(identity)}`,
-    body,
+  return client.put(
+    `${applianceMasterUrl}/policies/${conjurAccount}/policy/${policy_id}`,
+    policy_body,
     {
       headers,
-      tags: { endpoint: 'PostSecretsURL' },
+      timeout: '1h',
+      tags: {endpoint: 'PostPoliciesURL'},
     }
   )
-
-  return res
 }
 
-export function read_secret(client, data, identity) {
+export function readSecret(client, data, identity) {
   const {
     applianceFollowerUrl,
     conjurAccount,
     token
   } = data;
 
-  const headers = { 'Authorization': `Token token="${token}"` };
+  const headers = {'Authorization': `Token token="${token}"`};
   const url = `${applianceFollowerUrl}/secrets/${conjurAccount}/variable/${encodeURIComponent(identity)}`;
 
-  const res = client.get(
+  return client.get(
     url,
     {
       headers,
-      tags: { endpoint: 'GetSecretsURL' }
+      tags: {endpoint: 'GetSecretsURL'}
     }
   )
+}
 
-  return res
+export function writeSecret(client, data, resourceId, resourceBody) {
+  const {
+    applianceMasterUrl,
+    conjurAccount,
+    token
+  } = data;
+
+  const headers = {'Authorization': `Token token="${token}"`};
+
+  return client.post(
+    `${applianceMasterUrl}/secrets/${conjurAccount}/variable/${resourceId}`,
+    resourceBody,
+    {
+      headers,
+      timeout: '10s',
+      tags: {endpoint: 'PostSecretsURL'},
+    }
+  );
 }
 
 export function get(client, data, path) {
@@ -105,16 +121,14 @@ export function get(client, data, path) {
     token
   } = data;
 
-  const headers = { 'Authorization': `Token token="${token}"` };
+  const headers = {'Authorization': `Token token="${token}"`};
   const url = `${applianceFollowerUrl}/${path}`;
 
-  const res = client.get(
-      url,
-      {
-        headers,
-        tags: { endpoint: 'GetSecretsURL' }
-      }
+  return client.get(
+    url,
+    {
+      headers,
+      tags: {endpoint: 'GetSecretsURL'}
+    }
   )
-
-  return res
 }
