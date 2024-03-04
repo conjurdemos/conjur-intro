@@ -1,5 +1,5 @@
 import http from "k6/http";
-import { check } from "k6";
+import {check} from "k6";
 import * as conjurApi from "./modules/api.js";
 import * as lib from "./modules/lib.js";
 
@@ -11,10 +11,10 @@ const requiredEnvVars = [
   "POLICY_ID"
 ];
 
-lib.checkRequiredEnvironmetVariables(requiredEnvVars)
+lib.checkRequiredEnvironmentVariables(requiredEnvVars)
 
-const policyFile = lib.get_env_var("POLICY_FILE")
-const policyId = lib.get_env_var("POLICY_ID")
+const policyFile = lib.getEnvVar("POLICY_FILE")
+const policyId = lib.getEnvVar("POLICY_ID")
 const policyContent = open(policyFile);
 
 export const options = {
@@ -30,7 +30,8 @@ export const options = {
 };
 
 export default function () {
-  const settings = lib.parse_env();
+  const settings = lib.parseEnv();
+  settings.applianceUrl = settings.applianceMasterUrl
   let authRes;
 
   // authn to obtain token
@@ -47,7 +48,7 @@ export default function () {
   settings.token = authRes.body
 
   // create policy
-  const lobsPolicyRes = conjurApi.load_policy(
+  const lobsPolicyRes = conjurApi.loadPolicy(
     http,
     settings,
     policyId,

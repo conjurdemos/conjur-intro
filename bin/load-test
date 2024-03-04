@@ -1,12 +1,12 @@
-#!/bin/bash
+#!/bin/bash -x
 set -eo pipefail
 
 source "$(git rev-parse --show-toplevel)/tools/performance-tests/k6/bin/functions"
 
-ENABLE_STATSD=${ENABLE_STATSD:-"true"}
+ENABLE_STATSD=${ENABLE_STATSD:-"false"}
 # Default for statsd
 export K6_STATSD_PORT=${K6_STATSD_PORT:-"8125"}
-export K6_STATSD_ADDR=${K6_STATSD_ADDR:-"statsd:$K6_STATSD_PORT"}
+export K6_STATSD_ADDR=${K6_STATSD_ADDR:-"graphite-statsd:$K6_STATSD_PORT"}
 
 # Appliance URL
 export APPLIANCE_MASTER_URL=${APPLIANCE_MASTER_URL:-"https://conjur-master.mycompany.local:443"}

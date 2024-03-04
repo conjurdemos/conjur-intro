@@ -16,7 +16,7 @@ services:
       - ./files/haproxy/master:/usr/local/etc/haproxy
 
   conjur-master-1.mycompany.local:
-    image: registry.tld/conjur-appliance:${VERSION}
+    image: registry.tld/conjur-appliance:${VERSION:-5.0-stable}
     networks:
       dap_net:
         ipv4_address: 12.16.23.11
@@ -31,7 +31,7 @@ services:
       TRUSTED_PROXIES: 123.123.1.1,123.5.1.1
       CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
     security_opt:
-        - "seccomp:unconfined"
+      - "seccomp:unconfined"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
       - ./system/backup:/opt/conjur/backup:Z
@@ -40,7 +40,7 @@ services:
       - ./files:/conjur_files
 
   conjur-master-2.mycompany.local:
-    image: registry.tld/conjur-appliance:${VERSION}
+    image: registry.tld/conjur-appliance:${VERSION:-5.0-stable}
     networks:
       dap_net:
         ipv4_address: 12.16.23.12
@@ -52,7 +52,7 @@ services:
       - "1999"
       - "5432"
     security_opt:
-        - "seccomp:unconfined"
+      - "seccomp:unconfined"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
       - ./system/backup:/opt/conjur/backup:Z
@@ -61,7 +61,7 @@ services:
       - ./files:/conjur_files
 
   conjur-master-3.mycompany.local:
-    image: registry.tld/conjur-appliance:${VERSION}
+    image: registry.tld/conjur-appliance:${VERSION:-5.0-stable}
     networks:
       dap_net:
         ipv4_address: 12.16.23.13
@@ -73,7 +73,7 @@ services:
       - "1999"
       - "5432"
     security_opt:
-        - "seccomp:unconfined"
+      - "seccomp:unconfined"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
       - ./system/backup:/opt/conjur/backup:Z
@@ -82,7 +82,7 @@ services:
       - ./files:/conjur_files
 
   conjur-master-4.mycompany.local:
-    image: registry.tld/conjur-appliance:${VERSION}
+    image: registry.tld/conjur-appliance:${VERSION:-5.0-stable}
     networks:
       dap_net:
         ipv4_address: 12.16.23.14
@@ -94,7 +94,7 @@ services:
       - "1999"
       - "5432"
     security_opt:
-        - "seccomp:unconfined"
+      - "seccomp:unconfined"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
       - ./system/backup:/opt/conjur/backup:Z
@@ -103,7 +103,7 @@ services:
       - ./files:/conjur_files
 
   conjur-master-5.mycompany.local:
-    image: registry.tld/conjur-appliance:${VERSION}
+    image: registry.tld/conjur-appliance:${VERSION:-5.0-stable}
     networks:
       dap_net:
         ipv4_address: 12.16.23.15
@@ -115,7 +115,7 @@ services:
       - "1999"
       - "5432"
     security_opt:
-        - "seccomp:unconfined"
+      - "seccomp:unconfined"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
       - ./system/backup:/opt/conjur/backup:Z
@@ -137,7 +137,7 @@ services:
       - ./files/haproxy/follower:/usr/local/etc/haproxy
 
   conjur-follower-1.mycompany.local:
-    image: registry.tld/conjur-appliance:${VERSION}
+    image: registry.tld/conjur-appliance:${VERSION:-5.0-stable}
     networks:
       dap_net:
         ipv4_address: 12.16.23.17
@@ -149,7 +149,7 @@ services:
     environment:
       CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
     security_opt:
-        - "seccomp:unconfined"
+      - "seccomp:unconfined"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
       - follower-certs:/opt/conjur/etc/ssl/
@@ -163,7 +163,7 @@ services:
     networks:
       dap_net:
         ipv4_address: 12.16.23.18
-    working_dir:  /src/cli
+    working_dir: /src/cli
     environment:
       CONJUR_APPLIANCE_URL: https://conjur-master.mycompany.local
       CONJUR_ACCOUNT: demo
@@ -186,7 +186,7 @@ services:
     networks:
       dap_net:
         ipv4_address: 12.16.23.19
-    working_dir:  /src/cli
+    working_dir: /src/cli
     environment:
       CONJUR_APPLIANCE_URL: https://conjur-follower.mycompany.local
       CONJUR_ACCOUNT: demo
@@ -212,6 +212,12 @@ services:
     volumes:
       - ./system/configuration/certificates:/src/certificates
 
+  policy-generator:
+    build:
+      context: ./artifacts/policy-generator
+    volumes:
+      - ./tools/performance-tests/k6/data:/data
+
   k6:
     build:
       context: ./
@@ -223,24 +229,17 @@ services:
       - ./tools/performance-tests/k6:/tools/performance-tests/k6
       - ./files/conjur:/files/conjur
 
-  statsd:
-    image: statsd/statsd
+  graphite-statsd:
+    image: graphiteapp/graphite-statsd
     networks:
       dap_net:
         ipv4_address: 12.16.23.22
     ports:
-      - "${K6_STATSD_PORT}:8125/udp"
-      - "8126:8126"
-
-  graphite:
-    image: graphiteapp/graphite-statsd
-    networks:
-      dap_net:
-        ipv4_address: 12.16.23.23
-    ports:
       - "81:80"
       - "2003-2004:2003-2004"
       - "2023-2024:2023-2024"
+      - "${K6_STATSD_PORT:-8125}:8125/udp"
+      - "8126:8126"
 
 volumes:
   seeds:
