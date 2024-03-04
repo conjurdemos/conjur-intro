@@ -34,6 +34,7 @@ lib.checkRequiredEnvironmentVariables(requiredEnvVars);
 const gracefulStop = lib.getEnvVar("K6_CUSTOM_GRACEFUL_STOP");
 const vus = lib.getEnvVar("K6_CUSTOM_VUS")
 const iterations = lib.getEnvVar("K6_CUSTOM_ITERATIONS")
+const maxDuration = '3h';
 
 const env = lib.parseEnv();
 
@@ -62,7 +63,7 @@ export const options = {
   scenarios: {
     individual1: {
       executor: 'per-vu-iterations',
-      maxDuration: "1h",
+      maxDuration: maxDuration,
       vus: 4,
       iterations: 6200, // 5 * 20 * 62 (from previous jmeter tests)
       exec: "individuallyRetrieveSecrets",
@@ -70,7 +71,7 @@ export const options = {
     },
     individual2: {
       executor: 'per-vu-iterations',
-      maxDuration: "1h",
+      maxDuration: maxDuration,
       vus: 4,
       iterations: 6200, // 5 * 20 * 62 (from previous jmeter tests)
       exec: "individuallyRetrieveSecrets",
@@ -78,7 +79,7 @@ export const options = {
     },
     individual3: {
       executor: 'per-vu-iterations',
-      maxDuration: "1h",
+      maxDuration: maxDuration,
       vus: 1,
       iterations: 1240, // 20 * 62 (from previous jmeter tests)
       exec: "individuallyRetrieveSecrets",
@@ -86,7 +87,7 @@ export const options = {
     },
     individual4: {
       executor: 'per-vu-iterations',
-      maxDuration: "1h",
+      maxDuration: maxDuration,
       vus: 1,
       iterations: 1240, // 20 * 62 (from previous jmeter tests)
       exec: "individuallyRetrieveSecrets",
@@ -94,7 +95,7 @@ export const options = {
     },
     batch_2_secrets_1: {
       executor: 'per-vu-iterations',
-      maxDuration: "1h",
+      maxDuration: maxDuration,
       vus: 1,
       iterations: 1240, // 20 * 62 (from previous jmeter tests)
       exec: "batchRetrieveTwoSecrets",
@@ -102,7 +103,7 @@ export const options = {
     },
     batch_2_secrets_2: {
       executor: 'per-vu-iterations',
-      maxDuration: "1h",
+      maxDuration: maxDuration,
       vus: 1,
       iterations: 1240, // 20 * 62 (from previous jmeter tests)
       exec: "batchRetrieveTwoSecrets",
@@ -110,7 +111,7 @@ export const options = {
     },
     batch_2_secrets_3: {
       executor: 'per-vu-iterations',
-      maxDuration: "1h",
+      maxDuration: maxDuration,
       vus: 3,
       iterations: 6200, // 5 * 20 * 62 (from previous jmeter tests)
       exec: "batchRetrieveTwoSecrets",
@@ -118,7 +119,7 @@ export const options = {
     },
     batch_2_secrets_4: {
       executor: 'per-vu-iterations',
-      maxDuration: "1h",
+      maxDuration: maxDuration,
       vus: 3,
       iterations: 6200, // 5 * 20 * 62 (from previous jmeter tests)
       exec: "batchRetrieveTwoSecrets",
@@ -126,7 +127,7 @@ export const options = {
     },
     batch_4_secrets_1: {
       executor: 'per-vu-iterations',
-      maxDuration: "1h",
+      maxDuration: maxDuration,
       vus: 1,
       iterations: 1240, // 20 * 62 (from previous jmeter tests)
       exec: "batchRetrieveFourSecrets",
@@ -134,7 +135,7 @@ export const options = {
     },
     batch_4_secrets_2: {
       executor: 'per-vu-iterations',
-      maxDuration: "1h",
+      maxDuration: maxDuration,
       vus: 1,
       iterations: 1240, // 20 * 62 (from previous jmeter tests)
       exec: "batchRetrieveFourSecrets",
@@ -142,7 +143,7 @@ export const options = {
     },
     batch_4_secrets_3: {
       executor: 'per-vu-iterations',
-      maxDuration: "1h",
+      maxDuration: maxDuration,
       vus: 3,
       iterations: 6200, // 5 * 20 * 62 (from previous jmeter tests)
       exec: "batchRetrieveFourSecrets",
@@ -150,7 +151,7 @@ export const options = {
     },
     batch_4_secrets_4: {
       executor: 'per-vu-iterations',
-      maxDuration: "1h",
+      maxDuration: maxDuration,
       vus: 3,
       iterations: 6200, // 5 * 20 * 62 (from previous jmeter tests)
       exec: "batchRetrieveFourSecrets",
@@ -158,7 +159,7 @@ export const options = {
     },
     create_policy: {
       executor: 'per-vu-iterations',
-      maxDuration: "1h",
+      maxDuration: maxDuration,
       // We can only create one policy at a time (409 Conflict can occur because all policies are loaded into the same root policy)
       vus: 1,
       iterations: 500,
@@ -167,7 +168,7 @@ export const options = {
     },
     write_secrets: {
       executor: 'shared-iterations',
-      maxDuration: "1h",
+      maxDuration: maxDuration,
       vus: vus,
       iterations: writeSecretsData.length,
       exec: "writeSecrets",
