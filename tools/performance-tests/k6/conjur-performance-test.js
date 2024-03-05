@@ -270,14 +270,10 @@ export function authn() {
 export function individuallyRetrieveSecrets() {
   if (__ITER == 0) {
     env.applianceUrl = env.applianceFollowerUrl
-    authn();
   }
-  let now = new Date()
-  // if 6 minutes elapsed, renew authentication
-  if (now.getTime() - start.getTime() > 360000) {
-    start.setTime(now.getTime())
-    authn();
-  }
+
+  authn();
+
   const identity = `production/myapp/database/username`
   const res = conjurApi.readSecret(http, env, identity);
 
@@ -295,14 +291,10 @@ export function individuallyRetrieveSecrets() {
 export function batchRetrieveTwoSecrets() {
   if (__ITER == 0) {
     env.applianceUrl = env.applianceFollowerUrl
-    authn();
   }
-  let now = new Date()
-  // if 6 minutes elapsed, renew authentication
-  if (now.getTime() - start.getTime() > 360000) {
-    start.setTime(now.getTime())
-    authn();
-  }
+
+  authn();
+
   const path = `/secrets?variable_ids=demo:variable:production%2Fmyapp%2Fdatabase%2Fusername`
   const res = conjurApi.get(http, env, path);
 
@@ -320,14 +312,10 @@ export function batchRetrieveTwoSecrets() {
 export function batchRetrieveFourSecrets() {
   if (__ITER == 0) {
     env.applianceUrl = env.applianceFollowerUrl
-    authn();
   }
-  let now = new Date()
-  // if 6 minutes elapsed, renew authentication
-  if (now.getTime() - start.getTime() > 360000) {
-    start.setTime(now.getTime())
-    authn();
-  }
+
+  authn();
+
   const path = `/secrets?variable_ids=demo:variable:production%2Fmyapp%2Fdatabase%2Fusername,demo:variable:production%2Fmyapp%2Fdatabase%2Fpassword,demo:variable:production%2Fmyapp%2Fdatabase%2Fport,demo:variable:production%2Fmyapp%2Fdatabase%2Furl`
   const res = conjurApi.get(http, env, path);
 
@@ -343,16 +331,11 @@ export function batchRetrieveFourSecrets() {
 }
 
 export function createPolicy() {
-  env.applianceUrl = env.applianceMasterUrl
   if (__ITER == 0) {
-    authn();
+    env.applianceUrl = env.applianceMasterUrl
   }
-  let now = new Date()
-  // if 6 minutes elapsed, renew authentication
-  if (now.getTime() - start.getTime() > 360000) {
-    start.setTime(now.getTime())
-    authn();
-  }
+
+  authn();
 
   // Creates a unique identifier across all VUs and iterations
   const identifier = `${__VU}-${__ITER}-${lib.uuid()}`;
@@ -397,14 +380,9 @@ export function createPolicy() {
 export function writeSecrets() {
   if (__ITER == 0) {
     env.applianceUrl = env.applianceMasterUrl
-    authn();
   }
-  let now = new Date()
-  // if 6 minutes elapsed, renew authentication
-  if (now.getTime() - start.getTime() > 360000) {
-    start.setTime(now.getTime())
-    authn();
-  }
+
+  authn();
 
   const variable = writeSecretsData[exec.scenario.iterationInTest];
   const resourceId = encodeURIComponent(variable.resource_id);
