@@ -10,7 +10,7 @@ export K6_STATSD_ADDR=${K6_STATSD_ADDR:-"graphite-statsd:$K6_STATSD_PORT"}
 
 # Appliance URL
 export APPLIANCE_MASTER_URL=${APPLIANCE_MASTER_URL:-"https://conjur-master.mycompany.local:443"}
-export APPLIANCE_FOLLOWER_URL=${APPLIANCE_FOLLOWER_URL:-"https://conjur-follower.mycompany.local:443"}
+export APPLIANCE_READ_URL=${APPLIANCE_READ_URL:-"https://conjur-follower.mycompany.local:443"}
 export CONJUR_ACCOUNT=${CONJUR_ACCOUNT:-"demo"}
 export CONJUR_IDENTITY=${CONJUR_IDENTITY:-"admin"}
 
@@ -34,7 +34,7 @@ print_settings() {
     echo "TEST_NAME                   : $TEST_NAME"
     announce "K6 Settings"
     echo "APPLIANCE_MASTER_URL        : $APPLIANCE_MASTER_URL"
-    echo "APPLIANCE_FOLLOWER_URL      : $APPLIANCE_FOLLOWER_URL"
+    echo "APPLIANCE_READ_URL          : $APPLIANCE_READ_URL"
     echo "CONJUR_ADMIN_API_KEY:       : redacted"
     echo "CONJUR_ACCOUNT              : $CONJUR_ACCOUNT"
     echo "CONJUR_IDENTITY             : $CONJUR_IDENTITY"
@@ -47,7 +47,7 @@ test_k6() {
   export CONJUR_ADMIN_API_KEY=$(./bin/cli conjur user rotate-api-key | tail -n 1 | tr -d '[:space:]')
 
   check_env "APPLIANCE_MASTER_URL"
-  check_env "APPLIANCE_FOLLOWER_URL"
+  check_env "APPLIANCE_READ_URL"
   check_env "CONJUR_ACCOUNT"
   check_env "CONJUR_IDENTITY"
   check_env "CONJUR_ADMIN_API_KEY"
