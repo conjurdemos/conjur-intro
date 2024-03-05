@@ -17,20 +17,18 @@ export POLICY_ID=${POLICY_ID:-"root"}
 # Default for reading random secrets
 export K6_CUSTOM_GRACEFUL_STOP=${K6_CUSTOM_GRACEFUL_STOP:-"30s"}
 export K6_CUSTOM_VUS=${K6_CUSTOM_VUS:-"20"}
-export K6_CUSTOM_ITERATIONS=${K6_CUSTOM_ITERATIONS:-"2480"}
 
 k6() {
   cmd="$@"
 
   docker compose -f "$compose_file" run --rm \
     -e APPLIANCE_MASTER_URL \
-    -e APPLIANCE_FOLLOWER_URL \
+    -e APPLIANCE_READ_URL \
     -e CONJUR_ADMIN_API_KEY \
     -e CONJUR_ACCOUNT \
     -e CONJUR_IDENTITY \
     -e K6_CUSTOM_GRACEFUL_STOP \
     -e K6_CUSTOM_VUS \
-    -e K6_CUSTOM_ITERATIONS \
     -e K6_STATSD_ADDR \
     -e POLICY_FILE \
     -e POLICY_ID \
