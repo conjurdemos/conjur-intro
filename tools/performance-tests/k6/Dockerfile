@@ -1,4 +1,5 @@
 FROM golang:1.22-alpine AS builder
+ENV GOMAXPROCS=1
 WORKDIR /src
 
 # On CyberArk dev laptops, internet connections route through
