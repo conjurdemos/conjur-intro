@@ -243,7 +243,7 @@ function _run_in_kind {
   if [[ $DRY_RUN = false ]]; then
     # shellcheck disable=SC2128
     docker compose exec -T k8s-follower-orchestrator ash -c "
-      API_SERVER_URL=\$(kind get --name conjur-intro-k8s-follower kubeconfig | grep server | awk '{print \$2}' | sed 's/127.0.0.1/host.docker.internal/'); \
+      API_SERVER_URL=\$(kind get --name conjur-intro-k8s-follower kubeconfig | grep server | awk '{print \$2}' | sed 's/0.0.0.0/host.docker.internal/'); \
       KUBE_OPTS=\"--insecure-skip-tls-verify --server=\$API_SERVER_URL --context kind-conjur-intro-k8s-follower\"; \
       $_args
     "
@@ -336,6 +336,8 @@ function _setup_k8s_follower {
   docker compose up -d --no-deps k8s-follower-orchestrator
 
   # Wait a little bit to create k8s-follower-orchestrator cluster
+  SECONDS=0
+  TIMEOUT=300
   while true; do
     if _run_in_kind "kubectl \$KUBE_OPTS get nodes | grep -q \"Ready\"" &> /dev/null; then
       echo "The conjur-intro-k8s-follower cluster is created."
@@ -344,6 +346,14 @@ function _setup_k8s_follower {
       echo "Waiting for the conjur-intro-k8s-follower cluster to be created..."
       sleep 1
     fi
+    if [ $SECONDS -ge $TIMEOUT ]; then
+        echo "Timeout after waiting for 5 minutes. The conjur-intro-k8s-follower cluster is not created."
+        echo "Printing logs from k8s-follower-orchestrator container:"
+        docker logs conjur-intro-k8s-follower-orchestrator-1
+        echo "Printing logs from docker logs k8s-follower-control-plane container:"
+        docker logs conjur-intro-k8s-follower-control-plane
+        exit 1
+      fi
   done
 
   # Discover Kubernetes resources
@@ -373,11 +383,16 @@ function _setup_k8s_follower {
   _run_in_kind "kubectl \$KUBE_OPTS apply -f /manifests/operator"
   bin/cli conjur policy load -f artifacts/k8s-follower-orchestrator/seed-generation-policy.yaml -b root
   bin/cli conjur policy load -f artifacts/k8s-follower-orchestrator/conjur-kubernetes-follower-policy.yaml -b root
+
+  # Ensure certs are up to date
+  docker cp "$(docker compose ps -q conjur-master-1.mycompany.local)":/opt/conjur/etc/ssl/. ./system/haproxy/certs
   _run_in_kind "kubectl \$KUBE_OPTS create configmap -n cyberark-conjur conjur-cert --from-file=/etc/ssl/certs/conjur-master.mycompany.local.pem"
+
+  # Apply manifest with Conjur Follower
   _run_in_kind "kubectl \$KUBE_OPTS apply -f /manifests/samples"
 
   echo "Waiting for the conjur-follower deployment to be running..."
-  _run_in_kind "kubectl \$KUBE_OPTS wait --namespace=cyberark-conjur --for=condition=available --timeout=60s deployment/conjur-follower"
+  _run_in_kind "kubectl \$KUBE_OPTS wait --namespace=cyberark-conjur --for=condition=available --timeout=5m deployment/conjur-follower"
 
   # Deploy NodePort that will expose Conjur Follower endpoint
   _run_in_kind "kubectl \$KUBE_OPTS apply -f conjur-follower-node-port.yaml"
