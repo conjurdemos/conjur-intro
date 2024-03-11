@@ -80,6 +80,9 @@ test_k6() {
   # Run K6 test
   run_k6_test
 
+  #Move HTML report to LOG_ROOT
+  move_html_report
+
   echo "The test has completed!"
 
   # Stop the clock
@@ -104,6 +107,12 @@ run_k6_test() {
       --insecure-skip-tls-verify \
       --quiet 2>&1 | tee "$log_file"
   fi
+}
+
+move_html_report() {
+  local html_report_file="$LOG_ROOT/summary.html"
+  echo "Moving HTML report to $LOG_ROOT as summary.html"
+  mv "$(repo_root)/tools/performance-tests/k6/reports/$(basename "$TEST_PLAN")-summary.html" "$html_report_file"
 }
 
 main() {

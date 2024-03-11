@@ -5,6 +5,8 @@ import * as conjurApi from "../modules/api.js";
 import * as lib from "../modules/lib.js";
 import papaparse from "../modules/papaparse.min.js";
 import {SharedArray} from 'k6/data';
+import { htmlReport } from "https://raw.githubusercontent.com/benc-uk/k6-reporter/2.4.0/dist/bundle.js";
+import { textSummary } from "https://jslib.k6.io/k6-summary/0.0.1/index.js";
 
 /**
  *  Init stage
@@ -172,4 +174,11 @@ export default function () {
     "status is not 401": (r) => r.status !== 401,
     "status is not 500": (r) => r.status !== 500
   });
+}
+
+export function handleSummary(data) {
+  return {
+    "./tools/performance-tests/k6/reports/read-batch-2-secrets-summary.html": htmlReport(data, {title: "Read Batch 2 Secrets " + new Date().toISOString().slice(0, 16).replace('T', ' ')}),
+    stdout: textSummary(data, { indent: " ", enableColors: true }),
+  };
 }
