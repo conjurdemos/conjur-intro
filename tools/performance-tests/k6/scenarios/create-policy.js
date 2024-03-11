@@ -3,6 +3,8 @@ import {check} from "k6";
 import {Trend, Rate} from 'k6/metrics';
 import * as conjurApi from "../modules/api.js";
 import * as lib from "../modules/lib.js";
+import { htmlReport } from "https://raw.githubusercontent.com/benc-uk/k6-reporter/2.4.0/dist/bundle.js";
+import { textSummary } from "https://jslib.k6.io/k6-summary/0.0.1/index.js";
 
 /**
  *  Init stage
@@ -99,4 +101,11 @@ export default function () {
     "status is 201": (r) => r.status === 201,
     "status is not 500": (r) => r.status !== 500
   });
+}
+
+export function handleSummary(data) {
+  return {
+    "./tools/performance-tests/k6/reports/create-policy-summary.html": htmlReport(data, {title: "Create Policy " + new Date().toISOString().slice(0, 16).replace('T', ' ')}),
+    stdout: textSummary(data, { indent: " ", enableColors: true }),
+  };
 }
