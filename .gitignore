@@ -42,4 +42,5 @@ kubeconfig
 
 # Files created by policy-generator
 tools/performance-tests/k6/data/unpopulated-secrets.csv
+tools/performance-tests/k6/data/api-keys.csv
 tools/performance-tests/k6/data/policy/secrets

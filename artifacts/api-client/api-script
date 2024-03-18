@@ -18,6 +18,7 @@ Usage: bin/api [options]
     --load-sample-policy-and-values     Loads policy and sets variable values (equivalent to running '--load-policy' and '--set-secrets')
     -p, --password <password>           Password used for authentication (default is 'MySecretP@ss1')
     --rotate-api-key                    Rotates the authenticated user's API key
+    --rotate-multiple-host-api-keys     Rotates all api keys of hosts provided in an array to the function
     --set-secrets                       Sets variable values
     --set-secret-value <path> <value>   Assigns the provided value to the provided variable
     -u, --user <conjur-user>            Username to authenticate with (default is 'admin')
@@ -253,6 +254,24 @@ rotate_api_key() {
         "$master_url/authn/demo/api_key?role=user:$user"
 }
 
+rotate_multiple_host_api_keys() {
+  local token
+  token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
+  local responses=""
+  for host in "$@"; do
+    response=$(curl --header "Authorization: Token token=\"$token\"" \
+                    --insecure \
+                    --request PUT \
+                    "$master_url/authn/demo/api_key?role=host:$host")
+    if [ $? -ne 0 ]; then
+      echo "Failed to rotate API key for host: $host"
+    else
+      responses="$responses $response"
+    fi
+  done
+  echo "$responses"
+}
+
 # -- End functions called directly from CLI --
 
 follower_url='http://conjur-follower.mycompany.local'
@@ -280,6 +299,7 @@ while true ; do
     --fetch-secrets ) shift ; cmd="retrieve_variables" ;;
     --view-roles ) cmd="view_roles" ; shift ;;
     --rotate-api-key ) shift ; cmd="rotate_api_key $1" ; shift ;;
+    --rotate-multiple-host-api-keys ) shift ; cmd="rotate_multiple_host_api_keys $1" ; shift ;;
     --enable-seed-service ) shift ; cmd='enable_seed_service' ;;
      * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
   esac

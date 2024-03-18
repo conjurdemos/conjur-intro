@@ -115,6 +115,35 @@ move_html_report() {
   mv "$(repo_root)/tools/performance-tests/k6/reports/$(basename "$TEST_PLAN")-summary.html" "$html_report_file"
 }
 
+populate_apikeys_file() {
+  local file_name="$(repo_root)/tools/performance-tests/k6/data/api-keys.csv"
+
+  echo "lob_name,safe_name,api_key" > "$file_name"
+
+  local lob_number=10
+  local safe_number=15
+  set +x
+
+  for ((i=1; i<=lob_number; i++)); do
+    for ((j=1; j<=safe_number; j++)); do
+      hosts+="AutomationVault-hosts/lob-$i/safe-$j/host-1 "
+    done
+  done
+
+  read -r -a responses <<< "$(./bin/api --rotate-multiple-host-api-keys "${hosts[@]}" | tail -n 1)"
+  local idx=0;
+
+  for ((i=1; i<=lob_number; i++)); do
+    for ((j=1; j<=safe_number; j++)); do
+      echo "lob-$i,safe-$j,${responses[$idx]}" >> "$file_name"
+      idx=$((idx+1))
+    done
+  done
+
+  set -x
+  echo "API keys have been written to $file_name"
+}
+
 main() {
   while true ; do
     case "$1" in
@@ -122,7 +151,7 @@ main() {
        * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
     esac
   done
-
+  populate_apikeys_file
   eval "test_k6"
 }
 
