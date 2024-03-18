@@ -264,11 +264,7 @@ rotate_multiple_host_api_keys() {
                     --request PUT \
                     --silent \
                     "$master_url/authn/demo/api_key?role=host:$host")
-    if [ $? -ne 0 ]; then
-      echo "Failed to rotate API key for host: $host"
-    else
-      responses="$responses $response"
-    fi
+    responses="$responses $response"
   done
   echo "$responses"
 }
