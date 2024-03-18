@@ -262,6 +262,7 @@ rotate_multiple_host_api_keys() {
     response=$(curl --header "Authorization: Token token=\"$token\"" \
                     --insecure \
                     --request PUT \
+                    --silent \
                     "$master_url/authn/demo/api_key?role=host:$host")
     if [ $? -ne 0 ]; then
       echo "Failed to rotate API key for host: $host"
