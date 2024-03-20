@@ -195,3 +195,29 @@ export function createUsersPolicy(identifier) {
   role: !group AutomationVault/lob-1-${identifier}/safe-1-${identifier}/delegation/consumers
   members: !group AutomationVault-users/lob-1-${identifier}/safe-1-${identifier}/users`;
 }
+
+function createNestedPolicy(level, maxLevel) {
+  if (level > maxLevel) {
+    return '';
+  }
+
+  let policy = `- !group lob-${level}-admins
+- !policy
+  id: lob-${level}
+  owner: !group lob-${level}-admins`;
+
+  let nestedPolicy = createNestedPolicy(level + 1, maxLevel);
+  if (nestedPolicy) {
+    policy += `
+  body:
+${nestedPolicy.split('\n').map(line => '    ' + line).join('\n')}`;
+  }
+
+  return policy;
+}
+
+export function createPolicyYaml(level, maxLevel) {
+  let policyObject = createNestedPolicy(level, maxLevel)
+  return policyObject;
+}
+
