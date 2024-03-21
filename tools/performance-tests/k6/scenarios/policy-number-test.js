@@ -1,11 +1,9 @@
 import http from "k6/http";
-import {check, fail} from "k6";
+import {check} from "k6";
 import exec from 'k6/execution';
 import {Trend, Rate} from 'k6/metrics';
-import * as conjurApi from "./modules/api.js";
-import * as lib from "./modules/lib.js";
-import { htmlReport } from "https://raw.githubusercontent.com/benc-uk/k6-reporter/2.4.0/dist/bundle.js";
-import { textSummary } from "https://jslib.k6.io/k6-summary/0.0.1/index.js";
+import * as conjurApi from "../modules/api.js";
+import * as lib from "../modules/lib.js";
 
 /**
  *  Init stage
@@ -32,7 +30,7 @@ export const options = {
       executor: 'shared-iterations',
       maxDuration: "1h",
       vus: 1,
-      iterations: 500,
+      iterations: 10000,
       gracefulStop
     },
   }
@@ -68,29 +66,35 @@ export function loadPolicy(policyContent, policyId) {
 
   console.log("RESPONSE BODY START", policyRes.body, "RESPONSE BODY END")
 
-  if (!check(policyRes, {
-    "status is 201": (r) => r.status === 201,
-  })) {
-    fail("Policy load request failed");
-  }
+  // if (!check(policyRes, {
+  //   "status is 201": (r) => r.status === 201,
+  // })) {
+  //   fail("Policy load request failed");
+  // }
 }
 
 export default function () {
   env.applianceUrl = env.applianceMasterUrl
   authn();
-  const policyContent = lib.createPolicyYaml(1, exec.scenario.iterationInTest + 1)
-  try {
-    loadPolicy(policyContent,"root")
-  } catch (error) {
-    console.log(`Test stopped at iteration ${exec.scenario.iterationInTest} due to an error: ${error}`);
-    return;
+  const policyContent = lib.createSimplePolicy(exec.scenario.iterationInTest + 1)
+  //const policyContent = lib.createPolicyYaml(1, 289)
+
+  // try {
+  //   loadPolicy(policyContent,"root")
+  // } catch (error) {
+  //   console.log(`Test stopped at iteration ${exec.scenario.iterationInTest} due to an error: ${error}`);
+  //   exec.test.abort('API name validation failed');
+  // }
+
+  const policyRes = conjurApi.loadPolicy(
+    http,
+    env,
+    "root",
+    policyContent
+  );
+
+  if (check(policyRes, {"Status is not 201": (r) => r.status !== 201})) {
+    //console.log(`Test stopped at iteration ${exec.scenario.iterationInTest} due to an error: ${error}`);
+    exec.test.abort('Current max depth of nested policies: ' + exec.scenario.iterationInTest);
   }
-}
-
-
-export function handleSummary(data) {
-  return {
-    "./tools/performance-tests/k6/reports/write-secrets-summary.html": htmlReport(data, {title: "Write Secrets " + new Date().toISOString().slice(0, 16).replace('T', ' ')}),
-    stdout: textSummary(data, { indent: " ", enableColors: true }),
-  };
 }

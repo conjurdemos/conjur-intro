@@ -30,7 +30,7 @@ export const options = {
       executor: 'shared-iterations',
       maxDuration: "1h",
       vus: 1,
-      iterations: 1000,
+      iterations: 500,
       gracefulStop
     },
   }
@@ -92,6 +92,8 @@ export default function () {
     "root",
     policyContent
   );
+
+  console.log("RESPONSE BODY START", policyRes.body, "RESPONSE BODY END")
 
   if (check(policyRes, {"Status is not 201": (r) => r.status !== 201})) {
     //console.log(`Test stopped at iteration ${exec.scenario.iterationInTest} due to an error: ${error}`);

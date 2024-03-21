@@ -1,0 +1,18 @@
+{% macro policy(level, max_level) %}
+- !group policy{{level}}-admins
+- !policy
+  id: policy{{level}}
+  owner: !group policy{{level}}-admins
+  body:
+    {% if level < max_level %}
+    {{ policy(level+1, max_level) }}
+    {% endif %}
+{% endmacro %}
+
+- !group test-admins
+
+- !policy
+  id: test
+  owner: !group test-admins
+  body:
+    {{ policy(1, 4) }}

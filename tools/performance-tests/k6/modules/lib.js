@@ -201,10 +201,8 @@ export function createNestedPolicy(level, maxLevel) {
     return '';
   }
 
-  let policy = `- !group level-${level}-admins
-- !policy
-  id: level-${level}
-  owner: !group level-${level}-admins`;
+  let policy = `- !policy
+  id: level-${level}`;
 
   let nestedPolicy = createNestedPolicy(level + 1, maxLevel);
   if (nestedPolicy) {
