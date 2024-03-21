@@ -39,7 +39,7 @@ export const options = {
     individual: {
       executor: 'shared-iterations',
       maxDuration: "3h",
-      vus: 75,
+      vus: 24,
       iterations: 64500,
       gracefulStop
     },
