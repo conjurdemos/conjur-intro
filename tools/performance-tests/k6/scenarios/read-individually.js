@@ -37,10 +37,10 @@ const apiKeys = new SharedArray('ApiKeys', function () {
 export const options = {
   scenarios: {
     individual: {
-      executor: 'per-vu-iterations',
+      executor: 'shared-iterations',
       maxDuration: "3h",
       vus: 75,
-      iterations: 860,
+      iterations: 64500,
       gracefulStop
     },
   }, thresholds: {
