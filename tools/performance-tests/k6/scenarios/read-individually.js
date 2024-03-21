@@ -39,8 +39,8 @@ export const options = {
     individual: {
       executor: 'per-vu-iterations',
       maxDuration: "3h",
-      vus: 150,
-      iterations: 430,
+      vus: 75,
+      iterations: 860,
       gracefulStop
     },
   }, thresholds: {
