@@ -36,10 +36,10 @@ const apiKeys = new SharedArray('ApiKeys', function () {
 export const options = {
   scenarios: {
     batch_4_secrets: {
-      executor: 'per-vu-iterations',
+      executor: 'shared-iterations',
       maxDuration: "3h",
-      vus: 150,
-      iterations: 430,
+      vus: 12,
+      iterations: 64500,
       gracefulStop
     },
   }, thresholds: {
