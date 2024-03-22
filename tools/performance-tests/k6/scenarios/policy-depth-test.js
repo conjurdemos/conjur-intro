@@ -1,7 +1,7 @@
 import http from "k6/http";
 import {check} from "k6";
 import exec from 'k6/execution';
-import {Trend, Rate} from 'k6/metrics';
+import {Trend, Rate, Counter} from 'k6/metrics';
 import * as conjurApi from "../modules/api.js";
 import * as lib from "../modules/lib.js";
 
@@ -22,20 +22,24 @@ const gracefulStop = lib.getEnvVar("K6_CUSTOM_GRACEFUL_STOP");
 
 const env = lib.parseEnv();
 
+const successfulIterations = new Counter("Max Policy Depth");
+
 // Define test options
 // https://k6.io/docs/using-k6/k6-options/reference/
 export const options = {
   scenarios: {
-    write_secrets: {
+    policy_depth: {
       executor: 'shared-iterations',
       maxDuration: "1h",
       vus: 1,
       iterations: 500,
       gracefulStop
     },
+  },
+  thresholds: {
+    "Max Policy Depth": ["count>400"]
   }
 };
-
 
 export function setup() {
 }
@@ -55,36 +59,10 @@ export function authn() {
   env.token = res.body;
 }
 
-export function loadPolicy(policyContent, policyId) {
-  // create policy
-  const policyRes = conjurApi.loadPolicy(
-    http,
-    env,
-    policyId,
-    policyContent
-  );
-
-  console.log("RESPONSE BODY START", policyRes.body, "RESPONSE BODY END")
-
-  // if (!check(policyRes, {
-  //   "status is 201": (r) => r.status === 201,
-  // })) {
-  //   fail("Policy load request failed");
-  // }
-}
-
 export default function () {
   env.applianceUrl = env.applianceMasterUrl
   authn();
   const policyContent = lib.createNestedPolicy(1, exec.scenario.iterationInTest + 1)
-  //const policyContent = lib.createPolicyYaml(1, 289)
-
-  // try {
-  //   loadPolicy(policyContent,"root")
-  // } catch (error) {
-  //   console.log(`Test stopped at iteration ${exec.scenario.iterationInTest} due to an error: ${error}`);
-  //   exec.test.abort('API name validation failed');
-  // }
 
   const policyRes = conjurApi.loadPolicy(
     http,
@@ -95,8 +73,7 @@ export default function () {
 
   console.log("RESPONSE BODY START", policyRes.body, "RESPONSE BODY END")
 
-  if (check(policyRes, {"Status is not 201": (r) => r.status !== 201})) {
-    //console.log(`Test stopped at iteration ${exec.scenario.iterationInTest} due to an error: ${error}`);
-    exec.test.abort('Current max depth of nested policies: ' + exec.scenario.iterationInTest);
-    }
+  if (check(policyRes, {"Status is 201": (r) => r.status === 201})) {
+    successfulIterations.add(1);
   }
+}

@@ -219,3 +219,11 @@ export function createSimplePolicy(id) {
   id: dev${id}`;
 }
 
+export function create10kPolicies(id) {
+  let policies = '';
+  for (let i = 1; i <= 10000; i++) {
+    policies += `- !policy\n  id: dev${id}-${i}\n`;
+  }
+  return policies;
+}
+
