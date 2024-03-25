@@ -230,10 +230,10 @@ $ bin/dap --provision-follower
 $ ./tools/performance-tests/k6/bin/metrics --start
 
 # Optionally, load policies and 150k secrets (this might take around an hour)
-$ ./bin/load-benchmark-data --accounts_per_safe 500 --safes 15 --hosts 300 --users 150
+$ ./bin/load-benchmark-data --accounts_per_safe 200 --safes 15 --hosts 300 --users 150 --all-properties-synchronized
 
 # To integrate with statsD, set ENABLE_STATSD to true:
-$ ENABLE_STATSD=true ./bin/load-benchmark-data --accounts_per_safe 500 --safes 15 --hosts 300 --users 150
+$ ENABLE_STATSD=true ./bin/load-benchmark-data --accounts_per_safe 200 --safes 15 --hosts 300 --users 150 --all-properties-synchronized
 
 # Run load test without StatsD (default)
 $ TEST_FILE=tools/performance-tests/k6/scenarios/read-individually.js ./bin/load-test
