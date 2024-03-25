@@ -15,7 +15,7 @@ echo "Creating cluster..."
 export KIND_EXPERIMENTAL_DOCKER_NETWORK=dap_net
 kind create cluster --config kind-config.yaml --wait 30s
 
-API_SERVER_URL=$(kind get --name conjur-intro-k8s-follower kubeconfig | grep server | awk '{print $2}' | sed 's/127.0.0.1/host.docker.internal/')
+API_SERVER_URL=$(kind get --name conjur-intro-k8s-follower kubeconfig | grep server | awk '{print $2}' | sed 's/0.0.0.0/host.docker.internal/')
 KUBE_OPTS="--insecure-skip-tls-verify --server=$API_SERVER_URL --context kind-conjur-intro-k8s-follower"
 
 # we need to wait for the default service account to be created before creating any resources

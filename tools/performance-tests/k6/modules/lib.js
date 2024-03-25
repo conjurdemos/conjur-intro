@@ -9,7 +9,7 @@ import {uuidv4} from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
 
 export const requiredEnvVars = [
   "APPLIANCE_MASTER_URL",
-  "APPLIANCE_FOLLOWER_URL",
+  "APPLIANCE_READ_URL",
   "CONJUR_ADMIN_API_KEY",
   "CONJUR_ACCOUNT",
   "CONJUR_IDENTITY"
@@ -84,7 +84,7 @@ export function parseEnv() {
   return {
     apiKey: getEnvVar("CONJUR_ADMIN_API_KEY"),
     applianceMasterUrl: getEnvVar("APPLIANCE_MASTER_URL"),
-    applianceFollowerUrl: getEnvVar("APPLIANCE_FOLLOWER_URL"),
+    applianceReadUrl: getEnvVar("APPLIANCE_READ_URL"),
     conjurAccount: getEnvVar("CONJUR_ACCOUNT"),
     conjurIdentity: encodeURIComponent(getEnvVar("CONJUR_IDENTITY")),
     secretIdentity: getEnvVar("SECRET_IDENTITY"),
