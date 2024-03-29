@@ -230,16 +230,16 @@ $ bin/dap --provision-follower
 $ ./tools/performance-tests/k6/bin/metrics --start
 
 # Optionally, load policies and 150k secrets (this might take around an hour)
-$ ./bin/load-benchmark-data --accounts_per_safe 500 --safes 15 --hosts 300 --users 150
+$ ./bin/load-benchmark-data --accounts_per_safe 200 --safes 15 --hosts 300 --users 150 --all-properties-synchronized
 
 # To integrate with statsD, set ENABLE_STATSD to true:
-$ ENABLE_STATSD=true ./bin/load-benchmark-data --accounts_per_safe 500 --safes 15 --hosts 300 --users 150
+$ ENABLE_STATSD=true ./bin/load-benchmark-data --accounts_per_safe 200 --safes 15 --hosts 300 --users 150 --all-properties-synchronized
 
 # Run load test without StatsD (default)
-$ TEST_FILE=tools/performance-tests/k6/conjur-performance-test.js ./bin/load-test
+$ TEST_FILE=tools/performance-tests/k6/scenarios/read-individually.js ./bin/load-test
 
 # Or run load test with StatsD enabled
-$ ENABLE_STATSD=true TEST_FILE=tools/performance-tests/k6/conjur-performance-test.js ./bin/load-test
+$ ENABLE_STATSD=true TEST_FILE=tools/performance-tests/k6/scenarios/read-individually.js ./bin/load-test
 
 ```
 
@@ -250,6 +250,24 @@ The above test generates a report in the folder:
 Load is applied using k6. The k6 files are located at:
 
 `tools/performance-tests/k6`
+
+Scenarios for load testing are located at:
+
+`tools/performance-tests/k6/scenarios`
+
+Currently supported scenarios are: 
+
+- `tools/performance-tests/k6/scenarios/read-individually.js` - Read one secret at a time from Conjur by 12 VUs
+
+- `tools/performance-tests/k6/scenarios/read-batch-2-secrets.js` - Read two secrets at a time from Conjur by 12 VUs
+
+- `tools/performance-tests/k6/scenarios/read-batch-4-secrets.js` - Read four secrets at a time from Conjur by 12 VUs
+
+- `tools/performance-tests/k6/scenarios/create-policy.js` - Create unique policies in Conjur by 1 VU in 500 iterations.
+
+- `tools/performance-tests/k6/scenarios/write-secrets.js` - Write secrets to Conjur by 20 VUs. <br>
+  - Secrets are located at `tools/performance-tests/k6/data/test-variable-secrets.csv` <br>
+  - Number of VUs can be configured by setting K6_CUSTOM_VUS environment variable.
 
 ## Contributing
 

@@ -176,6 +176,8 @@ services:
     build:
       context: artifacts/k8s-follower-orchestrator
     privileged: true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./kubeconfig:/root/.kube/config
       - /var/run/docker.sock:/var/run/docker.sock
@@ -222,6 +224,8 @@ services:
     build:
       context: ./
       dockerfile: ./tools/performance-tests/k6/Dockerfile
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       dap_net:
         ipv4_address: 12.16.23.21

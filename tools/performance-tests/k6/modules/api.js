@@ -13,7 +13,7 @@ export function authenticate(client, data, exitOnFailure = false) {
 
   const headers = {'Accept-Encoding': 'base64'}
   const res = client.post(
-    `${applianceUrl}/authn/${conjurAccount}/${conjurIdentity}/authenticate`,
+    `${applianceUrl}/authn/${conjurAccount}/${encodeURIComponent(conjurIdentity)}/authenticate`,
     apiKey,
     {
       headers,
@@ -57,34 +57,15 @@ export function loadPolicy(client, data, policy_id, policy_body) {
   )
 }
 
-export function updatePolicy(client, data, policy_id, policy_body) {
-  const {
-    applianceMasterUrl,
-    conjurAccount,
-    token
-  } = data;
-  const headers = {'Authorization': `Token token="${token}"`}
-
-  return client.put(
-    `${applianceMasterUrl}/policies/${conjurAccount}/policy/${policy_id}`,
-    policy_body,
-    {
-      headers,
-      timeout: '1h',
-      tags: {endpoint: 'PostPoliciesURL'},
-    }
-  )
-}
-
 export function readSecret(client, data, identity) {
   const {
-    applianceFollowerUrl,
+    applianceReadUrl,
     conjurAccount,
     token
   } = data;
 
   const headers = {'Authorization': `Token token="${token}"`};
-  const url = `${applianceFollowerUrl}/secrets/${conjurAccount}/variable/${encodeURIComponent(identity)}`;
+  const url = `${applianceReadUrl}/secrets/${conjurAccount}/variable/${identity}`;
 
   return client.get(
     url,
@@ -117,12 +98,12 @@ export function writeSecret(client, data, resourceId, resourceBody) {
 
 export function get(client, data, path) {
   const {
-    applianceFollowerUrl,
+    applianceReadUrl,
     token
   } = data;
 
   const headers = {'Authorization': `Token token="${token}"`};
-  const url = `${applianceFollowerUrl}/${path}`;
+  const url = `${applianceReadUrl}/${path}`;
 
   return client.get(
     url,
