@@ -357,6 +357,7 @@ function _setup_k8s_follower {
       echo "-----kubectl failed: Printing logs from docker logs k8s-follower-control-plane container:-----"
       docker logs conjur-intro-k8s-follower-control-plane
       echo "-----kubectl failed: end logs-----"
+      echo "seconds: $SECONDS"
       sleep 1
       set -e
     fi
