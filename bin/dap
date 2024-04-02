@@ -340,14 +340,17 @@ function _setup_k8s_follower {
   TIMEOUT=300
   while true; do
     if _run_in_kind "kubectl \$KUBE_OPTS get nodes | grep -q \"Ready\"" &> /dev/null; then
+      set +e
       echo "The conjur-intro-k8s-follower cluster is created."
       echo "-----kubectl passed: Printing logs from k8s-follower-orchestrator container:-----"
       docker logs conjur-intro-k8s-follower-orchestrator-1
       echo "-----kubectl passed: Printing logs from docker logs k8s-follower-control-plane container:-----"
       docker logs conjur-intro-k8s-follower-control-plane
       echo "-----kubectl passed: end logs-----"
+      set -e
       break
     else
+      set +e
       echo "Waiting for the conjur-intro-k8s-follower cluster to be created..."
       echo "-----kubectl failed: Printing logs from k8s-follower-orchestrator container:-----"
       docker logs conjur-intro-k8s-follower-orchestrator-1
@@ -355,6 +358,7 @@ function _setup_k8s_follower {
       docker logs conjur-intro-k8s-follower-control-plane
       echo "-----kubectl failed: end logs-----"
       sleep 1
+      set -e
     fi
     if [ $SECONDS -ge $TIMEOUT ]; then
         echo "Timeout after waiting for 5 minutes. The conjur-intro-k8s-follower cluster is not created."
