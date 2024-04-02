@@ -341,9 +341,17 @@ function _setup_k8s_follower {
   while true; do
     if _run_in_kind "kubectl \$KUBE_OPTS get nodes | grep -q \"Ready\"" &> /dev/null; then
       echo "The conjur-intro-k8s-follower cluster is created."
+      echo "kubectl passed: Printing logs from k8s-follower-orchestrator container:"
+      docker logs conjur-intro-k8s-follower-orchestrator-1
+      echo "kubectl passed: Printing logs from docker logs k8s-follower-control-plane container:"
+      docker logs conjur-intro-k8s-follower-control-plane
       break
     else
       echo "Waiting for the conjur-intro-k8s-follower cluster to be created..."
+      echo "kubectl failed: Printing logs from k8s-follower-orchestrator container:"
+      docker logs conjur-intro-k8s-follower-orchestrator-1
+      echo "kubectl failed: Printing logs from docker logs k8s-follower-control-plane container:"
+      docker logs conjur-intro-k8s-follower-control-plane
       sleep 1
     fi
     if [ $SECONDS -ge $TIMEOUT ]; then
