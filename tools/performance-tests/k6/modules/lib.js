@@ -195,3 +195,39 @@ export function createUsersPolicy(identifier) {
   role: !group AutomationVault/lob-1-${identifier}/safe-1-${identifier}/delegation/consumers
   members: !group AutomationVault-users/lob-1-${identifier}/safe-1-${identifier}/users`;
 }
+
+export function createNestedPolicy(level, maxLevel) {
+  if (level > maxLevel) {
+    return '';
+  }
+
+  const randomUUID = () => {
+    let result = '';
+    while(result.length < 10) {
+      let randomChar = String.fromCharCode(Math.floor(Math.random() * 26) + 97);
+      result += randomChar;
+    }
+    return result;
+  };
+
+  let policy = `- !policy
+  id: ${randomUUID()}`;
+
+  let nestedPolicy = createNestedPolicy(level + 1, maxLevel);
+  if (nestedPolicy) {
+    policy += `
+  body:
+${nestedPolicy.split('\n').map(line => '    ' + line).join('\n')}`;
+  }
+
+  return policy;
+}
+
+export function create1kPolicies(id) {
+  let policies = '';
+  for (let i = 1; i <= 1000; i++) {
+    policies += `- !policy\n  id: dev${id}-${i}\n`;
+  }
+  return policies;
+}
+
