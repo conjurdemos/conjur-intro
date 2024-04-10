@@ -269,6 +269,11 @@ Currently supported scenarios are:
   - Secrets are located at `tools/performance-tests/k6/data/test-variable-secrets.csv` <br>
   - Number of VUs can be configured by setting K6_CUSTOM_VUS environment variable.
 
+- `tools/performance-tests/k6/scenarios/policy-number-test.js` - Load simple policies into Conjur by 5 VUs. <br>
+  - Duration of the test can be configured by setting K6_CUSTOM_DURATION environment variable.
+
+- `tools/performance-tests/k6/scenarios/policy-depth-test.js` - Keep loading nested policies until max depth is reached
+
 ## Contributing
 
 We welcome contributions of all kinds to this repository. For instructions on

@@ -57,6 +57,25 @@ export function loadPolicy(client, data, policy_id, policy_body) {
   )
 }
 
+export function replacePolicy(client, data, policy_id, policy_body) {
+  const {
+    applianceMasterUrl,
+    conjurAccount,
+    token
+  } = data;
+  const headers = {'Authorization': `Token token="${token}"`}
+
+  return client.put(
+    `${applianceMasterUrl}/policies/${conjurAccount}/policy/${policy_id}`,
+    policy_body,
+    {
+      headers,
+      timeout: '1h',
+      tags: {endpoint: 'PutPoliciesURL'},
+    }
+  )
+}
+
 export function readSecret(client, data, identity) {
   const {
     applianceReadUrl,
