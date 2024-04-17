@@ -5,6 +5,7 @@ set -eu
 # An upgrade test automation tool.
 #
 # Synopsis: bin/upgrade-test <initial-version> [intermediate-versions...] <final-version>
+DRY_RUN=false
 
 main() {
   # Ensure at least two versions (an initial and final version) have been provided
@@ -136,6 +137,11 @@ upgrade_cluster () {
 rollout_cluster() {
   local version=$1
 
+  # Trigger a restart of services to ensure that they come back up!
+  # See: CNJR-4751
+  _run conjur-master-1.mycompany.local \
+    "evoke variable set CONJUR_AUTHENTICATORS authn-jwt/fake-authenticator,authn"
+
   echo "Provisioning $version Standbys..."
   bin/dap --provision-standbys --version "$version"
 
@@ -152,6 +158,20 @@ header() {
   echo "---------------------------------------------"
   echo "$message"
   echo "---------------------------------------------"
+}
+
+function _run {
+  local _all_args=("$@")
+  local _node_name=$1
+  local _args=("${_all_args[@]:1}")
+
+  echo "Running Command (on $_node_name): docker exec cyberark-dap $_args"
+
+  if [[ $DRY_RUN = false ]]; then
+    docker compose exec -T $_node_name bash -c "
+      $_args
+    "
+  fi
 }
 
 main "$@"
