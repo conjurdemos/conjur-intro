@@ -274,6 +274,10 @@ Currently supported scenarios are:
 
 - `tools/performance-tests/k6/scenarios/policy-depth-test.js` - Keep loading nested policies until max depth is reached
 
+- `tools/performance-tests/k6/scenarios/list-and-batch-read.js` - List all secrets in Conjur and then read a portion of them.
+  - The purpose of this is to imitate how External Secrets Operator works when using the Find by Name or Find by Tag features.
+    See <https://github.com/external-secrets/external-secrets/pull/3364.
+
 ## Contributing
 
 We welcome contributions of all kinds to this repository. For instructions on
