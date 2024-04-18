@@ -68,9 +68,10 @@ export function authn() {
 
 export default function () {
   const apiKey = apiKeys.at(exec.vu.idInTest - 1);
+  const uuid = env.uuid
 
   env.applianceUrl = env.applianceReadUrl
-  env.conjurIdentity = `host/AutomationVault-hosts/${apiKey.lob_name}/${apiKey.safe_name}/host-1`;
+  env.conjurIdentity = `host/AutomationVault-hosts/${uuid}-${apiKey.lob_name}/${apiKey.safe_name}/host-1`;
   env.apiKey = apiKey.api_key;
 
   authn()
@@ -78,7 +79,7 @@ export default function () {
   // This magic number is tightly coupled with number of accounts in a default backup used in load tests.
   // It should be parametrized when dealing with running multiple load tests with different data
   const accountNumber = Math.ceil(Math.random() * 200) || 1;
-  const identity = encodeURIComponent(`AutomationVault/${apiKey.lob_name}/${apiKey.safe_name}/account-${accountNumber}`);
+  const identity = encodeURIComponent(`AutomationVault/${uuid}-${apiKey.lob_name}/${apiKey.safe_name}/account-${accountNumber}`);
 
   const path = `/secrets?variable_ids=demo:variable:${identity}%2Fvariable-1,demo:variable:${identity}%2Fvariable-2`
   const res = conjurApi.get(http, env, path);
