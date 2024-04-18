@@ -4,17 +4,17 @@
     {%- for lob in lobs %}
     {%- set parent_index = loop.index0 %}
     - !policy
-      id: {{lob}}
-      owner: !group /AutomationVault/{{lob}}-admins
+      id: {{uuid}}-{{lob}}
+      owner: !group /AutomationVault/{{uuid}}-{{lob}}-admins
       body:
         {%- for safe in safes %}
         - !policy
           id: {{safe}}
-          owner: !group /AutomationVault/{{lob}}/{{safe}}-admins
+          owner: !group /AutomationVault/{{uuid}}-{{lob}}/{{safe}}-admins
           {%- if (parent_index * safes|length + loop.index <= leftover_users|length) or users[0] %}
           body:
           - !group users
-          - &{{lob}}-{{safe}}-users
+          - &{{uuid}}-{{lob}}-{{safe}}-users
             {%- for user in users %}
             - !user {{user}}
             {%- endfor %}
@@ -23,7 +23,7 @@
             {%- endif %}
           - !grant
             role: !group users
-            members: *{{lob}}-{{safe}}-users
+            members: *{{uuid}}-{{lob}}-{{safe}}-users
           {%- endif %}
         {%- endfor %}
     {%- endfor %}
@@ -34,8 +34,8 @@
   {%- for safe in safes %}
   {%- if (parent_index * safes|length + loop.index <= leftover_users|length) or users[0] %}
 - !grant
-  role: !group AutomationVault/{{lob}}/{{safe}}/delegation/consumers
-  members: !group AutomationVault-users/{{lob}}/{{safe}}/users
+  role: !group AutomationVault/{{uuid}}-{{lob}}/{{safe}}/delegation/consumers
+  members: !group AutomationVault-users/{{uuid}}-{{lob}}/{{safe}}/users
   {%- endif %}
   {%- endfor %}
 {%- endfor %}
