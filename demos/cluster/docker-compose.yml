@@ -1,4 +1,3 @@
-version: "3"
 services:
   conjur-master-1.mycompany.local:
     image: registry.tld/conjur-appliance:${VERSION}
