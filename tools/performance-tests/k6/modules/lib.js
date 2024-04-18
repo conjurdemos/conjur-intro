@@ -84,6 +84,7 @@ export function parseEnv() {
   return {
     apiKey: getEnvVar("CONJUR_ADMIN_API_KEY"),
     applianceMasterUrl: getEnvVar("APPLIANCE_MASTER_URL"),
+    uuid: getEnvVar("UUID"),
     applianceReadUrl: getEnvVar("APPLIANCE_READ_URL"),
     conjurAccount: getEnvVar("CONJUR_ACCOUNT"),
     conjurIdentity: encodeURIComponent(getEnvVar("CONJUR_IDENTITY")),
@@ -230,7 +231,6 @@ export function create1kPolicies(id) {
   }
   return policies;
 }
-
 export function checkNodeType(url) {
   if (url.includes('conjur-master')) {
     return "DAP Leader";

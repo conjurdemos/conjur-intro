@@ -23,6 +23,7 @@ k6() {
   cmd="$@"
 
   docker compose -f "$compose_file" run --rm \
+    -e UUID \
     -e APPLIANCE_MASTER_URL \
     -e APPLIANCE_READ_URL \
     -e CONJUR_ADMIN_API_KEY \
