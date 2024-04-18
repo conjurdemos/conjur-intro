@@ -132,3 +132,21 @@ export function get(client, data, path) {
     }
   )
 }
+
+export function list(client, data, limit, offset) {
+  const {
+    applianceReadUrl,
+    token
+  } = data;
+
+  const headers = {'Authorization': `Token token="${token}"`};
+  const url = `${applianceReadUrl}/resources?kind=variable&limit=${limit}&offset=${offset}`;
+
+  return client.get(
+    url,
+    {
+      headers,
+      tags: {endpoint: 'ListResourcesURL'}
+    }
+  )
+}
