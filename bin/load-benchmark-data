@@ -11,8 +11,8 @@ export K6_STATSD_ADDR=${K6_STATSD_ADDR:-"datadog:$K6_STATSD_PORT"}
 export CONJUR_ADMIN_API_KEY=$(./bin/cli conjur user rotate-api-key | tail -n 1 | tr -d '[:space:]')
 export APPLIANCE_MASTER_URL=${APPLIANCE_MASTER_URL:-"https://conjur-master.mycompany.local:443"}
 export APPLIANCE_READ_URL=${APPLIANCE_READ_URL:-"https://conjur-follower.mycompany.local:443"}
-export CONJUR_ACCOUNT="demo"
-export CONJUR_IDENTITY="admin"
+export CONJUR_ACCOUNT=${CONJUR_ACCOUNT:-"demo"}
+export CONJUR_IDENTITY=${CONJUR_IDENTITY:-"admin"}
 export K6_FLAGS="--insecure-skip-tls-verify"
 
 POLICY_SET="secrets"
@@ -26,6 +26,7 @@ ACCOUNTS_PER_SAFE_COUNT=10
 SAFES_COUNT=50
 HOSTS_COUNT=100
 USERS_COUNT=200
+UUID=""
 ALL_PROPERTIES_SYNCHRONIZED="false"
 
 print_help() {
@@ -162,6 +163,10 @@ main() {
       USERS_COUNT="$2"
       shift 2
       ;;
+    --uuid)
+      UUID="$2"
+      shift 2
+      ;;
     --) shift;
       break
       ;;
@@ -187,6 +192,7 @@ main() {
 
   # Generate policy files
   docker compose run --build --rm policy-generator python3 policy-generator.py \
+    --uuid "$UUID" \
     --account_count "$ACCOUNTS_PER_SAFE_COUNT" \
     --secrets_per_account "$SECRETS_PER_ACCOUNT" \
     --lob_count "$LOB_COUNT" \

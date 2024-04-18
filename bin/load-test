@@ -4,6 +4,7 @@ set -eo pipefail
 source "$(git rev-parse --show-toplevel)/tools/performance-tests/k6/bin/functions"
 
 ENABLE_STATSD=${ENABLE_STATSD:-"false"}
+UUID=""
 # Default for statsd
 export K6_STATSD_PORT=${K6_STATSD_PORT:-"8125"}
 export K6_STATSD_ADDR=${K6_STATSD_ADDR:-"datadog:$K6_STATSD_PORT"}
@@ -43,8 +44,10 @@ print_settings() {
 }
 
 test_k6() {
-  # Set CONJUR_ADMIN_API_KEY
-  export CONJUR_ADMIN_API_KEY=$(./bin/cli conjur user rotate-api-key | tail -n 1 | tr -d '[:space:]')
+  # Set CONJUR_ADMIN_API_KEY if not present
+  if [[ -z "${CONJUR_ADMIN_API_KEY}" ]]; then
+      export CONJUR_ADMIN_API_KEY=$(./bin/cli conjur user rotate-api-key | tail -n 1 | tr -d '[:space:]')
+  fi
 
   check_env "APPLIANCE_MASTER_URL"
   check_env "APPLIANCE_READ_URL"
@@ -140,7 +143,6 @@ move_reports() {
 
 populate_apikeys_file() {
   local file_name="$(repo_root)/tools/performance-tests/k6/data/api-keys.csv"
-
   echo "lob_name,safe_name,api_key" > "$file_name"
 
   local lob_number=10
@@ -149,7 +151,7 @@ populate_apikeys_file() {
 
   for ((i=1; i<=lob_number; i++)); do
     for ((j=1; j<=safe_number; j++)); do
-      hosts+="AutomationVault-hosts/lob-$i/safe-$j/host-1 "
+      hosts+="AutomationVault-hosts/$UUID-lob-$i/safe-$j/host-1 "
     done
   done
 
@@ -170,7 +172,8 @@ populate_apikeys_file() {
 main() {
   while true ; do
     case "$1" in
-      -h | --help ) print_help ;;
+      -h | --help ) print_help exit 0 ;;
+      --uuid) export UUID="$2" shift 2 ;;
        * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
     esac
   done
