@@ -1,4 +1,3 @@
-version: "3"
 services:
   pet-store:
     image: jvanderhoof/test-app:0.0.1
