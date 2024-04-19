@@ -4,7 +4,10 @@ set -eo pipefail
 source "$(git rev-parse --show-toplevel)/tools/performance-tests/k6/bin/functions"
 
 ENABLE_STATSD=${ENABLE_STATSD:-"false"}
+AWS="false"
 UUID=""
+ADMIN_USER=${ADMIN_USER:-'admin'}
+PASSWORD=${PASSWORD:-'MySecretP@ss1'}
 # Default for statsd
 export K6_STATSD_PORT=${K6_STATSD_PORT:-"8125"}
 export K6_STATSD_ADDR=${K6_STATSD_ADDR:-"datadog:$K6_STATSD_PORT"}
@@ -46,6 +49,7 @@ print_settings() {
 test_k6() {
   # Set CONJUR_ADMIN_API_KEY if not present
   if [[ -z "${CONJUR_ADMIN_API_KEY}" ]]; then
+      echo "Generating CONJUR_ADMIN_API_KEY..."
       export CONJUR_ADMIN_API_KEY=$(./bin/cli conjur user rotate-api-key | tail -n 1 | tr -d '[:space:]')
   fi
 
@@ -155,12 +159,32 @@ populate_apikeys_file() {
     done
   done
 
-  read -r -a responses <<< "$(./bin/api --rotate-multiple-host-api-keys "${hosts[@]}" | tail -n 1)"
+  if [ "$AWS" = "true" ]; then
+    echo "Chose AWS flow for API key rotation"
+    token=$(authenticate_user "xa" "$ADMIN_USER" "$PASSWORD" "$APPLIANCE_MASTER_URL")
+    echo "Retrieved token for authentication"
+    echo "Token: $token"
+    responses=""
+    IFS=' ' read -r -a hosts_array <<< "$hosts"
+    for host in "${hosts_array[@]}"; do
+      response=$(curl --header "Authorization: Token token=\"$token\"" \
+                      --insecure \
+                      --request PUT \
+                      --silent \
+                      "$APPLIANCE_MASTER_URL/authn/xa/api_key?role=host:$host")
+      responses="$responses $response"
+    done
+    echo "Completed all requests"
+    read -r -a api_keys <<< "$responses"
+  else
+    read -r -a api_keys <<< "$(./bin/api --rotate-multiple-host-api-keys "${hosts[@]}" | tail -n 1)"
+  fi
+
   local idx=0;
 
   for ((i=1; i<=lob_number; i++)); do
     for ((j=1; j<=safe_number; j++)); do
-      echo "lob-$i,safe-$j,${responses[$idx]}" >> "$file_name"
+      echo "lob-$i,safe-$j,${api_keys[$idx]}" >> "$file_name"
       idx=$((idx+1))
     done
   done
@@ -172,9 +196,10 @@ populate_apikeys_file() {
 main() {
   while true ; do
     case "$1" in
-      -h | --help ) print_help exit 0 ;;
-      --uuid) export UUID="$2" shift 2 ;;
-       * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+      --uuid ) UUID="$2" ; shift 2 ;;
+      --aws ) AWS="true" ; shift ;;
+      -h | --help ) print_help ; shift ;;
+      * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
     esac
   done
   populate_apikeys_file

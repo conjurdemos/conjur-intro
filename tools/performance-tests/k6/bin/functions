@@ -42,3 +42,34 @@ date_timestamp() {
     echo "$(date -u "+%Y-%m-%d %T")+00:00"
   fi
 }
+
+retrieve_authentication_token() {
+  local account="$1"
+  local user="$2"
+  # Allow hosts to be used instead of just users
+  user=$(echo "$user" | sed -e "s/\//%2F/g")
+  local api_key="$3"
+  local url="${4:-$URL}"
+  token="$(curl \
+      --silent \
+      --insecure \
+      --header "Accept-Encoding: base64" \
+      --request POST \
+      --data "$api_key" \
+      "$url/authn/$account/$user/authenticate")"
+  echo "$token"
+}
+
+authenticate_user() {
+  local account="$1"
+  local user="$2"
+  local password="$3"
+  local url="${4:-$URL}"
+  api_key="$(curl \
+      --silent \
+      --insecure \
+      --user "$user:$password" \
+      "$url/authn/$account/login")"
+  token=$(retrieve_authentication_token "$account" "$user" "$api_key" "$url")
+  echo "$token"
+}

@@ -8,7 +8,6 @@ ENABLE_STATSD=${ENABLE_STATSD:-"false"}
 export K6_STATSD_PORT=${K6_STATSD_PORT:-"8125"}
 export K6_STATSD_ADDR=${K6_STATSD_ADDR:-"datadog:$K6_STATSD_PORT"}
 
-export CONJUR_ADMIN_API_KEY=$(./bin/cli conjur user rotate-api-key | tail -n 1 | tr -d '[:space:]')
 export APPLIANCE_MASTER_URL=${APPLIANCE_MASTER_URL:-"https://conjur-master.mycompany.local:443"}
 export APPLIANCE_READ_URL=${APPLIANCE_READ_URL:-"https://conjur-follower.mycompany.local:443"}
 export CONJUR_ACCOUNT=${CONJUR_ACCOUNT:-"demo"}
@@ -188,6 +187,12 @@ main() {
   if [ "$ENABLE_STATSD" = "true" ]; then
     echo "Configuring k6 to report load testing data points to StatsD"
     K6_FLAGS+=" -o output-statsd"
+  fi
+
+  # Set CONJUR_ADMIN_API_KEY if not present
+  if [[ -z "${CONJUR_ADMIN_API_KEY}" ]]; then
+      echo "Generating CONJUR_ADMIN_API_KEY..."
+      export CONJUR_ADMIN_API_KEY=$(./bin/cli conjur user rotate-api-key | tail -n 1 | tr -d '[:space:]')
   fi
 
   # Generate policy files
