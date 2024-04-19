@@ -78,7 +78,7 @@ export default function () {
 
   // This magic number is tightly coupled with number of accounts in a default backup used in load tests.
   // It should be parametrized when dealing with running multiple load tests with different data
-  const accountNumber = Math.ceil(Math.random() * 200) || 1;
+  const accountNumber = Math.ceil(Math.random() * 150) || 1;
   const identity = encodeURIComponent(`AutomationVault/${apiKey.lob_name}/${apiKey.safe_name}/account-${accountNumber}`);
 
   const path = `/secrets?variable_ids=demo:variable:${identity}%2Fvariable-1,demo:variable:${identity}%2Fvariable-2`

@@ -19,8 +19,8 @@ const requiredEnvVars = [
 // These are custom k6 metrics that will be reported in the k6 summary.
 const authenticateTrend = new Trend('http_req_duration_post_authn', true);
 const authenticateFailRate = new Rate('http_req_failed_post_authn');
-const readFourSecretsBatchTrend = new Trend('http_req_duration_get_four_secrets_batch', true);
-const readFourSecretsBatchFailRate = new Rate('http_req_failed_get_four_secrets_batch');
+const readtwentyfiveSecretsBatchTrend = new Trend('http_req_duration_get_twentyfive_secrets_batch', true);
+const readtwentyfiveSecretsBatchFailRate = new Rate('http_req_failed_get_twentyfive_secrets_batch');
 
 lib.checkRequiredEnvironmentVariables(requiredEnvVars);
 const gracefulStop = lib.getEnvVar("K6_CUSTOM_GRACEFUL_STOP");
@@ -79,13 +79,38 @@ export default function () {
   // This magic number is tightly coupled with number of accounts in a default backup used in load tests.
   // It should be parametrized when dealing with running multiple load tests with different data
   const accountNumber = Math.ceil(Math.random() * 150) || 1;
-  const identity = encodeURIComponent(`AutomationVault/${apiKey.lob_name}/${apiKey.safe_name}/account-${accountNumber}`);
+  const identity = encodeURIComponent(`AutomationVault/${apiKey.lob_name}/${apiKey.safe_name}/account-`);
 
-  const path = `/secrets?variable_ids=demo:variable:${identity}%2Fvariable-1,demo:variable:${identity}%2Fvariable-2,demo:variable:${identity}%2Fvariable-3,demo:variable:${identity}%2Fvariable-4`
+  const path = `/secrets?variable_ids=demo:variable:${identity}${accountNumber}%2Fvariable-1,` +
+    `demo:variable:${identity}${accountNumber}%2Fvariable-2,` +
+    `demo:variable:${identity}${accountNumber}%2Fvariable-3,` +
+    `demo:variable:${identity}${accountNumber}%2Fvariable-4` +
+    `demo:variable:${identity}${accountNumber+1}%2Fvariable-1` +
+    `demo:variable:${identity}${accountNumber+1}%2Fvariable-2` +
+    `demo:variable:${identity}${accountNumber+1}%2Fvariable-3` +
+    `demo:variable:${identity}${accountNumber+1}%2Fvariable-4` +
+    `demo:variable:${identity}${accountNumber+2}%2Fvariable-1` +
+    `demo:variable:${identity}${accountNumber+2}%2Fvariable-2` +
+    `demo:variable:${identity}${accountNumber+2}%2Fvariable-3` +
+    `demo:variable:${identity}${accountNumber+2}%2Fvariable-4` +
+    `demo:variable:${identity}${accountNumber+3}%2Fvariable-1` +
+    `demo:variable:${identity}${accountNumber+3}%2Fvariable-2` +
+    `demo:variable:${identity}${accountNumber+3}%2Fvariable-3` +
+    `demo:variable:${identity}${accountNumber+3}%2Fvariable-4` +
+    `demo:variable:${identity}${accountNumber+4}%2Fvariable-1` +
+    `demo:variable:${identity}${accountNumber+4}%2Fvariable-2` +
+    `demo:variable:${identity}${accountNumber+4}%2Fvariable-3` +
+    `demo:variable:${identity}${accountNumber+4}%2Fvariable-4` +
+    `demo:variable:${identity}${accountNumber+5}%2Fvariable-1` +
+    `demo:variable:${identity}${accountNumber+5}%2Fvariable-2` +
+    `demo:variable:${identity}${accountNumber+5}%2Fvariable-3` +
+    `demo:variable:${identity}${accountNumber+5}%2Fvariable-4` +
+    `demo:variable:${identity}${accountNumber+6}%2Fvariable-4`;
+
   const res = conjurApi.get(http, env, path);
 
-  readFourSecretsBatchTrend.add(res.timings.duration);
-  readFourSecretsBatchFailRate.add(res.status !== 200);
+  readtwentyfiveSecretsBatchTrend.add(res.timings.duration);
+  readtwentyfiveSecretsBatchFailRate.add(res.status !== 200);
 
   check(res, {
     "status is 200": (r) => r.status === 200,
