@@ -32,31 +32,33 @@ EOF
 # accept an auth token as an input. This greatly increases performance when dealing
 # with multiple API calls.
 retrieve_authentication_token() {
-  local user="$1"
+  local account="$1"
+  local user="$2"
   # Allow hosts to be used instead of just users
   user=$(echo "$user" | sed -e "s/\//%2F/g")
-  local api_key="$2"
-  local url="${3:-$URL}"
+  local api_key="$3"
+  local url="${4:-$URL}"
   token="$(curl \
       --silent \
       --insecure \
       --header "Accept-Encoding: base64" \
       --request POST \
       --data "$api_key" \
-      "$url/authn/demo/$user/authenticate")"
+      "$url/authn/$account/$user/authenticate")"
   echo "$token"
 }
 
 authenticate_user() {
-  local user="$1"
-  local password="$2"
-  local url="${3:-$URL}"
+  local account="$1"
+  local user="$2"
+  local password="$3"
+  local url="${4:-$URL}"
   api_key="$(curl \
       --silent \
       --insecure \
       --user "$user:$password" \
-      "$url/authn/demo/login")"
-  token=$(retrieve_authentication_token "$user" "$api_key" "$url")
+      "$url/authn/$account/login")"
+  token=$(retrieve_authentication_token "$account" "$user" "$api_key" "$url")
   echo "$token"
 }
 
@@ -78,7 +80,7 @@ load_policy() {
   local policy="$2"
   local method="${3:-POST}"
   local
-  token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
+  token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$master_url")
 
   apply_policy "$namespace" "$policy" "$token" "$method"
 }
@@ -141,13 +143,13 @@ fetch_secrets() {
 # the Conjur API
 load_default_policy() {
   local token
-  token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
+  token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$master_url")
   apply_default_policy "$token"
 }
 
 delete_policy() {
   local token
-  token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
+  token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$master_url")
   apply_policy 'delete_branch/first-level' 'policy/delete_policy/delete.yml' "$token" 'PATCH'
 }
 
@@ -155,33 +157,33 @@ set_secret() {
   local variable_path="$1"
   local variable_value="$2"
   local token
-  token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
+  token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$master_url")
   set_variable "$variable_path" "$variable_value" "$token"
 }
 
 load_default_values() {
   local token
-  token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
+  token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$master_url")
   apply_default_values "$token"
 }
 
 retrieve_variables() {
   local token
-  token=$(authenticate_user "$USER" "$PASSWORD" "$URL")
+  token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$URL")
   secrets="demo:variable:staging/my-app-1/postgres-database/url,demo:variable:staging/my-app-1/postgres-database/port,demo:variable:staging/my-app-1/postgres-database/username,demo:variable:staging/my-app-1/postgres-database/password"
   fetch_secrets $secrets "$token" | jq .
 }
 
 load_policy_and_set_variables() {
   local token
-  token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
+  token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$master_url")
   apply_default_policy "$token"
   apply_default_values "$token"
 }
 
 view_roles() {
   local token
-  token=$(authenticate_user "$USER" "$PASSWORD" "$URL")
+  token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$URL")
   curl --header "Authorization: Token token=\"$token\"" \
         --write-out "\n" \
         --insecure \
@@ -191,7 +193,7 @@ view_roles() {
 
 view_policy_members() {
   local token
-  token=$(authenticate_user "$USER" "$PASSWORD" "$URL")
+  token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$URL")
   curl --header "Authorization: Token token=\"$token\"" \
         --write-out "\n" \
         --insecure \
@@ -221,16 +223,16 @@ load_large_policy_and_secrets() {
   local iterations
   # Each iteration sets 1k secret values
   iterations=150
-  auth_token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
+  auth_token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$master_url")
   apply_policy 'root' 'policy/large-policy/root.yml' "$auth_token"
   for i in $(seq 1 $iterations)
   do
     apply_policy "staging-$i" 'policy/large-policy/variables.yml' "$auth_token"
     # Periodically refresh auth token
     if [ $((i%10)) = 0 ]; then
-      auth_token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
+      auth_token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$master_url")
     fi
-    auth_token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
+    auth_token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$master_url")
     set_thousand_variables "$i" "super-secret-value!!!" "$auth_token"
     echo "loaded $i of $iterations"
   done
@@ -238,7 +240,7 @@ load_large_policy_and_secrets() {
 
 enable_seed_service() {
   local token
-  token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
+  token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$master_url")
   apply_policy 'root' 'policy/seed-service/default.yml' "$token"
   apply_policy 'conjur' 'policy/seed-service/seed.yml' "$token"
 }
@@ -246,7 +248,7 @@ enable_seed_service() {
 rotate_api_key() {
   local user="$1"
   local token
-  token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
+  token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$master_url")
   curl --header "Authorization: Token token=\"$token\"" \
         --write-out "\n" \
         --insecure \
@@ -256,7 +258,7 @@ rotate_api_key() {
 
 rotate_multiple_host_api_keys() {
   local token
-  token=$(authenticate_user "$USER" "$PASSWORD" "$master_url")
+  token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$master_url")
   local responses=""
   for host in "$@"; do
     response=$(curl --header "Authorization: Token token=\"$token\"" \
@@ -282,7 +284,7 @@ while true ; do
   case "$1" in
     -u | --user ) shift ; USER=$1 ; shift ;;
     -p | --password ) shift ; PASSWORD=$1 ; shift ;;
-    --authenticate-user ) shift ; cmd="authenticate_user $USER $PASSWORD" ;;
+    --authenticate-user ) shift ; cmd="authenticate_user demo $USER $PASSWORD" ;;
     -h | --help ) _print_help ;;
     --patch-policy ) shift ; cmd="load_policy $1 $2 PATCH" ; shift ; shift ;;
     --load-policy ) shift ; cmd="load_policy $1 $2" ; shift ; shift ;;
@@ -303,4 +305,3 @@ while true ; do
 done
 
 eval $cmd
-
