@@ -13,7 +13,7 @@ export function authenticate(client, data, exitOnFailure = false) {
 
   const headers = {'Accept-Encoding': 'base64'}
   const res = client.post(
-    `${applianceUrl}/authn/${conjurAccount}/${encodeURIComponent(conjurIdentity)}/authenticate`,
+    `${applianceUrl}/authn/${conjurAccount}/${conjurIdentity}/authenticate`,
     apiKey,
     {
       headers,
@@ -84,7 +84,7 @@ export function readSecret(client, data, identity) {
   } = data;
 
   const headers = {'Authorization': `Token token="${token}"`};
-  const url = `${applianceReadUrl}/secrets/${conjurAccount}/variable/${identity}`;
+  const url = `${applianceReadUrl}/secrets/${conjurAccount}/variable/${encodeURIComponent(identity)}`;
 
   return client.get(
     url,

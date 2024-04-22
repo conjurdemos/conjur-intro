@@ -1,6 +1,5 @@
 import http from "k6/http";
 import {check} from "k6";
-import exec from 'k6/execution';
 import {Trend, Rate} from 'k6/metrics';
 import * as conjurApi from "../modules/api.js";
 import * as lib from "../modules/lib.js";
@@ -27,19 +26,48 @@ const gracefulStop = lib.getEnvVar("K6_CUSTOM_GRACEFUL_STOP");
 
 const env = lib.parseEnv();
 
-const apiKeys = new SharedArray('ApiKeys', function () {
-  return papaparse.parse(open("../data/api-keys.csv"), {header: true}).data;
+const csvData = new SharedArray('Secrets', function () {
+  // Load CSV file and parse it using Papa Parse
+  return papaparse.parse(open("../data/secrets.csv"), {header: true}).data;
 });
+
+const usersPolicy = open("../data/policy/users.yml");
+const policy = open("../data/policy/policy.yml");
+const myAppStagingPolicy = open("../data/policy/myapp_staging.yml");
+const myAppPolicy = open("../data/policy/myapp.yml");
+const applicationGrantsPolicy = open("../data/policy/application_grants.yml");
+const hostsPolicy = open("../data/policy/hosts.yml");
 
 // Define test options
 // https://k6.io/docs/using-k6/k6-options/reference/
 export const options = {
   scenarios: {
-    batch_2_secrets: {
-      executor: 'shared-iterations',
+    batch_2_secrets_1: {
+      executor: 'per-vu-iterations',
       maxDuration: "3h",
-      vus: 12,
-      iterations: 64500,
+      vus: 5,
+      iterations: 6200, // 5 * 20 * 62 (from previous jmeter tests)
+      gracefulStop
+    },
+    batch_2_secrets_2: {
+      executor: 'per-vu-iterations',
+      maxDuration: "3h",
+      vus: 5,
+      iterations: 6200, // 5 * 20 * 62 (from previous jmeter tests)
+      gracefulStop
+    },
+    batch_2_secrets_3: {
+      executor: 'per-vu-iterations',
+      maxDuration: "3h",
+      vus: 1,
+      iterations: 1240, // 20 * 62 (from previous jmeter tests)
+      gracefulStop
+    },
+    batch_2_secrets_4: {
+      executor: 'per-vu-iterations',
+      maxDuration: "3h",
+      vus: 1,
+      iterations: 1240, // 20 * 62 (from previous jmeter tests)
       gracefulStop
     },
   }, thresholds: {
@@ -49,7 +77,71 @@ export const options = {
   }
 };
 
+function loadSecrets() {
+  const {
+    applianceMasterUrl,
+    conjurAccount
+  } = env;
+  let reqs = [];
+  let slice = [...csvData];
+  while (slice.length > 0) {
+    if (slice.length) {
+      const item = slice.pop();
+      // The value to write
+      const secretIdentity = item.resource_id.replace(`${conjurAccount}:variable:`, '');
+      const body = item.resource_body
+
+      const headers = {'Authorization': `Token token="${env.token}"`}
+      const r = {
+        method: 'POST',
+        url: `${applianceMasterUrl}/secrets/${conjurAccount}/variable/${encodeURIComponent(secretIdentity)}`,
+        body,
+        params: {
+          headers: headers
+        },
+      }
+      reqs.push(r);
+    } else {
+      break;
+    }
+
+    const responses = http.batch(reqs);
+
+    for (let i = 0; i < responses.length; i++) {
+      check(responses[i], {
+        "status is 201": (r) => r.status === 200 || r.status === 201,
+      });
+    }
+
+    // dump the reqs for the next iteration
+    reqs = [];
+  }
+}
+
+function loadPolicy(policyContent, policyId) {
+  // create policy
+  const lobsPolicyRes = conjurApi.loadPolicy(
+    http,
+    env,
+    policyId,
+    policyContent
+  );
+
+  check(lobsPolicyRes, {
+    "status is 201": (r) => r.status === 201,
+  });
+}
+
 export function setup() {
+  env.applianceUrl = env.applianceMasterUrl
+  authn()
+  loadPolicy(usersPolicy, "root")
+  loadPolicy(policy, "root")
+  loadPolicy(myAppStagingPolicy, "staging")
+  loadPolicy(myAppPolicy, "production")
+  loadPolicy(applicationGrantsPolicy, "root")
+  loadPolicy(hostsPolicy, "root")
+  loadSecrets()
 }
 
 export function authn() {
@@ -68,20 +160,9 @@ export function authn() {
 }
 
 export default function () {
-  const apiKey = apiKeys.at(exec.vu.idInTest-1);
-
   env.applianceUrl = env.applianceReadUrl
-  env.conjurIdentity = `host/AutomationVault-hosts/${apiKey.lob_name}/${apiKey.safe_name}/host-1`;
-  env.apiKey = apiKey.api_key;
-
-  authn()
-
-  // This magic number is tightly coupled with number of accounts in a default backup used in load tests.
-  // It should be parametrized when dealing with running multiple load tests with different data
-  const accountNumber = Math.ceil(Math.random() * 200) || 1;
-  const identity = encodeURIComponent(`AutomationVault/${apiKey.lob_name}/${apiKey.safe_name}/account-${accountNumber}`);
-
-  const path = `/secrets?variable_ids=demo:variable:${identity}%2Fvariable-1,demo:variable:${identity}%2Fvariable-2`
+  authn();
+  const path = `/secrets?variable_ids=demo:variable:production%2Fmyapp%2Fdatabase%2Fusername,demo:variable:production%2Fmyapp%2Fdatabase%2Fpassword`
   const res = conjurApi.get(http, env, path);
 
   readTwoSecretsBatchTrend.add(res.timings.duration);

@@ -34,7 +34,7 @@
   {%- for safe in safes %}
   {%- if (parent_index * safes|length + loop.index <= leftover_hosts|length) or hosts[0] %}
 - !grant
-  role: !group AutomationVault/{{lob}}/{{safe}}/delegation/consumers
+  role: !group AutomationVault/{{lob}}/{{safe}}/delegation/viewers
   members: !layer AutomationVault-hosts/{{lob}}/{{safe}}/hosts
   {%- endif %}
   {%- endfor %}
