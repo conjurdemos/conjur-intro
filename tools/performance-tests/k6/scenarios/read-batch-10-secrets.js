@@ -84,12 +84,12 @@ export default function () {
   const path = `/secrets?variable_ids=demo:variable:${identity}${accountNumber}%2Fvariable-1,` +
     `demo:variable:${identity}${accountNumber}%2Fvariable-2,` +
     `demo:variable:${identity}${accountNumber}%2Fvariable-3,` +
-    `demo:variable:${identity}${accountNumber}%2Fvariable-4` +
-    `demo:variable:${identity}${(accountNumber+1)}%2Fvariable-1` +
-    `demo:variable:${identity}${(accountNumber+1)}%2Fvariable-2` +
-    `demo:variable:${identity}${(accountNumber+1)}%2Fvariable-3` +
-    `demo:variable:${identity}${(accountNumber+1)}%2Fvariable-4` +
-    `demo:variable:${identity}${(accountNumber+2)}%2Fvariable-3` +
+    `demo:variable:${identity}${accountNumber}%2Fvariable-4,` +
+    `demo:variable:${identity}${(accountNumber+1)}%2Fvariable-1,` +
+    `demo:variable:${identity}${(accountNumber+1)}%2Fvariable-2,` +
+    `demo:variable:${identity}${(accountNumber+1)}%2Fvariable-3,` +
+    `demo:variable:${identity}${(accountNumber+1)}%2Fvariable-4,` +
+    `demo:variable:${identity}${(accountNumber+2)}%2Fvariable-3,` +
     `demo:variable:${identity}${(accountNumber+2)}%2Fvariable-4`;
   const res = conjurApi.get(http, env, path);
 
