@@ -35,7 +35,7 @@ const apiKeys = new SharedArray('ApiKeys', function () {
 // https://k6.io/docs/using-k6/k6-options/reference/
 export const options = {
   scenarios: {
-    batch_4_secrets: {
+    batch_50_secrets: {
       executor: 'shared-iterations',
       maxDuration: "3h",
       vus: 12,
@@ -145,7 +145,7 @@ export default function () {
 
 export function handleSummary(data) {
   return {
-    "./tools/performance-tests/k6/reports/read-batch-4-secrets-summary.html": htmlReport(data, {title: "Read Batch 4 Secrets " + new Date().toISOString().slice(0, 16).replace('T', ' ')}),
+    "./tools/performance-tests/k6/reports/read-batch-50-secrets-summary.html": htmlReport(data, {title: "Read Batch 50 Secrets " + new Date().toISOString().slice(0, 16).replace('T', ' ')}),
     stdout: textSummary(data, { indent: " ", enableColors: true }),
   };
 }
