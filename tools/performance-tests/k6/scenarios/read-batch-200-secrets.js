@@ -283,6 +283,8 @@ export default function () {
     `demo:variable:${identity}${(accountNumber+49)}%2Fvariable-4`;
   const res = conjurApi.get(http, env, path);
 
+  console.log("RESPONSE BODY START", res.body, "RESPONSE BODY END")
+
   readtwohundredSecretsBatchTrend.add(res.timings.duration);
   readtwohundredSecretsBatchFailRate.add(res.status !== 200);
 
