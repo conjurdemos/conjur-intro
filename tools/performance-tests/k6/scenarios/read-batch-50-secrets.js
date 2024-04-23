@@ -130,7 +130,9 @@ export default function () {
     `demo:variable:${identity}${(accountNumber+11)}%2Fvariable-3,` +
     `demo:variable:${identity}${(accountNumber+11)}%2Fvariable-4,` +
     `demo:variable:${identity}${(accountNumber+12)}%2Fvariable-3,` +
-    `demo:variable:${identity}${(accountNumber+12)}%2Fvariable-4` +
+    `demo:variable:${identity}${(accountNumber+12)}%2Fvariable-4`;
+
+  const res = conjurApi.get(http, env, path);
 
   readfiftySecretsBatchTrend.add(res.timings.duration);
   readfiftySecretsBatchFailRate.add(res.status !== 200);
