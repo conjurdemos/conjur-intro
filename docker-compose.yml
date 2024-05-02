@@ -1,4 +1,3 @@
-version: "3"
 services:
   conjur-master.mycompany.local:
     image: haproxy:alpine
