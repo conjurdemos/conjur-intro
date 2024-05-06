@@ -153,9 +153,15 @@ populate_apikeys_file() {
   local safe_number=15
   set +x
 
+  if [[ $UUID != "" ]]; then
+    UUID_SUFFIX="-$UUID"
+  else
+    UUID_SUFFIX=""
+  fi
+
   for ((i=1; i<=lob_number; i++)); do
     for ((j=1; j<=safe_number; j++)); do
-      hosts+="AutomationVault-hosts/$UUID-lob-$i/safe-$j/host-1 "
+      hosts+="AutomationVault-hosts/lob-$i/safe-$j/host-1${UUID_SUFFIX} "
     done
   done
 
@@ -196,7 +202,7 @@ populate_apikeys_file() {
 main() {
   while true ; do
     case "$1" in
-      --uuid ) UUID="$2" ; shift 2 ;;
+      --uuid ) export UUID="$2" ; shift 2 ;;
       --aws ) AWS="true" ; shift ;;
       -h | --help ) print_help ; shift ;;
       * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
