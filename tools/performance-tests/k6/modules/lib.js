@@ -168,7 +168,7 @@ export function createHostsPolicy(identifier) {
             role: !layer hosts
             members: *lob-1-safe-1-hosts
 - !grant
-  role: !group AutomationVault/lob-1-${identifier}/safe-1-${identifier}/delegation/viewers
+  role: !group AutomationVault/lob-1-${identifier}/safe-1-${identifier}/delegation/consumers
   members: !layer AutomationVault-hosts/lob-1-${identifier}/safe-1-${identifier}/hosts`;
 }
 
