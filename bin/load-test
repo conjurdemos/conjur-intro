@@ -87,13 +87,17 @@ test_k6() {
   # Run K6 test
   run_k6_test
 
-  #Move HTML report to LOG_ROOT
+  #Move HTML report to LOG_ROOT, but dont fail if k6 scenario didn't produce one
+  set +e
   move_html_report
+  set -e
 
   echo "The test has completed!"
 
   # Stop the clock
   test_end=$(date_timestamp | sed 's/ /T/g')
+  echo "Test ended at: $test_start"
+  echo $LOG_ROOT
 }
 
 run_k6_test() {
