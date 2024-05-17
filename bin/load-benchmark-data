@@ -114,25 +114,8 @@ load_policy_set() {
   POLICY_FILE="$policy_set_dir/$POLICY_SET/users.yml" \
     "$(repo_root)/tools/performance-tests/k6/bin/k6" run "$test_plan_file" \
       "$K6_FLAGS" 2>&1 | tee -a "${policy_users_log_file}.log"
-}
 
-get_unpopulated_secrets() {
-  local container_name=$1
-  local csv_path_in_container="/opt/conjur/$CSV_FILE"
-  query="\copy (select r.resource_id from resources AS r
-            LEFT JOIN secrets s ON s.resource_id = r.resource_id
-            WHERE s.resource_id IS NULL AND r.resource_id LIKE '%variable%')
-          TO '$csv_path_in_container'
-          WITH DELIMITER ',' CSV HEADER;"
-
-  docker exec "$container_name" bash -c $"
-    chpst -u conjur psql -c \"$query\"
-  "
-
-  # Create data directory if it doesn't exist
-  mkdir -p "$(repo_root)/tools/performance-tests/k6/data"
-
-  docker cp "$container_name:$csv_path_in_container" "$OUTPUT_FILE"
+  echo $LOG_DIR
 }
 
 main() {
@@ -206,15 +189,31 @@ main() {
     --user_count "$USERS_COUNT"
 
   # Load policies into Conjur using previously made files
-  load_policy_set
+  log_dir=$(load_policy_set | tail -n 1)
 
-  # Get unpopulated secrets using data from the provided container
-  get_unpopulated_secrets "conjur-intro-conjur-master-1.mycompany.local-1"
+  # Generate unpopulated secrets
+  # Generate lines in loop for every lob safe account and variable
+  UUID_SUFFIX=""
+  if [ -n "$UUID" ]; then
+    UUID_SUFFIX="-$UUID"
+  fi
+  echo "resource_id" > "$OUTPUT_FILE"
+  for i in $(seq 1 $LOB_COUNT); do
+    for j in $(seq 1 $SAFES_COUNT); do
+      for k in $(seq 1 $ACCOUNTS_PER_SAFE_COUNT); do
+        for l in $(seq 1 $SECRETS_PER_ACCOUNT); do
+          echo "${CONJUR_ACCOUNT}:variable:AutomationVault/lob-$i/safe-$j/account-$k${UUID_SUFFIX}/variable-${l}${UUID_SUFFIX}" >> "$OUTPUT_FILE"
+        done
+      done
+    done
+  done
 
   # Populate secrets using a k6 test file
   "$(repo_root)/tools/performance-tests/k6/bin/k6" run "$POPULATE_SECRETS_TEST_FILE" "$K6_FLAGS"
 
   echo "--FINISHED LOADING BENCHMARK DATA INTO CONJUR--."
+
+  echo $log_dir
 }
 
 main "$@"
