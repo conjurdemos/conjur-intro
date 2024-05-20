@@ -1,5 +1,6 @@
 import http from "k6/http";
 import {check} from "k6";
+import {sleep} from "k6";
 import * as conjurApi from "./modules/api.js";
 import * as lib from "./modules/lib.js";
 
@@ -32,14 +33,23 @@ export const options = {
 export default function () {
   const settings = lib.parseEnv();
   settings.applianceUrl = settings.applianceMasterUrl
-  let authRes;
 
-  // authn to obtain token
-  authRes = conjurApi.authenticate(
-    http,
-    settings,
-    true
-  );
+  // authn to obtain token, retry up to 5 times if authn fails
+  let authRes;
+  let authAttempts = 0;
+  while (authAttempts < 5) {
+    authRes = conjurApi.authenticate(
+      http,
+      settings
+    );
+
+    if (authRes.status === 200) {
+      break;
+    }
+    authAttempts++;
+    console.log("Authn failed, retrying (attempt ", authAttempts, "/5)");
+    sleep(3);
+  }
 
   check(authRes, {
     "status is 200": (r) => r.status === 200,
@@ -47,13 +57,24 @@ export default function () {
 
   settings.token = authRes.body
 
-  // create policy
-  const lobsPolicyRes = conjurApi.loadPolicy(
-    http,
-    settings,
-    policyId,
-    policyContent
-  );
+  // create policy, retry up to 5 times if policy creation fails
+  let policyAttempts = 0;
+  let lobsPolicyRes;
+  while (policyAttempts < 5) {
+    lobsPolicyRes = conjurApi.loadPolicy(
+      http,
+      settings,
+      policyId,
+      policyContent
+    );
+
+    if (lobsPolicyRes.status === 201) {
+      break;
+    }
+    policyAttempts++;
+    console.log("Request failed, retrying (attempt ", policyAttempts, "/5)");
+    sleep(3);
+  }
 
   console.log("RESPONSE BODY START", lobsPolicyRes.body, "RESPONSE BODY END")
 

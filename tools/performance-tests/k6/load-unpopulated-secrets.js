@@ -1,6 +1,7 @@
 import http from "k6/http";
 import papaparse from './modules/papaparse.min.js';
 import {check} from "k6";
+import {sleep} from "k6";
 import {SharedArray} from 'k6/data';
 import {randomString} from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
 import * as conjurApi from "./modules/api.js";
@@ -81,11 +82,22 @@ export default function () {
         const secretIdentity = item.resource_id.replace(`${conjurAccount}:variable:`, '');
         const body = randomString(32);
 
-        // Authn to obtain token
-        const authRes = conjurApi.authenticate(
-          http,
-          env
-        );
+        // Authn to obtain token, retry up to 5 times if authn fails
+        let authRes;
+        let authAttempts = 0;
+        while (authAttempts < 5) {
+          authRes = conjurApi.authenticate(
+            http,
+            env
+          );
+
+          if (authRes.status === 200) {
+            break;
+          }
+          authAttempts++;
+          console.log("Authn failed, retrying (attempt ", authAttempts, "/5)");
+          sleep(3);
+        }
 
         check(authRes, {
           "status is 200": (r) => r.status === 200,
@@ -108,11 +120,23 @@ export default function () {
       }
     }
 
-    const responses = http.batch(reqs);
-
-    check(responses[0], {
-      "status is 201": (r) => r.status === 200 || r.status === 201,
-    });
+    // iterate through the reqs and send them, on failure retry up to 5 times
+    for (let i = 0; i < reqs.length; i++) {
+      let res;
+      let attempts = 0;
+      while (attempts < 5) {
+        res = http.post(reqs[i].url, reqs[i].body, reqs[i].params);
+        if (res.status === 200 || res.status === 201) {
+          break;
+        }
+        attempts++;
+        console.log("Request failed, retrying (attempt ", attempts, "/5)");
+        sleep(3);
+      }
+      check(res, {
+        "status is 201": (r) => r.status === 200 || r.status === 201,
+      });
+    }
 
     // dump the reqs for the next iteration
     reqs = [];

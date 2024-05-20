@@ -175,11 +175,20 @@ populate_apikeys_file() {
     responses=""
     IFS=' ' read -r -a hosts_array <<< "$hosts"
     for host in "${hosts_array[@]}"; do
-      response=$(curl --header "Authorization: Token token=\"$token\"" \
-                      --insecure \
-                      --request PUT \
-                      --silent \
-                      "$APPLIANCE_MASTER_URL/authn/xa/api_key?role=host:$host")
+      # make a request to rotate the API key for each host, if failed, retry up to 5 times
+      attempts=0
+      while [ $attempts -lt 5 ]; do
+        response=$(curl --header "Authorization: Token token=\"$token\"" \
+                        --insecure \
+                        --request PUT \
+                        --silent \
+                        "$APPLIANCE_MASTER_URL/authn/xa/api_key?role=host:$host")
+        if [ $? -eq 0 ]; then
+          break
+        fi
+        attempts=$((attempts+1))
+        sleep 3
+      done
       responses="$responses $response"
     done
     echo "Completed all requests"
