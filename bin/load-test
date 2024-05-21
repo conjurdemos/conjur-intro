@@ -121,9 +121,9 @@ run_k6_test() {
 }
 
 move_html_report() {
-  local html_report_file="$LOG_ROOT/summary.html"
-  echo "Moving HTML report to $LOG_ROOT as summary.html"
-  mv "$(repo_root)/tools/performance-tests/k6/reports/$(basename "$TEST_PLAN")-summary.html" "$html_report_file"
+  local html_report_file="$LOG_ROOT/metrics.csv"
+  echo "Moving HTML report to $LOG_ROOT as metrics.csv"
+  mv "$(repo_root)/tools/performance-tests/k6/reports/metrics.csv" "$html_report_file"
 }
 
 populate_apikeys_file() {
