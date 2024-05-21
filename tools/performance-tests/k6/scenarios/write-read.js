@@ -5,6 +5,7 @@ import * as conjurApi from "../modules/api.js";
 import * as lib from "../modules/lib.js";
 import papaparse from "../modules/papaparse.min.js";
 import {SharedArray} from 'k6/data';
+import { textSummary } from "https://jslib.k6.io/k6-summary/0.0.1/index.js";
 
 /**
  *  Init stage
@@ -321,4 +322,26 @@ export function batchRetrieveFourSecrets() {
     "status is not 401": (r) => r.status !== 401,
     "status is not 500": (r) => r.status !== 500
   });
+}
+export function handleSummary(data) {
+  // retrieve values from the data object
+
+  const http_req_failed = data['metrics']['http_req_failed']['values']['rate'] * 100
+  const http_req_failed_get_two_secret_batch = data['metrics']['http_req_failed_get_two_secrets_batch']['values']['rate'] * 100
+  const http_req_failed_get_four_secret_batch = data['metrics']['http_req_failed_get_four_secrets_batch']['values']['rate'] * 100
+  const http_req_failed_get_secrets_individually = data['metrics']['http_req_failed_get_secrets_individually']['values']['rate'] * 100
+  const http_req_failed_post_authn = data['metrics']['http_req_failed_post_authn']['values']['rate'] * 100
+  const http_reqs = data['metrics']['http_reqs']['values']['rate']
+
+  // create a csv data
+  const csv = papaparse.unparse([
+    ['http_req_failed [%]', 'http_req_failed_get_two_secret_batch [%]', 'http_req_failed_get_four_secret_batch [%]', 'http_req_failed_get_secrets_individually [%]', 'http_req_failed_post_authn [%]', 'http_reqs [req/s]'],
+    [http_req_failed, http_req_failed_get_two_secret_batch, http_req_failed_get_four_secret_batch, http_req_failed_get_secrets_individually, http_req_failed_post_authn, http_reqs]
+  ]);
+
+  // generate summary as default
+  return {
+    './tools/performance-tests/k6/reports/metrics.csv': csv,
+    stdout: textSummary(data, { indent: " ", enableColors: true }), //the default data object
+  };
 }
