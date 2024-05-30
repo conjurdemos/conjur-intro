@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+set -e
+
+main() {
+  number_of_secrets=$1
+
+  mkdir -p ./policy/bulk
+
+  for i in $(seq 1 $number_of_secrets); do
+    echo "Loading secret $i..."
+    cat <<EOF > ./policy/bulk/secret.yml
+- !variable secret_$i
+- !host host_$i
+- !group group_$i
+
+- !permit
+  role: !group group_$i
+  privilege: [ read, execute ]
+  resource: !variable secret_$i
+
+- !grant
+  role: !group group_$i
+  member: !host host_$i
+EOF
+
+    sleep 0.5
+
+    bin/cli conjur policy load --branch root --file policy/bulk/secret.yml 2>&1 > /dev/null
+
+    bin/cli conjur variable set -i "secret_$i" -v "$(head -c 10000 < /dev/zero | tr '\0' '\141')" 2>&1 > /dev/null
+  done
+}
+
+main "$@"
