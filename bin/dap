@@ -302,23 +302,34 @@ function _start_standby_synchronization {
     "evoke replication sync start"
 }
 
-function _setup_follower {
+function _setup_followers {
+  for ((i=1; i<=FOLLOWER_COUNT; i++))
+  do
+    _setup_follower "$i" &
+    sleep 0.1
+  done
 
-  docker compose rm --stop --force conjur-follower-1.mycompany.local
-  docker compose up --no-deps --detach conjur-follower-1.mycompany.local
+  wait
+}
+
+function _setup_follower {
+  local follower_number=${1:-1}
+
+  docker compose rm --stop --force "conjur-follower-${follower_number}.mycompany.local"
+  docker compose up --no-deps --detach "conjur-follower-${follower_number}.mycompany.local"
 
   # Generate Seed file
   _run conjur-master-1.mycompany.local \
-    "evoke seed follower conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed.tar"
+    "evoke seed follower conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed-${follower_number}.tar"
 
   # Unpack and Configure
-  _run conjur-follower-1.mycompany.local \
-    "evoke unpack seed /opt/cyberark/dap/seeds/follower-seed.tar && evoke configure follower"
+  _run "conjur-follower-${follower_number}.mycompany.local" \
+    "evoke unpack seed /opt/cyberark/dap/seeds/follower-seed-${follower_number}.tar && evoke configure follower --json-attributes-file='/conjur_files/conjur.json'"
 
   # Copy certs for HAProxy
-  _run conjur-follower-1.mycompany.local \
+  _run "conjur-follower-${follower_number}.mycompany.local" \
     "cp /opt/conjur/etc/ssl/conjur-follower.mycompany.local.key /opt/conjur/etc/ssl/conjur-follower.mycompany.local.pem.key"
-  _run conjur-follower-1.mycompany.local \
+  _run "conjur-follower-${follower_number}.mycompany.local" \
     "chown 99:99 /opt/conjur/etc/ssl/conjur-follower.mycompany.local.pem.key"
 
   _start_l7_load_balancer
@@ -821,6 +832,7 @@ PULL_IMAGES=false
 CMD=""
 export DHPATH="${DHPATH:-/etc/ssl}"
 STANDBY_COUNT=2
+FOLLOWER_COUNT=1
 
 while true ; do
   case "$1" in
@@ -831,7 +843,8 @@ while true ; do
     -h | --help ) _print_help ; shift ;;
     --import-custom-certificates ) CMD='_import_certificates' ; shift ;;
     --promote-standby ) CMD='_perform_promotion' ; shift ;;
-    --provision-follower ) CMD='_setup_follower' ; shift ;;
+    --provision-follower ) CMD='_setup_followers' ; shift ;;
+    --follower-count ) shift; FOLLOWER_COUNT=$1 ; shift ;;
     --provision-k8s-follower ) CMD='_setup_k8s_follower' ; shift ;;
     --provision-master ) CMD='_single_master' ; shift ;;
     --provision-standbys ) CMD='_setup_standbys' ; shift ;;
