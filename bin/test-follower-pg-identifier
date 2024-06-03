@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+
+set -e
+
+# USAGE
+#
+# Queries each Follower container to verify that each of their main pg databases
+# contain a unique identifier.
+#
+# ./bin/test-follower-pg-identifier
+
+# Always work from repo root directory
+cd "$(dirname ${0})/..";
+
+FOLLOWER_COUNT=5
+FOLLOWER_PG_IDENTIFIERS=()
+
+# Use this to hide WARN from docker compose...
+# WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string. 
+export VERSION=
+
+main(){
+  echo "Displaying PostgreSQL Identifiers for each Follower:"
+  for ((i=1; i<=FOLLOWER_COUNT; i++))
+  do
+    FOLLOWER_HOSTNAME="conjur-follower-${i}.mycompany.local"
+    IDENTIFIER=$(docker compose exec "$FOLLOWER_HOSTNAME" chpst -u postgres psql -tqc 'SELECT system_identifier FROM pg_control_system();')
+    FOLLOWER_PG_IDENTIFIERS+=("${IDENTIFIER}")
+    echo "[$FOLLOWER_HOSTNAME]: ${IDENTIFIER}"
+  done
+
+  # Check each element in the array
+  # Done without using a map to support bash 3.2
+  for ((i=0; i<${#FOLLOWER_PG_IDENTIFIERS[@]}; i++)); do
+    for ((j=i+1; j<${#FOLLOWER_PG_IDENTIFIERS[@]}; j++)); do
+      if [[ "${FOLLOWER_PG_IDENTIFIERS[i]}" == "${FOLLOWER_PG_IDENTIFIERS[j]}" ]]; then
+        echo "FATAL: Duplicate PostgreSQL Identifier found: ${FOLLOWER_PG_IDENTIFIERS[i]}"
+        exit 1
+      fi
+    done
+  done
+
+  echo "All identifiers are unique."
+  echo "DONE."
+}
+
+main "$@"
