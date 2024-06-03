@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+
+# TODO:
+# - This currently assumes that all Followers are using the full replication set
+#   (which is the default).
+#
+
+# USAGE
+#
+# Given a FOLLOWER_COUNT, count the number of rows
+# in relevant tables within the Leader and Followers. The results are compared
+# for similarity. If any one file is not the same as another, the script will
+# fail.
+# 
+# IMPORTANT: this output will only align if all Followers are
+# using the full replication set (default).
+#
+# ./bin/test-table-rows-match 1
+# ./bin/test-table-rows-match 5
+# ./bin/test-table-rows-match 10
+#
+
+MAX_ATTEMPTS="${MAX_ATTEMPTS:-10}"
+DOCKER_LEADER_CONTAINER="conjur-master-1.mycompany.local"
+LOG_DIR="tmp/appliance/tables"
+
+# Note: the following tables are irrelevant for comparision in this context:
+# - policy_log
+TABLE_NAMES=("annotations" "authenticator_configs" "credentials" "host_factory_tokens" "permissions" "policy_versions" "resources" "resources_textsearch" "role_memberships" "roles" "schema_info" "schema_migrations" "secrets" "slosilo_keystore")
+
+# Use this to hide WARN from docker compose...
+# WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string. 
+export VERSION=
+
+FOLLOWER_COUNT=
+
+main() {
+  if [[ -z "$MAX_ATTEMPTS" ]]; then
+    echo "FATAL: MAX_ATTEMPTS must be specified as --max-attempts"
+    exit 1
+  fi
+
+  mkdir -p "$LOG_DIR"
+
+  if [[ -z "$FOLLOWER_COUNT" ]]; then
+    echo "FATAL: FOLLOWER_COUNT must be specified as \$2"
+    exit 1
+  fi
+
+  # Start building the query
+  query=""
+
+    # Loop over the tables and append to the query
+  for i in "${!TABLE_NAMES[@]}"; do
+    table=${TABLE_NAMES[$i]}
+    if [ $i -eq 0 ]; then
+      # First table, no UNION
+      query+="SELECT '$table' AS table_name, COUNT(*) FROM public.$table"
+    else
+      # Subsequent tables, prepend with UNION ALL
+      query+=" UNION ALL SELECT '$table', COUNT(*) FROM public.$table"
+    fi
+  done
+
+  query+=" ORDER BY table_name"
+
+  echo "Statistics for $DOCKER_LEADER_CONTAINER"
+    docker compose exec "$DOCKER_LEADER_CONTAINER" bash -c $"
+          chpst -u conjur psql -c \"\\copy ($query) To '/tmp/output.csv' With CSV\"
+        "
+    docker compose cp "$DOCKER_LEADER_CONTAINER:/tmp/output.csv" "$LOG_DIR/${DOCKER_LEADER_CONTAINER}-row-counts.log"
+
+  for ((j=1; j<=FOLLOWER_COUNT; j++))
+  do
+    FOLLOWER_HOSTNAME="conjur-follower-${j}.mycompany.local"
+    echo "Statistics for $FOLLOWER_HOSTNAME"
+    docker compose exec "$FOLLOWER_HOSTNAME" bash -c $"
+          chpst -u conjur psql -c \"\\copy ($query) To '/tmp/output.csv' With CSV\"
+        "
+    docker compose cp "$FOLLOWER_HOSTNAME:/tmp/output.csv" "$LOG_DIR/${FOLLOWER_HOSTNAME}-row-counts.log"
+  done
+
+  echo "Begin comparing all files (they should all be the same)..."
+
+  # Get a list of all files in the directory
+  log_files=("$LOG_DIR"/*)
+
+  # Get the first file
+  first_file=${log_files[0]}
+
+  # Loop over the files and compare each to the first file
+  for ((k=1; k<=MAX_ATTEMPTS; k++))
+  do
+    is_failure_detected="false"
+
+    for file in "${log_files[@]:1}"; do
+      if [ ! -s "$file" ]; then
+        echo "[Attempt $k/$MAX_ATTEMPTS] FATAL: File $file is empty."
+        is_failure_detected="true"
+      elif diff -q "$first_file" "$file" > /dev/null; then
+        echo "[Attempt $k/$MAX_ATTEMPTS] Files $first_file and $file are the same"
+      else
+        echo "[Attempt $k/$MAX_ATTEMPTS] ERROR: Files $first_file and $file are different"
+        is_failure_detected="true"
+      fi
+    done
+
+    # Exit if no failure was detected
+    if [ "$is_failure_detected" == "false" ] ; then
+      echo "[Attempt $k/$MAX_ATTEMPTS] It looks like all Followers are in sync with the Leader!"
+      break
+    fi
+    # Exit if max attempts have been reached and a failure has been detected
+    if [ "$k" == "$MAX_ATTEMPTS" ] && [ "$is_failure_detected" == "true" ] ; then
+      echo "[Attempt $k/$MAX_ATTEMPTS] FATAL: it seems like the Follower is still replicating after '$MAX_ATTEMPTS' maximum attempts have been attempted."
+      exit 1
+    fi
+
+    echo "[$FOLLOWER_HOSTNAME] (Attempt: $k/$MAX_ATTEMPTS) - Retrying in 3 seconds..."
+    sleep 3
+  done
+
+  echo "All files are the same. It appears that all Followers tables are in sync with the Leader."
+  echo "DONE."
+}
+
+while true ; do
+  case "$1" in
+    --follower-count ) shift; FOLLOWER_COUNT="$1" ; shift ;;
+    --max-attempts ) shift; MAX_ATTEMPTS="$1" ; shift ;;
+     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+  esac
+done
+
+main
