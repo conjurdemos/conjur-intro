@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+
+set -o pipefail
+
+# USAGE
+#
+# Queries the Leader and each Follower for health and info. If there is a
+# response, it is written to a file in the `tmp/appliance/health` and
+# `tmp/appliance/info` directories. If there is no response, this indicates
+# a node failure configure / deploy, and this script will fail.
+#
+# ./bin/dump-appliance-health-and-info 1
+# ./bin/dump-appliance-health-and-info 5
+# ./bin/dump-appliance-health-and-info 10
+
+# Always work from repo root directory
+cd "$(dirname ${0})/..";
+
+source ./bin/utils.sh
+
+HEALTH_LOG_DIR="tmp/appliance/health"
+LEADER_HEALTH_LOG_DIR="$HEALTH_LOG_DIR/leader"
+FOLLOWER_HEALTH_LOG_DIR="$HEALTH_LOG_DIR/follower"
+
+INFO_LOG_DIR="tmp/appliance/info"
+LEADER_INFO_LOG_DIR="$INFO_LOG_DIR/leader"
+FOLLOWER_INFO_LOG_DIR="$INFO_LOG_DIR/follower"
+
+FOLLOWER_COUNT="$1"
+
+# Use this to hide WARN from docker compose...
+# WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string. 
+export VERSION=
+
+main(){
+  is_failure_detected_globally="false"
+
+  if [[ -z "$FOLLOWER_COUNT" ]]; then
+    echo "FATAL: FOLLOWER_COUNT must be specified as \$1"
+    exit 1
+  fi
+
+  rm -rf "$HEALTH_LOG_DIR"
+  rm -rf "$INFO_LOG_DIR"
+
+  mkdir -p "$LEADER_HEALTH_LOG_DIR"
+  mkdir -p "$FOLLOWER_HEALTH_LOG_DIR"
+  mkdir -p "$LEADER_INFO_LOG_DIR"
+  mkdir -p "$FOLLOWER_INFO_LOG_DIR"
+
+  echo "Dumping Leader Logs at:"
+  echo "- $LEADER_HEALTH_LOG_DIR"
+  echo "- $LEADER_INFO_LOG_DIR"
+  docker compose exec "conjur-master-1.mycompany.local" curl -s -k https://localhost/health > "$LEADER_HEALTH_LOG_DIR/conjur-master-1-health.log"
+  docker compose exec "conjur-master-1.mycompany.local" curl -s -k https://localhost/info > "$LEADER_INFO_LOG_DIR/conjur-master-1-info.log"
+
+  echo "Dumping Follower Logs at:"
+  echo "- $FOLLOWER_HEALTH_LOG_DIR"
+  echo "- $FOLLOWER_INFO_LOG_DIR"
+  for ((i=1; i<=FOLLOWER_COUNT; i++))
+  do
+    FOLLOWER_HOSTNAME="conjur-follower-${i}.mycompany.local"
+
+    container_id=$(docker-compose ps -q $FOLLOWER_HOSTNAME)
+    if [ -z "$container_id" ]; then
+      echo "\tWARNING: No container ID found for service '$FOLLOWER_HOSTNAME' (it is not running), skipping!"
+      continue
+    fi
+
+    echo -e "\nDumping health and info for '$FOLLOWER_HOSTNAME'"
+    output=$(docker compose exec "conjur-follower-${i}.mycompany.local" curl -s -k https://localhost/health | sed 's/^/\t/')
+    if [[ -n "$output" ]]; then
+      echo "$output" | tee "$FOLLOWER_HEALTH_LOG_DIR/conjur-follower-${i}-health.log"
+      is_failure_detected_globally="true"
+    else
+      echo -e "\tERROR: Failed to fetch health for '$FOLLOWER_HOSTNAME'"
+    fi
+    
+    output=$(docker compose exec "conjur-follower-${i}.mycompany.local" curl -s -k https://localhost/info | sed 's/^/\t/')
+    if [[ -n "$output" ]]; then
+      echo "$output" | tee "$FOLLOWER_INFO_LOG_DIR/conjur-follower-${i}-info.log"
+      is_failure_detected_globally="true"
+    else
+      echo -e "\tERROR: Failed to fetch info for '$FOLLOWER_HOSTNAME'"
+    fi
+  done
+
+  if [ "$is_failure_detected_globally" = "true" ]; then
+    echo "FATAL: An error was detected in at leats one node, see above."
+    exit 1
+  fi
+}
+
+main "$@"
