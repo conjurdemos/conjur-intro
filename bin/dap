@@ -272,6 +272,7 @@ function _configure_master {
   docker cp files/dhparam.pem "$(docker compose ps -q conjur-master-1.mycompany.local)":${DHPATH}/dhparam.pem
 
   _cmd="evoke configure master"
+  _cmd="$_cmd --json-attributes-file='/conjur_files/conjur.json'"
   _cmd="$_cmd --accept-eula"
   _cmd="$_cmd --hostname conjur-master.mycompany.local"
   _cmd="$_cmd --master-altnames conjur-master-1.mycompany.local,$(_standby_altnames)"
@@ -303,6 +304,16 @@ function _start_standby_synchronization {
 }
 
 function _setup_followers {
+
+  for ((i=1; i<=FOLLOWER_COUNT; i++))
+  do
+    # Generate Seed file(s)
+    _run conjur-master-1.mycompany.local \
+      "evoke seed follower conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed-${i}.tar"
+    echo "Creating Seed for Follower $i"
+    sleep 0.1
+  done
+
   for ((i=1; i<=FOLLOWER_COUNT; i++))
   do
     _setup_follower "$i" &
@@ -310,17 +321,17 @@ function _setup_followers {
   done
 
   wait
+
+  _start_l7_load_balancer
+  echo "DAP Follower instance available at: 'https://localhost:${CONJUR_FOLLOWER_PORT}'"
 }
 
 function _setup_follower {
   local follower_number=${1:-1}
 
+  echo "Configuring Follower $follower_number"
   docker compose rm --stop --force "conjur-follower-${follower_number}.mycompany.local"
   docker compose up --no-deps --detach "conjur-follower-${follower_number}.mycompany.local"
-
-  # Generate Seed file
-  _run conjur-master-1.mycompany.local \
-    "evoke seed follower conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed-${follower_number}.tar"
 
   # Unpack and Configure
   _run "conjur-follower-${follower_number}.mycompany.local" \
@@ -331,9 +342,6 @@ function _setup_follower {
     "cp /opt/conjur/etc/ssl/conjur-follower.mycompany.local.key /opt/conjur/etc/ssl/conjur-follower.mycompany.local.pem.key"
   _run "conjur-follower-${follower_number}.mycompany.local" \
     "chown 99:99 /opt/conjur/etc/ssl/conjur-follower.mycompany.local.pem.key"
-
-  _start_l7_load_balancer
-  echo "DAP Follower instance available at: 'https://localhost:${CONJUR_FOLLOWER_PORT}'"
 }
 
 function _setup_k8s_follower {
@@ -496,7 +504,6 @@ function _stop {
   docker network remove dap_net || true
 
   _command rm -rf cli_cache
-  _command rm -rf system/backup
   _command rm -rf system/logs
   _command rm -rf system/haproxy/certs
   _command rm files/haproxy/master/haproxy.cfg || true
@@ -622,7 +629,7 @@ function _restore_from_backup {
   _run conjur-master-1.mycompany.local 'evoke unpack backup --key /opt/conjur/backup/key /opt/conjur/backup/$(ls -1t /opt/conjur/backup | grep gpg | head -1)'
 
   # Configure the new master with docker exec <container> evoke restore master
-  _run conjur-master-1.mycompany.local "evoke restore --accept-eula"
+  _run conjur-master-1.mycompany.local "evoke restore --accept-eula --json-attributes-file='/conjur_files/conjur.json'"
 }
 
 function _upgrade_master_via_backup_restore {
@@ -820,7 +827,7 @@ create_docker_network() {
     docker network create \
       --driver bridge \
       --ipam-driver default \
-      --subnet 12.16.23.0/27 \
+      --subnet 12.16.23.0/26 \
       dap_net
   fi
 }

@@ -15,9 +15,9 @@
 # IMPORTANT: this output will only align if all Followers are
 # using the full replication set (default).
 #
-# ./bin/test-table-rows-match 1
-# ./bin/test-table-rows-match 5
-# ./bin/test-table-rows-match 10
+# ./bin/test-table-rows-match --follower-count 1
+# ./bin/test-table-rows-match --follower-count 5
+# ./bin/test-table-rows-match --follower-count 10
 #
 
 MAX_ATTEMPTS="${MAX_ATTEMPTS:-10}"
@@ -26,7 +26,8 @@ LOG_DIR="tmp/appliance/tables"
 
 # Note: the following tables are irrelevant for comparision in this context:
 # - policy_log
-TABLE_NAMES=("annotations" "authenticator_configs" "credentials" "host_factory_tokens" "permissions" "policy_versions" "resources" "resources_textsearch" "role_memberships" "roles" "schema_info" "schema_migrations" "secrets" "slosilo_keystore")
+# - schema_migrations
+TABLE_NAMES=("annotations" "authenticator_configs" "credentials" "host_factory_tokens" "permissions" "policy_versions" "resources" "resources_textsearch" "role_memberships" "roles" "schema_info" "secrets" "slosilo_keystore")
 
 # Use this to hide WARN from docker compose...
 # WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string. 
@@ -35,6 +36,8 @@ export VERSION=
 FOLLOWER_COUNT=
 
 main() {
+  echo "Beginning script: $0"
+
   if [[ -z "$MAX_ATTEMPTS" ]]; then
     echo "FATAL: MAX_ATTEMPTS must be specified as --max-attempts"
     exit 1
@@ -43,7 +46,7 @@ main() {
   mkdir -p "$LOG_DIR"
 
   if [[ -z "$FOLLOWER_COUNT" ]]; then
-    echo "FATAL: FOLLOWER_COUNT must be specified as \$2"
+    echo "FATAL: FOLLOWER_COUNT must be specified as --follower-count"
     exit 1
   fi
 

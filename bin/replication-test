@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+
+# Fail early.
+set -ex
+
+# USAGE
+#
+# This restores a Leader from backup, deploys and configures a number of
+# Followers, and runs a series of tests to verify that replication is working
+# as expected. It also monitors the host for system resource utilization,
+# the container logs, and outputs them into a single tarball.
+#
+# ./bin/replication-test
+#
+
+# Always work from repo root directory
+cd "$(dirname ${0})/..";
+
+source ./bin/utils.sh
+
+LOG_DIR="tmp/appliance"
+RESOURCE_UTLIZATION_LOG_DIR="$LOG_DIR/resources"
+TOP_LOG_DIR="$RESOURCE_UTLIZATION_LOG_DIR/top"
+DOCKER_STATS_LOG_DIR="$RESOURCE_UTLIZATION_LOG_DIR/docker_stats"
+ARCHIVE_DIR="tmp/artifacts"
+
+VERSION="${VERSION:-'5.0-stable'}"
+FOLLOWER_COUNT="${FOLLOWER_COUNT:-2}"
+RESOURCE_INTERVAL="${RESOURCE_INTERVAL:-60}"
+MAX_ATTEMPTS="${MAX_ATTEMPTS:-10}"
+
+# Use this to hide WARN from docker compose...
+# WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string. 
+export VERSION
+
+pid=""
+
+finish() {
+  # If a background process PID was stored, kill it (do not fail script if it is not found)
+  if [ -n "$pid" ]; then
+    echo "Killing resource monitor: $pid..."
+    kill $pid || true
+  fi
+
+  # TODO: dump logs just in case if any earlier test stage failed...
+  echo "Dumping appliance logs..."
+  ./bin/dump-appliance-logs --no-fail --follower-count "${FOLLOWER_COUNT}"
+  ./bin/dump-appliance-health-and-info --follower-count "${FOLLOWER_COUNT}"
+
+  timestamp=$(date +%Y%m%d%H%M%S)
+  archive_filename="$ARCHIVE_DIR/appliance-logs-$timestamp.tgz"
+  echo "Tarballing logs to $archive_filename"
+  tar -czvf "$archive_filename" -C "$LOG_DIR" .
+  ./bin/dap --stop
+}
+
+main(){
+  trap finish EXIT
+
+  echo "Running replication tests with '${FOLLOWER_COUNT}' Follower(s) and '${SECRET_COUNT}' Policies/Secret(s) on Appliance Version '${VERSION}'..."
+
+  rm -rf "$LOG_DIR"
+
+  mkdir -p "$LOG_DIR"
+  mkdir -p "$ARCHIVE_DIR"
+  mkdir -p "$TOP_LOG_DIR"
+  mkdir -p "$DOCKER_STATS_LOG_DIR"
+
+  ./bin/dap --stop || true
+
+  # Exclude the grep command and the current process
+  echo "Listening for orphaned resource monitoring processes from this script..."
+  echo "WARNING: anything is listening below, we'll want to kill those!"
+  ps -a | grep "$0" | grep -v "grep" | grep -v "$$" || true
+  echo "Done listening."
+
+  # Deploy the Leader (including loadbalancer)
+  echo "Deploying the Leader using tag: '${VERSION}'..."
+  bin/dap --provision-master --version "$VERSION"
+
+  # The most recent backup is used from system/backup
+  echo "Restoring the Leader from backup using tag: '${VERSION}'..."
+  bin/dap --restore-from-backup --version "$VERSION"
+
+  record_resource_utilization &
+  pid=$!
+  echo "Starting resource monitor: $pid"
+
+  echo "Provisioning Follower(s) using tag: '${VERSION}'..."
+  ./bin/dap --provision-follower --version "${VERSION}" --follower-count "${FOLLOWER_COUNT}"
+
+  ./bin/test-follower-pg-identifier --follower-count "${FOLLOWER_COUNT}"
+  ./bin/dump-appliance-health-and-info --follower-count "${FOLLOWER_COUNT}"
+
+  # Disable this test in favor of using replication from the backup
+  # ./bin/test-secret-replication --secret-count "${SECRET_COUNT}" --follower-count "${FOLLOWER_COUNT}" --max-attempts "${MAX_ATTEMPTS}"
+
+  ./bin/test-table-rows-match --follower-count "${FOLLOWER_COUNT}"
+
+  # These the test below depends on the appliance logs...
+  ./bin/dump-appliance-logs --follower-count "${FOLLOWER_COUNT}"
+  ./bin/test-appliance-logs-for-replication-slot-errors
+}
+
+record_resource_utilization() {
+  while true; do
+    snapshot_top
+    snapshot_docker_stats
+    sleep "$RESOURCE_INTERVAL"
+  done
+}
+
+snapshot_top() {
+  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S.000+00:00")
+  xtop > "$TOP_LOG_DIR/$timestamp.log"
+}
+
+snapshot_docker_stats() {
+  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S.000+00:00")
+  docker stats --no-stream > "$DOCKER_STATS_LOG_DIR/$timestamp.log"
+}
+
+xtop() {
+  if [ "$(uname)" = "Darwin" ]; then
+      # macOS
+      top -l 1 -n 30 -o cpu -o mem
+  else
+      # Linux
+      top -b -n 1 | head -n 30
+  fi
+}
+
+main "$@"

@@ -7,26 +7,34 @@ set -e
 # Queries each Follower container to verify that each of their main pg databases
 # contain a unique identifier.
 #
-# ./bin/test-follower-pg-identifier
+# ./bin/test-follower-pg-identifier --follower-count 1
+# ./bin/test-follower-pg-identifier --follower-count 5
+# ./bin/test-follower-pg-identifier --follower-count 10
 
 # Always work from repo root directory
 cd "$(dirname ${0})/..";
 
-FOLLOWER_COUNT=5
+FOLLOWER_COUNT=
+
 FOLLOWER_PG_IDENTIFIERS=()
 
-# Use this to hide WARN from docker compose...
-# WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string. 
-export VERSION=
-
 main(){
+  echo "Beginning script: $0"
+
+  if [[ -z "$FOLLOWER_COUNT" ]]; then
+    echo "FATAL: FOLLOWER_COUNT must be specified as --follower-count"
+    exit 1
+  fi
+
   echo "Displaying PostgreSQL Identifiers for each Follower:"
   for ((i=1; i<=FOLLOWER_COUNT; i++))
   do
     FOLLOWER_HOSTNAME="conjur-follower-${i}.mycompany.local"
+    echo "Querying postgres in '${FOLLOWER_HOSTNAME}'..."
+
     IDENTIFIER=$(docker compose exec "$FOLLOWER_HOSTNAME" chpst -u postgres psql -tqc 'SELECT system_identifier FROM pg_control_system();')
     FOLLOWER_PG_IDENTIFIERS+=("${IDENTIFIER}")
-    echo "[$FOLLOWER_HOSTNAME]: ${IDENTIFIER}"
+    echo -e "\tFound Identifier: ${IDENTIFIER}"
   done
 
   # Check each element in the array
@@ -44,4 +52,11 @@ main(){
   echo "DONE."
 }
 
-main "$@"
+while true ; do
+  case "$1" in
+    --follower-count ) shift; FOLLOWER_COUNT="$1" ; shift ;;
+     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+  esac
+done
+
+main

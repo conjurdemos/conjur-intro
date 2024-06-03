@@ -9,34 +9,38 @@ set -o pipefail
 # `tmp/appliance/info` directories. If there is no response, this indicates
 # a node failure configure / deploy, and this script will fail.
 #
-# ./bin/dump-appliance-health-and-info 1
-# ./bin/dump-appliance-health-and-info 5
-# ./bin/dump-appliance-health-and-info 10
+# ./bin/dump-appliance-health-and-info --follower-count 1
+# ./bin/dump-appliance-health-and-info --follower-count 5
+# ./bin/dump-appliance-health-and-info --follower-count 10
 
 # Always work from repo root directory
 cd "$(dirname ${0})/..";
 
 source ./bin/utils.sh
 
-HEALTH_LOG_DIR="tmp/appliance/health"
+LOG_PREFIX=$(date -u +"%Y-%m-%dT%H:%M:%S.000+00:00")
+HEALTH_LOG_DIR="tmp/appliance/health-$LOG_PREFIX"
 LEADER_HEALTH_LOG_DIR="$HEALTH_LOG_DIR/leader"
 FOLLOWER_HEALTH_LOG_DIR="$HEALTH_LOG_DIR/follower"
 
-INFO_LOG_DIR="tmp/appliance/info"
+INFO_LOG_DIR="tmp/appliance-$LOG_PREFIX/info"
 LEADER_INFO_LOG_DIR="$INFO_LOG_DIR/leader"
 FOLLOWER_INFO_LOG_DIR="$INFO_LOG_DIR/follower"
 
-FOLLOWER_COUNT="$1"
+NO_FAIL="false"
+FOLLOWER_COUNT=
 
 # Use this to hide WARN from docker compose...
 # WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string. 
 export VERSION=
 
 main(){
+  echo "Beginning script: $0"
+
   is_failure_detected_globally="false"
 
   if [[ -z "$FOLLOWER_COUNT" ]]; then
-    echo "FATAL: FOLLOWER_COUNT must be specified as \$1"
+    echo "FATAL: FOLLOWER_COUNT must be specified as --follower-count"
     exit 1
   fi
 
@@ -61,7 +65,7 @@ main(){
   do
     FOLLOWER_HOSTNAME="conjur-follower-${i}.mycompany.local"
 
-    container_id=$(docker-compose ps -q $FOLLOWER_HOSTNAME)
+    container_id=$(docker compose ps -q $FOLLOWER_HOSTNAME)
     if [ -z "$container_id" ]; then
       echo "\tWARNING: No container ID found for service '$FOLLOWER_HOSTNAME' (it is not running), skipping!"
       continue
@@ -71,24 +75,32 @@ main(){
     output=$(docker compose exec "conjur-follower-${i}.mycompany.local" curl -s -k https://localhost/health | sed 's/^/\t/')
     if [[ -n "$output" ]]; then
       echo "$output" | tee "$FOLLOWER_HEALTH_LOG_DIR/conjur-follower-${i}-health.log"
-      is_failure_detected_globally="true"
     else
       echo -e "\tERROR: Failed to fetch health for '$FOLLOWER_HOSTNAME'"
+      is_failure_detected_globally="true"
     fi
     
     output=$(docker compose exec "conjur-follower-${i}.mycompany.local" curl -s -k https://localhost/info | sed 's/^/\t/')
     if [[ -n "$output" ]]; then
       echo "$output" | tee "$FOLLOWER_INFO_LOG_DIR/conjur-follower-${i}-info.log"
-      is_failure_detected_globally="true"
     else
       echo -e "\tERROR: Failed to fetch info for '$FOLLOWER_HOSTNAME'"
+      is_failure_detected_globally="true"
     fi
   done
 
-  if [ "$is_failure_detected_globally" = "true" ]; then
-    echo "FATAL: An error was detected in at leats one node, see above."
+  if [ "$is_failure_detected_globally" = "true" ] && [ "$NO_FAIL" = "false" ] ; then
+    echo "FATAL: An error was detected in at least one node, see above."
     exit 1
   fi
 }
 
-main "$@"
+while true ; do
+  case "$1" in
+    --no-fail ) NO_FAIL='true' ; shift ;;
+    --follower-count ) shift; FOLLOWER_COUNT="$1" ; shift ;;
+     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+  esac
+done
+
+main

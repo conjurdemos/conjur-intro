@@ -18,8 +18,6 @@ tools/performance-tests/k6/tmp/**
 tools/performance-tests/k6/reports/**
 tmp/**
 
-**/backup/*
-
 files/haproxy/master/haproxy.cfg
 
 # Generated Certificates

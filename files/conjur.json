@@ -1,0 +1,16 @@
+{
+  "postgresql": {
+    "config": {
+      "log_line_prefix": "'%t '",
+      "max_connections": 300,
+      "max_wal_senders": 100,
+      "max_replication_slots": 100,
+      "max_worker_processes": 100
+    },
+    "archive": {
+      "config": {
+        "log_line_prefix": "'%t '"
+      }
+    }
+  }
+}
