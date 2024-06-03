@@ -143,6 +143,12 @@ $ bin/dap --provision-standbys
 $ bin/dap --provision-follower
 ```
 
+To provision more than one Follower at once, use the following command:
+
+```sh
+./bin/dap --provision-follower --follower-count 10
+```
+
 This instance runs behind an HAProxy load balancer and is available at: [https://localhost].  Login:
 
 - Account `demo`
