@@ -22,7 +22,9 @@ LOG_DIR="tmp/appliance"
 RESOURCE_UTLIZATION_LOG_DIR="$LOG_DIR/resources"
 TOP_LOG_DIR="$RESOURCE_UTLIZATION_LOG_DIR/top"
 DOCKER_STATS_LOG_DIR="$RESOURCE_UTLIZATION_LOG_DIR/docker_stats"
+REPLICATION_LOG_STATS_DIR="$LOG_DIR/replication"
 ARCHIVE_DIR="tmp/artifacts"
+DOCKER_LEADER_CONTAINER="conjur-master-1.mycompany.local"
 
 VERSION="${VERSION:-'5.0-stable'}"
 FOLLOWER_COUNT="${FOLLOWER_COUNT:-2}"
@@ -94,6 +96,8 @@ record_resource_utilization() {
   while true; do
     snapshot_top
     snapshot_docker_stats
+    snapshot_leader_replication_status
+    snapshot_follower_replication_status
     sleep "$RESOURCE_INTERVAL"
   done
 }
@@ -106,6 +110,76 @@ snapshot_top() {
 snapshot_docker_stats() {
   timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S.000+00:00")
   docker stats --no-stream > "$DOCKER_STATS_LOG_DIR/$timestamp.log"
+}
+
+# Print information of the replication status of the Leader
+snapshot_leader_replication_status() {
+  local log_dir
+  local query
+
+  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S.000+00:00")
+  log_dir="$REPLICATION_LOG_STATS_DIR/leader/$DOCKER_LEADER_CONTAINER"
+  pg_stat_replication_log_dir="$log_dir/pg_stat_replication"
+  pg_stat_replication_log_dir_log_file="$pg_stat_replication_log_dir/$timestamp.log"
+  pg_stat_activity_log_dir="$log_dir/pg_stat_activity"
+  pg_stat_activity_log_dir_log_file="$pg_stat_activity_log_dir/$timestamp.log"
+
+  mkdir -p "$pg_stat_replication_log_dir"
+  mkdir -p "$pg_stat_activity_log_dir"
+
+  docker compose exec -T "$DOCKER_LEADER_CONTAINER" bash -c $"
+        chpst -u conjur psql -c \"\\copy (SELECT * from pg_stat_replication) To '/tmp/output.csv' With CSV HEADER\"
+      " || true
+  docker compose exec "$DOCKER_LEADER_CONTAINER" bash -c "cat /tmp/output.csv" | tee "$pg_stat_replication_log_dir_log_file" || true
+
+
+  docker compose exec -T "$DOCKER_LEADER_CONTAINER" bash -c $"
+        chpst -u conjur psql -c \"\\copy (SELECT * from pg_stat_activity) To '/tmp/output.csv' With CSV HEADER\"
+      " || true
+  docker compose exec "$DOCKER_LEADER_CONTAINER" bash -c "cat /tmp/output.csv" | tee "$pg_stat_activity_log_dir_log_file" || true
+  
+}
+
+# Print information of the replication status of each Follower
+# WARNING: at scale, this will output a lot of files (2 per Follower)!
+snapshot_follower_replication_status() {
+  for ((i=1; i<=FOLLOWER_COUNT; i++))
+  do
+    local log_dir
+    FOLLOWER_HOSTNAME="conjur-follower-${i}.mycompany.local"
+    timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S.000+00:00")
+    log_dir="$REPLICATION_LOG_STATS_DIR/follower/$FOLLOWER_HOSTNAME"
+    pg_stat_subscription_log_dir="$log_dir/pg_stat_subscription_log_dir"
+    pg_subscription_rel_log_dir="$log_dir/pg_subscription_rel"
+    pg_subscription_log_dir="$log_dir/pg_subscription"
+    
+
+    container_id=$(docker compose ps -q $FOLLOWER_HOSTNAME)
+    if [ -z "$container_id" ]; then
+      echo "WARNING: No container ID found for service '$FOLLOWER_HOSTNAME' (it is not running), skipping!"
+      continue
+    fi
+
+    mkdir -p "$pg_stat_subscription_log_dir"
+    mkdir -p "$pg_subscription_rel_log_dir"
+    mkdir -p "$pg_subscription_log_dir"
+    
+
+    docker compose exec -T "$FOLLOWER_HOSTNAME" bash -c $"
+          chpst -u conjur psql -c \"\\copy (SELECT * from pg_stat_subscription) To '/tmp/output.csv' With CSV HEADER\"
+        "
+    docker compose exec "$FOLLOWER_HOSTNAME" bash -c "cat /tmp/output.csv" | tee "$pg_stat_subscription_log_dir/$timestamp.log"
+
+    docker compose exec -T "$FOLLOWER_HOSTNAME" bash -c $"
+          chpst -u conjur psql -c \"\\copy (SELECT * from pg_subscription_rel) To '/tmp/output.csv' With CSV HEADER\"
+        "
+    docker compose exec "$FOLLOWER_HOSTNAME" bash -c "cat /tmp/output.csv" | tee "$pg_subscription_rel_log_dir/$timestamp.log"
+
+    docker compose exec -T "$FOLLOWER_HOSTNAME" bash -c $"
+          chpst -u conjur psql -c \"\\copy (SELECT * from pg_subscription) To '/tmp/output.csv' With CSV HEADER\"
+        " || true
+    docker compose exec "$FOLLOWER_HOSTNAME" bash -c "cat /tmp/output.csv" | tee "$pg_subscription_log_dir/$timestamp.log" || true
+  done
 }
 
 xtop() {
