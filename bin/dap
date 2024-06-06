@@ -304,7 +304,6 @@ function _start_standby_synchronization {
 }
 
 function _setup_followers {
-
   for ((i=1; i<=FOLLOWER_COUNT; i++))
   do
     # Generate Seed file(s)
@@ -328,8 +327,12 @@ function _setup_followers {
 
 function _setup_follower {
   local follower_number=${1:-1}
+  local start_time
+  local end_time
+  local execution_time
 
-  echo "Configuring Follower $follower_number"
+  start_time=$(date +%s)
+
   docker compose rm --stop --force "conjur-follower-${follower_number}.mycompany.local"
   docker compose up --no-deps --detach "conjur-follower-${follower_number}.mycompany.local"
 
@@ -348,11 +351,17 @@ function _setup_follower {
   _run "conjur-follower-${follower_number}.mycompany.local" \
     "evoke unpack seed /opt/cyberark/dap/seeds/follower-seed-${follower_number}.tar && evoke configure follower --json-attributes-file='/conjur_files/conjur.json' --debug"
 
+  end_time=$(date +%s)
+  execution_time=$((end_time-start_time))
+
+  echo "INFO: it took: $execution_time seconds to configure Follower: 'conjur-follower-${follower_number}.mycompany.local'"
+
   # Copy certs for HAProxy
   _run "conjur-follower-${follower_number}.mycompany.local" \
     "cp /opt/conjur/etc/ssl/conjur-follower.mycompany.local.key /opt/conjur/etc/ssl/conjur-follower.mycompany.local.pem.key"
   _run "conjur-follower-${follower_number}.mycompany.local" \
     "chown 99:99 /opt/conjur/etc/ssl/conjur-follower.mycompany.local.pem.key"
+
 }
 
 function _setup_k8s_follower {
