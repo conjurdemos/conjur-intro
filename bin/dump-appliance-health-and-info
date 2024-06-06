@@ -18,12 +18,11 @@ cd "$(dirname ${0})/..";
 
 source ./bin/utils.sh
 
-LOG_PREFIX=$(date -u +"%Y-%m-%dT%H:%M:%S.000+00:00")
-HEALTH_LOG_DIR="tmp/appliance/health-$LOG_PREFIX"
+HEALTH_LOG_DIR="tmp/appliance/health"
 LEADER_HEALTH_LOG_DIR="$HEALTH_LOG_DIR/leader"
 FOLLOWER_HEALTH_LOG_DIR="$HEALTH_LOG_DIR/follower"
 
-INFO_LOG_DIR="tmp/appliance-$LOG_PREFIX/info"
+INFO_LOG_DIR="tmp/appliance/info"
 LEADER_INFO_LOG_DIR="$INFO_LOG_DIR/leader"
 FOLLOWER_INFO_LOG_DIR="$INFO_LOG_DIR/follower"
 
@@ -35,6 +34,7 @@ FOLLOWER_COUNT=
 export VERSION=
 
 main(){
+  local timestamp
   echo "Beginning script: $0"
 
   is_failure_detected_globally="false"
@@ -44,9 +44,6 @@ main(){
     exit 1
   fi
 
-  rm -rf "$HEALTH_LOG_DIR"
-  rm -rf "$INFO_LOG_DIR"
-
   mkdir -p "$LEADER_HEALTH_LOG_DIR"
   mkdir -p "$FOLLOWER_HEALTH_LOG_DIR"
   mkdir -p "$LEADER_INFO_LOG_DIR"
@@ -55,8 +52,10 @@ main(){
   echo "Dumping Leader Logs at:"
   echo "- $LEADER_HEALTH_LOG_DIR"
   echo "- $LEADER_INFO_LOG_DIR"
-  docker compose exec "conjur-master-1.mycompany.local" curl -s -k https://localhost/health > "$LEADER_HEALTH_LOG_DIR/conjur-master-1-health.log"
-  docker compose exec "conjur-master-1.mycompany.local" curl -s -k https://localhost/info > "$LEADER_INFO_LOG_DIR/conjur-master-1-info.log"
+
+  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S.000+00:00")
+  docker compose exec "conjur-master-1.mycompany.local" curl -s -k https://localhost/health > "$LEADER_HEALTH_LOG_DIR/$timestamp.log"
+  docker compose exec "conjur-master-1.mycompany.local" curl -s -k https://localhost/info > "$LEADER_INFO_LOG_DIR/$timestamp.log"
 
   echo "Dumping Follower Logs at:"
   echo "- $FOLLOWER_HEALTH_LOG_DIR"
@@ -64,6 +63,7 @@ main(){
   for ((i=1; i<=FOLLOWER_COUNT; i++))
   do
     FOLLOWER_HOSTNAME="conjur-follower-${i}.mycompany.local"
+    timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S.000+00:00")
 
     container_id=$(docker compose ps -q $FOLLOWER_HOSTNAME)
     if [ -z "$container_id" ]; then
@@ -74,7 +74,9 @@ main(){
     echo -e "\nDumping health and info for '$FOLLOWER_HOSTNAME'"
     output=$(docker compose exec "conjur-follower-${i}.mycompany.local" curl -s -k https://localhost/health | sed 's/^/\t/')
     if [[ -n "$output" ]]; then
-      echo "$output" | tee "$FOLLOWER_HEALTH_LOG_DIR/conjur-follower-${i}-health.log"
+      local output_dir="$FOLLOWER_HEALTH_LOG_DIR/conjur-follower-${i}"
+      mkdir -p $output_dir
+      echo "$output" | tee "$output_dir/$timestamp.log"
     else
       echo -e "\tERROR: Failed to fetch health for '$FOLLOWER_HOSTNAME'"
       is_failure_detected_globally="true"
@@ -82,7 +84,9 @@ main(){
     
     output=$(docker compose exec "conjur-follower-${i}.mycompany.local" curl -s -k https://localhost/info | sed 's/^/\t/')
     if [[ -n "$output" ]]; then
-      echo "$output" | tee "$FOLLOWER_INFO_LOG_DIR/conjur-follower-${i}-info.log"
+      local output_dir="$FOLLOWER_INFO_LOG_DIR/conjur-follower-${i}"
+      mkdir -p $output_dir
+      echo "$output" | tee "$output_dir/$timestamp.log"
     else
       echo -e "\tERROR: Failed to fetch info for '$FOLLOWER_HOSTNAME'"
       is_failure_detected_globally="true"
