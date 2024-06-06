@@ -1,6 +1,81 @@
 services:
+
+  k8s-follower-orchestrator:
+    build:
+      context: artifacts/k8s-follower-orchestrator
+    privileged: true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./kubeconfig:/root/.kube/config
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./system/haproxy/certs:/etc/ssl/certs
+
+  follower-client:
+    image: cyberark/conjur-cli:8
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.19
+    working_dir: /src/cli
+    environment:
+      CONJUR_APPLIANCE_URL: https://conjur-follower.mycompany.local
+      CONJUR_ACCOUNT: demo
+      CONJUR_AUTHN_LOGIN: admin
+    volumes:
+      - .:/src/cli
+      - ./cli_cache/follower:/root
+
+  api-client:
+    build:
+      context: ./artifacts/api-client
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.20
+    working_dir: /src/
+    volumes:
+      - ./artifacts/api-client/api-script:/src/bin/api
+      - ./policy:/src/policy
+
+  certificate-generator:
+    build:
+      context: ./artifacts/certificate-generator
+    volumes:
+      - ./system/configuration/certificates:/src/certificates
+
+  policy-generator:
+    build:
+      context: ./artifacts/policy-generator
+    volumes:
+      - ./tools/performance-tests/k6/data:/data
+
+  k6:
+    build:
+      context: ./
+      dockerfile: ./tools/performance-tests/k6/Dockerfile
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.21
+    volumes:
+      - ./tools/performance-tests/k6:/tools/performance-tests/k6
+      - ./files/conjur:/files/conjur
+
+  graphite-statsd:
+    image: graphiteapp/graphite-statsd
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.9
+    ports:
+      - "81:80"
+      - "2003-2004:2003-2004"
+      - "2023-2024:2023-2024"
+      - "${K6_STATSD_PORT:-8125}:8125/udp"
+      - "8126:8126"
+
   conjur-master.mycompany.local:
-    image: haproxy:alpine
+    image: haproxy:2.1-alpine
+    platform: "linux/amd64"
     networks:
       dap_net:
         ipv4_address: 12.16.23.10
@@ -123,7 +198,8 @@ services:
       - ./files:/conjur_files
 
   conjur-follower.mycompany.local:
-    image: haproxy:alpine
+    image: haproxy:2.1-alpine
+    platform: "linux/amd64"
     networks:
       dap_net:
         ipv4_address: 12.16.23.16
@@ -451,78 +527,505 @@ services:
       - .:/src/cli
       - ./cli_cache/master:/root
 
-  k8s-follower-orchestrator:
-    build:
-      context: artifacts/k8s-follower-orchestrator
-    privileged: true
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    volumes:
-      - ./kubeconfig:/root/.kube/config
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./system/haproxy/certs:/etc/ssl/certs
-
-  follower-client:
-    image: cyberark/conjur-cli:8
+  conjur-follower-16.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
     networks:
       dap_net:
-        ipv4_address: 12.16.23.19
-    working_dir: /src/cli
+        ipv4_address: 12.16.23.36
+    expose:
+      - "443"
+      - "444"
     environment:
-      CONJUR_APPLIANCE_URL: https://conjur-follower.mycompany.local
-      CONJUR_ACCOUNT: demo
-      CONJUR_AUTHN_LOGIN: admin
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+    security_opt:
+      - "seccomp:./system/security/seccomp.json"
     volumes:
-      - .:/src/cli
-      - ./cli_cache/follower:/root
+      - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
 
-  api-client:
-    build:
-      context: ./artifacts/api-client
+  conjur-follower-17.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
     networks:
       dap_net:
-        ipv4_address: 12.16.23.20
-    working_dir: /src/
+        ipv4_address: 12.16.23.37
+    expose:
+      - "443"
+      - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+    security_opt:
+      - "seccomp:./system/security/seccomp.json"
     volumes:
-      - ./artifacts/api-client/api-script:/src/bin/api
-      - ./policy:/src/policy
+      - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
 
-  certificate-generator:
-    build:
-      context: ./artifacts/certificate-generator
-    volumes:
-      - ./system/configuration/certificates:/src/certificates
-
-  policy-generator:
-    build:
-      context: ./artifacts/policy-generator
-    volumes:
-      - ./tools/performance-tests/k6/data:/data
-
-  k6:
-    build:
-      context: ./
-      dockerfile: ./tools/performance-tests/k6/Dockerfile
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+  conjur-follower-18.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
     networks:
       dap_net:
-        ipv4_address: 12.16.23.21
+        ipv4_address: 12.16.23.38
+    expose:
+      - "443"
+      - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+    security_opt:
+      - "seccomp:./system/security/seccomp.json"
     volumes:
-      - ./tools/performance-tests/k6:/tools/performance-tests/k6
-      - ./files/conjur:/files/conjur
+      - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
 
-  graphite-statsd:
-    image: graphiteapp/graphite-statsd
+  conjur-follower-19.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
     networks:
       dap_net:
-        ipv4_address: 12.16.23.22
-    ports:
-      - "81:80"
-      - "2003-2004:2003-2004"
-      - "2023-2024:2023-2024"
-      - "${K6_STATSD_PORT:-8125}:8125/udp"
-      - "8126:8126"
+        ipv4_address: 12.16.23.39
+    expose:
+      - "443"
+      - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+    security_opt:
+      - "seccomp:./system/security/seccomp.json"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-follower-20.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.40
+    expose:
+      - "443"
+      - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+    security_opt:
+      - "seccomp:./system/security/seccomp.json"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-follower-21.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.41
+    expose:
+      - "443"
+      - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+    security_opt:
+      - "seccomp:./system/security/seccomp.json"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-follower-22.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.42
+    expose:
+      - "443"
+      - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+    security_opt:
+      - "seccomp:./system/security/seccomp.json"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-follower-23.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.43
+    expose:
+      - "443"
+      - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+    security_opt:
+      - "seccomp:./system/security/seccomp.json"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-follower-24.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.44
+    expose:
+      - "443"
+      - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+    security_opt:
+      - "seccomp:./system/security/seccomp.json"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-follower-25.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.45
+    expose:
+      - "443"
+      - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+    security_opt:
+      - "seccomp:./system/security/seccomp.json"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-follower-26.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.46
+    expose:
+      - "443"
+      - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+    security_opt:
+      - "seccomp:./system/security/seccomp.json"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-follower-27.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.47
+    expose:
+      - "443"
+      - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+    security_opt:
+      - "seccomp:./system/security/seccomp.json"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-follower-28.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.48
+    expose:
+      - "443"
+      - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+    security_opt:
+      - "seccomp:./system/security/seccomp.json"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-follower-29.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.49
+    expose:
+      - "443"
+      - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+    security_opt:
+      - "seccomp:./system/security/seccomp.json"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-follower-30.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.50
+    expose:
+      - "443"
+      - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+    security_opt:
+      - "seccomp:./system/security/seccomp.json"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-follower-31.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.51
+    expose:
+      - "443"
+      - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+    security_opt:
+      - "seccomp:./system/security/seccomp.json"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-follower-32.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.52
+    expose:
+      - "443"
+      - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+    security_opt:
+      - "seccomp:./system/security/seccomp.json"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-follower-33.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.53
+    expose:
+      - "443"
+      - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+    security_opt:
+      - "seccomp:./system/security/seccomp.json"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-follower-34.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.54
+    expose:
+      - "443"
+      - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+    security_opt:
+      - "seccomp:./system/security/seccomp.json"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-follower-35.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.55
+    expose:
+      - "443"
+      - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+    security_opt:
+      - "seccomp:./system/security/seccomp.json"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-follower-36.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.56
+    expose:
+      - "443"
+      - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+    security_opt:
+      - "seccomp:./system/security/seccomp.json"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-follower-37.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.57
+    expose:
+      - "443"
+      - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+    security_opt:
+      - "seccomp:./system/security/seccomp.json"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-follower-38.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.58
+    expose:
+      - "443"
+      - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+    security_opt:
+      - "seccomp:./system/security/seccomp.json"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-follower-39.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.59
+    expose:
+      - "443"
+      - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+    security_opt:
+      - "seccomp:./system/security/seccomp.json"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-follower-40.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.60
+    expose:
+      - "443"
+      - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+    security_opt:
+      - "seccomp:./system/security/seccomp.json"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
 
 volumes:
   seeds:
