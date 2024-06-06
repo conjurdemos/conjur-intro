@@ -33,11 +33,6 @@ pipeline {
       description: 'Determine how many Followers to deploy during replication tests',
     )
     string(
-      name: 'REPLICATION_SECRET_COUNT',
-      defaultValue: "1",
-      description: 'Determine how many policies and secrets to create during replication tests',
-    )
-    string(
       name: 'REPLICATION_MAX_ATTEMPTS',
       defaultValue: "10",
       description: 'Determine how many attempts the replication test should use when testing if a secret is replicated',
@@ -66,7 +61,6 @@ pipeline {
       }
       environment {
         FOLLOWER_COUNT = "${params.REPLICATION_FOLLOWER_COUNT}"
-        SECRET_COUNT = "${params.REPLICATION_SECRET_COUNT}"
         VERSION = "${params.REPLICATION_APPLIANCE_VERISON}"
         MAX_ATTEMPTS = "${params.REPLICATION_MAX_ATTEMPTS}"
       }
