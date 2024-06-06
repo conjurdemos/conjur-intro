@@ -167,13 +167,13 @@ snapshot_follower_replication_status() {
 
     docker compose exec -T "$FOLLOWER_HOSTNAME" bash -c $"
           chpst -u conjur psql -c \"\\copy (SELECT * from pg_stat_subscription) To '/tmp/output.csv' With CSV HEADER\"
-        "
-    docker compose exec "$FOLLOWER_HOSTNAME" bash -c "cat /tmp/output.csv" | tee "$pg_stat_subscription_log_dir/$timestamp.log"
+        " || true
+    docker compose exec "$FOLLOWER_HOSTNAME" bash -c "cat /tmp/output.csv" | tee "$pg_stat_subscription_log_dir/$timestamp.log" || true
 
     docker compose exec -T "$FOLLOWER_HOSTNAME" bash -c $"
           chpst -u conjur psql -c \"\\copy (SELECT * from pg_subscription_rel) To '/tmp/output.csv' With CSV HEADER\"
-        "
-    docker compose exec "$FOLLOWER_HOSTNAME" bash -c "cat /tmp/output.csv" | tee "$pg_subscription_rel_log_dir/$timestamp.log"
+        " || true
+    docker compose exec "$FOLLOWER_HOSTNAME" bash -c "cat /tmp/output.csv" | tee "$pg_subscription_rel_log_dir/$timestamp.log" || true
 
     docker compose exec -T "$FOLLOWER_HOSTNAME" bash -c $"
           chpst -u conjur psql -c \"\\copy (SELECT * from pg_subscription) To '/tmp/output.csv' With CSV HEADER\"
