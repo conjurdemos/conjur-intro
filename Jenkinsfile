@@ -33,9 +33,14 @@ pipeline {
       description: 'Determine how many Followers to deploy during replication tests',
     )
     string(
+      name: 'REPLICATION_CONFIGURE_FOLLOWER_TIMEOUT',
+      defaultValue: "1200",
+      description: 'Determine the max length of seconds that any one Follower can be configured -- replication tests will fail if this time is exceeded',
+    )
+    string(
       name: 'REPLICATION_MAX_ATTEMPTS',
       defaultValue: "10",
-      description: 'Determine how many attempts the replication test should use when testing if a secret is replicated',
+      description: 'Determine how many attempts the replication test should use when testing if a secret is replicated. There is a 3 second sleep buffer between each attempt',
     )
   }
 
@@ -63,6 +68,7 @@ pipeline {
         FOLLOWER_COUNT = "${params.REPLICATION_FOLLOWER_COUNT}"
         VERSION = "${params.REPLICATION_APPLIANCE_VERISON}"
         MAX_ATTEMPTS = "${params.REPLICATION_MAX_ATTEMPTS}"
+        CONFIGURE_FOLLOWER_TIMEOUT = "${params.REPLICATION_CONFIGURE_FOLLOWER_TIMEOUT}"
       }
       steps {
         sh './bin/replication-test'
