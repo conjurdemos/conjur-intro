@@ -102,6 +102,7 @@ services:
       - "1999"
       - "5432"
     environment:
+      CONJUR_LOG_LEVEL: debug
       TRUSTED_PROXIES: 123.123.1.1,123.5.1.1
       CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
     security_opt:

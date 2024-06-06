@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+# Fail early.
+set -ex
+
+# USAGE
+#
+# This script should be called by `replication-test`. It will also always be
+# called by Jenkins, even if a job is aborted.
+#
+# ./bin/create-artifact-logs
+#
+
+# Always work from repo root directory
+cd "$(dirname ${0})/..";
+
+source ./bin/utils.sh
+
+LOG_DIR="tmp/appliance"
+ARCHIVE_DIR="tmp/artifacts"
+
+FOLLOWER_COUNT="${FOLLOWER_COUNT:-1}"
+
+main(){
+  echo "Beginning script: $0"
+
+  if [[ -z "$FOLLOWER_COUNT" ]]; then
+    echo "FATAL: FOLLOWER_COUNT must be specified as --follower-count"
+    exit 1
+  fi
+
+  ./bin/dump-appliance-logs --no-fail --follower-count "${FOLLOWER_COUNT}"
+
+  timestamp=$(date +%Y%m%d%H%M%S)
+  archive_filename="$ARCHIVE_DIR/appliance-logs-$timestamp.tgz"
+
+  if [ -f "$archive_filename" ]; then
+    echo "Log artifacts already exist at $archive_filename, SKIPPING!"
+    exit 0
+  fi
+
+  echo "Dumping appliance logs..."
+  ./bin/dump-appliance-logs --no-fail --follower-count "${FOLLOWER_COUNT}"
+  ./bin/dump-appliance-health-and-info --no-fail --follower-count "${FOLLOWER_COUNT}"
+
+  echo "Tarballing logs to $archive_filename"
+  tar -czvf "$archive_filename" -C "$LOG_DIR" .
+}
+
+main "$@"

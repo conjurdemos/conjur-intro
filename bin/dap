@@ -335,7 +335,7 @@ function _setup_follower {
 
   # Unpack and Configure
   _run "conjur-follower-${follower_number}.mycompany.local" \
-    "evoke unpack seed /opt/cyberark/dap/seeds/follower-seed-${follower_number}.tar && evoke configure follower --json-attributes-file='/conjur_files/conjur.json'"
+    "evoke unpack seed /opt/cyberark/dap/seeds/follower-seed-${follower_number}.tar && evoke configure follower --json-attributes-file='/conjur_files/conjur.json' --debug"
 
   # Copy certs for HAProxy
   _run "conjur-follower-${follower_number}.mycompany.local" \

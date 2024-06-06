@@ -42,15 +42,7 @@ finish() {
     kill $pid || true
   fi
 
-  # TODO: dump logs just in case if any earlier test stage failed...
-  echo "Dumping appliance logs..."
-  ./bin/dump-appliance-logs --no-fail --follower-count "${FOLLOWER_COUNT}"
-  ./bin/dump-appliance-health-and-info --follower-count "${FOLLOWER_COUNT}"
-
-  timestamp=$(date +%Y%m%d%H%M%S)
-  archive_filename="$ARCHIVE_DIR/appliance-logs-$timestamp.tgz"
-  echo "Tarballing logs to $archive_filename"
-  tar -czvf "$archive_filename" -C "$LOG_DIR" .
+  ./bin/create-log-artifacts --follower-count  "${FOLLOWER_COUNT}"
   ./bin/dap --stop
 }
 
