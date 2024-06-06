@@ -36,6 +36,8 @@ export VERSION=
 FOLLOWER_COUNT=
 
 main() {
+  LEADER_ROW_COUNTS_LOG_FILE="${DOCKER_LEADER_CONTAINER}-row-counts.log"
+
   echo "Beginning script: $0"
 
   if [[ -z "$MAX_ATTEMPTS" ]]; then
@@ -71,7 +73,7 @@ main() {
     docker compose exec "$DOCKER_LEADER_CONTAINER" bash -c $"
           chpst -u conjur psql -c \"\\copy ($query) To '/tmp/output.csv' With CSV\"
         "
-    docker compose cp "$DOCKER_LEADER_CONTAINER:/tmp/output.csv" "$LOG_DIR/${DOCKER_LEADER_CONTAINER}-row-counts.log"
+    docker compose cp "$DOCKER_LEADER_CONTAINER:/tmp/output.csv" "$LOG_DIR/${LEADER_ROW_COUNTS_LOG_FILE}"
 
   for ((j=1; j<=FOLLOWER_COUNT; j++))
   do
@@ -88,9 +90,6 @@ main() {
   # Get a list of all files in the directory
   log_files=("$LOG_DIR"/*)
 
-  # Get the first file
-  first_file=${log_files[0]}
-
   # Loop over the files and compare each to the first file
   for ((k=1; k<=MAX_ATTEMPTS; k++))
   do
@@ -100,10 +99,10 @@ main() {
       if [ ! -s "$file" ]; then
         echo "[Attempt $k/$MAX_ATTEMPTS] FATAL: File $file is empty."
         is_failure_detected="true"
-      elif diff -q "$first_file" "$file" > /dev/null; then
-        echo "[Attempt $k/$MAX_ATTEMPTS] Files $first_file and $file are the same"
+      elif diff -q "$LOG_DIR/$LEADER_ROW_COUNTS_LOG_FILE" "$file" > /dev/null; then
+        echo "[Attempt $k/$MAX_ATTEMPTS] Files $LOG_DIR/$LEADER_ROW_COUNTS_LOG_FILE and $file are the same"
       else
-        echo "[Attempt $k/$MAX_ATTEMPTS] ERROR: Files $first_file and $file are different"
+        echo "[Attempt $k/$MAX_ATTEMPTS] ERROR: Files $LOG_DIR/$LEADER_ROW_COUNTS_LOG_FILE and $file are different"
         is_failure_detected="true"
       fi
     done
