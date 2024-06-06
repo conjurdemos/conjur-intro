@@ -333,6 +333,17 @@ function _setup_follower {
   docker compose rm --stop --force "conjur-follower-${follower_number}.mycompany.local"
   docker compose up --no-deps --detach "conjur-follower-${follower_number}.mycompany.local"
 
+  # HACK: Set log level to DEBUG
+  # IMPORTANT: this debug hack cannot be applied to the Leader until AFTER
+  # seedfiles are generated, otherwise you will encounter:
+  #
+  # error: "185018 #1483" is not a valid octal string.
+  #
+  # This is because the debug output on the Leader is include in the seedfile,
+  # thus corrupting it!
+  _run "conjur-follower-${follower_number}.mycompany.local" "sed -i 's/Logger::INFO/Logger::DEBUG/g' /opt/conjur/evoke/lib/evoke/cli_logger.rb"
+  _run "conjur-follower-${follower_number}.mycompany.local" "cat /opt/conjur/evoke/lib/evoke/cli_logger.rb"
+
   # Unpack and Configure
   _run "conjur-follower-${follower_number}.mycompany.local" \
     "evoke unpack seed /opt/cyberark/dap/seeds/follower-seed-${follower_number}.tar && evoke configure follower --json-attributes-file='/conjur_files/conjur.json' --debug"
