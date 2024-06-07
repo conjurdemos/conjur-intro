@@ -79,7 +79,6 @@ pipeline {
   post {
     always {
       script {
-        sh "./bin/create-log-artifacts --follower-count  ${params.REPLICATION_FOLLOWER_COUNT}"
         archiveArtifacts artifacts: 'tmp/artifacts/*.tgz', allowEmptyArchive: true, onlyIfSuccessful: false
         sh "./bin/dap --stop"
         cleanupAndNotify(currentBuild.currentResult, '#conjur-core')
