@@ -26,7 +26,7 @@ NO_FAIL="false"
 FOLLOWER_COUNT=
 
 # Use this to hide WARN from docker compose...
-# WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string. 
+# WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string.
 export VERSION=
 
 main(){
@@ -48,6 +48,9 @@ main(){
 
   echo "Dumping Leader Logs at: $LEADER_LOG_DIR"
   docker compose logs "conjur-master-1.mycompany.local" > "$LEADER_LOG_DIR/conjur-master-1.log"
+
+  echo "Dumping Leader reconfigure logs at: $LEADER_LOG_DIR"
+  docker compose logs "conjur-master.mycompany.local" > "$LEADER_LOG_DIR/haproxy.log"
 
   echo "Dumping Follower Logs at: $FOLLOWER_LOG_DIR"
   for ((i=1; i<=FOLLOWER_COUNT; i++))
