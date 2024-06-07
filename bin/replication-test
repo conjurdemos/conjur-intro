@@ -10,7 +10,11 @@ set -ex
 # as expected. It also monitors the host for system resource utilization,
 # the container logs, and outputs them into a single tarball.
 #
-# ./bin/replication-test
+# VERSION=5.0-stable FOLLOWER_COUNT=2 ./bin/replication-test
+# VERSION=13.3.0 FOLLOWER_COUNT=2 ./bin/replication-test
+#
+# Useful for when only testing changes to tests or the test harness itself:
+# USE_EXISTING_ENVIRONMENT=true ./bin/replication-test
 #
 
 # Always work from repo root directory
@@ -26,6 +30,7 @@ REPLICATION_LOG_STATS_DIR="$LOG_DIR/replication"
 ARCHIVE_DIR="tmp/artifacts"
 DOCKER_LEADER_CONTAINER="conjur-master-1.mycompany.local"
 
+USE_EXISTING_ENVIRONMENT="${USE_EXISTING_ENVIRONMENT:-false}"
 VERSION="${VERSION:-'5.0-stable'}"
 FOLLOWER_COUNT="${FOLLOWER_COUNT:-2}"
 RESOURCE_INTERVAL="${RESOURCE_INTERVAL:-60}"
@@ -48,7 +53,7 @@ finish() {
   fi
 
   ./bin/create-log-artifacts --follower-count  "${FOLLOWER_COUNT}"
-  ./bin/dap --stop
+  teardown_compose_environment
 }
 
 main(){
@@ -68,7 +73,7 @@ main(){
   mkdir -p "$TOP_LOG_DIR"
   mkdir -p "$DOCKER_STATS_LOG_DIR"
 
-  ./bin/dap --stop || true
+  teardown_compose_environment
 
   # Exclude the grep command and the current process
   echo "Listening for orphaned resource monitoring processes from this script..."
@@ -77,12 +82,7 @@ main(){
   echo "Done listening."
 
   # Deploy the Leader (including loadbalancer)
-  echo "Deploying the Leader using tag: '${VERSION}'..."
-  bin/dap --provision-master --version "$VERSION"
-
-  # The most recent backup is used from system/backup
-  echo "Restoring the Leader from backup using tag: '${VERSION}'..."
-  bin/dap --restore-from-backup --version "$VERSION"
+  deploy_and_restore_leader
 
   record_resource_utilization &
   pid=$!
@@ -94,6 +94,46 @@ main(){
   # The following enables us to kill long-running configurations (hanging).
   # This allows the pipeline to continue, fail, and for artifacts to still be
   # generated.
+  deploy_followers
+
+  ./bin/test-follower-pg-identifier --follower-count "${FOLLOWER_COUNT}"
+  ./bin/dump-appliance-health-and-info --follower-count "${FOLLOWER_COUNT}"
+  ./bin/test-table-rows-match --follower-count "${FOLLOWER_COUNT}" --max-attempts "${MAX_ATTEMPTS}"
+
+  # These the test below depends on the appliance logs...
+  ./bin/dump-appliance-logs --follower-count "${FOLLOWER_COUNT}"
+  ./bin/test-appliance-logs-for-replication-slot-errors
+}
+
+teardown_compose_environment() {
+  if [ "$USE_EXISTING_ENVIRONMENT" = "true" ]; then
+    echo "USE_EXISTING_ENVIRONMENT is set to '$USE_EXISTING_ENVIRONMENT', skipping teardown of the Compose environment..."
+    return
+  fi
+  ./bin/dap --stop || true
+}
+
+deploy_and_restore_leader() {
+  if [ "$USE_EXISTING_ENVIRONMENT" = "true" ]; then
+    echo "USE_EXISTING_ENVIRONMENT is set to '$USE_EXISTING_ENVIRONMENT', skipping deployment and restoration of Leader..."
+    return
+  fi
+
+  echo "Deploying the Leader using tag: '${VERSION}'..."
+  bin/dap --provision-master --version "$VERSION"
+
+  # The most recent backup is used from system/backup
+  echo "Restoring the Leader from backup using tag: '${VERSION}'..."
+  bin/dap --restore-from-backup --version "$VERSION"
+}
+
+deploy_followers() {
+  if [ "$USE_EXISTING_ENVIRONMENT" = "true" ]; then
+    echo "USE_EXISTING_ENVIRONMENT is set to '$USE_EXISTING_ENVIRONMENT', skipping deployment of Followers..."
+    return
+  fi
+
+
   set +e
   { timeout "$CONFIGURE_FOLLOWER_TIMEOUT" ./bin/dap --provision-follower --version "${VERSION}" --follower-count "${FOLLOWER_COUNT}"; exit_status=$?; }
   set -e
@@ -106,14 +146,6 @@ main(){
       echo "FATAL: Failed to configure Follower(s) with error: $exit_status"
       exit 1
   fi
-
-  ./bin/test-follower-pg-identifier --follower-count "${FOLLOWER_COUNT}"
-  ./bin/dump-appliance-health-and-info --follower-count "${FOLLOWER_COUNT}"
-  ./bin/test-table-rows-match --follower-count "${FOLLOWER_COUNT}" --max-attempts "${MAX_ATTEMPTS}"
-
-  # These the test below depends on the appliance logs...
-  ./bin/dump-appliance-logs --follower-count "${FOLLOWER_COUNT}"
-  ./bin/test-appliance-logs-for-replication-slot-errors
 }
 
 record_resource_utilization() {
