@@ -11,6 +11,7 @@ source ./bin/utils.sh
 dotenv > /dev/null 2>&1 || true
 
 FOLLOWER_CONFIG_PIDS=()
+FOLLOWER_LOG_DIR="tmp/appliance/configure/follower"
 CONJUR_MASTER_PORT=${CONJUR_MASTER_PORT:-443}
 CONJUR_FOLLOWER_PORT=${CONJUR_FOLLOWER_PORT:-450}
 CONJUR_K8S_FOLLOWER_PORT=${CONJUR_K8S_FOLLOWER_PORT:-451}
@@ -316,6 +317,11 @@ function _start_standby_synchronization {
 }
 
 function _setup_followers {
+  echo "Follower configuration logs for '$follower_service_name' will be output to $follower_log_file"
+  mkdir -p "$FOLLOWER_LOG_DIR"
+
+  echo -e "hostname,seconds\n" > "$FOLLOWER_LOG_DIR/durations.log"
+
   for ((i=1; i<=FOLLOWER_COUNT; i++))
   do
     # Generate Seed file(s)
@@ -342,6 +348,7 @@ function _setup_followers {
 }
 
 function _setup_follower {
+  local follower_log_file
   local follower_number=${1:-1}
   local follower_service_name
   local start_time
@@ -349,8 +356,8 @@ function _setup_follower {
   local execution_time
 
   follower_service_name="conjur-follower-${follower_number}.mycompany.local"
+  follower_log_file="$FOLLOWER_LOG_DIR/$follower_service_name.log"
   start_time=$(date +%s)
-  
 
   docker compose rm --stop --force "$follower_service_name"
   docker compose up --no-deps --detach "$follower_service_name"
@@ -368,12 +375,13 @@ function _setup_follower {
 
   # Unpack and Configure
   _run "$follower_service_name" \
-    "evoke unpack seed /opt/cyberark/dap/seeds/follower-seed-${follower_number}.tar && evoke configure follower --json-attributes-file='/conjur_files/conjur.json' --debug" | awk -v follower="$follower_service_name" '{print "[CONFIG " follower "]: " $0}' 
+    "evoke unpack seed /opt/cyberark/dap/seeds/follower-seed-${follower_number}.tar && evoke configure follower --json-attributes-file='/conjur_files/conjur.json' --debug" | awk -v follower="$follower_service_name" '{print "[CONFIG " follower "]: " $0}' 2>&1 | tee "$follower_log_file"
 
   end_time=$(date +%s)
   execution_time=$((end_time-start_time))
 
   echo "INFO: it took: $execution_time seconds to configure Follower: '$follower_service_name'"
+  echo "$follower_service_name,$execution_time" >> "$FOLLOWER_LOG_DIR/durations.log"
 
   # Copy certs for HAProxy
   _run "$follower_service_name" \
