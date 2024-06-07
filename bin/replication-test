@@ -27,6 +27,7 @@ RESOURCE_UTLIZATION_LOG_DIR="$LOG_DIR/resources"
 TOP_LOG_DIR="$RESOURCE_UTLIZATION_LOG_DIR/top"
 DOCKER_STATS_LOG_DIR="$RESOURCE_UTLIZATION_LOG_DIR/docker_stats"
 REPLICATION_LOG_STATS_DIR="$LOG_DIR/replication"
+PG_ID_LOG_DIR="$LOG_DIR/pg_identifier"
 ARCHIVE_DIR="tmp/artifacts"
 DOCKER_LEADER_CONTAINER="conjur-master-1.mycompany.local"
 
@@ -59,6 +60,11 @@ finish() {
 main(){
   trap finish EXIT
 
+  if [ "$USE_EXISTING_ENVIRONMENT" = "true" ]; then
+    echo "USE_EXISTING_ENVIRONMENT is set to '$USE_EXISTING_ENVIRONMENT'... Setting RESOURCE_INTERVAL to '1'..."
+    RESOURCE_INTERVAL="1"
+  fi
+
   if ! command -v timeout >/dev/null 2>&1; then
     echo "FATAL: the timeout command is not available which is a requirement for this script."
     exit 1
@@ -72,6 +78,7 @@ main(){
   mkdir -p "$ARCHIVE_DIR"
   mkdir -p "$TOP_LOG_DIR"
   mkdir -p "$DOCKER_STATS_LOG_DIR"
+  mkdir -p "$PG_ID_LOG_DIR"
 
   teardown_compose_environment
 
@@ -87,7 +94,6 @@ main(){
   record_resource_utilization &
   pid=$!
   echo "Starting resource monitor: $pid"
-
   echo "Provisioning Follower(s) using tag: '${VERSION}'..."
   echo "If any one Follower takes longer than $CONFIGURE_FOLLOWER_TIMEOUT seconds to configure, the configuration process for all Followers will be stopped."
 
@@ -96,6 +102,17 @@ main(){
   # generated.
   deploy_followers
 
+  # This is a Developer Exprience option for using USE_EXISTING_ENVIRONMENT
+  if [ "$USE_EXISTING_ENVIRONMENT" = "true" ]; then
+    local interval=10
+    echo "USE_EXISTING_ENVIRONMENT is set to '$USE_EXISTING_ENVIRONMENT'... Sleeping for '$interval' seconds to let the resource monitor get some ticks in..."
+    echo "Press any key to proceed immediately, or wait '$interval' seconds to proceed automatically."
+    if ! read -t "$interval" -s; then
+      echo "Proceeding..."
+    fi
+  fi
+
+  # Begin test suite
   ./bin/test-follower-pg-identifier --follower-count "${FOLLOWER_COUNT}"
   ./bin/dump-appliance-health-and-info --follower-count "${FOLLOWER_COUNT}"
   ./bin/test-table-rows-match --follower-count "${FOLLOWER_COUNT}" --max-attempts "${MAX_ATTEMPTS}"
@@ -103,6 +120,9 @@ main(){
   # These the test below depends on the appliance logs...
   ./bin/dump-appliance-logs --follower-count "${FOLLOWER_COUNT}"
   ./bin/test-appliance-logs-for-replication-slot-errors
+
+  echo "Tests are finished executing!"
+  echo "DONE."
 }
 
 teardown_compose_environment() {
@@ -133,7 +153,6 @@ deploy_followers() {
     return
   fi
 
-
   set +e
   { timeout "$CONFIGURE_FOLLOWER_TIMEOUT" ./bin/dap --provision-follower --version "${VERSION}" --follower-count "${FOLLOWER_COUNT}"; exit_status=$?; }
   set -e
@@ -148,12 +167,16 @@ deploy_followers() {
   fi
 }
 
+# IMPORTANT: this is all done in sequence, each statistic is not a separate
+# process!
 record_resource_utilization() {
   while true; do
     snapshot_top
     snapshot_docker_stats
     snapshot_leader_replication_status
     snapshot_follower_replication_status
+    snapshot_leader_pg_identifier
+    snapshot_follower_pg_identifier
     sleep "$RESOURCE_INTERVAL"
   done
 }
@@ -171,7 +194,6 @@ snapshot_docker_stats() {
 # Print information of the replication status of the Leader
 snapshot_leader_replication_status() {
   local log_dir
-  local query
 
   timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S.000+00:00")
   log_dir="$REPLICATION_LOG_STATS_DIR/leader/$DOCKER_LEADER_CONTAINER"
@@ -188,12 +210,10 @@ snapshot_leader_replication_status() {
       " || true
   docker compose exec "$DOCKER_LEADER_CONTAINER" bash -c "cat /tmp/output.csv" | tee "$pg_stat_replication_log_dir_log_file" || true
 
-
   docker compose exec -T "$DOCKER_LEADER_CONTAINER" bash -c $"
         chpst -u conjur psql -c \"\\copy (SELECT * from pg_stat_activity) To '/tmp/output.csv' With CSV HEADER\"
       " || true
   docker compose exec "$DOCKER_LEADER_CONTAINER" bash -c "cat /tmp/output.csv" | tee "$pg_stat_activity_log_dir_log_file" || true
-  
 }
 
 # Print information of the replication status of each Follower
@@ -202,39 +222,76 @@ snapshot_follower_replication_status() {
   for ((i=1; i<=FOLLOWER_COUNT; i++))
   do
     local log_dir
-    FOLLOWER_HOSTNAME="conjur-follower-${i}.mycompany.local"
+    local follower_hostname="conjur-follower-${i}.mycompany.local"
     timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S.000+00:00")
-    log_dir="$REPLICATION_LOG_STATS_DIR/follower/$FOLLOWER_HOSTNAME"
+    log_dir="$REPLICATION_LOG_STATS_DIR/follower/$follower_hostname"
     pg_stat_subscription_log_dir="$log_dir/pg_stat_subscription_log_dir"
     pg_subscription_rel_log_dir="$log_dir/pg_subscription_rel"
     pg_subscription_log_dir="$log_dir/pg_subscription"
-    
 
-    container_id=$(docker compose ps -q $FOLLOWER_HOSTNAME)
+    container_id=$(docker compose ps -q $follower_hostname)
     if [ -z "$container_id" ]; then
-      echo "WARNING: No container ID found for service '$FOLLOWER_HOSTNAME' (it is not running), skipping!"
+      echo "WARNING: No container ID found for service '$follower_hostname' (it is not running), skipping!"
       continue
     fi
 
     mkdir -p "$pg_stat_subscription_log_dir"
     mkdir -p "$pg_subscription_rel_log_dir"
     mkdir -p "$pg_subscription_log_dir"
-    
 
-    docker compose exec -T "$FOLLOWER_HOSTNAME" bash -c $"
+    docker compose exec -T "$follower_hostname" bash -c $"
           chpst -u conjur psql -c \"\\copy (SELECT * from pg_stat_subscription) To '/tmp/output.csv' With CSV HEADER\"
         " || true
-    docker compose exec "$FOLLOWER_HOSTNAME" bash -c "cat /tmp/output.csv" | tee "$pg_stat_subscription_log_dir/$timestamp.log" || true
+    docker compose exec "$follower_hostname" bash -c "cat /tmp/output.csv" | tee "$pg_stat_subscription_log_dir/$timestamp.log" || true
 
-    docker compose exec -T "$FOLLOWER_HOSTNAME" bash -c $"
+    docker compose exec -T "$follower_hostname" bash -c $"
           chpst -u conjur psql -c \"\\copy (SELECT * from pg_subscription_rel) To '/tmp/output.csv' With CSV HEADER\"
         " || true
-    docker compose exec "$FOLLOWER_HOSTNAME" bash -c "cat /tmp/output.csv" | tee "$pg_subscription_rel_log_dir/$timestamp.log" || true
+    docker compose exec "$follower_hostname" bash -c "cat /tmp/output.csv" | tee "$pg_subscription_rel_log_dir/$timestamp.log" || true
 
-    docker compose exec -T "$FOLLOWER_HOSTNAME" bash -c $"
+    docker compose exec -T "$follower_hostname" bash -c $"
           chpst -u conjur psql -c \"\\copy (SELECT * from pg_subscription) To '/tmp/output.csv' With CSV HEADER\"
         " || true
-    docker compose exec "$FOLLOWER_HOSTNAME" bash -c "cat /tmp/output.csv" | tee "$pg_subscription_log_dir/$timestamp.log" || true
+    docker compose exec "$follower_hostname" bash -c "cat /tmp/output.csv" | tee "$pg_subscription_log_dir/$timestamp.log" || true
+  done
+}
+
+snapshot_leader_pg_identifier() {
+  local log_dir
+
+  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S.000+00:00")
+  log_dir="$PG_ID_LOG_DIR/leader/$DOCKER_LEADER_CONTAINER"
+
+  mkdir -p "$log_dir"
+
+  pgid=$(docker compose exec -T "$DOCKER_LEADER_CONTAINER" chpst -u postgres psql -tqc 'SELECT system_identifier FROM pg_control_system();')
+  echo "Got pg identifer for Leader '$DOCKER_LEADER_CONTAINER': $pgid"
+  echo "$pgid" > "$log_dir/$timestamp.log" || true
+}
+
+snapshot_follower_pg_identifier() {
+  local log_dir
+
+  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S.000+00:00")
+
+  for ((i=1; i<=FOLLOWER_COUNT; i++))
+  do
+    local log_dir
+    local follower_hostname="conjur-follower-${i}.mycompany.local"
+
+    container_id=$(docker compose ps -q $follower_hostname)
+    if [ -z "$container_id" ]; then
+      echo "WARNING: No container ID found for service '$follower_hostname' (it is not running), skipping!"
+      continue
+    fi
+
+    log_dir="$PG_ID_LOG_DIR/follower/$follower_hostname"
+
+    mkdir -p "$log_dir"
+
+    pgid=$(docker compose exec -T "$follower_hostname" chpst -u postgres psql -tqc 'SELECT system_identifier FROM pg_control_system();')
+    echo "Got pg identifer for Follower '$follower_hostname': $pgid"
+    echo "$pgid" > "$log_dir/$timestamp.log" || true
   done
 }
 
