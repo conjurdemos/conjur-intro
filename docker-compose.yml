@@ -228,10 +228,8 @@ services:
         - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
       - ./files:/conjur_files
 
   conjur-follower-2.mycompany.local:
@@ -248,10 +246,10 @@ services:
         - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-3.mycompany.local:
@@ -268,10 +266,10 @@ services:
         - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-4.mycompany.local:
@@ -288,10 +286,10 @@ services:
         - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-5.mycompany.local:
@@ -308,10 +306,10 @@ services:
         - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-6.mycompany.local:
@@ -328,10 +326,10 @@ services:
         - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-7.mycompany.local:
@@ -348,10 +346,10 @@ services:
         - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-8.mycompany.local:
@@ -368,10 +366,10 @@ services:
         - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-9.mycompany.local:
@@ -388,10 +386,10 @@ services:
         - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-10.mycompany.local:
@@ -408,10 +406,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-11.mycompany.local:
@@ -428,10 +426,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-12.mycompany.local:
@@ -448,10 +446,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-13.mycompany.local:
@@ -468,10 +466,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-14.mycompany.local:
@@ -488,10 +486,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-15.mycompany.local:
@@ -508,10 +506,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   client:
@@ -542,10 +540,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-17.mycompany.local:
@@ -562,10 +560,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-18.mycompany.local:
@@ -582,10 +580,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-19.mycompany.local:
@@ -602,10 +600,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-20.mycompany.local:
@@ -622,10 +620,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-21.mycompany.local:
@@ -642,10 +640,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-22.mycompany.local:
@@ -662,10 +660,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-23.mycompany.local:
@@ -682,10 +680,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-24.mycompany.local:
@@ -702,10 +700,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-25.mycompany.local:
@@ -722,10 +720,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-26.mycompany.local:
@@ -742,10 +740,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-27.mycompany.local:
@@ -762,10 +760,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-28.mycompany.local:
@@ -782,10 +780,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-29.mycompany.local:
@@ -802,10 +800,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-30.mycompany.local:
@@ -822,10 +820,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-31.mycompany.local:
@@ -842,10 +840,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-32.mycompany.local:
@@ -862,10 +860,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-33.mycompany.local:
@@ -882,10 +880,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-34.mycompany.local:
@@ -902,10 +900,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-35.mycompany.local:
@@ -922,10 +920,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-36.mycompany.local:
@@ -942,10 +940,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-37.mycompany.local:
@@ -962,10 +960,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-38.mycompany.local:
@@ -982,10 +980,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-39.mycompany.local:
@@ -1002,10 +1000,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
   conjur-follower-40.mycompany.local:
@@ -1022,10 +1020,10 @@ services:
       - "seccomp:./system/security/seccomp.json"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
-      - follower-certs:/opt/conjur/etc/ssl/
+
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
-      - ./system/logs/follower:/var/log/conjur:Z
+
       - ./files:/conjur_files
 
 volumes:
