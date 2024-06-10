@@ -155,7 +155,7 @@ backend www-backend
   mode tcp
   balance roundrobin
   option httpchk GET /health
-  server conjur-master-1 conjur-master-1.mycompany.local:443 check port 443 check-ssl ca-file /etc/ssl/certs/ca.pem
+  server conjur-master-1 conjur-master-1.mycompany.local:443 check port 444
 $(_standby_backend_www_lines)
 
 #
@@ -166,7 +166,7 @@ backend postgres-backend
   mode tcp
   balance roundrobin
   option httpchk GET /health
-  server conjur-master-1 conjur-master-1.mycompany.local:5432 check port 443 check-ssl ca-file /etc/ssl/certs/ca.pem
+  server conjur-master-1 conjur-master-1.mycompany.local:5432 check port 444
 $(_standby_backend_postgres_lines)
 
 #
@@ -177,7 +177,7 @@ backend syslog-backend
   mode tcp
   balance roundrobin
   option httpchk GET /health
-  server conjur-master-1 conjur-master-1.mycompany.local:1999 check port 443 check-ssl ca-file /etc/ssl/certs/ca.pem
+  server conjur-master-1 conjur-master-1.mycompany.local:1999 check port 444
 $(_standby_backend_syslog_lines)
 
 #
@@ -197,7 +197,7 @@ _standby_backend_www_lines() {
   # The identifier for the Leader is 1, so we start at 2 for Standbys
   for ((i=2; i<=STANDBY_COUNT+1; i++))
   do
-    standby_servers+=("  server conjur-master-$i conjur-master-$i.mycompany.local:443 check port 443 check-ssl ca-file /etc/ssl/certs/ca.pem")
+    standby_servers+=("  server conjur-master-$i conjur-master-$i.mycompany.local:443 check port 444")
   done
 
   printf '%s' "$(IFS=$'\n' ; echo "${standby_servers[*]}")"
@@ -209,7 +209,7 @@ _standby_backend_postgres_lines() {
   # The identifier for the Leader is 1, so we start at 2 for Standbys
   for ((i=2; i<=STANDBY_COUNT+1; i++))
   do
-    standby_servers+=("  server conjur-master-$i conjur-master-$i.mycompany.local:5432 check port 443 check-ssl ca-file /etc/ssl/certs/ca.pem")
+    standby_servers+=("  server conjur-master-$i conjur-master-$i.mycompany.local:5432 check port 444")
   done
 
   printf '%s' "$(IFS=$'\n' ; echo "${standby_servers[*]}")"
@@ -221,7 +221,7 @@ _standby_backend_syslog_lines() {
   # The identifier for the Leader is 1, so we start at 2 for Standbys
   for ((i=2; i<=STANDBY_COUNT+1; i++))
   do
-    standby_servers+=("  server conjur-master-$i conjur-master-$i.mycompany.local:1999 check port 443 check-ssl ca-file /etc/ssl/certs/ca.pem")
+    standby_servers+=("  server conjur-master-$i conjur-master-$i.mycompany.local:1999 check port 444")
   done
 
   printf '%s' "$(IFS=$'\n' ; echo "${standby_servers[*]}")"
@@ -236,7 +236,7 @@ function _run {
   local _node_name=$1
   local _args=("${_all_args[@]:1}")
 
-  echo "Running Command (on $_node_name): docker exec cyberark-dap $_args"
+  echo "Running Command (on $_node_name): $_args"
 
   if [[ $DRY_RUN = false ]]; then
     docker compose exec -T $_node_name bash -c "
@@ -307,8 +307,12 @@ function _setup_standby {
     "evoke seed standby conjur-master-$_standby_number.mycompany.local conjur-master-1.mycompany.local > /opt/cyberark/dap/seeds/standby-seed-$_standby_number.tar"
 
   # Unpack and Configure
-  _run conjur-master-$_standby_number.mycompany.local \
-    "evoke unpack seed /opt/cyberark/dap/seeds/standby-seed-$_standby_number.tar && evoke configure standby"
+  _cmd="evoke unpack seed"
+  _cmd="$_cmd /opt/cyberark/dap/seeds/standby-seed-$_standby_number.tar &&"
+  _cmd="$_cmd evoke configure standby"
+  _cmd="$_cmd --json-attributes-file='/conjur_files/conjur.json'"
+
+  _run conjur-master-$_standby_number.mycompany.local "$_cmd"
 }
 
 function _start_standby_synchronization {
