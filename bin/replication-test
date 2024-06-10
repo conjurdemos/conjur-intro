@@ -145,6 +145,21 @@ deploy_and_restore_leader() {
   # The most recent backup is used from system/backup
   echo "Restoring the Leader from backup using tag: '${VERSION}'..."
   bin/dap --restore-from-backup --version "$VERSION"
+
+  echo "Importing certificates..."
+  bin/dap --import-custom-certificates --version "$VERSION"
+  bin/dap --wait-for-master
+
+  echo "Deploying the Standbys..."
+  bin/dap --provision-standbys --version "$VERSION"
+
+  bin/dap --wait-for-master
+
+  echo "Enabling auto-failover..."
+  bin/dap --enable-auto-failover
+
+  echo "Waiting for healthy cluster..."
+  bin/dap --wait-for-master
 }
 
 deploy_followers() {
