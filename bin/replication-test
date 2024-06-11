@@ -132,6 +132,15 @@ main(){
   echo "Waiting for Follower(s) to become healthy after rebasing..."
   wait_for_followers
 
+  echo "Gathering test results again..."
+  ./bin/test-follower-pg-identifier --follower-count "${FOLLOWER_COUNT}"
+  ./bin/dump-appliance-health-and-info --follower-count "${FOLLOWER_COUNT}"
+  ./bin/test-table-rows-match --follower-count "${FOLLOWER_COUNT}" --max-attempts "${MAX_ATTEMPTS}"
+
+  # These the test below depends on the appliance logs...
+  ./bin/dump-appliance-logs --follower-count "${FOLLOWER_COUNT}"
+  ./bin/test-appliance-logs-for-replication-slot-errors
+
   echo "Tests are finished executing!"
   echo "DONE."
 }
