@@ -24,6 +24,12 @@ To run latest build from `master` branch (with tag edge) of k8s-follower use:
 bin/dap --provision-k8s-follower
 ```
 
+You may specify the number of k8s-follower replicas as such:
+
+```shell
+bin/dap --provision-k8s-follower --follower-count 3
+```
+
 For specific tag version flag could be specified:
 
 ```shell

@@ -398,6 +398,7 @@ function _setup_k8s_follower {
   docker compose build \
     --build-arg K8S_FOLLOWER_TAG="$K8S_FOLLOWER_TAG" \
     --build-arg CONJUR_K8S_FOLLOWER_PORT="$CONJUR_K8S_FOLLOWER_PORT" \
+    --build-arg FOLLOWER_COUNT="$FOLLOWER_COUNT" \
     k8s-follower-orchestrator
   docker compose up -d --no-deps k8s-follower-orchestrator
 
@@ -446,6 +447,8 @@ function _setup_k8s_follower {
   pull_k8s_follower_images
 
   # Deploy the Conjur Kubernetes Follower
+  echo "Applying K8S Follower Operator (displayed below)..."
+  _run_in_kind "cat /manifests/operator/*"
   _run_in_kind "kubectl \$KUBE_OPTS apply -f /manifests/operator"
   bin/cli conjur policy load -f artifacts/k8s-follower-orchestrator/seed-generation-policy.yaml -b root
   bin/cli conjur policy load -f artifacts/k8s-follower-orchestrator/conjur-kubernetes-follower-policy.yaml -b root
@@ -455,6 +458,8 @@ function _setup_k8s_follower {
   _run_in_kind "kubectl \$KUBE_OPTS create configmap -n cyberark-conjur conjur-cert --from-file=/etc/ssl/certs/conjur-master.mycompany.local.pem"
 
   # Apply manifest with Conjur Follower
+  echo "Applying K8S Follower Manifests (displayed below)..."
+  _run_in_kind "cat /manifests/samples/*"
   _run_in_kind "kubectl \$KUBE_OPTS apply -f /manifests/samples"
 
   echo "Waiting for the conjur-follower deployment to be running..."

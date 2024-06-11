@@ -6,6 +6,7 @@ FROM golang:alpine
 
 ARG K8S_FOLLOWER_TAG
 ARG CONJUR_K8S_FOLLOWER_PORT
+ARG FOLLOWER_COUNT
 
 RUN apk add docker-cli kubectl curl jq && \
     go install sigs.k8s.io/kind@v0.20.0
@@ -38,6 +39,7 @@ RUN sed -i "s/conjur-kubernetes-follower-configurator/conjur-kubernetes-follower
 RUN sed -i 's|https://conjur.host.name/|https://host.docker.internal|g' /manifests/samples/conjur_v1_conjurfollower.yaml && \
     sed -i 's|my-authenticator-id|dev-cluster|g' /manifests/samples/conjur_v1_conjurfollower.yaml && \
     sed -i 's|conjur-master-ca.crt|conjur-cert|g' /manifests/samples/conjur_v1_conjurfollower.yaml && \
+    sed -i "s|replicas: [0-9]*|replicas: ${FOLLOWER_COUNT}|g" /manifests/samples/conjur_v1_conjurfollower.yaml && \
     sed -i 's|ca.crt|conjur-master.mycompany.local.pem|g' /manifests/samples/conjur_v1_conjurfollower.yaml
 
 ENTRYPOINT [ "./entrypoint.sh" ]
