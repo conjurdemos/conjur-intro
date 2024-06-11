@@ -329,9 +329,9 @@ function _setup_followers {
   for ((i=1; i<=FOLLOWER_COUNT; i++))
   do
     # Generate Seed file(s)
+    echo "Creating Seed for Follower $i"
     _run conjur-master-1.mycompany.local \
       "evoke seed follower conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed-${i}.tar"
-    echo "Creating Seed for Follower $i"
     sleep 0.1
   done
 
@@ -363,21 +363,12 @@ function _setup_follower {
   follower_log_file="$FOLLOWER_LOG_DIR/$follower_service_name.log"
   start_time=$(date +%s)
 
+  echo "Creating Follower container: '$follower_service_name'..."
   docker compose rm --stop --force "$follower_service_name"
   docker compose up --no-deps --detach "$follower_service_name"
 
-  # HACK: Set log level to DEBUG
-  # IMPORTANT: this debug hack cannot be applied to the Leader until AFTER
-  # seedfiles are generated, otherwise you will encounter:
-  #
-  # error: "185018 #1483" is not a valid octal string.
-  #
-  # This is because the debug output on the Leader is include in the seedfile,
-  # thus corrupting it!
-  _run "$follower_service_name" "sed -i 's/Logger::INFO/Logger::DEBUG/g' /opt/conjur/evoke/lib/evoke/cli_logger.rb"
-  _run "$follower_service_name" "cat /opt/conjur/evoke/lib/evoke/cli_logger.rb"
-
   # Unpack and Configure
+  echo "Unpacking and configuring Follower: '$follower_service_name'..."
   _run "$follower_service_name" \
     "evoke unpack seed /opt/cyberark/dap/seeds/follower-seed-${follower_number}.tar && evoke configure follower --json-attributes-file='/conjur_files/conjur.json' --debug" | awk -v follower="$follower_service_name" '{print "[CONFIG " follower "]: " $0}' 2>&1 | tee "$follower_log_file"
 
