@@ -16,6 +16,7 @@ FOLLOWER_LOG_DIR="tmp/appliance/configure/follower"
 CONJUR_MASTER_PORT=${CONJUR_MASTER_PORT:-443}
 CONJUR_FOLLOWER_PORT=${CONJUR_FOLLOWER_PORT:-450}
 CONJUR_K8S_FOLLOWER_PORT=${CONJUR_K8S_FOLLOWER_PORT:-451}
+K8S_FOLLOWER_CONJUR_LOG_LEVEL=${K8S_FOLLOWER_CONJUR_LOG_LEVEL:-info}
 _admin_password="MySecretP@ss1"
 
 function _print_help {
@@ -316,7 +317,7 @@ function _setup_followers {
   do
     # Generate Seed file(s)
     echo "Creating Seed for Follower $i"
-    _run conjur-master-1.mycompany.local \
+    _run "$(discover_leader_container)" \
       "evoke seed follower conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed-${i}.tar"
     sleep 0.1
   done
@@ -380,6 +381,7 @@ function _setup_k8s_follower {
     --build-arg K8S_FOLLOWER_TAG="$K8S_FOLLOWER_TAG" \
     --build-arg CONJUR_K8S_FOLLOWER_PORT="$CONJUR_K8S_FOLLOWER_PORT" \
     --build-arg FOLLOWER_COUNT="$FOLLOWER_COUNT" \
+    --build-arg K8S_FOLLOWER_CONJUR_LOG_LEVEL="$K8S_FOLLOWER_CONJUR_LOG_LEVEL" \
     k8s-follower-orchestrator
   docker compose up -d --no-deps k8s-follower-orchestrator
 
@@ -736,6 +738,8 @@ function _import_certificates {
     "evoke ca import --force --key $cert_path/dap_master/dap-master-key.pem --set $cert_path/dap_master/dap-master.pem"
   _run conjur-master-1.mycompany.local \
     "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
+  _run conjur-master-1.mycompany.local \
+    "evoke ca import --force --key $cert_path/dap_follower_k8s/dap-follower-k8s-key.pem $cert_path/dap_follower_k8s/dap-follower-k8s.pem"
 }
 
 function _rotate_certificates {
@@ -754,6 +758,8 @@ function _rotate_certificates {
   # is available through the seed service
   _run conjur-master-1.mycompany.local \
     "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
+  _run conjur-master-1.mycompany.local \
+    "evoke ca import --force --key $cert_path/dap_follower_k8s/dap-follower-k8s-key.pem $cert_path/dap_follower_k8s/dap-follower-k8s.pem"
 
   # Import the new certificate into the DAP Standbys
   for ((i=2; i<=STANDBY_COUNT+1; i++))
@@ -766,6 +772,8 @@ function _rotate_certificates {
       # is available through the seed service if the Standby is promoted.
       _run "conjur-master-$i.mycompany.local" \
         "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
+      _run conjur-master-$i.mycompany.local \
+        "evoke ca import --force --key $cert_path/dap_follower_k8s/dap-follower-k8s-key.pem $cert_path/dap_follower_k8s/dap-follower-k8s.pem"
     fi
   done
 
@@ -776,6 +784,9 @@ function _rotate_certificates {
     # Import the new certificate into each Follower
     _run conjur-follower-1.mycompany.local \
       "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem --set $cert_path/dap_follower/dap-follower.pem"
+
+    # Note: K8S Follower Certificates do not need to be imported into the K8S
+    # Follower, only the Leader node.
   fi
 }
 
@@ -878,6 +889,7 @@ AUTO_FAILOVER_TTL=300
 while true ; do
   case "$1" in
     --create-backup ) CMD='_create_backup' ; shift ;;
+    --k8s-follower-conjur-log-level ) shift ; K8S_FOLLOWER_CONJUR_LOG_LEVEL=$1 ; shift ;;
     --dry-run ) DRY_RUN=true ; shift ;;
     --enable-auto-failover ) CMD='_enable_autofailover' ; shift ;;
     --auto-failover-ttl ) shift; AUTO_FAILOVER_TTL=$1 ; shift ;;

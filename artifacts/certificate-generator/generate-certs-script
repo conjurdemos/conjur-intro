@@ -1,4 +1,4 @@
-#!/bin/ash -e
+#!/bin/ash -ex
 set -o pipefail
 
 config_path="/src/configuration"
@@ -9,6 +9,7 @@ root_destination="$certificate_path/root_ca/ca"
 intermediate_destination="$certificate_path/intermediate_ca/intermediate"
 master_destination="$certificate_path/dap_master/dap-master"
 follower_destination="$certificate_path/dap_follower/dap-follower"
+k8s_follower_destination="$certificate_path/dap_follower_k8s/dap-follower-k8s"
 
 GENERATE_CA=true
 GENERATE_SERVER=true
@@ -45,7 +46,7 @@ EOF
 }
 
 create_folders() {
-  folders='root_ca intermediate_ca dap_master dap_follower'
+  folders='root_ca intermediate_ca dap_master dap_follower dap_follower_k8s'
   for folder in $folders ; do
     mkdir -p "$certificate_path/$folder"
   done
@@ -91,13 +92,23 @@ generate_certificates() {
     fi
     
     if [ ! -f "$follower_destination-key.pem" ]; then
-      generate_follower_key      
+      generate_follower_key
     fi
 
     # Generate and sign follower certificate w/ intermediate
     if [ ! -f "$follower_destination.pem" ] || [ "$FORCE" = true ]; then
       generate_follower_csr
       issue_follower_certificate
+    fi
+    
+    if [ ! -f "$k8s_follower_destination-key.pem" ]; then
+      generate_k8s_follower_key
+    fi
+
+    # Generate and sign follower certificate w/ intermediate
+    if [ ! -f "$k8s_follower_destination.pem" ] || [ "$FORCE" = true ]; then
+      generate_k8s_follower_csr
+      issue_k8s_follower_certificate
     fi
   fi
 }
@@ -142,6 +153,27 @@ issue_follower_certificate() {
     -config $config_path/cfssl.conf \
     -profile=peer \
     $follower_destination.csr | cfssljson -bare $follower_destination
+}
+
+generate_k8s_follower_key() {
+  cfssl genkey \
+    -config $config_path/cfssl.conf \
+    $config_path/dap-follower-k8s.json | cfssljson -bare $k8s_follower_destination
+}
+
+generate_k8s_follower_csr() {
+  cfssl gencsr \
+    -key "$k8s_follower_destination-key.pem" \
+    $config_path/dap-follower-k8s.json | cfssljson -bare $k8s_follower_destination
+}
+
+issue_k8s_follower_certificate() {
+  cfssl sign \
+    -ca $intermediate_destination.pem \
+    -ca-key $intermediate_destination-key.pem \
+    -config $config_path/cfssl.conf \
+    -profile=peer \
+    $k8s_follower_destination.csr | cfssljson -bare $k8s_follower_destination
 }
 
 main "$@"
