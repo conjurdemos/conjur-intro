@@ -5,12 +5,12 @@ repo_root() {
 }
 
 # A date timestamp separated by underscores, ideal for file names.
-timestamp() {
+file_friendly_timestamp() {
   date +"%Y_%m_%d_%I_%M_%s"
 }
 
-log_dir() {
-  echo "$(repo_root)/tmp"
+replication_test_log_dir() {
+  echo "$(repo_root)/tmp/replication-test-logs"
 }
 
 check_env() {

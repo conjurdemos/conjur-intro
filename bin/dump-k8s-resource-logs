@@ -1,0 +1,216 @@
+#!/bin/bash
+set -uo pipefail
+
+# Usage:
+# ./dump-k8s-resource-logs [namespace N]...
+#
+# Note: This script expects several environment variables to be
+# defined and exported, some of which are sensitive/secret values.
+# It is for this that we recommend to always call this script using summon.
+#
+# Usage:
+# ./bin/dump-k8s-resource-logs cyberark-conjur
+#
+# Usage:
+# ./bin/dump-k8s-resource-logs cyberark-conjur conjur-follower-operator-system
+#
+# namespace(s): Variadic parameter; all pod containers within each of the given
+#               namespaces will have their log contents written.
+#
+# shellcheck disable=SC1090,SC1091
+source "$(git rev-parse --show-toplevel)/bin/functions"
+
+VERBOSE=8
+LOG_LEVELS=( "Emergency" "Alert" "Critical" "Error" "Warning" "Notice" "Info" "Debug")
+# <timestamp>/<feature-name>/<scenario-name>/<namespace>_*.log
+LOG_TIMESTAMP="$(file_friendly_timestamp)"
+LOG_ROOT_DIR="$(replication_test_log_dir)/replication-test-k8s/k8s-resources/$LOG_TIMESTAMP"
+
+function verbose() {
+    if [ $# -lt 2 ]
+    then
+        verbose 4 "Error: expecting a verbose level and a message"
+        exit 2
+    fi
+    
+    local level=$1
+
+    if [ -n "$VERBOSE" ]; then
+        if (( "$level" <= "$VERBOSE" )); then
+            printf "%9s %s\n" "[${LOG_LEVELS[$level-1]}]" "$2"
+        fi
+    fi
+}
+
+main() {
+  # ensure log dir exists
+  verbose 7 "Beginning script: $0"
+  verbose 7 "Log directory: $LOG_ROOT_DIR"
+
+  mkdir -p "$LOG_ROOT_DIR"
+
+  if ! ./bin/kubectl cluster-info; then
+    verbose 5 "WARNING: failed to connect to k8s cluster, either it is not running or kubectl is not configured correctly. Exiting..."
+    exit 0
+  fi
+
+  for ns in "$@"
+  do
+      LOG_DIR="$LOG_ROOT_DIR/$ns"
+
+      mkdir -p "$LOG_DIR"
+
+      verbose 7 "Begin logging all resources in namespace: $ns"
+      get_all_resources_log_path="$LOG_DIR/get-all-resources.log"
+      verbose 7 "\tLog path: $get_all_resources_log_path"
+      log_all_resources "$ns" "$get_all_resources_log_path"
+      
+      verbose 7 "Begin describing resources in namespace: $ns"
+      describe_all_resources_log_path="$LOG_DIR/describe-all-resources.log"
+      verbose 7 "Log path: $describe_all_resources_log_path"
+      describe_all_resources "$ns" "$describe_all_resources_log_path"
+      
+      verbose 7 "Begin logging all events in namespace: $ns" 
+      all_events_log_path="$LOG_DIR/get-all-events.log"
+      verbose 7 "Log path: $all_events_log_path"
+      log_all_events "$ns" "$all_events_log_path"
+
+      # log all pod containers...
+      verbose 7 "Begin logging all pod containers in namespace: $ns"
+      log_all_pod_containers "$ns"
+  done
+}
+
+log_all_resources() {
+  local ns=$1
+  local log_path=$2
+  ./bin/kubectl get all -n "$ns" > "$log_path"
+  remark_empty_log_file "$log_path"
+}
+
+describe_all_resources() {
+  local ns=$1
+  local log_path=$2
+  ./bin/kubectl describe all -n "$ns" > "$log_path"
+  remark_empty_log_file "$log_path"
+}
+
+log_all_events() {
+  local ns=$1
+  local log_path=$2
+  ./bin/kubectl get events -n "$ns" > "$log_path"
+  remark_empty_log_file "$log_path"
+}
+
+log_all_pod_containers(){
+  local ns
+  ns=$1
+  
+  pods=$(./bin/kubectl get pods --namespace="$ns" -o json | jq -r ".items[].metadata.name")
+
+  if [ -z "$pods" ]; then
+    verbose 7 "No pods found $ns in namespace."
+    return
+  fi
+
+  verbose 7 "Found pods: $pods"
+
+  for p in $pods; do
+      log_pod_containers "$p" "$ns"
+  done
+}
+
+function log_pod_containers() {
+  local p
+  local ns
+
+  p=$1
+  ns=$2
+
+  if [ $# -lt 2 ]
+  then
+      verbose 4 "Expecting min 2 arguments (mandatory: pod name, namespace), $p, $ns, got $#"
+      exit 2
+  fi
+  
+  containers=$(./bin/kubectl get pod "$p" --namespace="$ns" -o json | jq -r ".spec.containers[]?.name")
+  init_containers=$(./bin/kubectl get pod "$p" --namespace="$ns" -o json | jq -r ".spec.initContainers[]?.name")
+  
+  verbose 8 "Init Containers Found: $init_containers"
+  verbose 8 "Containers Found: $containers"
+
+  if [ -z "$init_containers" ]; then
+      verbose 7 "No containers found in pod: $p"
+  else
+      verbose 7 "Begin logging init containers found in pod: $p"
+      # ... and log each of them
+      for c in $init_containers; do
+          log_container "$p" "$c"
+          # Sleep between each container log attempt
+          sleep 0.1
+      done
+  fi
+
+  if [ -z "$containers" ]; then
+      verbose 7 "No containers found in pod: $p"
+  else
+      verbose 7 "Begin logging containers found in pod: $p"
+      # ... and log each of them
+      for c in $containers; do
+          log_container "$p" "$c"
+          # Sleep between each container log attempt
+          sleep 0.1
+      done
+  fi
+}
+
+function log_container() {
+    if [ $# -lt 1 ]
+    then
+        verbose 4 "Expecting min 2 arguments (mandatory: pod name, container name)"
+        exit 2
+    fi
+
+    p=$1
+    c=$2
+    
+    if [ -z "$c" ]; then
+        verbose 7 "Container '$c' not provided, skipping!"
+        return
+    fi
+
+    output_dir="$LOG_DIR/${p}"
+    output_path="$output_dir/${c}.log"
+
+    mkdir -p "$output_dir"
+    verbose 7 "Log path: $output_path"
+
+    # Skip logging if container state is ContainerCreating
+    state=$(./bin/kubectl get pod "$p" --namespace="$ns" -o json \
+        | jq -r ".status.containerStatuses[] | select(.name == \"$c\") \
+        | .state.waiting.reason" \
+        || echo "")
+    if [ "$state" == 'ContainerCreating' ] || [ "$state" == 'PodInitializing' ]; then
+        msg="Container [$p/$c] is not a loggable state (current state: $state)"
+        verbose 7 "$msg" 
+        echo "$msg" >> "$output_path"
+        return
+    fi
+
+    # log the container
+    # $PLATFORM_CTL logs --prefix=true not supported in 3.11
+    ./bin/kubectl logs "$p" --namespace="$ns" --timestamps -c "$c" >> "$output_path"
+
+    remark_empty_log_file "$output_path"
+}
+
+remark_empty_log_file(){
+  log_path=$1
+
+  # if the file exists and is empty, tell us
+  if [ ! -s "$log_path" ] ; then
+    echo "Resource(s) produced no log output." >> "$log_path"
+  fi
+}
+
+main "$@"
