@@ -308,7 +308,7 @@ function _setup_standby {
 
   # Unpack and Configure
   _run conjur-master-$_standby_number.mycompany.local \
-    "evoke unpack seed /opt/cyberark/dap/seeds/standby-seed-$_standby_number.tar && evoke configure standby"
+    "evoke unpack seed /opt/cyberark/dap/seeds/standby-seed-$_standby_number.tar && evoke configure standby --json-attributes-file='/conjur_files/conjur.json'"
 }
 
 function _start_standby_synchronization {
@@ -728,7 +728,7 @@ function _reenroll_failed_leader {
 
   # Unpack and Configure
   _run "conjur-master-$old_leader_number.mycompany.local" \
-    "evoke unpack seed /opt/cyberark/dap/seeds/standby-seed-1.tar && evoke configure standby"
+    "evoke unpack seed /opt/cyberark/dap/seeds/standby-seed-1.tar && evoke configure standby --json-attributes-file='/conjur_files/conjur.json'"
 
   _run "conjur-master-$new_leader_number.mycompany.local" \
     "evoke cluster member add conjur-master-$old_leader_number.mycompany.local"
