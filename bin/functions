@@ -1,0 +1,63 @@
+#!/bin/bash -x
+
+repo_root() {
+  git rev-parse --show-toplevel
+}
+
+# A date timestamp separated by underscores, ideal for file names.
+timestamp() {
+  date +"%Y_%m_%d_%I_%M_%s"
+}
+
+log_dir() {
+  echo "$(repo_root)/tmp"
+}
+
+check_env() {
+  # evaluate given variable name to get its value
+  eval temp_var="\$$1"
+
+  # verify it has a non-empty value
+  if [ -z "${temp_var}" ]; then
+    echo "ENV VAR \"$1\" must be set. Try using summon and running this command again."
+    exit 1
+  fi
+}
+
+is_gnu_date() {
+  date --version >/dev/null 2>&1
+}
+
+# Outputs time in UTC, including the timezone offset
+date_timestamp() {
+  if is_gnu_date; then
+    echo "$(date '+%Y-%m-%d %T')+00:00"
+  else
+    echo "$(date -u "+%Y-%m-%d %T")+00:00"
+  fi
+}
+
+function _get_kubectl_opts() {
+  API_SERVER_URL=$(kind get --name conjur-intro-k8s-follower kubeconfig | grep server | awk '{print $2}' | sed 's/0.0.0.0/host.docker.internal/')
+  KUBE_OPTS="--insecure-skip-tls-verify --server=$API_SERVER_URL --context kind-conjur-intro-k8s-follower"
+  echo "$KUBE_OPTS"
+}
+
+# Each command will be executed with KUBE_OPTS environment variable
+# which is defined to point to the k8s-follower-orchestrator cluster.
+# The KUBE_OPTS variable should be then used in the command to interact with the k8s-follower-orchestrator cluster.
+# For example:
+# run_in_kind "get pods -n cyberark-conjur"
+function run_in_kind {
+  local _args=("$@")
+
+  if [[ $DRY_RUN = false ]]; then
+    # NOTE: suppress the compose warning 'WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string.'
+    # as it is not relevant here
+    #
+    # shellcheck disable=SC2128
+    VERSION= docker compose exec -T k8s-follower-orchestrator ash -c "
+          $_args
+    "
+  fi
+}

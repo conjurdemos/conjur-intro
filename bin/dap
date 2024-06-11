@@ -5,6 +5,7 @@ set -e
 # Always work from repo root directory
 cd "$(dirname ${0})/..";
 
+source ./bin/functions
 source ./bin/utils.sh
 
 # Make sure .env envvars are available
@@ -245,24 +246,6 @@ function _run {
   fi
 }
 
-# Each command will be executed with KUBE_OPTS environment variable
-# which is defined to point to the k8s-follower-orchestrator cluster.
-# The KUBE_OPTS variable should be then used in the command to interact with the k8s-follower-orchestrator cluster.
-# For example:
-# _run_in_kind "kubectl \$KUBE_OPTS get pods"
-function _run_in_kind {
-  local _args=("$@")
-
-  if [[ $DRY_RUN = false ]]; then
-    # shellcheck disable=SC2128
-    docker compose exec -T k8s-follower-orchestrator ash -c "
-      API_SERVER_URL=\$(kind get --name conjur-intro-k8s-follower kubeconfig | grep server | awk '{print \$2}' | sed 's/0.0.0.0/host.docker.internal/'); \
-      KUBE_OPTS=\"--insecure-skip-tls-verify --server=\$API_SERVER_URL --context kind-conjur-intro-k8s-follower\"; \
-      $_args
-    "
-  fi
-}
-
 function _start_master {
   if [[ $DRY_RUN = false ]]; then
 
@@ -406,7 +389,7 @@ function _setup_k8s_follower {
   SECONDS=0
   TIMEOUT=300
   while true; do
-    if _run_in_kind "kubectl \$KUBE_OPTS get nodes | grep -q \"Ready\"" &> /dev/null; then
+    if bin/kubectl "get nodes | grep -q \"Ready\"" &> /dev/null; then
       echo "The conjur-intro-k8s-follower cluster is created."
       break
     else
@@ -424,7 +407,7 @@ function _setup_k8s_follower {
   done
 
   # Discover Kubernetes resources
-  jwks=$(_run_in_kind "kubectl \$KUBE_OPTS get --raw \$(kubectl \$KUBE_OPTS get --raw /.well-known/openid-configuration | jq -r '.jwks_uri')")
+  jwks=$(bin/kubectl "get --raw \$(kubectl get $(_get_kubectl_opts) --raw /.well-known/openid-configuration | jq -r '.jwks_uri')")
   policy_value="{\"type\":\"jwks\",\"value\":$jwks}"
 
   # Define the JWT Authenticator in Conjur
@@ -448,25 +431,25 @@ function _setup_k8s_follower {
 
   # Deploy the Conjur Kubernetes Follower
   echo "Applying K8S Follower Operator (displayed below)..."
-  _run_in_kind "cat /manifests/operator/*"
-  _run_in_kind "kubectl \$KUBE_OPTS apply -f /manifests/operator"
+  run_in_kind "cat /manifests/operator/*"
+  bin/kubectl "apply -f /manifests/operator"
   bin/cli conjur policy load -f artifacts/k8s-follower-orchestrator/seed-generation-policy.yaml -b root
   bin/cli conjur policy load -f artifacts/k8s-follower-orchestrator/conjur-kubernetes-follower-policy.yaml -b root
 
   # Ensure certs are up to date
   docker cp "$(docker compose ps -q conjur-master-1.mycompany.local)":/opt/conjur/etc/ssl/. ./system/haproxy/certs
-  _run_in_kind "kubectl \$KUBE_OPTS create configmap -n cyberark-conjur conjur-cert --from-file=/etc/ssl/certs/conjur-master.mycompany.local.pem"
+  bin/kubectl "create configmap -n cyberark-conjur conjur-cert --from-file=/etc/ssl/certs/conjur-master.mycompany.local.pem"
 
   # Apply manifest with Conjur Follower
   echo "Applying K8S Follower Manifests (displayed below)..."
-  _run_in_kind "cat /manifests/samples/*"
-  _run_in_kind "kubectl \$KUBE_OPTS apply -f /manifests/samples"
+  run_in_kind "cat /manifests/samples/*"
+  bin/kubectl "apply -f /manifests/samples"
 
   echo "Waiting for the conjur-follower deployment to be running..."
-  _run_in_kind "kubectl \$KUBE_OPTS wait --namespace=cyberark-conjur --for=condition=available --timeout=5m deployment/conjur-follower"
+  bin/kubectl "wait --namespace=cyberark-conjur --for=condition=available --timeout=5m deployment/conjur-follower"
 
   # Deploy NodePort that will expose Conjur Follower endpoint
-  _run_in_kind "kubectl \$KUBE_OPTS apply -f conjur-follower-node-port.yaml"
+  bin/kubectl "apply -f conjur-follower-node-port.yaml"
 
   echo "K8S Follower instance deployed and available at https://localhost:${CONJUR_K8S_FOLLOWER_PORT}"
 }
@@ -489,7 +472,7 @@ function pull_k8s_follower_images {
 
     docker pull "${img}"
     docker tag "${img}" "${img_without_registry}"
-    _run_in_kind "kind load docker-image ${img_without_registry} --name conjur-intro-k8s-follower"
+    run_in_kind "kind load docker-image ${img_without_registry} --name conjur-intro-k8s-follower"
   done
 }
 
