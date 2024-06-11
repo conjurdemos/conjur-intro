@@ -14,9 +14,10 @@ set -ex
 # Always work from repo root directory
 cd "$(dirname ${0})/..";
 
+source ./bin/functions
 source ./bin/utils.sh
 
-LOG_DIR="tmp/appliance"
+LOG_DIR="$(replication_test_log_dir)"
 ARCHIVE_DIR="tmp/artifacts"
 
 FOLLOWER_COUNT="${FOLLOWER_COUNT:-1}"
@@ -40,6 +41,9 @@ main(){
   echo "Dumping appliance logs..."
   ./bin/dump-appliance-logs --no-fail --follower-count "${FOLLOWER_COUNT}"
   ./bin/dump-appliance-health-and-info --no-fail --follower-count "${FOLLOWER_COUNT}"
+
+  echo "Dumping kubernetes logs..."
+  ./bin/dump-k8s-resource-logs cyberark-conjur conjur-follower-operator-system || true
 
   echo "Tarballing logs to $archive_filename"
   tar -czvf "$archive_filename" -C "$LOG_DIR" .
