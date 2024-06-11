@@ -446,7 +446,7 @@ function _setup_k8s_follower {
   bin/kubectl "apply -f /manifests/samples"
 
   echo "Waiting for the conjur-follower deployment to be running..."
-  bin/kubectl "wait --namespace=cyberark-conjur --for=condition=available --timeout=5m deployment/conjur-follower"
+  bin/kubectl "wait --namespace=$(_get_k8s_follower_namespace) --for=condition=available --timeout=${TIMEOUT}s deployment/conjur-follower"
 
   # Deploy NodePort that will expose Conjur Follower endpoint
   bin/kubectl "apply -f conjur-follower-node-port.yaml"
