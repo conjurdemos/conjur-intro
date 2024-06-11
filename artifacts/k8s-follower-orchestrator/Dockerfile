@@ -7,6 +7,7 @@ FROM golang:alpine
 ARG K8S_FOLLOWER_TAG
 ARG CONJUR_K8S_FOLLOWER_PORT
 ARG FOLLOWER_COUNT
+ARG K8S_FOLLOWER_CONJUR_LOG_LEVEL
 
 RUN apk add docker-cli kubectl curl jq && \
     go install sigs.k8s.io/kind@v0.20.0
@@ -41,5 +42,13 @@ RUN sed -i 's|https://conjur.host.name/|https://host.docker.internal|g' /manifes
     sed -i 's|conjur-master-ca.crt|conjur-cert|g' /manifests/samples/conjur_v1_conjurfollower.yaml && \
     sed -i "s|replicas: [0-9]*|replicas: ${FOLLOWER_COUNT}|g" /manifests/samples/conjur_v1_conjurfollower.yaml && \
     sed -i 's|ca.crt|conjur-master.mycompany.local.pem|g' /manifests/samples/conjur_v1_conjurfollower.yaml
+
+# Set log level for the conjur container
+# WARNING: this is whitespace-sensitive, and the indentation must be exactly as
+# shown! If the manifest includes already this key, the text below will not
+# be injected.
+RUN if ! grep -q "containerEnv" /manifests/samples/conjur_v1_conjurfollower.yaml; then \
+    printf '  containerEnv:\n    conjur:\n      - name: CONJUR_LOG_LEVEL\n        value: %s\n' "$K8S_FOLLOWER_CONJUR_LOG_LEVEL" >> /manifests/samples/conjur_v1_conjurfollower.yaml; \
+fi
 
 ENTRYPOINT [ "./entrypoint.sh" ]
