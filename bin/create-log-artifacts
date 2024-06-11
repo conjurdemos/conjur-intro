@@ -29,8 +29,6 @@ main(){
     exit 1
   fi
 
-  ./bin/dump-appliance-logs --no-fail --follower-count "${FOLLOWER_COUNT}"
-
   timestamp=$(date +%Y%m%d%H%M%S)
   archive_filename="$ARCHIVE_DIR/appliance-logs-$timestamp.tgz"
 
