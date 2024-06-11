@@ -1,9 +1,9 @@
-#!/bin/bash -ex
+#!/bin/bash -e
 
 # USAGE
 #
-# ./bin/kubectl "get namespace"
-# ./bin/kubectl "get pods -n cyberark-conjur"
+# ./bin/kubectl get namespace
+# ./bin/kubectl get pods -n cyberark-conjur
 #
 
 # Always work from repo root directory
@@ -14,7 +14,6 @@ source ./bin/functions
 DRY_RUN="${DRY_RUN:-false}"
 
 function _kubectl() {
-  API_SERVER_URL=$(kind get --name conjur-intro-k8s-follower kubeconfig | grep server | awk '{print $2}' | sed 's/0.0.0.0/host.docker.internal/')
   run_in_kind "kubectl $(_get_kubectl_opts) $*"
 }
 
