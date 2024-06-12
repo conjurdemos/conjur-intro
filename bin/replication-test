@@ -34,6 +34,7 @@ DOCKER_LEADER_CONTAINER="conjur-master-1.mycompany.local"
 USE_EXISTING_ENVIRONMENT="${USE_EXISTING_ENVIRONMENT:-false}"
 VERSION="${VERSION:-5.0-stable}"
 FOLLOWER_COUNT="${FOLLOWER_COUNT:-2}"
+LEADER_COUNT="${LEADER_COUNT:-3}"
 RESOURCE_INTERVAL="${RESOURCE_INTERVAL:-60}"
 MAX_ATTEMPTS="${MAX_ATTEMPTS:-10}"
 # The timeout in seconds to wait for the all Followers to be deployed
@@ -276,24 +277,36 @@ snapshot_leader_replication_status() {
   local log_dir
 
   timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S.000+00:00")
-  log_dir="$REPLICATION_LOG_STATS_DIR/leader/$DOCKER_LEADER_CONTAINER"
-  pg_stat_replication_log_dir="$log_dir/pg_stat_replication"
-  pg_stat_replication_log_dir_log_file="$pg_stat_replication_log_dir/$timestamp.log"
-  pg_stat_activity_log_dir="$log_dir/pg_stat_activity"
-  pg_stat_activity_log_dir_log_file="$pg_stat_activity_log_dir/$timestamp.log"
 
-  mkdir -p "$pg_stat_replication_log_dir"
-  mkdir -p "$pg_stat_activity_log_dir"
+  # Collect the replication status from each leader container
+  for ((i=1; i<=LEADER_COUNT; i++)); do
+    local leader_container="conjur-master-${i}.mycompany.local"
 
-  docker compose exec -T "$DOCKER_LEADER_CONTAINER" bash -c $"
-        chpst -u conjur psql -c \"\\copy (SELECT * from pg_stat_replication) To '/tmp/output.csv' With CSV HEADER\"
-      " || true
-  docker compose exec "$DOCKER_LEADER_CONTAINER" bash -c "cat /tmp/output.csv" | tee "$pg_stat_replication_log_dir_log_file" || true
+    container_id=$(docker compose ps -q $leader_container)
+    if [ -z "$container_id" ]; then
+      echo "WARNING: No container ID found for service '$leader_container' (it is not running), skipping!"
+      continue
+    fi
 
-  docker compose exec -T "$DOCKER_LEADER_CONTAINER" bash -c $"
-        chpst -u conjur psql -c \"\\copy (SELECT * from pg_stat_activity) To '/tmp/output.csv' With CSV HEADER\"
-      " || true
-  docker compose exec "$DOCKER_LEADER_CONTAINER" bash -c "cat /tmp/output.csv" | tee "$pg_stat_activity_log_dir_log_file" || true
+    log_dir="$REPLICATION_LOG_STATS_DIR/leader/$leader_container"
+    pg_stat_replication_log_dir="$log_dir/pg_stat_replication"
+    pg_stat_replication_log_dir_log_file="$pg_stat_replication_log_dir/$timestamp.log"
+    pg_stat_activity_log_dir="$log_dir/pg_stat_activity"
+    pg_stat_activity_log_dir_log_file="$pg_stat_activity_log_dir/$timestamp.log"
+
+    mkdir -p "$pg_stat_replication_log_dir"
+    mkdir -p "$pg_stat_activity_log_dir"
+
+    docker compose exec -T "$leader_container" bash -c $"
+          chpst -u conjur psql -c \"\\copy (SELECT * from pg_stat_replication) To '/tmp/output.csv' With CSV HEADER\"
+        " || true
+    docker compose exec "$leader_container" bash -c "cat /tmp/output.csv" | tee "$pg_stat_replication_log_dir_log_file" || true
+
+    docker compose exec -T "$leader_container" bash -c $"
+          chpst -u conjur psql -c \"\\copy (SELECT * from pg_stat_activity) To '/tmp/output.csv' With CSV HEADER\"
+        " || true
+    docker compose exec "$leader_container" bash -c "cat /tmp/output.csv" | tee "$pg_stat_activity_log_dir_log_file" || true
+  done
 }
 
 # Print information of the replication status of each Follower
@@ -340,13 +353,25 @@ snapshot_leader_pg_identifier() {
   local log_dir
 
   timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S.000+00:00")
-  log_dir="$PG_ID_LOG_DIR/leader/$DOCKER_LEADER_CONTAINER"
 
-  mkdir -p "$log_dir"
+  # Collect the identifier from each leader container
+  for ((i=1; i<=LEADER_COUNT; i++)); do
+    local leader_container="conjur-master-${i}.mycompany.local"
 
-  pgid=$(docker compose exec -T "$DOCKER_LEADER_CONTAINER" chpst -u postgres psql -tqc 'SELECT system_identifier FROM pg_control_system();')
-  echo "Got pg identifer for Leader '$DOCKER_LEADER_CONTAINER': $pgid"
-  echo "$pgid" > "$log_dir/$timestamp.log" || true
+    container_id=$(docker compose ps -q $leader_container)
+    if [ -z "$container_id" ]; then
+      echo "WARNING: No container ID found for service '$leader_container' (it is not running), skipping!"
+      continue
+    fi
+
+    log_dir="$PG_ID_LOG_DIR/leader/$leader_container"
+
+    mkdir -p "$log_dir"
+
+    pgid=$(docker compose exec -T "$leader_container" chpst -u postgres psql -tqc 'SELECT system_identifier FROM pg_control_system();')
+    echo "Got pg identifer for Leader '$leader_container': $pgid"
+    echo "$pgid" > "$log_dir/$timestamp.log" || true
+  done
 }
 
 snapshot_follower_pg_identifier() {

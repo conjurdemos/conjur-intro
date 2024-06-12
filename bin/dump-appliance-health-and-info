@@ -28,9 +28,10 @@ FOLLOWER_INFO_LOG_DIR="$INFO_LOG_DIR/follower"
 
 NO_FAIL="false"
 FOLLOWER_COUNT=
+LEADER_COUNT=3
 
 # Use this to hide WARN from docker compose...
-# WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string. 
+# WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string.
 export VERSION=
 
 main(){
@@ -53,9 +54,25 @@ main(){
   echo "- $LEADER_HEALTH_LOG_DIR"
   echo "- $LEADER_INFO_LOG_DIR"
 
-  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S.000+00:00")
-  docker compose exec "conjur-master-1.mycompany.local" curl -s -k https://localhost/health > "$LEADER_HEALTH_LOG_DIR/$timestamp.log"
-  docker compose exec "conjur-master-1.mycompany.local" curl -s -k https://localhost/info > "$LEADER_INFO_LOG_DIR/$timestamp.log"
+  for ((i=1; i<=LEADER_COUNT; i++)); do
+    local leader_container="conjur-master-${i}.mycompany.local"
+    timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S.000+00:00")
+
+    container_id=$(docker compose ps -q $leader_container)
+    if [ -z "$container_id" ]; then
+      echo "WARNING: No container ID found for service '$leader_container' (it is not running), skipping!"
+      continue
+    fi
+
+    echo -e "\nDumping health and info for '$leader_container'"
+    local output_dir="$LEADER_HEALTH_LOG_DIR/conjur-master-${i}"
+    mkdir -p $output_dir
+    docker compose exec "$leader_container" curl -s -k https://localhost/health > "$output_dir/$timestamp.log"
+
+    local output_dir="$LEADER_INFO_LOG_DIR/conjur-master-${i}"
+    mkdir -p $output_dir
+    docker compose exec "$leader_container" curl -s -k https://localhost/info > "$output_dir/$timestamp.log"
+  done
 
   echo "Dumping Follower Logs at:"
   echo "- $FOLLOWER_HEALTH_LOG_DIR"
@@ -81,7 +98,7 @@ main(){
       echo -e "\tERROR: Failed to fetch health for '$FOLLOWER_HOSTNAME'"
       is_failure_detected_globally="true"
     fi
-    
+
     output=$(docker compose exec "conjur-follower-${i}.mycompany.local" curl -s -k https://localhost/info | sed 's/^/\t/')
     if [[ -n "$output" ]]; then
       local output_dir="$FOLLOWER_INFO_LOG_DIR/conjur-follower-${i}"
