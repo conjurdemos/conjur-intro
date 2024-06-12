@@ -38,7 +38,7 @@ date_timestamp() {
 }
 
 function _get_kubectl_opts() {
-  API_SERVER_URL=$(kind get --name conjur-intro-k8s-follower kubeconfig | grep server | awk '{print $2}' | sed 's/0.0.0.0/host.docker.internal/')
+  API_SERVER_URL=$(VERSION="" run_in_kind "kind get --name conjur-intro-k8s-follower kubeconfig | grep server" | awk -F' ' '{print $2}' | sed 's/0.0.0.0/host.docker.internal/')
   KUBE_OPTS="--insecure-skip-tls-verify --server=$API_SERVER_URL --context kind-conjur-intro-k8s-follower"
   echo "$KUBE_OPTS"
 }
@@ -56,7 +56,7 @@ function run_in_kind {
     # as it is not relevant here
     #
     # shellcheck disable=SC2128
-    VERSION= docker compose exec -T k8s-follower-orchestrator ash -c "
+    VERSION="" docker compose exec -T k8s-follower-orchestrator ash -c "
           $_args
     "
   fi
