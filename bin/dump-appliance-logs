@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # USAGE
 #
@@ -31,9 +31,9 @@ LEADER_COUNT=3
 export VERSION=
 
 main(){
-  echo "Beginning script: $0"
-
   is_failure_detected_globally="false"
+
+  echo "Beginning script: $0"
 
   if [[ -z "$FOLLOWER_COUNT" ]]; then
     echo "FATAL: FOLLOWER_COUNT must be specified as --follower-count"
@@ -81,7 +81,7 @@ main(){
   done
 
   if [ "$is_failure_detected_globally" = "true" ] && [ "$NO_FAIL" = "false" ] ; then
-    echo "FATAL: An error was detected in at leats one node, see above."
+    echo "FATAL: An error was detected in at least one node, see above."
     exit 1
   fi
   echo "DONE."
