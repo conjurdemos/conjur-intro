@@ -17,7 +17,7 @@ cd "$(dirname ${0})/..";
 source ./bin/functions
 source ./bin/utils.sh
 
-LOG_DIR="$(replication_test_log_dir)"
+LOG_DIR="$(root_log_dir)"
 ARCHIVE_DIR="tmp/artifacts"
 
 FOLLOWER_COUNT="${FOLLOWER_COUNT:-1}"

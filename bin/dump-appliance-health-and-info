@@ -5,8 +5,7 @@ set -o pipefail
 # USAGE
 #
 # Queries the Leader and each Follower for health and info. If there is a
-# response, it is written to a file in the `tmp/appliance/health` and
-# `tmp/appliance/info` directories. If there is no response, this indicates
+# response, it is logged. If there is no response, this indicates
 # a node failure configure / deploy, and this script will fail.
 #
 # ./bin/dump-appliance-health-and-info --follower-count 1
@@ -16,13 +15,14 @@ set -o pipefail
 # Always work from repo root directory
 cd "$(dirname ${0})/..";
 
+source ./bin/functions
 source ./bin/utils.sh
 
-HEALTH_LOG_DIR="tmp/appliance/health"
+HEALTH_LOG_DIR="$(appliance_log_dir)/health"
 LEADER_HEALTH_LOG_DIR="$HEALTH_LOG_DIR/leader"
 FOLLOWER_HEALTH_LOG_DIR="$HEALTH_LOG_DIR/follower"
 
-INFO_LOG_DIR="tmp/appliance/info"
+INFO_LOG_DIR="$(appliance_log_dir)/info"
 LEADER_INFO_LOG_DIR="$INFO_LOG_DIR/leader"
 FOLLOWER_INFO_LOG_DIR="$INFO_LOG_DIR/follower"
 
@@ -56,7 +56,7 @@ main(){
 
   for ((i=1; i<=LEADER_COUNT; i++)); do
     local leader_container="conjur-master-${i}.mycompany.local"
-    timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S.000+00:00")
+    timestamp=$(utc_timestamp)
 
     container_id=$(docker compose ps -q $leader_container)
     if [ -z "$container_id" ]; then
@@ -80,7 +80,7 @@ main(){
   for ((i=1; i<=FOLLOWER_COUNT; i++))
   do
     FOLLOWER_HOSTNAME="conjur-follower-${i}.mycompany.local"
-    timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S.000+00:00")
+    timestamp=$(utc_timestamp)
 
     container_id=$(docker compose ps -q $FOLLOWER_HOSTNAME)
     if [ -z "$container_id" ]; then

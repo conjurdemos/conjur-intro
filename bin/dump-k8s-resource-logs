@@ -17,14 +17,18 @@ set -uo pipefail
 # namespace(s): Variadic parameter; all pod containers within each of the given
 #               namespaces will have their log contents written.
 #
-# shellcheck disable=SC1090,SC1091
-source "$(git rev-parse --show-toplevel)/bin/functions"
+
+# Always work from repo root directory
+cd "$(dirname ${0})/..";
+
+source ./bin/functions
+source ./bin/utils.sh
 
 VERBOSE=8
 LOG_LEVELS=( "Emergency" "Alert" "Critical" "Error" "Warning" "Notice" "Info" "Debug")
 # <timestamp>/<feature-name>/<scenario-name>/<namespace>_*.log
 LOG_TIMESTAMP="$(file_friendly_timestamp)"
-LOG_ROOT_DIR="$(replication_test_log_dir)/replication-test-k8s/k8s-resources/$LOG_TIMESTAMP"
+LOG_ROOT_DIR="$(k8s_log_dir)/k8s-resources/$LOG_TIMESTAMP"
 
 function verbose() {
     if [ $# -lt 2 ]

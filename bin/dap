@@ -12,7 +12,7 @@ source ./bin/utils.sh
 dotenv > /dev/null 2>&1 || true
 
 FOLLOWER_CONFIG_PIDS=()
-FOLLOWER_LOG_DIR="tmp/appliance/configure/follower"
+APPLIANCE_FOLLOWER_LOG_DIR="$(appliance_log_dir)/configure/follower"
 CONJUR_MASTER_PORT=${CONJUR_MASTER_PORT:-443}
 CONJUR_FOLLOWER_PORT=${CONJUR_FOLLOWER_PORT:-450}
 CONJUR_K8S_FOLLOWER_PORT=${CONJUR_K8S_FOLLOWER_PORT:-451}
@@ -309,9 +309,9 @@ function _start_standby_synchronization {
 
 function _setup_followers {
   echo "Follower configuration logs for '$follower_service_name' will be output to $follower_log_file"
-  mkdir -p "$FOLLOWER_LOG_DIR"
+  mkdir -p "$APPLIANCE_FOLLOWER_LOG_DIR"
 
-  echo -e "hostname,seconds\n" > "$FOLLOWER_LOG_DIR/durations.log"
+  echo -e "hostname,seconds\n" > "$APPLIANCE_FOLLOWER_LOG_DIR/durations.log"
 
   for ((i=1; i<=FOLLOWER_COUNT; i++))
   do
@@ -347,7 +347,7 @@ function _setup_follower {
   local execution_time
 
   follower_service_name="conjur-follower-${follower_number}.mycompany.local"
-  follower_log_file="$FOLLOWER_LOG_DIR/$follower_service_name.log"
+  follower_log_file="$APPLIANCE_FOLLOWER_LOG_DIR/$follower_service_name.log"
   start_time=$(date +%s)
 
   echo "Creating Follower container: '$follower_service_name'..."
@@ -363,7 +363,7 @@ function _setup_follower {
   execution_time=$((end_time-start_time))
 
   echo "INFO: it took: $execution_time seconds to configure Follower: '$follower_service_name'"
-  echo "$follower_service_name,$execution_time" >> "$FOLLOWER_LOG_DIR/durations.log"
+  echo "$follower_service_name,$execution_time" >> "$APPLIANCE_FOLLOWER_LOG_DIR/durations.log"
 
   # Copy certs for HAProxy
   _run "$follower_service_name" \
