@@ -23,7 +23,7 @@ cd "$(dirname ${0})/..";
 source ./bin/functions
 source ./bin/utils.sh
 
-LOG_DIR="$(replication_test_log_dir)/replication-test"
+LOG_DIR="$(appliance_log_dir)"
 RESOURCE_UTLIZATION_LOG_DIR="$LOG_DIR/resources"
 TOP_LOG_DIR="$RESOURCE_UTLIZATION_LOG_DIR/top"
 DOCKER_STATS_LOG_DIR="$RESOURCE_UTLIZATION_LOG_DIR/docker_stats"
@@ -300,12 +300,12 @@ record_resource_utilization() {
 }
 
 snapshot_top() {
-  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S.000+00:00")
+  timestamp=$(utc_timestamp)
   xtop > "$TOP_LOG_DIR/$timestamp.log"
 }
 
 snapshot_docker_stats() {
-  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S.000+00:00")
+  timestamp=$(utc_timestamp)
   docker stats --no-stream > "$DOCKER_STATS_LOG_DIR/$timestamp.log"
 }
 
@@ -313,7 +313,7 @@ snapshot_docker_stats() {
 snapshot_leader_replication_status() {
   local log_dir
 
-  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S.000+00:00")
+  timestamp=$(utc_timestamp)
 
   # Collect the replication status from each leader container
   for ((i=1; i<=LEADER_COUNT; i++)); do
@@ -353,7 +353,7 @@ snapshot_follower_replication_status() {
   do
     local log_dir
     local follower_hostname="conjur-follower-${i}.mycompany.local"
-    timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S.000+00:00")
+    timestamp=$(utc_timestamp)
     log_dir="$REPLICATION_LOG_STATS_DIR/follower/$follower_hostname"
     pg_stat_subscription_log_dir="$log_dir/pg_stat_subscription_log_dir"
     pg_subscription_rel_log_dir="$log_dir/pg_subscription_rel"
@@ -389,7 +389,7 @@ snapshot_follower_replication_status() {
 snapshot_leader_pg_identifier() {
   local log_dir
 
-  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S.000+00:00")
+  timestamp=$(utc_timestamp)
 
   # Collect the identifier from each leader container
   for ((i=1; i<=LEADER_COUNT; i++)); do
@@ -414,7 +414,7 @@ snapshot_leader_pg_identifier() {
 snapshot_follower_pg_identifier() {
   local log_dir
 
-  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%S.000+00:00")
+  timestamp=$(utc_timestamp)
 
   for ((i=1; i<=FOLLOWER_COUNT; i++))
   do

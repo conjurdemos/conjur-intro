@@ -21,7 +21,7 @@ cd "$(dirname ${0})/..";
 source ./bin/functions
 source ./bin/utils.sh
 
-LOG_DIR="$(replication_test_log_dir)/replication-test-k8s"
+LOG_DIR="$(k8s_log_dir)"
 FOLLOWER_LOG_DIR="$LOG_DIR/follower/info"
 NO_FAIL="false"
 FOLLOWER_COUNT=

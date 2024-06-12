@@ -20,8 +20,14 @@
 # ./bin/test-table-rows-match --follower-count 10
 #
 
+# Always work from repo root directory
+cd "$(dirname ${0})/..";
+
+source ./bin/functions
+source ./bin/utils.sh
+
 MAX_ATTEMPTS="${MAX_ATTEMPTS:-10}"
-LOG_DIR="tmp/appliance/tables"
+LOG_DIR="$(appliance_log_dir)/tables"
 
 # Note: the following tables are irrelevant for comparision in this context:
 # - policy_log

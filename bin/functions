@@ -4,13 +4,25 @@ repo_root() {
   git rev-parse --show-toplevel
 }
 
+utc_timestamp() {
+  date -u +"%Y-%m-%dT%H:%M:%S.000+00:00"
+}
+
 # A date timestamp separated by underscores, ideal for file names.
 file_friendly_timestamp() {
   date +"%Y_%m_%d_%I_%M_%s"
 }
 
-replication_test_log_dir() {
+root_log_dir() {
   echo "$(repo_root)/tmp/replication-test-logs"
+}
+
+appliance_log_dir() {
+  echo "$(root_log_dir)/replication-test"
+}
+
+k8s_log_dir() {
+  echo "$(root_log_dir)/replication-test-k8s"
 }
 
 check_env() {
