@@ -1,0 +1,174 @@
+#!/bin/bash -x
+
+# TODO:
+# - This currently assumes that all Followers are using the full replication set
+#   (which is the default).
+#
+
+# USAGE
+# A FOLLOWER_COUNT is used to confirm that there are this number of K8S Follower
+# Pods. If there are not, retry until MAX_ATTEMPTS has been reached. If they
+# match, then the stats for each table of the Leader are compared with that
+# of the Follower. If they match, then the test is successful. If they are not,
+# the test will retry until MAX_ATTEMPTS has been reached.
+# 
+# IMPORTANT: this output will only align if all Followers are
+# using the full replication set (default).
+#
+# ./bin/test-table-rows-match-k8s --follower-count 1
+# ./bin/test-table-rows-match-k8s --follower-count 5
+# ./bin/test-table-rows-match-k8s --follower-count 10
+#
+
+# Always work from repo root directory
+cd "$(dirname ${0})/..";
+
+source ./bin/functions
+source ./bin/utils.sh
+
+MAX_ATTEMPTS="${MAX_ATTEMPTS:-10}"
+DOCKER_LEADER_CONTAINER="conjur-master-1.mycompany.local"
+LOG_DIR="$(k8s_log_dir)/tables"
+
+# Note: the following tables are irrelevant for comparision in this context:
+# - policy_log
+# - schema_migrations
+# - schema_info
+TABLE_NAMES=("annotations" "authenticator_configs" "credentials" "host_factory_tokens" "permissions" "policy_versions" "resources" "resources_textsearch" "role_memberships" "roles" "secrets" "slosilo_keystore")
+
+# Use this to hide WARN from docker compose...
+# WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string. 
+export VERSION=
+export DRY_RUN=${DRY_RUN:-false}
+
+FOLLOWER_COUNT=
+
+main() {
+  LEADER_ROW_COUNTS_LOG_FILE="${DOCKER_LEADER_CONTAINER}-row-counts.log"
+  query=""
+  query_tmp_file="tmp/query.sql"
+
+  echo "Beginning script: $0"
+
+  if [[ -z "$MAX_ATTEMPTS" ]]; then
+    echo "FATAL: MAX_ATTEMPTS must be specified as --max-attempts"
+    exit 1
+  fi
+
+  echo "Cleaning up existing logs at: $LOG_DIR"
+  rm -rf "$LOG_DIR"
+  mkdir -p "$LOG_DIR"
+
+  if [[ -z "$FOLLOWER_COUNT" ]]; then
+    echo "FATAL: FOLLOWER_COUNT must be specified as --follower-count"
+    exit 1
+  fi
+
+  # Loop over the tables and append to the query
+  for i in "${!TABLE_NAMES[@]}"; do
+    table=${TABLE_NAMES[$i]}
+    if [ $i -eq 0 ]; then
+      # First table, no UNION
+      query+="SELECT '$table' AS table_name, COUNT(*) FROM public.$table"
+    else
+      # Subsequent tables, prepend with UNION ALL
+      query+=" UNION ALL SELECT '$table', COUNT(*) FROM public.$table"
+    fi
+  done
+
+  query+=" ORDER BY table_name"
+
+  # NOTE: as to not have to battle quotes during shell expansion through
+  # the local shell > KinD orchestrator > K8S Follower Pod, we instead upload
+  # the query as a file to the pod and execute it later...
+  echo "\copy ($query) To '/tmp/output.csv' With CSV" > "$query_tmp_file"
+  
+  # Loop over the files and compare each to the first file
+  for ((k=1; k<=MAX_ATTEMPTS; k++))
+  do
+    echo "$k"
+    is_failure_detected="false"
+
+    echo "Statistics for $DOCKER_LEADER_CONTAINER"
+    docker compose exec "$DOCKER_LEADER_CONTAINER" bash -c $"
+          chpst -u conjur psql -c \"\\copy ($query) To '/tmp/output.csv' With CSV\"
+        "
+    docker compose cp "$DOCKER_LEADER_CONTAINER:/tmp/output.csv" "$LOG_DIR/${LEADER_ROW_COUNTS_LOG_FILE}"
+
+    echo "Dumping Follower Logs at: $FOLLOWER_LOG_DIR"
+    RUNNING_PODS=$(get_k8s_follower_pod_names)
+    echo "$RUNNING_PODS"
+
+    RUNNING_PODS_COUNT=$(echo "$RUNNING_PODS" | wc -w | tr -d ' ')
+
+    if [ "$RUNNING_PODS_COUNT" -ne "$FOLLOWER_COUNT" ]; then
+      echo "ERROR: The number of running pods '$RUNNING_PODS_COUNT' is not equal to the expected FOLLOWER_COUNT: '${FOLLOWER_COUNT}'. Trying again..."
+      is_failure_detected="true"
+      continue
+    fi
+  
+    for pod in $RUNNING_PODS; do
+      # upload the query to the KinD container, then the pod
+      ./bin/kubectl "exec $pod -n 'cyberark-conjur' -c conjur -- bash -c 'rm -f /$query_tmp_file'"
+      VERSION= docker compose cp "$query_tmp_file" k8s-follower-orchestrator:"/$query_tmp_file"
+      ./bin/kubectl "cp $query_tmp_file cyberark-conjur/$pod:/$query_tmp_file -c conjur"
+
+      # execute the query
+      ./bin/kubectl "exec $pod -n 'cyberark-conjur' -c conjur -- bash -c 'rm -f /tmp/output.csv && psql \"$(get_k8s_follower_pg_connection_string)\" -f /${query_tmp_file}'"
+
+      # download the results
+      ./bin/kubectl "exec $pod -n 'cyberark-conjur' -c conjur -- bash -c 'cat /tmp/output.csv'" > "$LOG_DIR/${pod}-row-counts.log"
+    done
+
+    echo "Begin comparing all files (they should all be the same)..."
+    # Get a list of all files in the directory
+    log_files=("$LOG_DIR"/*)
+    for file in "${log_files[@]}"; do
+      if [ ! -s "$file" ]; then
+        echo "[Attempt $k/$MAX_ATTEMPTS] ERROR: File $file is empty."
+        is_failure_detected="true"
+      elif diff -q "$LOG_DIR/$LEADER_ROW_COUNTS_LOG_FILE" "$file" > /dev/null; then
+        echo "[Attempt $k/$MAX_ATTEMPTS] Files $LOG_DIR/$LEADER_ROW_COUNTS_LOG_FILE and $file are the same"
+      else
+        echo "[Attempt $k/$MAX_ATTEMPTS] ERROR: Files $LOG_DIR/$LEADER_ROW_COUNTS_LOG_FILE and $file are different"
+        is_failure_detected="true"
+      fi
+    done
+
+    # Exit if no failure was detected
+    if [ "$is_failure_detected" == "false" ] ; then
+      echo "[Attempt $k/$MAX_ATTEMPTS] It looks like all Followers are in sync with the Leader!"
+      break
+    fi
+    # Exit if max attempts have been reached and a failure has been detected
+    if [ "$k" == "$MAX_ATTEMPTS" ] && [ "$is_failure_detected" == "true" ] ; then
+      echo "[Attempt $k/$MAX_ATTEMPTS] FATAL: it seems like the Follower is still replicating after '$MAX_ATTEMPTS' maximum attempts have been attempted."
+      exit 1
+    fi
+
+    echo "[$FOLLOWER_HOSTNAME] (Attempt: $k/$MAX_ATTEMPTS) - Retrying in 3 seconds..."
+    sleep 3
+  done
+
+  echo "SUCCESS: All files are the same. It appears that all Followers tables are in sync with the Leader."
+  echo "DONE."
+}
+
+function get_k8s_follower_pg_connection_string() {
+  CONJUR_DATABASE_HOSTNAME=localhost
+  DATABASE_URL="postgres://conjur@$CONJUR_DATABASE_HOSTNAME:$PG_PORT/conjur?sslmode=require"
+  SSL_CERT="/opt/conjur/etc/ssl/cert/tls.crt"
+  SSL_KEY="/opt/conjur/etc/ssl/cert/conjur-tls.key"
+  connection_str="$DATABASE_URL&sslcert=$SSL_CERT&sslkey=$SSL_KEY"
+  echo "$connection_str"
+}
+
+while true ; do
+  case "$1" in
+    --follower-count ) shift; FOLLOWER_COUNT="$1" ; shift ;;
+    --max-attempts ) shift; MAX_ATTEMPTS="$1" ; shift ;;
+     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+  esac
+done
+
+main

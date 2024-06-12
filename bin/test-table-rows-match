@@ -106,6 +106,7 @@ main() {
       docker compose cp "$FOLLOWER_HOSTNAME:/tmp/output.csv" "$LOG_DIR/${FOLLOWER_HOSTNAME}-row-counts.log"
     done
 
+    echo "Begin comparing all files (they should all be the same)..."
 
     log_files=("$LOG_DIR"/*)
     for file in "${log_files[@]}"; do
