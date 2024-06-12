@@ -176,7 +176,7 @@ deploy_and_restore_leader() {
   bin/dap --wait-for-master
 
   echo "Enabling auto-failover..."
-  bin/dap --enable-auto-failover
+  bin/dap --enable-auto-failover --auto-failover-ttl 60
 
   echo "Waiting for healthy cluster..."
   bin/dap --wait-for-master
