@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Fail early.
-set -ex
+set -e
 
 # USAGE
 #
@@ -48,19 +48,45 @@ export VERSION
 
 pid=""
 
+# Initialize two indexed arrays to hold the test command names and their
+# exit codes
+TEST_COMMANDS=()
+EXIT_CODES_FIRST_RUN=()
+EXIT_CODES_SECOND_RUN=()
+
 finish() {
+  # Re-enable exit on error, in case any of these commands fail.
+  set -e
+  exit_code=$1
+
   # If a background process PID was stored, kill it (do not fail script if it is not found)
   if [ -n "$pid" ]; then
     echo "Killing resource monitor: $pid..."
     kill $pid || true
   fi
 
-  ./bin/create-log-artifacts --follower-count  "${FOLLOWER_COUNT}"
+  ./bin/create-log-artifacts --log-directory "$LOG_DIR" --follower-count  "${FOLLOWER_COUNT}"
+  print_test_suite_summary
+
   teardown_compose_environment
+  determine_exit_code "$exit_code"
+  exit $?
 }
 
 main(){
-  trap finish EXIT
+  local leader_log_dir="$LOG_DIR/logs/leader"
+  local follower_log_dir="$LOG_DIR/logs/follower"
+
+  trap 'finish $?' EXIT
+
+  TEST_COMMANDS+=("./bin/test-follower-pg-identifier --follower-count \"${FOLLOWER_COUNT}\"")
+  TEST_COMMANDS+=("./bin/dump-appliance-health-and-info --follower-count \"${FOLLOWER_COUNT}\"")
+  TEST_COMMANDS+=("./bin/test-secret-replication --max-attempts \"${MAX_ATTEMPTS}\" --policy-count \"${POLICY_COUNT}\" --secret-count \"${SECRET_COUNT}\" --follower-count \"${FOLLOWER_COUNT}\"")
+  TEST_COMMANDS+=("./bin/test-table-rows-match --follower-count \"${FOLLOWER_COUNT}\" --max-attempts \"${MAX_ATTEMPTS}\"")
+  TEST_COMMANDS+=("./bin/dump-leader-logs --no-fail --log-directory \"$leader_log_dir\"")
+  TEST_COMMANDS+=("./bin/dump-appliance-follower-logs --no-fail --log-directory \"$follower_log_dir\" --follower-count \"${FOLLOWER_COUNT}\"")
+  TEST_COMMANDS+=("./bin/test-leader-logs-for-replication-slot-errors --log-directory \"$leader_log_dir\"")
+  TEST_COMMANDS+=("./bin/test-appliance-follower-logs-for-replication-slot-errors --log-directory \"$follower_log_dir\"")
 
   if [ "$USE_EXISTING_ENVIRONMENT" = "true" ]; then
     echo "USE_EXISTING_ENVIRONMENT is set to '$USE_EXISTING_ENVIRONMENT'... Setting RESOURCE_INTERVAL to '1'..."
@@ -115,15 +141,17 @@ main(){
     fi
   fi
 
-  # Begin test suite
-  echo "Gathering test results..."
-  ./bin/test-follower-pg-identifier --follower-count "${FOLLOWER_COUNT}"
-  ./bin/dump-appliance-health-and-info --follower-count "${FOLLOWER_COUNT}"
-  ./bin/test-table-rows-match --follower-count "${FOLLOWER_COUNT}" --max-attempts "${MAX_ATTEMPTS}"
-
-  # These the test below depends on the appliance logs...
-  ./bin/dump-appliance-logs --follower-count "${FOLLOWER_COUNT}"
-  ./bin/test-appliance-logs-for-replication-slot-errors
+  # Run all test suite commands and capture their exit codes. Any failure
+  # does not prevent the following tests from running.
+  set +e
+  announce "BEGIN TEST SUITE - BEFORE FAILOVER"
+  for i in "${!TEST_COMMANDS[@]}"; do
+    announce "BEGIN TEST: ${TEST_COMMANDS[$i]}"
+    # shellcheck disable=SC2086
+    eval ${TEST_COMMANDS[$i]}
+    # shellcheck disable=SC2004
+    EXIT_CODES_FIRST_RUN[$i]=$?
+  done
 
   echo "Triggering a Leader failover..."
   perform_failover
@@ -135,14 +163,14 @@ main(){
   echo "Waiting for Follower(s) to become healthy after rebasing..."
   wait_for_followers
 
-  echo "Gathering test results again..."
-  ./bin/test-follower-pg-identifier --follower-count "${FOLLOWER_COUNT}"
-  ./bin/dump-appliance-health-and-info --follower-count "${FOLLOWER_COUNT}"
-  ./bin/test-table-rows-match --follower-count "${FOLLOWER_COUNT}" --max-attempts "${MAX_ATTEMPTS}"
-
-  # These the test below depends on the appliance logs...
-  ./bin/dump-appliance-logs --follower-count "${FOLLOWER_COUNT}"
-  ./bin/test-appliance-logs-for-replication-slot-errors
+  announce "BEGIN TEST SUITE - AFTER FAILOVER"
+  for i in "${!TEST_COMMANDS[@]}"; do
+    announce "BEGIN TEST: ${TEST_COMMANDS[$i]}"
+    # shellcheck disable=SC2086
+    eval ${TEST_COMMANDS[$i]}
+    # shellcheck disable=SC2004
+    EXIT_CODES_SECOND_RUN[$i]=$?
+  done
 
   echo "Tests are finished executing!"
   echo "DONE."
@@ -191,7 +219,7 @@ deploy_followers() {
   fi
 
   set +e
-  { timeout "$CONFIGURE_FOLLOWER_TIMEOUT" ./bin/dap --provision-follower --version "${VERSION}" --follower-count "${FOLLOWER_COUNT}"; exit_status=$?; }
+  { timeout --foreground "$CONFIGURE_FOLLOWER_TIMEOUT" ./bin/dap --provision-follower --version "${VERSION}" --follower-count "${FOLLOWER_COUNT}"; exit_status=$?; }
   set -e
   if [ $exit_status -eq 124 ]; then
     echo "FATAL: Timeout of '$CONFIGURE_FOLLOWER_TIMEOUT' exceeded when provisioning Follower(s)!"
@@ -205,6 +233,11 @@ deploy_followers() {
 }
 
 perform_failover() {
+  if [ "$USE_EXISTING_ENVIRONMENT" = "true" ]; then
+    echo "USE_EXISTING_ENVIRONMENT is set to '$USE_EXISTING_ENVIRONMENT', skipping triggering auto-failover..."
+    return
+  fi
+
   # Trigger a failover and wait for the cluster to become healthy again
   bin/dap --trigger-failover
   sleep 5
@@ -253,13 +286,15 @@ wait_for_follower() {
 # IMPORTANT: this is all done in sequence, each statistic is not a separate
 # process!
 record_resource_utilization() {
+  # Suppress output from stdout
+  set +x
   while true; do
-    snapshot_top
-    snapshot_docker_stats
-    snapshot_leader_replication_status
-    snapshot_follower_replication_status
-    snapshot_leader_pg_identifier
-    snapshot_follower_pg_identifier
+    snapshot_top > /dev/null 2>&1
+    snapshot_docker_stats > /dev/null 2>&1
+    snapshot_leader_replication_status > /dev/null 2>&1
+    snapshot_follower_replication_status > /dev/null 2>&1
+    snapshot_leader_pg_identifier > /dev/null 2>&1
+    snapshot_follower_pg_identifier > /dev/null 2>&1
     sleep "$RESOURCE_INTERVAL"
   done
 }
@@ -410,6 +445,39 @@ xtop() {
       # Linux
       top -b -n 1 | head -n 30
   fi
+}
+
+print_test_suite_summary() {
+  announce "TEST SUITE SUMMARY"
+  
+  for i in "${!TEST_COMMANDS[@]}"; do
+    echo "Command: ${TEST_COMMANDS[$i]}"
+    echo "Exit code before failover: ${EXIT_CODES_FIRST_RUN[$i]}"
+    echo "Exit code after failover: ${EXIT_CODES_SECOND_RUN[$i]}"
+  done
+}
+
+determine_exit_code() {
+  if [ "$1" -ne 0 ]; then
+    echo "Setup failed with exit code: $exit_code"
+    return 1
+  fi
+
+  for exit_code in "${EXIT_CODES_FIRST_RUN[@]}"; do
+    if [ "$exit_code" -ne 0 ]; then
+      echo "A test failed with exit code: $exit_code"
+      return 1
+    fi
+  done
+
+  for exit_code in "${EXIT_CODES_SECOND_RUN[@]}"; do
+    if [ "$exit_code" -ne 0 ]; then
+      echo "A test failed with exit code: $exit_code"
+      return 1
+    fi
+  done
+
+  return 0
 }
 
 main "$@"

@@ -601,7 +601,7 @@ _set_cluster_policy_file() {
   body:
     - !layer
 
-    # Host nodes to be enrolled in the `production` auto-failover cluster
+    # Host nodes to be enrolled in the production auto-failover cluster
     - &hosts
       - !host conjur-master-1.mycompany.local
 $(_standby_host_lines)

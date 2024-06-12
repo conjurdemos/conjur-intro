@@ -38,7 +38,7 @@ date_timestamp() {
 }
 
 function _get_kubectl_opts() {
-  API_SERVER_URL=$(kind get --name conjur-intro-k8s-follower kubeconfig | grep server | awk '{print $2}' | sed 's/0.0.0.0/host.docker.internal/')
+  API_SERVER_URL=$(VERSION="" run_in_kind "kind get --name conjur-intro-k8s-follower kubeconfig | grep server" | awk -F' ' '{print $2}' | sed 's/0.0.0.0/host.docker.internal/')
   KUBE_OPTS="--insecure-skip-tls-verify --server=$API_SERVER_URL --context kind-conjur-intro-k8s-follower"
   echo "$KUBE_OPTS"
 }
@@ -56,8 +56,26 @@ function run_in_kind {
     # as it is not relevant here
     #
     # shellcheck disable=SC2128
-    VERSION= docker compose exec -T k8s-follower-orchestrator ash -c "
+    VERSION="" docker compose exec -T k8s-follower-orchestrator ash -c "
           $_args
     "
   fi
+}
+
+# Returns a list of K8S Follower pods that have a status of Running.
+function get_k8s_follower_pod_names() {
+  bin/kubectl "get pods --field-selector=status.phase=Running -o jsonpath='{.items[*].metadata.name}' -n $(_get_k8s_follower_namespace)"
+}
+
+# WARNING: this is naive and only encodes forward slashes, and no other
+# characters! Used when fetching secrets via Conjur REST API.
+urlencode_forward_slashes_only() {
+    local string="$1"
+    echo "$string" | sed 's|/|%2F|g'
+}
+
+# Returns the active leader as reported by the Leader load balancer. Defaults
+# to the original leader container.
+function discover_leader_container() {
+  curl --silent -k https://localhost:443/info | jq -r '.configuration.conjur.cluster_leader' || echo "conjur-master-1.mycompany.local"
 }

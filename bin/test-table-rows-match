@@ -35,7 +35,7 @@ export VERSION=
 FOLLOWER_COUNT=
 
 main() {
-  local docker_leader_container=$(discover_leader_container)
+  local docker_leader_container
   LEADER_ROW_COUNTS_LOG_FILE="${docker_leader_container}-row-counts.log"
 
   echo "Beginning script: $0"
@@ -45,6 +45,8 @@ main() {
     exit 1
   fi
 
+  echo "Cleaning up existing logs at: $LOG_DIR"
+  rm -rf "$LOG_DIR"
   mkdir -p "$LOG_DIR"
 
   if [[ -z "$FOLLOWER_COUNT" ]]; then
@@ -52,7 +54,7 @@ main() {
     exit 1
   fi
 
-  discover_leader_container
+  docker_leader_container=$(discover_leader_container)
 
   # Start building the query
   query=""
@@ -71,22 +73,6 @@ main() {
 
   query+=" ORDER BY table_name"
 
-  echo "Statistics for $docker_leader_container"
-    docker compose exec "$docker_leader_container" bash -c $"
-          chpst -u conjur psql -c \"\\copy ($query) To '/tmp/output.csv' With CSV\"
-        "
-    docker compose cp "$docker_leader_container:/tmp/output.csv" "$LOG_DIR/${LEADER_ROW_COUNTS_LOG_FILE}"
-
-  for ((j=1; j<=FOLLOWER_COUNT; j++))
-  do
-    FOLLOWER_HOSTNAME="conjur-follower-${j}.mycompany.local"
-    echo "Statistics for $FOLLOWER_HOSTNAME"
-    docker compose exec "$FOLLOWER_HOSTNAME" bash -c $"
-          chpst -u conjur psql -c \"\\copy ($query) To '/tmp/output.csv' With CSV\"
-        "
-    docker compose cp "$FOLLOWER_HOSTNAME:/tmp/output.csv" "$LOG_DIR/${FOLLOWER_HOSTNAME}-row-counts.log"
-  done
-
   echo "Begin comparing all files (they should all be the same)..."
 
   # Get a list of all files in the directory
@@ -97,7 +83,26 @@ main() {
   do
     is_failure_detected="false"
 
-    for file in "${log_files[@]:1}"; do
+
+    echo "Statistics for $docker_leader_container"
+    docker compose exec "$docker_leader_container" bash -c $"
+          chpst -u conjur psql -c \"\\copy ($query) To '/tmp/output.csv' With CSV\"
+        "
+    docker compose cp "$docker_leader_container:/tmp/output.csv" "$LOG_DIR/${LEADER_ROW_COUNTS_LOG_FILE}"
+
+    for ((j=1; j<=FOLLOWER_COUNT; j++))
+    do
+      FOLLOWER_HOSTNAME="conjur-follower-${j}.mycompany.local"
+      echo "Statistics for $FOLLOWER_HOSTNAME"
+      docker compose exec "$FOLLOWER_HOSTNAME" bash -c $"
+            chpst -u conjur psql -c \"\\copy ($query) To '/tmp/output.csv' With CSV\"
+          "
+      docker compose cp "$FOLLOWER_HOSTNAME:/tmp/output.csv" "$LOG_DIR/${FOLLOWER_HOSTNAME}-row-counts.log"
+    done
+
+
+    log_files=("$LOG_DIR"/*)
+    for file in "${log_files[@]}"; do
       if [ ! -s "$file" ]; then
         echo "[Attempt $k/$MAX_ATTEMPTS] FATAL: File $file is empty."
         is_failure_detected="true"
