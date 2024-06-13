@@ -26,6 +26,8 @@ source ./bin/functions
 source ./bin/utils.sh
 
 LOG_DIR="$(k8s_log_dir)"
+LEADER_LOG_DIR="$(k8s_log_dir)/logs/leader"
+FOLLOWER_LOG_DIR="$(k8s_resources_log_dir)"
 RESOURCE_UTLIZATION_LOG_DIR="$LOG_DIR/resources"
 TOP_LOG_DIR="$RESOURCE_UTLIZATION_LOG_DIR/top"
 DOCKER_STATS_LOG_DIR="$RESOURCE_UTLIZATION_LOG_DIR/docker_stats"
@@ -66,7 +68,7 @@ finish() {
     kill -9 "$RESOURCE_MONITOR_PID" || true
   fi
 
-  ./bin/create-log-artifacts --follower-count  "${FOLLOWER_COUNT}"
+  ./bin/create-log-artifacts --log-directory "$LOG_DIR" --follower-count  "${FOLLOWER_COUNT}"
   print_test_suite_summary
 
   teardown_compose_environment
@@ -83,6 +85,8 @@ main(){
   TEST_COMMANDS+=("./bin/test-k8s-follower-pg-identifier")
   TEST_COMMANDS+=("./bin/dump-k8s-follower-info --follower-count \"${FOLLOWER_COUNT}\"")
   TEST_COMMANDS+=("./bin/test-table-rows-match-k8s --follower-count \"${FOLLOWER_COUNT}\" --max-attempts \"${MAX_ATTEMPTS}\"")
+  TEST_COMMANDS+=("./bin/test-leader-logs-for-replication-slot-errors --log-directory \"$LEADER_LOG_DIR\"")
+  TEST_COMMANDS+=("./bin/test-k8s-follower-logs-for-replication-slot-errors --log-directory \"$FOLLOWER_LOG_DIR\"")
 
   trap 'finish $?' EXIT
 
@@ -135,6 +139,15 @@ main(){
       echo "Proceeding..."
     fi
   fi
+
+  # Logs are a prerequisite for log scanning tests(s)...
+  # A failure to log wil cause that test to fail, but we continue to run tests
+  # in effort to get as much information from a long running pipeline as
+  # possible.
+  announce "Dumping Appliance and K8S Resource Logs..."
+  echo "This is required for the test that checks K8S Follower logs for replication slot errors..."
+  ./bin/dump-leader-logs --no-fail --log-directory "$LEADER_LOG_DIR"
+  ./bin/dump-k8s-resource-logs "$FOLLOWER_LOG_DIR" "$(_get_k8s_follower_namespace)" "$(_get_k8s_operator_namespace)" || true
 
   # Run all test suite commands and capture their exit codes. Any failure
   # does not prevent the following tests from running.

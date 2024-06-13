@@ -24,11 +24,13 @@ cd "$(dirname ${0})/..";
 source ./bin/functions
 source ./bin/utils.sh
 
+LOG_DIR="$1" ; shift
+
 VERBOSE=8
 LOG_LEVELS=( "Emergency" "Alert" "Critical" "Error" "Warning" "Notice" "Info" "Debug")
 # <timestamp>/<feature-name>/<scenario-name>/<namespace>_*.log
 LOG_TIMESTAMP="$(file_friendly_timestamp)"
-LOG_ROOT_DIR="$(k8s_log_dir)/k8s-resources/$LOG_TIMESTAMP"
+LOG_ROOT_DIR="$LOG_DIR/$LOG_TIMESTAMP"
 
 function verbose() {
     if [ $# -lt 2 ]
@@ -144,14 +146,12 @@ function log_pod_containers() {
   verbose 8 "Containers Found: $containers"
 
   if [ -z "$init_containers" ]; then
-      verbose 7 "No containers found in pod: $p"
+      verbose 7 "No init containers found in pod: $p"
   else
       verbose 7 "Begin logging init containers found in pod: $p"
       # ... and log each of them
       for c in $init_containers; do
           log_container "$p" "$c"
-          # Sleep between each container log attempt
-          sleep 0.1
       done
   fi
 
@@ -162,8 +162,6 @@ function log_pod_containers() {
       # ... and log each of them
       for c in $containers; do
           log_container "$p" "$c"
-          # Sleep between each container log attempt
-          sleep 0.1
       done
   fi
 }

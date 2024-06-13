@@ -55,7 +55,7 @@ finish() {
     kill $pid || true
   fi
 
-  ./bin/create-log-artifacts --follower-count  "${FOLLOWER_COUNT}"
+  ./bin/create-log-artifacts --log-directory "$LOG_DIR" --follower-count  "${FOLLOWER_COUNT}"
   teardown_compose_environment
 }
 
@@ -141,9 +141,10 @@ main(){
   ./bin/test-table-rows-match --follower-count "${FOLLOWER_COUNT}" --max-attempts "${MAX_ATTEMPTS}"
 
   # These the test below depends on the appliance logs...
-  ./bin/dump-appliance-logs --follower-count "${FOLLOWER_COUNT}"
-  ./bin/test-leader-logs-for-replication-slot-errors
-  ./bin/test-appliance-follower-logs-for-replication-slot-errors
+  ./bin/dump-leader-logs --log-directory "$LOG_DIR/logs/leader"
+  ./bin/dump-appliance-follower-logs --log-directory "$LOG_DIR/logs/follower" --follower-count "${FOLLOWER_COUNT}"
+  ./bin/test-leader-logs-for-replication-slot-errors --log-directory "$LOG_DIR/logs/leader"
+  ./bin/test-appliance-follower-logs-for-replication-slot-errors --log-directory "$LOG_DIR/logs/follower"
 
   echo "Tests are finished executing!"
   echo "DONE."

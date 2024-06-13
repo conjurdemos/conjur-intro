@@ -10,7 +10,7 @@ set -o pipefail
 #
 # NOTE: Leader and Follower logs are tested for different patterns/cases.
 #
-# ./bin/test-leader-logs-for-replication-slot-errors
+# ./bin/test-leader-logs-for-replication-slot-errors --log-directory tmp
 #
 
 # Always work from repo root directory
@@ -19,18 +19,32 @@ cd "$(dirname ${0})/..";
 source ./bin/functions
 source ./bin/utils.sh
 
-LOG_DIR="$(appliance_log_dir)/logs"
-LEADER_LOG_DIR="$LOG_DIR/leader"
+LOG_DIR=
 
 main(){
   is_failure_detected_globally="false"
   failed_logs=()
 
-  for file in "$LEADER_LOG_DIR"/*
+  if [[ -z "$LOG_DIR" ]]; then
+    echo "FATAL: Argument '--log-directory' must be provided!"
+    exit 1
+  fi
+
+  if [ ! -d "$LOG_DIR" ]; then
+    echo "FATAL: Directory does not exist: $LOG_DIR"
+    exit 1
+  fi
+
+  for file in "$LOG_DIR"/*
   do
     is_leader_failure_detected="false"
 
     echo "Testing log file: $file..."
+
+    if [ ! -s "$file" ]; then
+      echo "ERROR: log file does not exist or is empty, and cannot be tested: $file..."
+      is_failure_detected_globally="true"
+    fi
 
     if grep -n -E 'ERROR:  replication slot "pg_[0-9]+_sync_[0-9]+_[0-9]+" does not exist' "$file" | sed 's/^/\t/'; then
       is_leader_failure_detected="true"
@@ -56,4 +70,11 @@ main(){
   echo "DONE."
 }
 
-main "$@"
+while true ; do
+  case "$1" in
+    --log-directory ) shift; LOG_DIR="$1" ; shift ;;
+     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+  esac
+done
+
+main
