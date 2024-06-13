@@ -17,6 +17,7 @@ CONJUR_MASTER_PORT=${CONJUR_MASTER_PORT:-443}
 CONJUR_FOLLOWER_PORT=${CONJUR_FOLLOWER_PORT:-450}
 CONJUR_K8S_FOLLOWER_PORT=${CONJUR_K8S_FOLLOWER_PORT:-451}
 K8S_FOLLOWER_CONJUR_LOG_LEVEL=${K8S_FOLLOWER_CONJUR_LOG_LEVEL:-info}
+CONFIGURE_FOLLOWER_TIMEOUT=${CONFIGURE_FOLLOWER_TIMEOUT:-300}
 _admin_password="MySecretP@ss1"
 
 function _print_help {
@@ -387,7 +388,8 @@ function _setup_k8s_follower {
 
   # Wait a little bit to create k8s-follower-orchestrator cluster
   SECONDS=0
-  TIMEOUT=300
+
+  echo "Will wait for ${CONFIGURE_FOLLOWER_TIMEOUT} seconds for the conjur-intro-k8s-follower cluster to be created...."
   while true; do
     if bin/kubectl "get nodes | grep -q \"Ready\"" &> /dev/null; then
       echo "The conjur-intro-k8s-follower cluster is created."
@@ -396,8 +398,8 @@ function _setup_k8s_follower {
       echo "Waiting for the conjur-intro-k8s-follower cluster to be created..."
       sleep 1
     fi
-    if [ $SECONDS -ge $TIMEOUT ]; then
-        echo "Timeout after waiting for 5 minutes. The conjur-intro-k8s-follower cluster is not created."
+    if [ $SECONDS -ge "$CONFIGURE_FOLLOWER_TIMEOUT" ]; then
+        echo "Timeout after waiting for ${CONFIGURE_FOLLOWER_TIMEOUT} seconds. The conjur-intro-k8s-follower cluster is not created."
         echo "Printing logs from k8s-follower-orchestrator container:"
         docker logs conjur-intro-k8s-follower-orchestrator-1
         echo "Printing logs from docker logs k8s-follower-control-plane container:"
@@ -445,8 +447,8 @@ function _setup_k8s_follower {
   run_in_kind "cat /manifests/samples/*"
   bin/kubectl "apply -f /manifests/samples"
 
-  echo "Waiting for the conjur-follower deployment to be running..."
-  bin/kubectl "wait --namespace=$(_get_k8s_follower_namespace) --for=condition=available --timeout=${TIMEOUT}s deployment/conjur-follower"
+  echo "Will wait for ${CONFIGURE_FOLLOWER_TIMEOUT} seconds for the conjur-follower deployment to be running..."
+  bin/kubectl "wait --namespace=$(_get_k8s_follower_namespace) --for=condition=available --timeout=${CONFIGURE_FOLLOWER_TIMEOUT}s deployment/conjur-follower"
 
   # Deploy NodePort that will expose Conjur Follower endpoint
   bin/kubectl "apply -f conjur-follower-node-port.yaml"
@@ -889,6 +891,7 @@ AUTO_FAILOVER_TTL=300
 while true ; do
   case "$1" in
     --create-backup ) CMD='_create_backup' ; shift ;;
+    --k8s-follower-timeout ) shift ; CONFIGURE_FOLLOWER_TIMEOUT=$1 ; shift ;;
     --k8s-follower-conjur-log-level ) shift ; K8S_FOLLOWER_CONJUR_LOG_LEVEL=$1 ; shift ;;
     --dry-run ) DRY_RUN=true ; shift ;;
     --enable-auto-failover ) CMD='_enable_autofailover' ; shift ;;

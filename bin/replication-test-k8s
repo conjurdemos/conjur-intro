@@ -157,10 +157,14 @@ deploy_k8s_followers() {
     return
   fi
 
-  ./bin/dap --provision-k8s-follower --k8s-follower-version "${K8S_FOLLOWER_TAG}" --follower-count "${FOLLOWER_COUNT}" --k8s-follower-conjur-log-level debug
-  exit_status="$?"
-
-  if [ $exit_status -eq 0 ]; then
+  set +e
+  echo "Will wait for ${CONFIGURE_FOLLOWER_TIMEOUT} seconds for the KinD Cluster and K8S Followers to be created..."
+  { timeout --foreground "$CONFIGURE_FOLLOWER_TIMEOUT" ./bin/dap --provision-k8s-follower --k8s-follower-version "${K8S_FOLLOWER_TAG}" --follower-count "${FOLLOWER_COUNT}" --k8s-follower-conjur-log-level debug --k8s-follower-timeout "${CONFIGURE_FOLLOWER_TIMEOUT}"; exit_status="$?"; }
+  set -e
+  if [ $exit_status -eq 124 ]; then
+    echo "FATAL: Timeout of '$CONFIGURE_FOLLOWER_TIMEOUT' exceeded when provisioning K8S Follower(s)!"
+    exit 1
+  elif [ $exit_status -eq 0 ]; then
     echo "SUCCESS: K8S Follower(s) were succesfully configured completed before timeout!"
   else
     echo "FATAL: Failed to configure K8S Follower(s) with error: $exit_status"
