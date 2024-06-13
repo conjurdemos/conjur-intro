@@ -121,7 +121,7 @@ main(){
   fi
 
   # Begin test suite
-  # ./bin/test-follower-pg-identifier --follower-count "${FOLLOWER_COUNT}"
+  ./bin/test-k8s-follower-pg-identifier
   ./bin/dump-k8s-follower-info --follower-count "${FOLLOWER_COUNT}"
   ./bin/test-table-rows-match-k8s --follower-count "${FOLLOWER_COUNT}" --max-attempts "${MAX_ATTEMPTS}"
 
@@ -183,7 +183,6 @@ record_resource_utilization() {
     snapshot_leader_replication_status > /dev/null 2>&1
     # snapshot_follower_replication_status > /dev/null 2>&1
     snapshot_leader_pg_identifier > /dev/null 2>&1
-    # snapshot_follower_pg_identifier > /dev/null 2>&1
     sleep "$RESOURCE_INTERVAL"
   done
 }
@@ -274,32 +273,6 @@ snapshot_leader_pg_identifier() {
   pgid=$(docker compose exec -T "$DOCKER_LEADER_CONTAINER" chpst -u postgres psql -tqc 'SELECT system_identifier FROM pg_control_system();')
   echo "Got pg identifer for Leader '$DOCKER_LEADER_CONTAINER': $pgid"
   echo "$pgid" > "$log_dir/$timestamp.log" || true
-}
-
-snapshot_follower_pg_identifier() {
-  local log_dir
-
-  timestamp=$(utc_timestamp)
-
-  for ((i=1; i<=FOLLOWER_COUNT; i++))
-  do
-    local log_dir
-    local follower_hostname="conjur-follower-${i}.mycompany.local"
-
-    container_id=$(docker compose ps -q $follower_hostname)
-    if [ -z "$container_id" ]; then
-      echo "WARNING: No container ID found for service '$follower_hostname' (it is not running), skipping!"
-      continue
-    fi
-
-    log_dir="$PG_ID_LOG_DIR/follower/$follower_hostname"
-
-    mkdir -p "$log_dir"
-
-    pgid=$(docker compose exec -T "$follower_hostname" chpst -u postgres psql -tqc 'SELECT system_identifier FROM pg_control_system();')
-    echo "Got pg identifer for Follower '$follower_hostname': $pgid"
-    echo "$pgid" > "$log_dir/$timestamp.log" || true
-  done
 }
 
 xtop() {
