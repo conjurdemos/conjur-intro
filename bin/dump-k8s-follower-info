@@ -78,6 +78,8 @@ main(){
     echo "FATAL: An error was detected in at least one node, see above."
     exit 1
   fi
+
+  echo "SUCCESS: All nodes were able to be queried successfully."
   echo "DONE."
 }
 

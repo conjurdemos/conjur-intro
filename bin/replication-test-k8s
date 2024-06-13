@@ -102,12 +102,9 @@ main(){
   record_resource_utilization &
   pid=$!
   echo "Starting resource monitor: $pid"
+
   echo "Provisioning K8S Follower(s) using tag: '${K8S_FOLLOWER_TAG}'..."
   echo "If any one Follower takes longer than $CONFIGURE_FOLLOWER_TIMEOUT seconds to configure, the configuration process for all Followers will be stopped."
-
-  # The following enables us to kill long-running configurations (hanging).
-  # This allows the pipeline to continue, fail, and for artifacts to still be
-  # generated.
   deploy_k8s_followers
 
   # This is a Developer Exprience option for using USE_EXISTING_ENVIRONMENT
@@ -157,10 +154,14 @@ deploy_k8s_followers() {
     return
   fi
 
+  # The following enables us to kill long-running configurations (hanging).
+  # This allows the pipeline to continue, fail, and for artifacts to still be
+  # generated.
   set +e
   echo "Will wait for ${CONFIGURE_FOLLOWER_TIMEOUT} seconds for the KinD Cluster and K8S Followers to be created..."
   { timeout --foreground "$CONFIGURE_FOLLOWER_TIMEOUT" ./bin/dap --provision-k8s-follower --k8s-follower-version "${K8S_FOLLOWER_TAG}" --follower-count "${FOLLOWER_COUNT}" --k8s-follower-conjur-log-level debug --k8s-follower-timeout "${CONFIGURE_FOLLOWER_TIMEOUT}"; exit_status="$?"; }
   set -e
+
   if [ $exit_status -eq 124 ]; then
     echo "FATAL: Timeout of '$CONFIGURE_FOLLOWER_TIMEOUT' exceeded when provisioning K8S Follower(s)!"
     exit 1
@@ -181,7 +182,7 @@ record_resource_utilization() {
     snapshot_top > /dev/null 2>&1
     snapshot_docker_stats > /dev/null 2>&1
     snapshot_leader_replication_status > /dev/null 2>&1
-    # snapshot_follower_replication_status > /dev/null 2>&1
+    snapshot_follower_replication_status > /dev/null 2>&1
     snapshot_leader_pg_identifier > /dev/null 2>&1
     sleep "$RESOURCE_INTERVAL"
   done
@@ -223,42 +224,32 @@ snapshot_leader_replication_status() {
 }
 
 # Print information of the replication status of each Follower
-# WARNING: at scale, this will output a lot of files (2 per Follower)!
+# WARNING: at scale, this will output a lot of files
 snapshot_follower_replication_status() {
-  for ((i=1; i<=FOLLOWER_COUNT; i++))
-  do
+  local running_pods
+  local table_names
+
+  running_pods=$(get_k8s_follower_pod_names)
+  table_names=("pg_stat_subscription" "pg_subscription_rel" "pg_subscription")
+
+  for pod in $running_pods; do
     local log_dir
-    local follower_hostname="conjur-follower-${i}.mycompany.local"
-    timestamp=$(utc_timestamp)
-    log_dir="$REPLICATION_LOG_STATS_DIR/follower/$follower_hostname"
-    pg_stat_subscription_log_dir="$log_dir/pg_stat_subscription_log_dir"
-    pg_subscription_rel_log_dir="$log_dir/pg_subscription_rel"
-    pg_subscription_log_dir="$log_dir/pg_subscription"
 
-    container_id=$(docker compose ps -q $follower_hostname)
-    if [ -z "$container_id" ]; then
-      echo "WARNING: No container ID found for service '$follower_hostname' (it is not running), skipping!"
-      continue
-    fi
+    log_dir="$REPLICATION_LOG_STATS_DIR/follower/$pod"
 
-    mkdir -p "$pg_stat_subscription_log_dir"
-    mkdir -p "$pg_subscription_rel_log_dir"
-    mkdir -p "$pg_subscription_log_dir"
+    for i in "${!table_names[@]}"; do
+      local timestamp
+      local table_log_dir
 
-    docker compose exec -T "$follower_hostname" bash -c $"
-          chpst -u conjur psql -c \"\\copy (SELECT * from pg_stat_subscription) To '/tmp/output.csv' With CSV HEADER\"
-        " || true
-    docker compose exec "$follower_hostname" bash -c "cat /tmp/output.csv" | tee "$pg_stat_subscription_log_dir/$timestamp.log" || true
+      timestamp=$(utc_timestamp)
+      table=${table_names[$i]}
+      table_log_dir="$log_dir/$table"
 
-    docker compose exec -T "$follower_hostname" bash -c $"
-          chpst -u conjur psql -c \"\\copy (SELECT * from pg_subscription_rel) To '/tmp/output.csv' With CSV HEADER\"
-        " || true
-    docker compose exec "$follower_hostname" bash -c "cat /tmp/output.csv" | tee "$pg_subscription_rel_log_dir/$timestamp.log" || true
+      mkdir -p "$table_log_dir"
 
-    docker compose exec -T "$follower_hostname" bash -c $"
-          chpst -u conjur psql -c \"\\copy (SELECT * from pg_subscription) To '/tmp/output.csv' With CSV HEADER\"
-        " || true
-    docker compose exec "$follower_hostname" bash -c "cat /tmp/output.csv" | tee "$pg_subscription_log_dir/$timestamp.log" || true
+      bin/kubectl exec -n "$(_get_k8s_follower_namespace)" "$pod" -c postgres -- pg-uid-wrapper "psql --username=postgres --host=/tmp --dbname=conjur --command='\copy (SELECT * from $table) To '/tmp/$table.csv' With CSV HEADER;'" || true
+      bin/kubectl "exec $pod -n '$(_get_k8s_follower_namespace)' -c postgres -- bash -c 'cat /tmp/$table.csv'" > "$table_log_dir/${timestamp}.log" || true
+    done
   done
 }
 
