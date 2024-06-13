@@ -142,7 +142,8 @@ main(){
 
   # These the test below depends on the appliance logs...
   ./bin/dump-appliance-logs --follower-count "${FOLLOWER_COUNT}"
-  ./bin/test-appliance-logs-for-replication-slot-errors
+  ./bin/test-leader-logs-for-replication-slot-errors
+  ./bin/test-appliance-follower-logs-for-replication-slot-errors
 
   echo "Tests are finished executing!"
   echo "DONE."
