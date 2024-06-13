@@ -25,6 +25,10 @@ k8s_log_dir() {
   echo "$(root_log_dir)/replication-test-k8s"
 }
 
+k8s_resources_log_dir() {
+  echo "$(k8s_log_dir)/k8s-resources"
+}
+
 check_env() {
   # evaluate given variable name to get its value
   eval temp_var="\$$1"
@@ -63,6 +67,10 @@ function _get_kubectl_opts() {
 
 function _get_k8s_follower_namespace() {
   echo "cyberark-conjur"
+}
+
+function _get_k8s_operator_namespace() {
+  echo "conjur-follower-operator-system"
 }
 
 # Each command will be executed with KUBE_OPTS environment variable

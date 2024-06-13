@@ -43,7 +43,7 @@ main(){
   ./bin/dump-appliance-health-and-info --no-fail --follower-count "${FOLLOWER_COUNT}"
 
   echo "Dumping kubernetes logs..."
-  ./bin/dump-k8s-resource-logs "$(_get_k8s_follower_namespace)" conjur-follower-operator-system || true
+  ./bin/dump-k8s-resource-logs "$(_get_k8s_follower_namespace)" "$(_get_k8s_operator_namespace)" || true
 
   echo "Tarballing logs to $archive_filename"
   tar -czvf "$archive_filename" -C "$LOG_DIR" .
