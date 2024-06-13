@@ -55,9 +55,14 @@ function _get_kubectl_opts() {
   echo "$KUBE_OPTS"
 }
 
+function _get_k8s_follower_namespace() {
+  echo "cyberark-conjur"
+}
+
 # Each command will be executed with KUBE_OPTS environment variable
 # which is defined to point to the k8s-follower-orchestrator cluster.
 # The KUBE_OPTS variable should be then used in the command to interact with the k8s-follower-orchestrator cluster.
+#
 # For example:
 # run_in_kind "get pods -n cyberark-conjur"
 function run_in_kind {
@@ -72,4 +77,9 @@ function run_in_kind {
           $_args
     "
   fi
+}
+
+# Returns a list of K8S Follower pods that have a status of Running.
+function get_k8s_follower_pod_names() {
+  bin/kubectl "get pods --field-selector=status.phase=Running -o jsonpath='{.items[*].metadata.name}' -n $(_get_k8s_follower_namespace)"
 }

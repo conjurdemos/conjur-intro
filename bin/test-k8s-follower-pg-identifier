@@ -12,19 +12,22 @@ set -e
 # Always work from repo root directory
 cd "$(dirname ${0})/..";
 
+source ./bin/functions
+source ./bin/utils.sh
+
 FOLLOWER_PG_IDENTIFIERS=()
 
 main(){
   echo "Beginning script: $0"
 
-  PODS=$(bin/kubectl get pods -n cyberark-conjur --no-headers -o custom-columns=":metadata.name")
+  PODS=$(bin/kubectl get pods -n "$(_get_k8s_follower_namespace)" --no-headers -o custom-columns=":metadata.name")
 
   echo "Displaying PostgreSQL Identifiers for each K8S Follower:"
   for POD in $PODS
   do
     echo "Querying postgres in '${POD}'..."
 
-    IDENTIFIER=$(bin/kubectl exec -n cyberark-conjur $POD -c postgres -- pg-uid-wrapper "psql --username=postgres --host=/tmp --dbname=conjur --command='SELECT system_identifier FROM pg_control_system();'" 2>/dev/null | tail -3 | head -1)
+    IDENTIFIER=$(bin/kubectl exec -n "$(_get_k8s_follower_namespace)" "$POD" -c postgres -- pg-uid-wrapper "psql --username=postgres --host=/tmp --dbname=conjur --command='SELECT system_identifier FROM pg_control_system();'" 2>/dev/null | tail -3 | head -1)
     FOLLOWER_PG_IDENTIFIERS+=("${IDENTIFIER}")
     echo -e "\tFound Identifier: ${IDENTIFIER}"
   done
