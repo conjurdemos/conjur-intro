@@ -36,6 +36,12 @@ check_env() {
   fi
 }
 
+announce() {
+  echo "------------------------------------"
+  echo "$1"
+  echo "------------------------------------"
+}
+
 is_gnu_date() {
   date --version >/dev/null 2>&1
 }
