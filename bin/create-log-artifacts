@@ -17,7 +17,7 @@ cd "$(dirname ${0})/..";
 source ./bin/functions
 source ./bin/utils.sh
 
-LOG_DIR="$(root_log_dir)"
+LOG_DIR=
 ARCHIVE_DIR="tmp/artifacts"
 
 FOLLOWER_COUNT="${FOLLOWER_COUNT:-1}"
@@ -25,10 +25,18 @@ FOLLOWER_COUNT="${FOLLOWER_COUNT:-1}"
 main(){
   echo "Beginning script: $0"
 
+  if [[ -z "$LOG_DIR" ]]; then
+    echo "FATAL: Argument '--log-directory' must be provided!"
+    exit 1
+  fi
+
   if [[ -z "$FOLLOWER_COUNT" ]]; then
     echo "FATAL: FOLLOWER_COUNT must be specified as --follower-count"
     exit 1
   fi
+
+  echo "Creating log directory: $LOG_DIR..."
+  mkdir -p "$LOG_DIR"
 
   timestamp=$(date +%Y%m%d%H%M%S)
   archive_filename="$ARCHIVE_DIR/appliance-logs-$timestamp.tgz"
@@ -39,14 +47,24 @@ main(){
   fi
 
   echo "Dumping appliance logs..."
-  ./bin/dump-appliance-logs --no-fail --follower-count "${FOLLOWER_COUNT}"
+
+  ./bin/dump-leader-logs --no-fail --log-directory "$LOG_DIR/logs/leader"
+  ./bin/dump-appliance-follower-logs --no-fail --log-directory "$LOG_DIR/logs/follower" --follower-count "${FOLLOWER_COUNT}"
   ./bin/dump-appliance-health-and-info --no-fail --follower-count "${FOLLOWER_COUNT}"
 
   echo "Dumping kubernetes logs..."
-  ./bin/dump-k8s-resource-logs "$(_get_k8s_follower_namespace)" "$(_get_k8s_operator_namespace)" || true
+  ./bin/dump-k8s-resource-logs "$LOG_DIR/k8s-resources" "$(_get_k8s_follower_namespace)" "$(_get_k8s_operator_namespace)" || true
 
   echo "Tarballing logs to $archive_filename"
   tar -czvf "$archive_filename" -C "$LOG_DIR" .
 }
 
-main "$@"
+while true ; do
+  case "$1" in
+    --log-directory ) shift; LOG_DIR="$1" ; shift ;;
+    --follower-count ) shift; FOLLOWER_COUNT="$1" ; shift ;;
+     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+  esac
+done
+
+main
