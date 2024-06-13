@@ -440,7 +440,7 @@ function _setup_k8s_follower {
 
   # Ensure certs are up to date
   docker cp "$(docker compose ps -q conjur-master-1.mycompany.local)":/opt/conjur/etc/ssl/. ./system/haproxy/certs
-  bin/kubectl "create configmap -n cyberark-conjur conjur-cert --from-file=/etc/ssl/certs/conjur-master.mycompany.local.pem"
+  bin/kubectl "create configmap --namespace $(_get_k8s_follower_namespace) conjur-cert --from-file=/etc/ssl/certs/conjur-master.mycompany.local.pem" || true
 
   # Apply manifest with Conjur Follower
   echo "Applying K8S Follower Manifests (displayed below)..."

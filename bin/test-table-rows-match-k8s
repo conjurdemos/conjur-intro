@@ -109,15 +109,15 @@ main() {
   
     for pod in $RUNNING_PODS; do
       # upload the query to the KinD container, then the pod
-      ./bin/kubectl "exec $pod -n 'cyberark-conjur' -c conjur -- bash -c 'rm -f /$query_tmp_file'"
+      ./bin/kubectl "exec $pod -n '$(_get_k8s_follower_namespace)' -c conjur -- bash -c 'rm -f /$query_tmp_file'"
       VERSION= docker compose cp "$query_tmp_file" k8s-follower-orchestrator:"/$query_tmp_file"
-      ./bin/kubectl "cp $query_tmp_file cyberark-conjur/$pod:/$query_tmp_file -c conjur"
+      ./bin/kubectl "cp $query_tmp_file $(_get_k8s_follower_namespace)/$pod:/$query_tmp_file -c conjur"
 
       # execute the query
-      ./bin/kubectl "exec $pod -n 'cyberark-conjur' -c conjur -- bash -c 'rm -f /tmp/output.csv && psql \"$(get_k8s_follower_pg_connection_string)\" -f /${query_tmp_file}'"
+      ./bin/kubectl "exec $pod -n '$(_get_k8s_follower_namespace)' -c conjur -- bash -c 'rm -f /tmp/output.csv && psql \"$(get_k8s_follower_pg_connection_string)\" -f /${query_tmp_file}'"
 
       # download the results
-      ./bin/kubectl "exec $pod -n 'cyberark-conjur' -c conjur -- bash -c 'cat /tmp/output.csv'" > "$LOG_DIR/${pod}-row-counts.log"
+      ./bin/kubectl "exec $pod -n '$(_get_k8s_follower_namespace)' -c conjur -- bash -c 'cat /tmp/output.csv'" > "$LOG_DIR/${pod}-row-counts.log"
     done
 
     echo "Begin comparing all files (they should all be the same)..."
