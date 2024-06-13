@@ -51,7 +51,7 @@ main(){
     done
   done
 
-  echo "All identifiers are unique."
+  echo "SUCCESS: All identifiers are unique."
   echo "DONE."
 }
 
