@@ -121,7 +121,7 @@ main(){
   fi
 
   # Begin test suite
-  # ./bin/test-follower-pg-identifier --follower-count "${FOLLOWER_COUNT}"
+  ./bin/test-k8s-follower-pg-identifier
   ./bin/dump-k8s-follower-info --follower-count "${FOLLOWER_COUNT}"
   ./bin/test-table-rows-match-k8s --follower-count "${FOLLOWER_COUNT}" --max-attempts "${MAX_ATTEMPTS}"
 
