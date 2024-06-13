@@ -1,7 +1,4 @@
-#!/usr/bin/env bash
-
-# Fail early.
-set -ex
+#!/bin/bash
 
 # USAGE
 #
@@ -51,21 +48,43 @@ CONFIGURE_FOLLOWER_TIMEOUT=${CONFIGURE_FOLLOWER_TIMEOUT:-600}
 # WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string. 
 export VERSION
 
-pid=""
+RESOURCE_MONITOR_PID=""
+
+# Initialize two indexed arrays to hold the test command names and their
+# exit codes
+TEST_COMMANDS=()
+EXIT_CODES=()
 
 finish() {
+  # Re-enable exit on error, in case any of these commands fail.
+  set -e
+  exit_code=$1
+
   # If a background process PID was stored, kill it (do not fail script if it is not found)
-  if [ -n "$pid" ]; then
-    echo "Killing resource monitor: $pid..."
-    kill $pid || true
+  if [ -n "$RESOURCE_MONITOR_PID" ]; then
+    echo "Killing resource monitor: $RESOURCE_MONITOR_PID..."
+    kill -9 "$RESOURCE_MONITOR_PID" || true
   fi
 
   ./bin/create-log-artifacts --follower-count  "${FOLLOWER_COUNT}"
+  print_test_suite_summary
+
   teardown_compose_environment
+  determine_exit_code "$exit_code"
+  exit $?
 }
 
 main(){
-  trap finish EXIT
+  # We want to exit immediately if any setup command fails. This will be
+  # disabled when the tests start running, as we want to run all tests.
+  set -e
+
+  # Define test suite(s) commands
+  TEST_COMMANDS+=("./bin/test-k8s-follower-pg-identifier")
+  TEST_COMMANDS+=("./bin/dump-k8s-follower-info --follower-count \"${FOLLOWER_COUNT}\"")
+  TEST_COMMANDS+=("./bin/test-table-rows-match-k8s --follower-count \"${FOLLOWER_COUNT}\" --max-attempts \"${MAX_ATTEMPTS}\"")
+
+  trap 'finish $?' EXIT
 
   if [ "$USE_EXISTING_ENVIRONMENT" = "true" ]; then
     echo "USE_EXISTING_ENVIRONMENT is set to '$USE_EXISTING_ENVIRONMENT'... Setting RESOURCE_INTERVAL to '1'..."
@@ -100,8 +119,8 @@ main(){
   deploy_and_restore_leader
 
   record_resource_utilization &
-  pid=$!
-  echo "Starting resource monitor: $pid"
+  RESOURCE_MONITOR_PID=$!
+  echo "Starting resource monitor: $RESOURCE_MONITOR_PID"
 
   echo "Provisioning K8S Follower(s) using tag: '${K8S_FOLLOWER_TAG}'..."
   echo "If any one Follower takes longer than $CONFIGURE_FOLLOWER_TIMEOUT seconds to configure, the configuration process for all Followers will be stopped."
@@ -117,10 +136,17 @@ main(){
     fi
   fi
 
-  # Begin test suite
-  ./bin/test-k8s-follower-pg-identifier
-  ./bin/dump-k8s-follower-info --follower-count "${FOLLOWER_COUNT}"
-  ./bin/test-table-rows-match-k8s --follower-count "${FOLLOWER_COUNT}" --max-attempts "${MAX_ATTEMPTS}"
+  # Run all test suite commands and capture their exit codes. Any failure
+  # does not prevent the following tests from running.
+  set +e
+  announce "BEGIN TEST SUITE"
+  for i in "${!TEST_COMMANDS[@]}"; do
+    announce "BEGIN TEST: ${TEST_COMMANDS[$i]}"
+    # shellcheck disable=SC2086
+    eval ${TEST_COMMANDS[$i]}
+    # shellcheck disable=SC2004
+    EXIT_CODES[$i]=$?
+  done
 
   echo "Tests are finished executing!"
   echo "DONE."
@@ -274,6 +300,30 @@ xtop() {
       # Linux
       top -b -n 1 | head -n 30
   fi
+}
+
+print_test_suite_summary() {
+  announce "TEST SUITE SUMMARY"
+  
+  for i in "${!TEST_COMMANDS[@]}"; do
+    echo "Command: ${TEST_COMMANDS[$i]}"
+    echo "Exit code: ${EXIT_CODES[$i]}"
+  done
+}
+
+determine_exit_code() {
+  if [ "$1" -ne 0 ]; then
+    echo "Setup failed with exit code: $exit_code"
+    return 1
+  fi
+
+  for exit_code in "${EXIT_CODES[@]}"; do
+    if [ "$exit_code" -ne 0 ]; then
+      echo "A test failed with exit code: $exit_code"
+      return 1
+    fi
+  done
+  return 0
 }
 
 main "$@"
