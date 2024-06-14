@@ -97,3 +97,10 @@ function run_in_kind {
 function get_k8s_follower_pod_names() {
   bin/kubectl "get pods --field-selector=status.phase=Running -o jsonpath='{.items[*].metadata.name}' -n $(_get_k8s_follower_namespace)"
 }
+
+# WARNING: this is naive and only encodes forward slashes, and no other
+# characters! Used when fetching secrets via Conjur REST API.
+urlencode_forward_slashes_only() {
+    local string="$1"
+    echo "$string" | sed 's|/|%2F|g'
+}

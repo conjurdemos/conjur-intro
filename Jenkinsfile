@@ -53,6 +53,16 @@ pipeline {
       description: 'Determine the max length of seconds that any one Follower can be configured -- replication tests will fail if this time is exceeded',
     )
     string(
+      name: 'REPLICATION_POLICY_COUNT',
+      defaultValue: "2",
+      description: 'Determine the number of policies are created for replication tests',
+    )
+    string(
+      name: 'REPLICATION_SECRET_COUNT',
+      defaultValue: "2",
+      description: 'Determine the number of secrets created per policy for replication tests. Total number of secrets = REPLICATION_POLICY_COUNT * REPLICATION_SECRET_COUNT',
+    )
+    string(
       name: 'REPLICATION_MAX_ATTEMPTS',
       defaultValue: "10",
       description: 'Determine how many attempts the replication test should use when testing if a secret is replicated. There is a 3 second sleep buffer between each attempt',
@@ -80,6 +90,8 @@ pipeline {
         VERSION = "${params.REPLICATION_APPLIANCE_VERISON}"
         MAX_ATTEMPTS = "${params.REPLICATION_MAX_ATTEMPTS}"
         CONFIGURE_FOLLOWER_TIMEOUT = "${params.REPLICATION_CONFIGURE_FOLLOWER_TIMEOUT}"
+        POLICY_COUNT = "${params.REPLICATION_POLICY_COUNT}"
+        SECRET_COUNT = "${params.REPLICATION_SECRET_COUNT}"
       }
       steps {
         sh './bin/replication-test'
@@ -94,6 +106,8 @@ pipeline {
         MAX_ATTEMPTS = "${params.REPLICATION_MAX_ATTEMPTS}"
         CONFIGURE_FOLLOWER_TIMEOUT = "${params.REPLICATION_CONFIGURE_FOLLOWER_TIMEOUT}"
         K8S_FOLLOWER_TAG = "${params.REPLICATION_K8S_FOLLOWER_VERISON}"
+        POLICY_COUNT = "${params.REPLICATION_POLICY_COUNT}"
+        SECRET_COUNT = "${params.REPLICATION_SECRET_COUNT}"
       }
       steps {
         sh './bin/replication-test-k8s'

@@ -36,6 +36,8 @@ USE_EXISTING_ENVIRONMENT="${USE_EXISTING_ENVIRONMENT:-false}"
 VERSION="${VERSION:-5.0-stable}"
 FOLLOWER_COUNT="${FOLLOWER_COUNT:-2}"
 LEADER_COUNT="${LEADER_COUNT:-3}"
+POLICY_COUNT="${REPLICATION_POLICY_COUNT:-2}"
+SECRET_COUNT="${REPLICATION_SECRET_COUNT:-2}"
 RESOURCE_INTERVAL="${RESOURCE_INTERVAL:-60}"
 MAX_ATTEMPTS="${MAX_ATTEMPTS:-10}"
 # The timeout in seconds to wait for the all Followers to be deployed
@@ -138,6 +140,7 @@ main(){
   echo "Gathering test results again..."
   ./bin/test-follower-pg-identifier --follower-count "${FOLLOWER_COUNT}"
   ./bin/dump-appliance-health-and-info --follower-count "${FOLLOWER_COUNT}"
+  ./bin/test-secret-replication --max-attempts "${MAX_ATTEMPTS}" --policy-count "${POLICY_COUNT}" --secret-count "${SECRET_COUNT}" --follower-count "${FOLLOWER_COUNT}"
   ./bin/test-table-rows-match --follower-count "${FOLLOWER_COUNT}" --max-attempts "${MAX_ATTEMPTS}"
 
   # These the test below depends on the appliance logs...
