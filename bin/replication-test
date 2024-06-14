@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Fail early.
-set -ex
+set -e
 
 # USAGE
 #
@@ -193,7 +193,7 @@ deploy_followers() {
   fi
 
   set +e
-  { timeout "$CONFIGURE_FOLLOWER_TIMEOUT" ./bin/dap --provision-follower --version "${VERSION}" --follower-count "${FOLLOWER_COUNT}"; exit_status=$?; }
+  { timeout --foreground "$CONFIGURE_FOLLOWER_TIMEOUT" ./bin/dap --provision-follower --version "${VERSION}" --follower-count "${FOLLOWER_COUNT}"; exit_status=$?; }
   set -e
   if [ $exit_status -eq 124 ]; then
     echo "FATAL: Timeout of '$CONFIGURE_FOLLOWER_TIMEOUT' exceeded when provisioning Follower(s)!"
