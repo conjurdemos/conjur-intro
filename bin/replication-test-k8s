@@ -40,6 +40,8 @@ USE_EXISTING_ENVIRONMENT="${USE_EXISTING_ENVIRONMENT:-false}"
 K8S_FOLLOWER_TAG="${K8S_FOLLOWER_TAG:-edge}"
 VERSION="${VERSION:-5.0-stable}"
 FOLLOWER_COUNT="${FOLLOWER_COUNT:-2}"
+POLICY_COUNT="${REPLICATION_POLICY_COUNT:-2}"
+SECRET_COUNT="${REPLICATION_SECRET_COUNT:-2}"
 RESOURCE_INTERVAL="${RESOURCE_INTERVAL:-60}"
 MAX_ATTEMPTS="${MAX_ATTEMPTS:-10}"
 # The timeout in seconds to wait for the all Followers to be deployed
@@ -84,6 +86,7 @@ main(){
   # Define test suite(s) commands
   TEST_COMMANDS+=("./bin/test-k8s-follower-pg-identifier")
   TEST_COMMANDS+=("./bin/dump-k8s-follower-info --follower-count \"${FOLLOWER_COUNT}\"")
+  TEST_COMMANDS+=("./bin/test-secret-replication-k8s --max-attempts \"${MAX_ATTEMPTS}\" --policy-count \"${POLICY_COUNT}\" --secret-count \"${SECRET_COUNT}\" --follower-count \"${FOLLOWER_COUNT}\"")
   TEST_COMMANDS+=("./bin/test-table-rows-match-k8s --follower-count \"${FOLLOWER_COUNT}\" --max-attempts \"${MAX_ATTEMPTS}\"")
   TEST_COMMANDS+=("./bin/test-leader-logs-for-replication-slot-errors --log-directory \"$LEADER_LOG_DIR\"")
   TEST_COMMANDS+=("./bin/test-k8s-follower-logs-for-replication-slot-errors --log-directory \"$FOLLOWER_LOG_DIR\"")
@@ -100,7 +103,7 @@ main(){
     exit 1
   fi
 
-  echo "Running replication tests with '${FOLLOWER_COUNT}' K8S Follower(s) on with Leader Appliance Version '${VERSION}'..."
+  echo "Running replication tests with '${FOLLOWER_COUNT}' K8S Follower(s) version '${K8S_FOLLOWER_TAG}'  on with Leader Appliance Version '${VERSION}'..."
 
   echo "Removing old logs from: $LOG_DIR"
   rm -rf "$LOG_DIR"
