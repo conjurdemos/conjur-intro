@@ -114,14 +114,15 @@ function _set_master_multi_node_proxy_config {
   cat << EOF > files/haproxy/master/haproxy.cfg
 global
   daemon
-  maxconn 256
+  maxconn 10000
   log-send-hostname
 
 defaults
   mode tcp
-  timeout connect 5000ms
-  timeout client  50000ms
-  timeout server  50000ms
+  option tcplog
+  timeout connect 5s
+  timeout client  10m
+  timeout server  10m
 
 #
 # Peform SSL Pass-Through to proxy HTTPS requests to DAP
