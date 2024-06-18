@@ -19,7 +19,6 @@ cd "$(dirname ${0})/..";
 source ./bin/functions
 source ./bin/utils.sh
 
-DOCKER_LEADER_CONTAINER="conjur-master-1.mycompany.local"
 CONJUR_USER="admin"
 CONJUR_ACCOUNT="demo"
 CONJUR_PASSWORD="MySecretP@ss1"
@@ -109,26 +108,34 @@ EOF
 # Conjur Access Tokens work across all Leaders/Followers. Let's get a token
 # one time, and refresh it as needed. Returns a base64 encoded token.
 get_conjur_access_token() {
-  API_KEY=$(docker compose exec "$DOCKER_LEADER_CONTAINER" curl --silent --user "$CONJUR_USER:$CONJUR_PASSWORD" -k https://localhost/authn/$CONJUR_ACCOUNT/login)
-  docker compose exec "$DOCKER_LEADER_CONTAINER" curl \
+  local docker_leader_container
+  local api_key
+
+  docker_leader_container=$(discover_leader_container)
+  api_key=$(docker compose exec "$docker_leader_container" curl --silent --user "$CONJUR_USER:$CONJUR_PASSWORD" -k https://localhost/authn/$CONJUR_ACCOUNT/login)
+
+  docker compose exec "$docker_leader_container" curl \
         --max-time 3 \
         --silent \
         --insecure \
         --request POST \
-        --data "$API_KEY" \
+        --data "$api_key" \
         "https://localhost/authn/$CONJUR_ACCOUNT/$CONJUR_USER/authenticate" | base64 | tr -d "[:space:]"
 }
 
 load_policy() {
-  local token
-
   POLICY_MODE="$1"
   POLICY_BRANCH="$2"
   POLICY_BODY="$3"
 
+  local token
+  local docker_leader_container
+
+  docker_leader_container=$(discover_leader_container)
+
   token=$(get_conjur_access_token)
 
-  docker compose exec "$DOCKER_LEADER_CONTAINER" sh -c "
+  docker compose exec "$docker_leader_container" sh -c "
     curl \
       --silent \
       --insecure \
