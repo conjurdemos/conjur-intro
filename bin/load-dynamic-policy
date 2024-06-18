@@ -33,6 +33,8 @@ SECRET_COUNT=${SECRET_COUNT:-1}
 
 main() {
   echo "Beginning script: $0"
+  DOCKER_LEADER_CONTAINER=$(discover_leader_container)
+  echo "Active Leader container is: $DOCKER_LEADER_CONTAINER"
 
   if [[ -z "$BASE_POLICY_BRANCH" ]]; then
     echo "FATAL: Argument '--branch' must be provided!"
@@ -108,13 +110,11 @@ EOF
 # Conjur Access Tokens work across all Leaders/Followers. Let's get a token
 # one time, and refresh it as needed. Returns a base64 encoded token.
 get_conjur_access_token() {
-  local docker_leader_container
   local api_key
 
-  docker_leader_container=$(discover_leader_container)
-  api_key=$(docker compose exec "$docker_leader_container" curl --silent --user "$CONJUR_USER:$CONJUR_PASSWORD" -k https://localhost/authn/$CONJUR_ACCOUNT/login)
+  api_key=$(docker compose exec "$DOCKER_LEADER_CONTAINER" curl --silent --user "$CONJUR_USER:$CONJUR_PASSWORD" -k https://localhost/authn/$CONJUR_ACCOUNT/login)
 
-  docker compose exec "$docker_leader_container" curl \
+  docker compose exec "$DOCKER_LEADER_CONTAINER" curl \
         --max-time 3 \
         --silent \
         --insecure \
@@ -129,13 +129,11 @@ load_policy() {
   POLICY_BODY="$3"
 
   local token
-  local docker_leader_container
-
-  docker_leader_container=$(discover_leader_container)
 
   token=$(get_conjur_access_token)
 
-  docker compose exec "$docker_leader_container" sh -c "
+  echo "Load in leader: $DOCKER_LEADER_CONTAINER"
+  docker compose exec "$DOCKER_LEADER_CONTAINER" sh -c "
     curl \
       --silent \
       --insecure \
