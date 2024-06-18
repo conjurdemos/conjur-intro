@@ -21,6 +21,8 @@ source ./bin/utils.sh
 
 LOG_DIR=
 NO_FAIL="false"
+LEADER_COUNT=3
+
 
 # Use this to hide WARN from docker compose...
 # WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string.
@@ -52,10 +54,13 @@ main(){
     echo "NO_FAIL is specified, this script will not fail if a container is not running."
   fi
 
-  mkdir -p "$LOG_DIR"
+  for ((i=1; i<=LEADER_COUNT; i++)); do
+    local leader_container="conjur-master-${i}.mycompany.local"
+    local log_file="$LOG_DIR/$leader_container.log"
 
-  echo "Dumping Leader Logs at: $LOG_DIR"
-  docker compose logs "conjur-master-1.mycompany.local" > "$LOG_DIR/conjur-master-1.log"
+    echo "Dumping individual Leader logs at: $log_file"
+    docker compose logs "$leader_container" > "$log_file"
+  done
 
   echo "Dumping Leader reconfigure logs at: $LOG_DIR"
   docker compose logs "conjur-master.mycompany.local" > "$LOG_DIR/haproxy.log"
