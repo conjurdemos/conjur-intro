@@ -41,8 +41,9 @@ export VERSION=
 FOLLOWER_COUNT=
 
 main() {
-  local docker_leader_container
-  LEADER_ROW_COUNTS_LOG_FILE="${docker_leader_container}-row-counts.log"
+  DOCKER_LEADER_CONTAINER=$(discover_leader_container)
+  echo "Active Leader container is: $DOCKER_LEADER_CONTAINER"
+  LEADER_ROW_COUNTS_LOG_FILE="${DOCKER_LEADER_CONTAINER}-row-counts.log"
 
   echo "Beginning script: $0"
 
@@ -60,7 +61,7 @@ main() {
     exit 1
   fi
 
-  docker_leader_container=$(discover_leader_container)
+  DOCKER_LEADER_CONTAINER=$(discover_leader_container)
 
   # Start building the query
   query=""
@@ -90,11 +91,11 @@ main() {
     is_failure_detected="false"
 
 
-    echo "Statistics for $docker_leader_container"
-    docker compose exec "$docker_leader_container" bash -c $"
+    echo "Statistics for $DOCKER_LEADER_CONTAINER"
+    docker compose exec "$DOCKER_LEADER_CONTAINER" bash -c $"
           chpst -u conjur psql -c \"\\copy ($query) To '/tmp/output.csv' With CSV\"
         "
-    docker compose cp "$docker_leader_container:/tmp/output.csv" "$LOG_DIR/${LEADER_ROW_COUNTS_LOG_FILE}"
+    docker compose cp "$DOCKER_LEADER_CONTAINER:/tmp/output.csv" "$LOG_DIR/${LEADER_ROW_COUNTS_LOG_FILE}"
 
     for ((j=1; j<=FOLLOWER_COUNT; j++))
     do

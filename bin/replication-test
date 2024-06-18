@@ -156,6 +156,7 @@ main(){
 
   echo "Triggering a Leader failover..."
   perform_failover
+  echo "Active Leader container is: $(discover_leader_container)"
 
   # Wait 5 minutes for all Followers to begin rebasing
   echo "Waiting 5 minutes for Follower(s) to begin rebasing..."
