@@ -317,7 +317,7 @@ function _setup_followers {
   do
     # Generate Seed file(s)
     echo "Creating Seed for Follower $i"
-    _run conjur-master-1.mycompany.local \
+    _run "$(discover_leader_container)" \
       "evoke seed follower conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed-${i}.tar"
     sleep 0.1
   done
