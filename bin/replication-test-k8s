@@ -10,7 +10,7 @@
 # ./bin/replication-test-k8s
 #
 # Patch release: 13.3.2
-# VERSION=5.17.4-12 K8S_FOLLOWER_TAG=2.3.5-10 FOLLOWER_COUNT=2 ./bin/replication-test-k8s
+# VERSION=5.17.4-16 K8S_FOLLOWER_TAG=2.3.5-12 FOLLOWER_COUNT=2 ./bin/replication-test-k8s
 #
 # Production release: 13.3.0
 # VERSION=13.3.0 K8S_FOLLOWER_TAG=2.3.4-6 FOLLOWER_COUNT=2 ./bin/replication-test-k8s
@@ -57,7 +57,8 @@ RESOURCE_MONITOR_PID=""
 # Initialize two indexed arrays to hold the test command names and their
 # exit codes
 TEST_COMMANDS=()
-EXIT_CODES=()
+EXIT_CODES_FIRST_RUN=()
+EXIT_CODES_SECOND_RUN=()
 
 finish() {
   # Re-enable exit on error, in case any of these commands fail.
@@ -155,13 +156,32 @@ main(){
   # Run all test suite commands and capture their exit codes. Any failure
   # does not prevent the following tests from running.
   set +e
-  announce "BEGIN TEST SUITE"
+  announce "BEGIN TEST SUITE - BEFORE FAILOVER"
   for i in "${!TEST_COMMANDS[@]}"; do
     announce "BEGIN TEST: ${TEST_COMMANDS[$i]}"
     # shellcheck disable=SC2086
     eval ${TEST_COMMANDS[$i]}
     # shellcheck disable=SC2004
-    EXIT_CODES[$i]=$?
+    EXIT_CODES_FIRST_RUN[$i]=$?
+  done
+
+  echo "Triggering a Leader failover..."
+  perform_failover
+
+  # Wait 5 minutes for all Followers to begin rebasing
+  echo "Waiting 5 minutes for Follower(s) to begin rebasing..."
+  sleep 300
+
+  echo "Waiting for Follower(s) to become healthy after rebasing..."
+  wait_for_followers
+
+  announce "BEGIN TEST SUITE - AFTER FAILOVER"
+  for i in "${!TEST_COMMANDS[@]}"; do
+    announce "BEGIN TEST: ${TEST_COMMANDS[$i]}"
+    # shellcheck disable=SC2086
+    eval ${TEST_COMMANDS[$i]}
+    # shellcheck disable=SC2004
+    EXIT_CODES_SECOND_RUN[$i]=$?
   done
 
   echo "Tests are finished executing!"
@@ -188,6 +208,20 @@ deploy_and_restore_leader() {
   # The most recent backup is used from system/backup
   echo "Restoring the Leader from backup using tag: '${VERSION}'..."
   bin/dap --restore-from-backup --version "$VERSION"
+
+  echo "Importing certificates..."
+  bin/dap --import-custom-certificates --version "$VERSION"
+  bin/dap --wait-for-master
+
+  echo "Deploying the Standbys..."
+  bin/dap --provision-standbys --version "$VERSION"
+  bin/dap --wait-for-master
+
+  echo "Enabling auto-failover..."
+  bin/dap --enable-auto-failover --auto-failover-ttl 60
+
+  echo "Waiting for healthy cluster..."
+  bin/dap --wait-for-master
 }
 
 deploy_k8s_followers() {
@@ -213,6 +247,57 @@ deploy_k8s_followers() {
     echo "FATAL: Failed to configure K8S Follower(s) with error: $exit_status"
     exit 1
   fi
+}
+
+perform_failover() {
+  if [ "$USE_EXISTING_ENVIRONMENT" = "true" ]; then
+    echo "USE_EXISTING_ENVIRONMENT is set to '$USE_EXISTING_ENVIRONMENT', skipping triggering auto-failover..."
+    return
+  fi
+
+  # Trigger a failover and wait for the cluster to become healthy again
+  bin/dap --trigger-failover
+  sleep 5
+  bin/dap --wait-for-master
+}
+
+wait_for_followers() {
+  for ((i=1; i<=FOLLOWER_COUNT; i++))
+  do
+    echo "Waiting for Follower conjur-follower-${i}.mycompany.local to be healthy..."
+    wait_for_follower "conjur-follower-${i}.mycompany.local"
+  done
+}
+
+wait_for_follower() {
+  local follower_hostname=$1
+  local container_id
+  local attempts=0
+  local max_attempts=180
+
+  container_id=$(docker compose ps -q $follower_hostname)
+  if [ -z "$container_id" ]; then
+    echo "WARNING: No container ID found for service '$follower_hostname' (it is not running), skipping!"
+    return
+  fi
+
+  while true; do
+    attempts=$((attempts + 1))
+    if [ $attempts -gt $max_attempts ]; then
+      echo "FATAL: Follower '$follower_hostname' did not become healthy after '$max_attempts' attempts!"
+      exit 1
+    fi
+
+    echo "Checking Follower '$follower_hostname' health status (attempt $attempts/$max_attempts)..."
+    if docker compose exec "$follower_hostname" curl -k --fail-with-body https://localhost/health &>/dev/null; then
+      echo "Follower '$follower_hostname' is healthy!"
+      break
+    fi
+
+    echo "Follower '$follower_hostname' is not healthy yet, waiting 10 seconds before trying again..."
+    sleep 10
+  done
+
 }
 
 # IMPORTANT: this is all done in sequence, each statistic is not a separate
@@ -323,7 +408,8 @@ print_test_suite_summary() {
   
   for i in "${!TEST_COMMANDS[@]}"; do
     echo "Command: ${TEST_COMMANDS[$i]}"
-    echo "Exit code: ${EXIT_CODES[$i]}"
+    echo "Exit code before failover: ${EXIT_CODES_FIRST_RUN[$i]}"
+    echo "Exit code after failover: ${EXIT_CODES_SECOND_RUN[$i]}"
   done
 }
 
@@ -333,12 +419,20 @@ determine_exit_code() {
     return 1
   fi
 
-  for exit_code in "${EXIT_CODES[@]}"; do
+  for exit_code in "${EXIT_CODES_FIRST_RUN[@]}"; do
     if [ "$exit_code" -ne 0 ]; then
       echo "A test failed with exit code: $exit_code"
       return 1
     fi
   done
+
+  for exit_code in "${EXIT_CODES_SECOND_RUN[@]}"; do
+    if [ "$exit_code" -ne 0 ]; then
+      echo "A test failed with exit code: $exit_code"
+      return 1
+    fi
+  done
+
   return 0
 }
 
