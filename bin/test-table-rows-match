@@ -52,6 +52,8 @@ main() {
     exit 1
   fi
 
+  echo "Cleaning up existing logs at: $LOG_DIR"
+  rm -rf "$LOG_DIR"
   mkdir -p "$LOG_DIR"
 
   if [[ -z "$FOLLOWER_COUNT" ]]; then
