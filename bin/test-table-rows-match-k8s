@@ -27,7 +27,6 @@ source ./bin/functions
 source ./bin/utils.sh
 
 MAX_ATTEMPTS="${MAX_ATTEMPTS:-10}"
-DOCKER_LEADER_CONTAINER="conjur-master-1.mycompany.local"
 LOG_DIR="$(k8s_log_dir)/tables"
 
 # Note: the following tables are irrelevant for comparision in this context:
@@ -44,7 +43,11 @@ export DRY_RUN=${DRY_RUN:-false}
 FOLLOWER_COUNT=
 
 main() {
-  LEADER_ROW_COUNTS_LOG_FILE="${DOCKER_LEADER_CONTAINER}-row-counts.log"
+  local docker_leader_container
+
+  docker_leader_container=$(discover_leader_container)
+
+  LEADER_ROW_COUNTS_LOG_FILE="${docker_leader_container}-row-counts.log"
   query=""
   query_tmp_file="tmp/query.sql"
 
@@ -89,11 +92,11 @@ main() {
     echo "$k"
     is_failure_detected="false"
 
-    echo "Statistics for $DOCKER_LEADER_CONTAINER"
-    docker compose exec "$DOCKER_LEADER_CONTAINER" bash -c $"
+    echo "Statistics for $docker_leader_container"
+    docker compose exec "$docker_leader_container" bash -c $"
           chpst -u conjur psql -c \"\\copy ($query) To '/tmp/output.csv' With CSV\"
         "
-    docker compose cp "$DOCKER_LEADER_CONTAINER:/tmp/output.csv" "$LOG_DIR/${LEADER_ROW_COUNTS_LOG_FILE}"
+    docker compose cp "$docker_leader_container:/tmp/output.csv" "$LOG_DIR/${LEADER_ROW_COUNTS_LOG_FILE}"
 
     echo "Dumping Follower Logs at: $FOLLOWER_LOG_DIR"
     RUNNING_PODS=$(get_k8s_follower_pod_names)

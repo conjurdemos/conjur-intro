@@ -140,10 +140,6 @@ main() {
   echo "DONE."
 }
 
-discover_leader_container() {
-  curl -k https://localhost:443/info | jq -r '.configuration.conjur.cluster_leader' || echo "conjur-master-1.mycompany.local"
-}
-
 while true ; do
   case "$1" in
     --follower-count ) shift; FOLLOWER_COUNT="$1" ; shift ;;
