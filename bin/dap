@@ -34,6 +34,8 @@ Usage: bin/dap [options]:
     --enable-auto-failover                                    Configures Master cluster with auto-failover
                                                                 (Requires configured master and standbys).
 
+    --auto-failover-ttl                                       Allows to set TTL(default 300)
+
     --generate-dh                                             Don't mount pre-generated DH params into the
                                                                 appliance containers (will cause a _lot_ more
                                                                 CPU consumption).
@@ -112,14 +114,15 @@ function _set_master_multi_node_proxy_config {
   cat << EOF > files/haproxy/master/haproxy.cfg
 global
   daemon
-  maxconn 256
+  maxconn 10000
   log-send-hostname
 
 defaults
   mode tcp
-  timeout connect 5000ms
-  timeout client  50000ms
-  timeout server  50000ms
+  option tcplog
+  timeout connect 5s
+  timeout client  10m
+  timeout server  10m
 
 #
 # Peform SSL Pass-Through to proxy HTTPS requests to DAP
@@ -156,7 +159,7 @@ backend www-backend
   mode tcp
   balance roundrobin
   option httpchk GET /health
-  server conjur-master-1 conjur-master-1.mycompany.local:443 check port 443 check-ssl ca-file /etc/ssl/certs/ca.pem
+  server conjur-master-1 conjur-master-1.mycompany.local:443 check port 444
 $(_standby_backend_www_lines)
 
 #
@@ -167,7 +170,7 @@ backend postgres-backend
   mode tcp
   balance roundrobin
   option httpchk GET /health
-  server conjur-master-1 conjur-master-1.mycompany.local:5432 check port 443 check-ssl ca-file /etc/ssl/certs/ca.pem
+  server conjur-master-1 conjur-master-1.mycompany.local:5432 check port 444
 $(_standby_backend_postgres_lines)
 
 #
@@ -178,7 +181,7 @@ backend syslog-backend
   mode tcp
   balance roundrobin
   option httpchk GET /health
-  server conjur-master-1 conjur-master-1.mycompany.local:1999 check port 443 check-ssl ca-file /etc/ssl/certs/ca.pem
+  server conjur-master-1 conjur-master-1.mycompany.local:1999 check port 444
 $(_standby_backend_syslog_lines)
 
 #
@@ -198,7 +201,7 @@ _standby_backend_www_lines() {
   # The identifier for the Leader is 1, so we start at 2 for Standbys
   for ((i=2; i<=STANDBY_COUNT+1; i++))
   do
-    standby_servers+=("  server conjur-master-$i conjur-master-$i.mycompany.local:443 check port 443 check-ssl ca-file /etc/ssl/certs/ca.pem")
+    standby_servers+=("  server conjur-master-$i conjur-master-$i.mycompany.local:443 check port 444")
   done
 
   printf '%s' "$(IFS=$'\n' ; echo "${standby_servers[*]}")"
@@ -210,7 +213,7 @@ _standby_backend_postgres_lines() {
   # The identifier for the Leader is 1, so we start at 2 for Standbys
   for ((i=2; i<=STANDBY_COUNT+1; i++))
   do
-    standby_servers+=("  server conjur-master-$i conjur-master-$i.mycompany.local:5432 check port 443 check-ssl ca-file /etc/ssl/certs/ca.pem")
+    standby_servers+=("  server conjur-master-$i conjur-master-$i.mycompany.local:5432 check port 444")
   done
 
   printf '%s' "$(IFS=$'\n' ; echo "${standby_servers[*]}")"
@@ -222,7 +225,7 @@ _standby_backend_syslog_lines() {
   # The identifier for the Leader is 1, so we start at 2 for Standbys
   for ((i=2; i<=STANDBY_COUNT+1; i++))
   do
-    standby_servers+=("  server conjur-master-$i conjur-master-$i.mycompany.local:1999 check port 443 check-ssl ca-file /etc/ssl/certs/ca.pem")
+    standby_servers+=("  server conjur-master-$i conjur-master-$i.mycompany.local:1999 check port 444")
   done
 
   printf '%s' "$(IFS=$'\n' ; echo "${standby_servers[*]}")"
@@ -237,7 +240,7 @@ function _run {
   local _node_name=$1
   local _args=("${_all_args[@]:1}")
 
-  echo "Running Command (on $_node_name): docker exec cyberark-dap $_args"
+  echo "Running Command (on $_node_name): $_args"
 
   if [[ $DRY_RUN = false ]]; then
     docker compose exec -T $_node_name bash -c "
@@ -290,8 +293,12 @@ function _setup_standby {
     "evoke seed standby conjur-master-$_standby_number.mycompany.local conjur-master-1.mycompany.local > /opt/cyberark/dap/seeds/standby-seed-$_standby_number.tar"
 
   # Unpack and Configure
-  _run conjur-master-$_standby_number.mycompany.local \
-    "evoke unpack seed /opt/cyberark/dap/seeds/standby-seed-$_standby_number.tar && evoke configure standby --json-attributes-file='/conjur_files/conjur.json'"
+  _cmd="evoke unpack seed"
+  _cmd="$_cmd /opt/cyberark/dap/seeds/standby-seed-$_standby_number.tar &&"
+  _cmd="$_cmd evoke configure standby"
+  _cmd="$_cmd --json-attributes-file='/conjur_files/conjur.json'"
+
+  _run conjur-master-$_standby_number.mycompany.local "$_cmd"
 }
 
 function _start_standby_synchronization {
@@ -308,9 +315,9 @@ function _setup_followers {
   for ((i=1; i<=FOLLOWER_COUNT; i++))
   do
     # Generate Seed file(s)
+    echo "Creating Seed for Follower $i"
     _run conjur-master-1.mycompany.local \
       "evoke seed follower conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed-${i}.tar"
-    echo "Creating Seed for Follower $i"
     sleep 0.1
   done
 
@@ -342,21 +349,12 @@ function _setup_follower {
   follower_log_file="$FOLLOWER_LOG_DIR/$follower_service_name.log"
   start_time=$(date +%s)
 
+  echo "Creating Follower container: '$follower_service_name'..."
   docker compose rm --stop --force "$follower_service_name"
   docker compose up --no-deps --detach "$follower_service_name"
 
-  # HACK: Set log level to DEBUG
-  # IMPORTANT: this debug hack cannot be applied to the Leader until AFTER
-  # seedfiles are generated, otherwise you will encounter:
-  #
-  # error: "185018 #1483" is not a valid octal string.
-  #
-  # This is because the debug output on the Leader is include in the seedfile,
-  # thus corrupting it!
-  _run "$follower_service_name" "sed -i 's/Logger::INFO/Logger::DEBUG/g' /opt/conjur/evoke/lib/evoke/cli_logger.rb"
-  _run "$follower_service_name" "cat /opt/conjur/evoke/lib/evoke/cli_logger.rb"
-
   # Unpack and Configure
+  echo "Unpacking and configuring Follower: '$follower_service_name'..."
   _run "$follower_service_name" \
     "evoke unpack seed /opt/cyberark/dap/seeds/follower-seed-${follower_number}.tar && evoke configure follower --json-attributes-file='/conjur_files/conjur.json' --debug" | awk -v follower="$follower_service_name" '{print "[CONFIG " follower "]: " $0}' 2>&1 | tee "$follower_log_file"
 
@@ -597,7 +595,7 @@ _set_cluster_policy_file() {
 - !policy
   id: production
   annotations:
-    ttl: 30
+    ttl: $AUTO_FAILOVER_TTL
   body:
     - !layer
 
@@ -875,12 +873,14 @@ CMD=""
 export DHPATH="${DHPATH:-/etc/ssl}"
 STANDBY_COUNT=2
 FOLLOWER_COUNT=1
+AUTO_FAILOVER_TTL=300
 
 while true ; do
   case "$1" in
     --create-backup ) CMD='_create_backup' ; shift ;;
     --dry-run ) DRY_RUN=true ; shift ;;
     --enable-auto-failover ) CMD='_enable_autofailover' ; shift ;;
+    --auto-failover-ttl ) shift; AUTO_FAILOVER_TTL=$1 ; shift ;;
     --generate-dh ) export DHPATH=/tmp ; shift ;;
     -h | --help ) _print_help ; shift ;;
     --import-custom-certificates ) CMD='_import_certificates' ; shift ;;

@@ -11,7 +11,7 @@
 # in relevant tables within the Leader and Followers. The results are compared
 # for similarity. If any one file is not the same as another, the script will
 # fail.
-# 
+#
 # IMPORTANT: this output will only align if all Followers are
 # using the full replication set (default).
 #
@@ -21,7 +21,6 @@
 #
 
 MAX_ATTEMPTS="${MAX_ATTEMPTS:-10}"
-DOCKER_LEADER_CONTAINER="conjur-master-1.mycompany.local"
 LOG_DIR="tmp/appliance/tables"
 
 # Note: the following tables are irrelevant for comparision in this context:
@@ -30,13 +29,14 @@ LOG_DIR="tmp/appliance/tables"
 TABLE_NAMES=("annotations" "authenticator_configs" "credentials" "host_factory_tokens" "permissions" "policy_versions" "resources" "resources_textsearch" "role_memberships" "roles" "schema_info" "secrets" "slosilo_keystore")
 
 # Use this to hide WARN from docker compose...
-# WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string. 
+# WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string.
 export VERSION=
 
 FOLLOWER_COUNT=
 
 main() {
-  LEADER_ROW_COUNTS_LOG_FILE="${DOCKER_LEADER_CONTAINER}-row-counts.log"
+  local docker_leader_container=$(discover_leader_container)
+  LEADER_ROW_COUNTS_LOG_FILE="${docker_leader_container}-row-counts.log"
 
   echo "Beginning script: $0"
 
@@ -51,6 +51,8 @@ main() {
     echo "FATAL: FOLLOWER_COUNT must be specified as --follower-count"
     exit 1
   fi
+
+  discover_leader_container
 
   # Start building the query
   query=""
@@ -69,11 +71,11 @@ main() {
 
   query+=" ORDER BY table_name"
 
-  echo "Statistics for $DOCKER_LEADER_CONTAINER"
-    docker compose exec "$DOCKER_LEADER_CONTAINER" bash -c $"
+  echo "Statistics for $docker_leader_container"
+    docker compose exec "$docker_leader_container" bash -c $"
           chpst -u conjur psql -c \"\\copy ($query) To '/tmp/output.csv' With CSV\"
         "
-    docker compose cp "$DOCKER_LEADER_CONTAINER:/tmp/output.csv" "$LOG_DIR/${LEADER_ROW_COUNTS_LOG_FILE}"
+    docker compose cp "$docker_leader_container:/tmp/output.csv" "$LOG_DIR/${LEADER_ROW_COUNTS_LOG_FILE}"
 
   for ((j=1; j<=FOLLOWER_COUNT; j++))
   do
@@ -124,6 +126,10 @@ main() {
 
   echo "All files are the same. It appears that all Followers tables are in sync with the Leader."
   echo "DONE."
+}
+
+discover_leader_container() {
+  curl -k https://localhost:443/info | jq -r '.configuration.conjur.cluster_leader' || echo "conjur-master-1.mycompany.local"
 }
 
 while true ; do

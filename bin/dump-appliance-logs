@@ -24,6 +24,7 @@ LEADER_LOG_DIR="$LOG_DIR/leader"
 FOLLOWER_LOG_DIR="$LOG_DIR/follower"
 NO_FAIL="false"
 FOLLOWER_COUNT=
+LEADER_COUNT=3
 
 # Use this to hide WARN from docker compose...
 # WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string.
@@ -47,7 +48,18 @@ main(){
   mkdir -p "$FOLLOWER_LOG_DIR"
 
   echo "Dumping Leader Logs at: $LEADER_LOG_DIR"
-  docker compose logs "conjur-master-1.mycompany.local" > "$LEADER_LOG_DIR/conjur-master-1.log"
+  for ((i=1; i<=LEADER_COUNT; i++)); do
+    local leader_container="conjur-master-${i}.mycompany.local"
+
+    container_id=$(docker compose ps -q $leader_container)
+    if [ -z "$container_id" ]; then
+      echo "WARNING: No container ID found for service '$leader_container' (it is not running), skipping!"
+      continue
+    fi
+
+    echo "Dumping logs for '$leader_container'"
+    docker compose logs "$leader_container" > "$LEADER_LOG_DIR/conjur-master-${i}.log"
+  done
 
   echo "Dumping Leader reconfigure logs at: $LEADER_LOG_DIR"
   docker compose logs "conjur-master.mycompany.local" > "$LEADER_LOG_DIR/haproxy.log"
