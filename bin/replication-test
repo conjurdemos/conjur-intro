@@ -124,8 +124,9 @@ main(){
   ./bin/test-table-rows-match --follower-count "${FOLLOWER_COUNT}" --max-attempts "${MAX_ATTEMPTS}"
 
   # These the test below depends on the appliance logs...
-  ./bin/dump-appliance-logs --follower-count "${FOLLOWER_COUNT}"
-  ./bin/test-appliance-logs-for-replication-slot-errors
+  ./bin/dump-leader-logs --no-fail --log-directory "$LOG_DIR/logs/leader"
+  ./bin/dump-appliance-follower-logs --no-fail --log-directory "$LOG_DIR/logs/follower" --follower-count "${FOLLOWER_COUNT}"
+  ./bin/test-appliance-follower-logs-for-replication-slot-errors --log-directory "$LOG_DIR/logs/follower"
 
   echo "Triggering a Leader failover..."
   perform_failover
