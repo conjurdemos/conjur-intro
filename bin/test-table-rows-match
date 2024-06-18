@@ -109,7 +109,8 @@ main() {
 
     echo "Begin comparing all files (they should all be the same)..."
 
-    for file in "${log_files[@]:1}"; do
+    log_files=("$LOG_DIR"/*)
+    for file in "${log_files[@]}"; do
       if [ ! -s "$file" ]; then
         echo "[Attempt $k/$MAX_ATTEMPTS] FATAL: File $file is empty."
         is_failure_detected="true"
