@@ -740,6 +740,8 @@ function _import_certificates {
     "evoke ca import --force --key $cert_path/dap_master/dap-master-key.pem --set $cert_path/dap_master/dap-master.pem"
   _run conjur-master-1.mycompany.local \
     "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
+  _run conjur-master-1.mycompany.local \
+    "evoke ca import --force --key $cert_path/dap_follower_k8s/dap-follower-k8s-key.pem $cert_path/dap_follower_k8s/dap-follower-k8s.pem"
 }
 
 function _rotate_certificates {
@@ -758,6 +760,8 @@ function _rotate_certificates {
   # is available through the seed service
   _run conjur-master-1.mycompany.local \
     "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
+  _run conjur-master-1.mycompany.local \
+    "evoke ca import --force --key $cert_path/dap_follower_k8s/dap-follower-k8s-key.pem $cert_path/dap_follower_k8s/dap-follower-k8s.pem"
 
   # Import the new certificate into the DAP Standbys
   for ((i=2; i<=STANDBY_COUNT+1; i++))
@@ -770,6 +774,8 @@ function _rotate_certificates {
       # is available through the seed service if the Standby is promoted.
       _run "conjur-master-$i.mycompany.local" \
         "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
+      _run conjur-master-$i.mycompany.local \
+        "evoke ca import --force --key $cert_path/dap_follower_k8s/dap-follower-k8s-key.pem $cert_path/dap_follower_k8s/dap-follower-k8s.pem"
     fi
   done
 
@@ -780,6 +786,9 @@ function _rotate_certificates {
     # Import the new certificate into each Follower
     _run conjur-follower-1.mycompany.local \
       "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem --set $cert_path/dap_follower/dap-follower.pem"
+
+    # Note: K8S Follower Certificates do not need to be imported into the K8S
+    # Follower, only the Leader node.
   fi
 }
 
