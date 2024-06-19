@@ -56,6 +56,10 @@ EXIT_CODES_FIRST_RUN=()
 EXIT_CODES_SECOND_RUN=()
 
 finish() {
+  # Re-enable exit on error, in case any of these commands fail.
+  set -e
+  exit_code=$1
+
   # If a background process PID was stored, kill it (do not fail script if it is not found)
   if [ -n "$pid" ]; then
     echo "Killing resource monitor: $pid..."
@@ -74,7 +78,7 @@ main(){
   local leader_log_dir="$LOG_DIR/logs/leader"
   local follower_log_dir="$LOG_DIR/logs/follower"
 
-  trap finish EXIT
+  trap 'finish $?' EXIT
 
   TEST_COMMANDS+=("./bin/test-follower-pg-identifier --follower-count \"${FOLLOWER_COUNT}\"")
   TEST_COMMANDS+=("./bin/dump-appliance-health-and-info --follower-count \"${FOLLOWER_COUNT}\"")
