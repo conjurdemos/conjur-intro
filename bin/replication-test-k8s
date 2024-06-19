@@ -303,14 +303,13 @@ wait_for_follower() {
 # IMPORTANT: this is all done in sequence, each statistic is not a separate
 # process!
 record_resource_utilization() {
-  # Suppress output from stdout
-  set +x
   while true; do
-    snapshot_top > /dev/null 2>&1
-    snapshot_docker_stats > /dev/null 2>&1
-    snapshot_leader_replication_status > /dev/null 2>&1
-    snapshot_follower_replication_status > /dev/null 2>&1
-    snapshot_leader_pg_identifier > /dev/null 2>&1
+    snapshot_top > /dev/null 2>&1 || true
+    snapshot_docker_stats > /dev/null 2>&1 || true
+    set -x
+    snapshot_leader_replication_status > /dev/null 2>&1 || true
+    snapshot_follower_replication_status > /dev/null 2>&1 || true
+    snapshot_leader_pg_identifier > /dev/null 2>&1 || true
     sleep "$RESOURCE_INTERVAL"
   done
 }

@@ -108,5 +108,7 @@ urlencode_forward_slashes_only() {
 # Returns the active leader as reported by the Leader load balancer. Defaults
 # to the original leader container.
 function discover_leader_container() {
-  curl --silent -k https://localhost:443/info | jq -r '.configuration.conjur.cluster_leader' || echo "conjur-master-1.mycompany.local"
+  curl --max-time 3 \
+       --silent -k https://localhost:443/info \
+        | jq -r '.configuration.conjur.cluster_leader' || echo "conjur-master-1.mycompany.local"
 }
