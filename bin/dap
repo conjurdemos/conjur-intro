@@ -12,10 +12,12 @@ source ./bin/utils.sh
 dotenv > /dev/null 2>&1 || true
 
 FOLLOWER_CONFIG_PIDS=()
-FOLLOWER_LOG_DIR="tmp/appliance/configure/follower"
+APPLIANCE_FOLLOWER_LOG_DIR="$(appliance_log_dir)/configure/follower"
 CONJUR_MASTER_PORT=${CONJUR_MASTER_PORT:-443}
 CONJUR_FOLLOWER_PORT=${CONJUR_FOLLOWER_PORT:-450}
 CONJUR_K8S_FOLLOWER_PORT=${CONJUR_K8S_FOLLOWER_PORT:-451}
+K8S_FOLLOWER_CONJUR_LOG_LEVEL=${K8S_FOLLOWER_CONJUR_LOG_LEVEL:-info}
+CONFIGURE_FOLLOWER_TIMEOUT=${CONFIGURE_FOLLOWER_TIMEOUT:-300}
 _admin_password="MySecretP@ss1"
 
 function _print_help {
@@ -307,16 +309,15 @@ function _start_standby_synchronization {
 }
 
 function _setup_followers {
-  echo "Follower configuration logs for '$follower_service_name' will be output to $follower_log_file"
-  mkdir -p "$FOLLOWER_LOG_DIR"
+  mkdir -p "$APPLIANCE_FOLLOWER_LOG_DIR"
 
-  echo -e "hostname,seconds\n" > "$FOLLOWER_LOG_DIR/durations.log"
+  echo -e "hostname,seconds\n" > "$APPLIANCE_FOLLOWER_LOG_DIR/durations.log"
 
   for ((i=1; i<=FOLLOWER_COUNT; i++))
   do
     # Generate Seed file(s)
     echo "Creating Seed for Follower $i"
-    _run conjur-master-1.mycompany.local \
+    _run "$(discover_leader_container)" \
       "evoke seed follower conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed-${i}.tar"
     sleep 0.1
   done
@@ -346,10 +347,11 @@ function _setup_follower {
   local execution_time
 
   follower_service_name="conjur-follower-${follower_number}.mycompany.local"
-  follower_log_file="$FOLLOWER_LOG_DIR/$follower_service_name.log"
+  follower_log_file="$APPLIANCE_FOLLOWER_LOG_DIR/$follower_service_name.log"
   start_time=$(date +%s)
 
   echo "Creating Follower container: '$follower_service_name'..."
+  echo "Follower configuration logs for '$follower_service_name' will be output to $follower_log_file"
   docker compose rm --stop --force "$follower_service_name"
   docker compose up --no-deps --detach "$follower_service_name"
 
@@ -362,7 +364,7 @@ function _setup_follower {
   execution_time=$((end_time-start_time))
 
   echo "INFO: it took: $execution_time seconds to configure Follower: '$follower_service_name'"
-  echo "$follower_service_name,$execution_time" >> "$FOLLOWER_LOG_DIR/durations.log"
+  echo "$follower_service_name,$execution_time" >> "$APPLIANCE_FOLLOWER_LOG_DIR/durations.log"
 
   # Copy certs for HAProxy
   _run "$follower_service_name" \
@@ -380,12 +382,14 @@ function _setup_k8s_follower {
     --build-arg K8S_FOLLOWER_TAG="$K8S_FOLLOWER_TAG" \
     --build-arg CONJUR_K8S_FOLLOWER_PORT="$CONJUR_K8S_FOLLOWER_PORT" \
     --build-arg FOLLOWER_COUNT="$FOLLOWER_COUNT" \
+    --build-arg K8S_FOLLOWER_CONJUR_LOG_LEVEL="$K8S_FOLLOWER_CONJUR_LOG_LEVEL" \
     k8s-follower-orchestrator
   docker compose up -d --no-deps k8s-follower-orchestrator
 
   # Wait a little bit to create k8s-follower-orchestrator cluster
   SECONDS=0
-  TIMEOUT=300
+
+  echo "Will wait for ${CONFIGURE_FOLLOWER_TIMEOUT} seconds for the conjur-intro-k8s-follower cluster to be created...."
   while true; do
     if bin/kubectl "get nodes | grep -q \"Ready\"" &> /dev/null; then
       echo "The conjur-intro-k8s-follower cluster is created."
@@ -394,8 +398,8 @@ function _setup_k8s_follower {
       echo "Waiting for the conjur-intro-k8s-follower cluster to be created..."
       sleep 1
     fi
-    if [ $SECONDS -ge $TIMEOUT ]; then
-        echo "Timeout after waiting for 5 minutes. The conjur-intro-k8s-follower cluster is not created."
+    if [ $SECONDS -ge "$CONFIGURE_FOLLOWER_TIMEOUT" ]; then
+        echo "Timeout after waiting for ${CONFIGURE_FOLLOWER_TIMEOUT} seconds. The conjur-intro-k8s-follower cluster is not created."
         echo "Printing logs from k8s-follower-orchestrator container:"
         docker logs conjur-intro-k8s-follower-orchestrator-1
         echo "Printing logs from docker logs k8s-follower-control-plane container:"
@@ -436,15 +440,15 @@ function _setup_k8s_follower {
 
   # Ensure certs are up to date
   docker cp "$(docker compose ps -q conjur-master-1.mycompany.local)":/opt/conjur/etc/ssl/. ./system/haproxy/certs
-  bin/kubectl "create configmap -n cyberark-conjur conjur-cert --from-file=/etc/ssl/certs/conjur-master.mycompany.local.pem"
+  bin/kubectl "create configmap --namespace $(_get_k8s_follower_namespace) conjur-cert --from-file=/etc/ssl/certs/conjur-master.mycompany.local.pem" || true
 
   # Apply manifest with Conjur Follower
   echo "Applying K8S Follower Manifests (displayed below)..."
   run_in_kind "cat /manifests/samples/*"
   bin/kubectl "apply -f /manifests/samples"
 
-  echo "Waiting for the conjur-follower deployment to be running..."
-  bin/kubectl "wait --namespace=cyberark-conjur --for=condition=available --timeout=5m deployment/conjur-follower"
+  echo "Will wait for ${CONFIGURE_FOLLOWER_TIMEOUT} seconds for the conjur-follower deployment to be running..."
+  bin/kubectl "wait --namespace=$(_get_k8s_follower_namespace) --for=condition=available --timeout=${CONFIGURE_FOLLOWER_TIMEOUT}s deployment/conjur-follower"
 
   # Deploy NodePort that will expose Conjur Follower endpoint
   bin/kubectl "apply -f conjur-follower-node-port.yaml"
@@ -599,7 +603,7 @@ _set_cluster_policy_file() {
   body:
     - !layer
 
-    # Host nodes to be enrolled in the `production` auto-failover cluster
+    # Host nodes to be enrolled in the production auto-failover cluster
     - &hosts
       - !host conjur-master-1.mycompany.local
 $(_standby_host_lines)
@@ -736,6 +740,8 @@ function _import_certificates {
     "evoke ca import --force --key $cert_path/dap_master/dap-master-key.pem --set $cert_path/dap_master/dap-master.pem"
   _run conjur-master-1.mycompany.local \
     "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
+  _run conjur-master-1.mycompany.local \
+    "evoke ca import --force --key $cert_path/dap_follower_k8s/dap-follower-k8s-key.pem $cert_path/dap_follower_k8s/dap-follower-k8s.pem"
 }
 
 function _rotate_certificates {
@@ -754,6 +760,8 @@ function _rotate_certificates {
   # is available through the seed service
   _run conjur-master-1.mycompany.local \
     "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
+  _run conjur-master-1.mycompany.local \
+    "evoke ca import --force --key $cert_path/dap_follower_k8s/dap-follower-k8s-key.pem $cert_path/dap_follower_k8s/dap-follower-k8s.pem"
 
   # Import the new certificate into the DAP Standbys
   for ((i=2; i<=STANDBY_COUNT+1; i++))
@@ -766,6 +774,8 @@ function _rotate_certificates {
       # is available through the seed service if the Standby is promoted.
       _run "conjur-master-$i.mycompany.local" \
         "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
+      _run conjur-master-$i.mycompany.local \
+        "evoke ca import --force --key $cert_path/dap_follower_k8s/dap-follower-k8s-key.pem $cert_path/dap_follower_k8s/dap-follower-k8s.pem"
     fi
   done
 
@@ -776,6 +786,9 @@ function _rotate_certificates {
     # Import the new certificate into each Follower
     _run conjur-follower-1.mycompany.local \
       "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem --set $cert_path/dap_follower/dap-follower.pem"
+
+    # Note: K8S Follower Certificates do not need to be imported into the K8S
+    # Follower, only the Leader node.
   fi
 }
 
@@ -878,6 +891,8 @@ AUTO_FAILOVER_TTL=300
 while true ; do
   case "$1" in
     --create-backup ) CMD='_create_backup' ; shift ;;
+    --k8s-follower-timeout ) shift ; CONFIGURE_FOLLOWER_TIMEOUT=$1 ; shift ;;
+    --k8s-follower-conjur-log-level ) shift ; K8S_FOLLOWER_CONJUR_LOG_LEVEL=$1 ; shift ;;
     --dry-run ) DRY_RUN=true ; shift ;;
     --enable-auto-failover ) CMD='_enable_autofailover' ; shift ;;
     --auto-failover-ttl ) shift; AUTO_FAILOVER_TTL=$1 ; shift ;;

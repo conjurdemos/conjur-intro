@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+set -e
+
+# USAGE
+#
+# Queries each K8S Follower container to verify that each of their main pg databases
+# contain a unique identifier.
+#
+# ./bin/test-k8s-follower-pg-identifier
+
+# Always work from repo root directory
+cd "$(dirname ${0})/..";
+
+source ./bin/functions
+source ./bin/utils.sh
+
+FOLLOWER_PG_IDENTIFIERS=()
+
+main(){
+  echo "Beginning script: $0"
+
+  PODS=$(bin/kubectl get pods -n "$(_get_k8s_follower_namespace)" --no-headers -o custom-columns=":metadata.name")
+
+  echo "Displaying PostgreSQL Identifiers for each K8S Follower:"
+  for POD in $PODS
+  do
+    echo "Querying postgres in '${POD}'..."
+
+    IDENTIFIER=$(bin/kubectl exec -n "$(_get_k8s_follower_namespace)" "$POD" -c postgres -- pg-uid-wrapper "psql --username=postgres --host=/tmp --dbname=conjur --command='SELECT system_identifier FROM pg_control_system();'" 2>/dev/null | tail -3 | head -1)
+    FOLLOWER_PG_IDENTIFIERS+=("${IDENTIFIER}")
+    echo -e "\tFound Identifier: ${IDENTIFIER}"
+  done
+
+  # Check each element in the array
+  # Done without using a map to support bash 3.2
+  for ((i=0; i<${#FOLLOWER_PG_IDENTIFIERS[@]}; i++)); do
+    for ((j=i+1; j<${#FOLLOWER_PG_IDENTIFIERS[@]}; j++)); do
+      if [[ "${FOLLOWER_PG_IDENTIFIERS[i]}" == "${FOLLOWER_PG_IDENTIFIERS[j]}" ]]; then
+        echo "FATAL: Duplicate PostgreSQL Identifier found: ${FOLLOWER_PG_IDENTIFIERS[i]}"
+        exit 1
+      fi
+    done
+  done
+
+  echo "SUCCESS: All identifiers are unique."
+  echo "DONE."
+}
+
+main

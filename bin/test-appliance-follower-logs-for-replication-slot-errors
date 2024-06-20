@@ -3,45 +3,28 @@ set -o pipefail
 
 # USAGE
 #
-# Parses the Leader and Follower log files created by the `dump-appliance-logs`
+# Parses the Appliance Follower log files created by the `dump-appliance-logs`
 # script for error patterns related to replication slots issues. Error patterns
 # that are matched are prefixed with the line number of where the match
 # occurred, and are tabbed in for (hopefully) better readability.
 #
 # NOTE: Leader and Follower logs are tested for different patterns/cases.
 #
-# ./bin/test-appliance-logs-for-replication-slot-errors
+# ./bin/test-appliance-follower-logs-for-replication-slot-errors
 #
 
 # Always work from repo root directory
 cd "$(dirname ${0})/..";
 
+source ./bin/functions
 source ./bin/utils.sh
 
-LOG_DIR="tmp/appliance/logs"
-LEADER_LOG_DIR="$LOG_DIR/leader"
+LOG_DIR="$(appliance_log_dir)/logs"
 FOLLOWER_LOG_DIR="$LOG_DIR/follower"
 
 main(){
   is_failure_detected_globally="false"
   failed_logs=()
-
-  for file in "$LEADER_LOG_DIR"/*
-  do
-    is_leader_failure_detected="false"
-
-    echo "Testing log file: $file..."
-
-    if grep -n -E 'ERROR:  replication slot "pg_[0-9]+_sync_[0-9]+_[0-9]+" does not exist' "$file" | sed 's/^/\t/'; then
-      is_leader_failure_detected="true"
-    fi
-
-    if [ "$is_leader_failure_detected" = "true" ]; then
-      echo "ERROR: An error was detected in log file '$file', see above."
-      is_failure_detected_globally="true"
-      failed_logs+=("$file")
-    fi
-  done
 
   for file in "$FOLLOWER_LOG_DIR"/*
   do
@@ -76,10 +59,10 @@ main(){
     do
       echo "- $log"
     done
-    echo "FATAL: An error was detected in at least one log file, see above."
+    echo "FATAL: An error was detected in at least one Appliance Follower log file, see above."
     exit 1
   fi
-  echo "SUCCESS: No errors were detected in any log file."
+  echo "SUCCESS: No errors were detected in any Appliance Follower log file."
   echo "DONE."
 }
 

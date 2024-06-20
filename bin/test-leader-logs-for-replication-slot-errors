@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+set -o pipefail
+
+# USAGE
+#
+# Parses the Appliance Leader log files created by the `dump-appliance-logs`
+# script for error patterns related to replication slots issues. Error patterns
+# that are matched are prefixed with the line number of where the match
+# occurred, and are tabbed in for (hopefully) better readability.
+#
+# NOTE: Leader and Follower logs are tested for different patterns/cases.
+#
+# ./bin/test-leader-logs-for-replication-slot-errors --log-directory tmp
+#
+
+# Always work from repo root directory
+cd "$(dirname ${0})/..";
+
+source ./bin/functions
+source ./bin/utils.sh
+
+LOG_DIR=
+
+main(){
+  is_failure_detected_globally="false"
+  failed_logs=()
+
+  if [[ -z "$LOG_DIR" ]]; then
+    echo "FATAL: Argument '--log-directory' must be provided!"
+    exit 1
+  fi
+
+  if [ ! -d "$LOG_DIR" ]; then
+    echo "FATAL: Directory does not exist: $LOG_DIR"
+    exit 1
+  fi
+
+  for file in "$LOG_DIR"/*
+  do
+    is_leader_failure_detected="false"
+
+    echo "Testing log file: $file..."
+
+    if [ ! -s "$file" ]; then
+      echo "ERROR: log file does not exist or is empty, and cannot be tested: $file..."
+      is_failure_detected_globally="true"
+    fi
+
+    if grep -n -E 'ERROR:  replication slot "pg_[0-9]+_sync_[0-9]+_[0-9]+" does not exist' "$file" | sed 's/^/\t/'; then
+      is_leader_failure_detected="true"
+    fi
+
+    if [ "$is_leader_failure_detected" = "true" ]; then
+      echo "ERROR: An error was detected in log file '$file', see above."
+      is_failure_detected_globally="true"
+      failed_logs+=("$file")
+    fi
+  done
+
+  if [ "$is_failure_detected_globally" = "true" ]; then
+    echo "Failures were detected in the following files:"
+    for log in "${failed_logs[@]}"
+    do
+      echo "- $log"
+    done
+    echo "FATAL: An error was detected in at least one Leader log file, see above."
+    exit 1
+  fi
+  echo "SUCCESS: No errors were detected in any log Leader file."
+  echo "DONE."
+}
+
+while true ; do
+  case "$1" in
+    --log-directory ) shift; LOG_DIR="$1" ; shift ;;
+     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+  esac
+done
+
+main

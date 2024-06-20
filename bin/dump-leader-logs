@@ -1,0 +1,83 @@
+#!/bin/bash
+
+# USAGE
+#
+# Dumps the logs of the running Leader. If the container is not running, no log
+# is printed, and indicating a failure to configure / deploy a container, and
+# this script will fail.
+#
+# ./bin/dump-leader-logs --log-directory tmp
+# ./bin/dump-leader-logs --log-directory tmp
+# ./bin/dump-leader-logs --log-directory tmp
+# ./bin/dump-leader-logs --log-directory tmp --no-fail
+
+set -e
+
+# Always work from repo root directory
+cd "$(dirname ${0})/..";
+
+source ./bin/functions
+source ./bin/utils.sh
+
+LOG_DIR=
+NO_FAIL="false"
+LEADER_COUNT=3
+
+
+# Use this to hide WARN from docker compose...
+# WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string.
+export VERSION=
+
+finish() {
+  if [ "$NO_FAIL" = "true" ]; then
+    exit 0
+  fi
+  exit "$1"
+}
+
+main(){
+  local is_failure_detected_globally="false"
+
+  trap 'finish $?' EXIT
+
+  echo "Beginning script: $0"
+
+  if [[ -z "$LOG_DIR" ]]; then
+    echo "FATAL: Argument '--log-directory' must be provided!"
+    exit 1
+  fi
+
+  echo "Creating log directory: $LOG_DIR..."
+  mkdir -p "$LOG_DIR"
+
+  if [ "$NO_FAIL" = "true" ]; then
+    echo "NO_FAIL is specified, this script will not fail if a container is not running."
+  fi
+
+  for ((i=1; i<=LEADER_COUNT; i++)); do
+    local leader_container="conjur-master-${i}.mycompany.local"
+    local log_file="$LOG_DIR/$leader_container.log"
+
+    echo "Dumping individual Leader logs at: $log_file"
+    docker compose logs "$leader_container" > "$log_file"
+  done
+
+  echo "Dumping Leader reconfigure logs at: $LOG_DIR"
+  docker compose logs "conjur-master.mycompany.local" > "$LOG_DIR/haproxy.log"
+
+  if [ "$is_failure_detected_globally" = "true" ] && [ "$NO_FAIL" = "false" ] ; then
+    echo "FATAL: An error was detected in at least one node, see above."
+    exit 1
+  fi
+  echo "DONE."
+}
+
+while true ; do
+  case "$1" in
+    --no-fail ) NO_FAIL='true' ; shift ;;
+    --log-directory ) shift; LOG_DIR="$1" ; shift ;;
+     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+  esac
+done
+
+main

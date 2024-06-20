@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # TODO:
 # - This currently assumes that all Followers are using the full replication set
@@ -6,18 +6,18 @@
 #
 
 # USAGE
-#
-# Given a FOLLOWER_COUNT, count the number of rows
-# in relevant tables within the Leader and Followers. The results are compared
-# for similarity. If any one file is not the same as another, the script will
-# fail.
-#
+# A FOLLOWER_COUNT is used to confirm that there are this number of K8S Follower
+# Pods. If there are not, retry until MAX_ATTEMPTS has been reached. If they
+# match, then the stats for each table of the Leader are compared with that
+# of the Follower. If they match, then the test is successful. If they are not,
+# the test will retry until MAX_ATTEMPTS has been reached.
+# 
 # IMPORTANT: this output will only align if all Followers are
 # using the full replication set (default).
 #
-# ./bin/test-table-rows-match --follower-count 1
-# ./bin/test-table-rows-match --follower-count 5
-# ./bin/test-table-rows-match --follower-count 10
+# ./bin/test-table-rows-match-k8s --follower-count 1
+# ./bin/test-table-rows-match-k8s --follower-count 5
+# ./bin/test-table-rows-match-k8s --follower-count 10
 #
 
 # Always work from repo root directory
@@ -27,23 +27,28 @@ source ./bin/functions
 source ./bin/utils.sh
 
 MAX_ATTEMPTS="${MAX_ATTEMPTS:-10}"
-LOG_DIR="$(appliance_log_dir)/tables"
+LOG_DIR="$(k8s_log_dir)/tables"
 
 # Note: the following tables are irrelevant for comparision in this context:
 # - policy_log
 # - schema_migrations
-TABLE_NAMES=("annotations" "authenticator_configs" "credentials" "host_factory_tokens" "permissions" "policy_versions" "resources" "resources_textsearch" "role_memberships" "roles" "schema_info" "secrets" "slosilo_keystore")
+# - schema_info
+TABLE_NAMES=("annotations" "authenticator_configs" "credentials" "host_factory_tokens" "permissions" "policy_versions" "resources" "resources_textsearch" "role_memberships" "roles" "secrets" "slosilo_keystore")
 
 # Use this to hide WARN from docker compose...
-# WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string.
+# WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string. 
 export VERSION=
+export DRY_RUN=${DRY_RUN:-false}
 
 FOLLOWER_COUNT=
 
 main() {
   DOCKER_LEADER_CONTAINER=$(discover_leader_container)
   echo "Active Leader container is: $DOCKER_LEADER_CONTAINER"
+
   LEADER_ROW_COUNTS_LOG_FILE="${DOCKER_LEADER_CONTAINER}-row-counts.log"
+  query=""
+  query_tmp_file="tmp/query.sql"
 
   echo "Beginning script: $0"
 
@@ -61,12 +66,7 @@ main() {
     exit 1
   fi
 
-  DOCKER_LEADER_CONTAINER=$(discover_leader_container)
-
-  # Start building the query
-  query=""
-
-    # Loop over the tables and append to the query
+  # Loop over the tables and append to the query
   for i in "${!TABLE_NAMES[@]}"; do
     table=${TABLE_NAMES[$i]}
     if [ $i -eq 0 ]; then
@@ -80,16 +80,16 @@ main() {
 
   query+=" ORDER BY table_name"
 
-  echo "Begin comparing all files (they should all be the same)..."
-
-  # Get a list of all files in the directory
-  log_files=("$LOG_DIR"/*)
-
+  # NOTE: as to not have to battle quotes during shell expansion through
+  # the local shell > KinD orchestrator > K8S Follower Pod, we instead upload
+  # the query as a file to the pod and execute it later...
+  echo "\copy ($query) To '/tmp/output.csv' With CSV" > "$query_tmp_file"
+  
   # Loop over the files and compare each to the first file
   for ((k=1; k<=MAX_ATTEMPTS; k++))
   do
+    echo "$k"
     is_failure_detected="false"
-
 
     echo "Statistics for $DOCKER_LEADER_CONTAINER"
     docker compose exec "$DOCKER_LEADER_CONTAINER" bash -c $"
@@ -97,22 +97,37 @@ main() {
         "
     docker compose cp "$DOCKER_LEADER_CONTAINER:/tmp/output.csv" "$LOG_DIR/${LEADER_ROW_COUNTS_LOG_FILE}"
 
-    for ((j=1; j<=FOLLOWER_COUNT; j++))
-    do
-      FOLLOWER_HOSTNAME="conjur-follower-${j}.mycompany.local"
-      echo "Statistics for $FOLLOWER_HOSTNAME"
-      docker compose exec "$FOLLOWER_HOSTNAME" bash -c $"
-            chpst -u conjur psql -c \"\\copy ($query) To '/tmp/output.csv' With CSV\"
-          "
-      docker compose cp "$FOLLOWER_HOSTNAME:/tmp/output.csv" "$LOG_DIR/${FOLLOWER_HOSTNAME}-row-counts.log"
+    echo "Dumping Follower Logs at: $FOLLOWER_LOG_DIR"
+    RUNNING_PODS=$(get_k8s_follower_pod_names)
+    echo "$RUNNING_PODS"
+
+    RUNNING_PODS_COUNT=$(echo "$RUNNING_PODS" | wc -w | tr -d ' ')
+
+    if [ "$RUNNING_PODS_COUNT" -ne "$FOLLOWER_COUNT" ]; then
+      echo "ERROR: The number of running pods '$RUNNING_PODS_COUNT' is not equal to the expected FOLLOWER_COUNT: '${FOLLOWER_COUNT}'. Trying again..."
+      is_failure_detected="true"
+      continue
+    fi
+  
+    for pod in $RUNNING_PODS; do
+      # upload the query to the KinD container, then the pod
+      ./bin/kubectl "exec $pod -n '$(_get_k8s_follower_namespace)' -c conjur -- bash -c 'rm -f /$query_tmp_file'"
+      VERSION= docker compose cp "$query_tmp_file" k8s-follower-orchestrator:"/$query_tmp_file"
+      ./bin/kubectl "cp $query_tmp_file $(_get_k8s_follower_namespace)/$pod:/$query_tmp_file -c conjur"
+
+      # execute the query
+      ./bin/kubectl "exec $pod -n '$(_get_k8s_follower_namespace)' -c conjur -- bash -c 'rm -f /tmp/output.csv && psql \"$(get_k8s_follower_pg_connection_string)\" -f /${query_tmp_file}'"
+
+      # download the results
+      ./bin/kubectl "exec $pod -n '$(_get_k8s_follower_namespace)' -c conjur -- bash -c 'cat /tmp/output.csv'" > "$LOG_DIR/${pod}-row-counts.log"
     done
 
     echo "Begin comparing all files (they should all be the same)..."
-
+    # Get a list of all files in the directory
     log_files=("$LOG_DIR"/*)
     for file in "${log_files[@]}"; do
       if [ ! -s "$file" ]; then
-        echo "[Attempt $k/$MAX_ATTEMPTS] FATAL: File $file is empty."
+        echo "[Attempt $k/$MAX_ATTEMPTS] ERROR: File $file is empty."
         is_failure_detected="true"
       elif diff -q "$LOG_DIR/$LEADER_ROW_COUNTS_LOG_FILE" "$file" > /dev/null; then
         echo "[Attempt $k/$MAX_ATTEMPTS] Files $LOG_DIR/$LEADER_ROW_COUNTS_LOG_FILE and $file are the same"
@@ -137,8 +152,17 @@ main() {
     sleep 3
   done
 
-  echo "All files are the same. It appears that all Followers tables are in sync with the Leader."
+  echo "SUCCESS: All files are the same. It appears that all Followers tables are in sync with the Leader."
   echo "DONE."
+}
+
+function get_k8s_follower_pg_connection_string() {
+  CONJUR_DATABASE_HOSTNAME=localhost
+  DATABASE_URL="postgres://conjur@$CONJUR_DATABASE_HOSTNAME:$PG_PORT/conjur?sslmode=require"
+  SSL_CERT="/opt/conjur/etc/ssl/cert/tls.crt"
+  SSL_KEY="/opt/conjur/etc/ssl/cert/conjur-tls.key"
+  connection_str="$DATABASE_URL&sslcert=$SSL_CERT&sslkey=$SSL_KEY"
+  echo "$connection_str"
 }
 
 while true ; do

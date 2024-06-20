@@ -1,0 +1,94 @@
+#!/bin/bash -x
+
+# USAGE
+#
+# Dumps the logs of the running Appliance Followers. If a container is not
+# running, no log is printed, and indicating a failure to configure / deploy a
+# container, and this script will fail.
+#
+# ./bin/appliance-follower-logs --log-directory tmp --follower-count 1
+# ./bin/appliance-follower-logs --log-directory tmp --follower-count 5
+# ./bin/appliance-follower-logs --log-directory tmp --follower-count 10
+# ./bin/appliance-follower-logs --log-directory tmp --no-fail --follower-count 10
+
+set -e
+
+# Always work from repo root directory
+cd "$(dirname ${0})/..";
+
+source ./bin/functions
+source ./bin/utils.sh
+
+LOG_DIR=
+NO_FAIL="false"
+FOLLOWER_COUNT=
+
+# Use this to hide WARN from docker compose...
+# WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string.
+export VERSION=
+
+finish() {
+  if [ "$NO_FAIL" = "true" ]; then
+    exit 0
+  fi
+  exit "$1"
+}
+
+main(){
+  local is_failure_detected_globally="false"
+
+  trap 'finish $?' EXIT
+
+  echo "Beginning script: $0"
+
+  if [[ -z "$LOG_DIR" ]]; then
+    echo "FATAL: Argument '--log-directory' must be provided!"
+    exit 1
+  fi
+
+  if [[ -z "$FOLLOWER_COUNT" ]]; then
+    echo "FATAL: Argument '--follower-count' must be provided!"
+    exit 1
+  fi
+
+  echo "Creating log directory: $LOG_DIR..."
+  mkdir -p "$LOG_DIR"
+
+  if [ "$NO_FAIL" = "true" ]; then
+    echo "NO_FAIL is specified, this script will not fail if a container is not running."
+  fi
+
+  echo "Dumping Follower Logs at: $LOG_DIR"
+  for ((i=1; i<=FOLLOWER_COUNT; i++))
+  do
+    local log_file_path="$LOG_DIR/conjur-follower-${i}.log"
+    FOLLOWER_HOSTNAME="conjur-follower-${i}.mycompany.local"
+
+    container_id=$(docker compose ps -q $FOLLOWER_HOSTNAME)
+    if [ -z "$container_id" ]; then
+      echo "WARNING: No container ID found for service '$FOLLOWER_HOSTNAME' (it is not running), skipping!"
+      is_failure_detected_globally="true"
+      continue
+    fi
+
+    echo "Dumping logs for '$FOLLOWER_HOSTNAME' at: $log_file_path..."
+    docker compose logs "$FOLLOWER_HOSTNAME" > "$log_file_path"
+  done
+
+  if [ "$is_failure_detected_globally" = "true" ] && [ "$NO_FAIL" = "false" ] ; then
+    echo "FATAL: An error was detected in at least one node, see above."
+    exit 1
+  fi
+  echo "DONE."
+}
+
+while true ; do
+  case "$1" in
+    --no-fail ) NO_FAIL='true' ; shift ;;
+    --log-directory ) shift; LOG_DIR="$1" ; shift ;;
+    --follower-count ) shift; FOLLOWER_COUNT="$1" ; shift ;;
+     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+  esac
+done
+
+main
