@@ -5,6 +5,7 @@ import * as conjurApi from "../modules/api.js";
 import * as lib from "../modules/lib.js";
 import { htmlReport } from "https://raw.githubusercontent.com/benc-uk/k6-reporter/2.4.0/dist/bundle.js";
 import { textSummary } from "https://jslib.k6.io/k6-summary/0.0.1/index.js";
+import papaparse from "../modules/papaparse.min.js";
 
 /**
  *  Init stage
