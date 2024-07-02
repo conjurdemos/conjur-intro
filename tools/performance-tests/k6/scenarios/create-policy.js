@@ -104,7 +104,24 @@ export default function () {
 }
 
 export function handleSummary(data) {
+  const httpReqs = data['metrics']['http_reqs']['values']['rate']
+  const avgHttpReqDurationGetSecretsIndividually = data['metrics']['http_req_duration_create_policy']['values']['avg'];
+  const maxHttpReqDurationGetSecretsIndividually = data['metrics']['http_req_duration_create_policy']['values']['max'];
+  const minHttpReqDurationGetSecretsIndividually = data['metrics']['http_req_duration_create_policy']['values']['min'];
+  const vusMax = data['metrics']['vus_max']['values']['max'];
+  const testName = "Load a policy";
+
+  console.log("---Summary data---")
+  console.log(JSON.stringify(data, null, 2));
+
+// create a csv data
+  const csv = papaparse.unparse([
+    ['Action','Virtual users', 'Requests per second [req/s]', 'Average response time [ms]', 'Max response time [ms]', 'Min response time [ms]'],
+    [testName, vusMax, httpReqs, avgHttpReqDurationGetSecretsIndividually, maxHttpReqDurationGetSecretsIndividually, minHttpReqDurationGetSecretsIndividually]
+  ]);
+
   return {
+    "./tools/performance-tests/k6/reports/metrics.csv": csv,
     "./tools/performance-tests/k6/reports/create-policy-summary.html": htmlReport(data, {title: "Create Policy " + new Date().toISOString().slice(0, 16).replace('T', ' ')}),
     stdout: textSummary(data, { indent: " ", enableColors: true }),
   };
