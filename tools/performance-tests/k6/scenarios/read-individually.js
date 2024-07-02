@@ -96,7 +96,23 @@ export default function () {
 }
 
 export function handleSummary(data) {
+  const http_reqs = data['metrics']['http_reqs']['values']['rate']
+  const avg_http_req_duration_get_secrets_individually = data['metrics']['http_req_duration_get_secrets_individually']['values']['avg'];
+  const max_http_req_duration_get_secrets_individually = data['metrics']['http_req_duration_get_secrets_individually']['values']['max'];
+  const min_http_req_duration_get_secrets_individually = data['metrics']['http_req_duration_get_secrets_individually']['values']['min'];
+  const vus_max = data['metrics']['vus_max']['values']['max'];
+
+  console.log("---Summary data---")
+  console.log(JSON.stringify(data, null, 2));
+
+  // create a csv data
+  const csv = papaparse.unparse([
+    ['Virtual users', 'Requests per second [req/s]', 'Average response time [ms]', 'Max response time [ms]', 'Min response time [ms]'],
+    [vus_max, http_reqs, avg_http_req_duration_get_secrets_individually, max_http_req_duration_get_secrets_individually, min_http_req_duration_get_secrets_individually]
+  ]);
+
   return {
+    "./tools/performance-tests/k6/reports/metrics.csv": csv,
     "./tools/performance-tests/k6/reports/read-individually-summary.html": htmlReport(data, {title: "Read Secrets Individually " + new Date().toISOString().slice(0, 16).replace('T', ' ')}),
     stdout: textSummary(data, { indent: " ", enableColors: true }),
   };
