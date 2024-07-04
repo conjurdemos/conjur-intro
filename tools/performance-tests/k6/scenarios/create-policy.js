@@ -3,8 +3,9 @@ import {check} from "k6";
 import {Trend, Rate} from 'k6/metrics';
 import * as conjurApi from "../modules/api.js";
 import * as lib from "../modules/lib.js";
-import { htmlReport } from "https://raw.githubusercontent.com/benc-uk/k6-reporter/2.4.0/dist/bundle.js";
-import { textSummary } from "https://jslib.k6.io/k6-summary/0.0.1/index.js";
+import {htmlReport} from "https://raw.githubusercontent.com/benc-uk/k6-reporter/2.4.0/dist/bundle.js";
+import {textSummary} from "https://jslib.k6.io/k6-summary/0.0.1/index.js";
+import papaparse from "../modules/papaparse.min.js";
 
 /**
  *  Init stage
@@ -104,8 +105,32 @@ export default function () {
 }
 
 export function handleSummary(data) {
+  const {
+    iterations: {
+      values: {rate: httpReqs}
+    },
+    http_req_duration_create_policy: {
+      values: {
+        avg: avgResponseTime,
+        max: maxResponseTime,
+        min: minResponseTime
+      }
+    },
+    vus_max: {
+      values: {max: vusMax}
+    }
+  } = data['metrics'];
+
+  const testName = "Load a policy";
+  const nodeType = lib.checkNodeType(env.applianceMasterUrl);
+
+  const csv = papaparse.unparse(
+    lib.generateMetricsArray(nodeType, testName, vusMax, httpReqs, avgResponseTime, maxResponseTime, minResponseTime)
+  );
+
   return {
+    "./tools/performance-tests/k6/reports/metrics.csv": csv,
     "./tools/performance-tests/k6/reports/create-policy-summary.html": htmlReport(data, {title: "Create Policy " + new Date().toISOString().slice(0, 16).replace('T', ' ')}),
-    stdout: textSummary(data, { indent: " ", enableColors: true }),
+    stdout: textSummary(data, {indent: " ", enableColors: true}),
   };
 }
