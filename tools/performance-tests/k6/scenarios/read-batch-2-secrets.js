@@ -6,8 +6,8 @@ import * as conjurApi from "../modules/api.js";
 import * as lib from "../modules/lib.js";
 import papaparse from "../modules/papaparse.min.js";
 import {SharedArray} from 'k6/data';
-import { htmlReport } from "https://raw.githubusercontent.com/benc-uk/k6-reporter/2.4.0/dist/bundle.js";
-import { textSummary } from "https://jslib.k6.io/k6-summary/0.0.1/index.js";
+import {htmlReport} from "https://raw.githubusercontent.com/benc-uk/k6-reporter/2.4.0/dist/bundle.js";
+import {textSummary} from "https://jslib.k6.io/k6-summary/0.0.1/index.js";
 
 /**
  *  Init stage
@@ -68,7 +68,7 @@ export function authn() {
 }
 
 export default function () {
-  const apiKey = apiKeys.at(exec.vu.idInTest-1);
+  const apiKey = apiKeys.at(exec.vu.idInTest - 1);
 
   env.applianceUrl = env.applianceReadUrl
   env.conjurIdentity = `host/AutomationVault-hosts/${apiKey.lob_name}/${apiKey.safe_name}/host-1`;
@@ -96,8 +96,28 @@ export default function () {
 }
 
 export function handleSummary(data) {
+  const {
+    iterations: {
+      values: {rate: httpReqs}
+    },
+    http_req_duration_get_two_secrets_batch: {
+      values: {avg: avgResponseTime, max: maxResponseTime, min: minResponseTime}
+    },
+    vus_max: {
+      values: {max: vusMax}
+    }
+  } = data['metrics'];
+
+  const testName = "Retrieve 2 batch secrets";
+  const nodeType = lib.checkNodeType(env.applianceReadUrl);
+
+  const csv = papaparse.unparse(
+    lib.generateMetricsArray(nodeType, testName, vusMax, httpReqs, avgResponseTime, maxResponseTime, minResponseTime)
+  );
+
   return {
+    "./tools/performance-tests/k6/reports/metrics.csv": csv,
     "./tools/performance-tests/k6/reports/read-batch-2-secrets-summary.html": htmlReport(data, {title: "Read Batch 2 Secrets " + new Date().toISOString().slice(0, 16).replace('T', ' ')}),
-    stdout: textSummary(data, { indent: " ", enableColors: true }),
+    stdout: textSummary(data, {indent: " ", enableColors: true}),
   };
 }
