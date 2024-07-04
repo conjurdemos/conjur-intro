@@ -203,7 +203,7 @@ export function createNestedPolicy(level, maxLevel) {
 
   const randomUUID = () => {
     let result = '';
-    while(result.length < 10) {
+    while (result.length < 10) {
       let randomChar = String.fromCharCode(Math.floor(Math.random() * 26) + 97);
       result += randomChar;
     }
@@ -231,3 +231,21 @@ export function create1kPolicies(id) {
   return policies;
 }
 
+export function checkNodeType(url) {
+  if (url.includes('conjur-master')) {
+    return "DAP Leader";
+  } else if (url.includes('host.docker.internal')) {
+    return "K8S Follower";
+  } else if (url.includes('conjur-follower')) {
+    return "DAP Follower";
+  } else {
+    return "Unknown";
+  }
+}
+
+export function generateMetricsArray(nodeType, testName, vusMax, httpReqs, avgResponseTime, maxResponseTime, minResponseTime) {
+  return [
+    ['Node type', 'Action', 'Virtual users', 'Requests handled by Conjur per second', 'Average response time (ms)', 'Max response time (ms)', 'Min response time (ms)'],
+    [nodeType, testName, vusMax, httpReqs, avgResponseTime, maxResponseTime, minResponseTime]
+  ];
+}
