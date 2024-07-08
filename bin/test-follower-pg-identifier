@@ -14,6 +14,9 @@ set -e
 # Always work from repo root directory
 cd "$(dirname ${0})/..";
 
+source ./bin/functions
+source ./bin/utils.sh
+
 FOLLOWER_COUNT=
 
 FOLLOWER_PG_IDENTIFIERS=()
@@ -48,7 +51,7 @@ main(){
     done
   done
 
-  echo "All identifiers are unique."
+  echo "SUCCESS: All identifiers are unique."
   echo "DONE."
 }
 

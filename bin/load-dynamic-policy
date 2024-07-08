@@ -1,0 +1,207 @@
+#!/usr/bin/env bash
+
+# DESCRIPTION
+# Given a branch, will create a dynamic policy with the given id. If given
+# --reset, the provided --branch will be REPLACED ENTIRELY with an empty policy,
+# and the script will exit. You cannot reset and load policy in one go.
+#
+# This intentionally does not set any secrets, to defer the control flow logic
+# in upstream scripts.
+#
+# USAGE
+# ./bin/load-dynamic-policy --reset
+# ./bin/load-dynamic-policy --branch replication-test --id policy-1
+#
+
+# Always work from repo root directory
+cd "$(dirname ${0})/..";
+
+source ./bin/functions
+source ./bin/utils.sh
+
+CONJUR_USER="admin"
+CONJUR_ACCOUNT="demo"
+CONJUR_PASSWORD="MySecretP@ss1"
+BASE_POLICY_BRANCH=
+
+# Use this to hide WARN from docker compose...
+# WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string. 
+export VERSION=
+
+POLICY_IDENTIFIER=
+SECRET_COUNT=${SECRET_COUNT:-1}
+
+main() {
+  echo "Beginning script: $0"
+  DOCKER_LEADER_CONTAINER=$(discover_leader_container)
+  echo "Active Leader container is: $DOCKER_LEADER_CONTAINER"
+
+  if [[ -z "$BASE_POLICY_BRANCH" ]]; then
+    echo "FATAL: Argument '--branch' must be provided!"
+    exit 1
+  fi
+
+  reset_policy_brach
+
+  if [[ -z "$POLICY_IDENTIFIER" ]]; then
+    echo "FATAL: Argument '--id' must be provided!"
+    exit 1
+  fi
+
+  echo "This script will load a dynamic policy with '${SECRET_COUNT}' secrets into branch '${BASE_POLICY_BRANCH}'"
+  echo "The secrets created will range from: '${BASE_POLICY_BRANCH}/${POLICY_IDENTIFIER}-secret-1' and end with: '${BASE_POLICY_BRANCH}/${POLICY_IDENTIFIER}-secret-${SECRET_COUNT}'"
+  load_dynamic_policy
+
+  echo -e "\nDONE."
+}
+
+reset_policy_brach() {
+  if [ "$RESET_POLICY_BRANCH" != "true" ]; then
+    echo "Argument '--reset' is not provided, will not reset policy branch."
+    return
+  fi
+
+  # Reset the base policy branch
+  echo "Initializing and/or replacing base policy..."
+  load_base_policy
+  replace_base_policy
+
+  exit $?
+}
+
+load_dynamic_policy() {
+  local policy_body
+
+  echo "Will attempt to load '${POLICY_IDENTIFIER}'"
+  policy_body="$(get_dynamic_policy_body "$POLICY_IDENTIFIER")"
+
+  load_policy "POST" "$BASE_POLICY_BRANCH" "$policy_body"
+}
+
+replace_base_policy() {
+  local policy_body
+
+  policy_body="#"
+
+  load_policy "PUT" "$BASE_POLICY_BRANCH" "$policy_body"
+
+  if [ $? -ne 0 ]; then
+    echo -e "\nFATAL: Failed to reset base policy!"
+    exit 1
+  fi
+  echo -e "\nBase policy was reset successfully."
+}
+
+load_base_policy() {
+  POLICY_FILE=$(cat <<EOF
+- !policy
+  id: $BASE_POLICY_BRANCH
+EOF
+)
+
+  load_policy "POST" "root" "$POLICY_FILE"
+  if [ $? -ne 0 ]; then
+    echo -e "\nFATAL: Failed to load base policy!"
+    exit 1
+  fi
+  echo -e "\nBase policy was loaded successfully."
+}
+
+# Conjur Access Tokens work across all Leaders/Followers. Let's get a token
+# one time, and refresh it as needed. Returns a base64 encoded token.
+get_conjur_access_token() {
+  local api_key
+
+  api_key=$(docker compose exec "$DOCKER_LEADER_CONTAINER" curl --silent --user "$CONJUR_USER:$CONJUR_PASSWORD" -k https://localhost/authn/$CONJUR_ACCOUNT/login)
+
+  docker compose exec "$DOCKER_LEADER_CONTAINER" curl \
+        --max-time 3 \
+        --silent \
+        --insecure \
+        --request POST \
+        --data "$api_key" \
+        "https://localhost/authn/$CONJUR_ACCOUNT/$CONJUR_USER/authenticate" | base64 | tr -d "[:space:]"
+}
+
+load_policy() {
+  POLICY_MODE="$1"
+  POLICY_BRANCH="$2"
+  POLICY_BODY="$3"
+
+  local token
+
+  token=$(get_conjur_access_token)
+
+  echo "Load in leader: $DOCKER_LEADER_CONTAINER"
+  docker compose exec "$DOCKER_LEADER_CONTAINER" sh -c "
+    curl \
+      --silent \
+      --insecure \
+      --request '$POLICY_MODE' \
+      --header 'Authorization: Token token=\"$token\"' \
+      --data '$POLICY_BODY' \
+      https://localhost/policies/$CONJUR_ACCOUNT/policy/$POLICY_BRANCH
+  "
+}
+
+get_dynamic_policy_body() {
+  DYNAMIC_BRANCH="$1"
+  cat <<EOF
+- !policy
+  id: $DYNAMIC_BRANCH
+  annotations:
+    description: Namespace defs for the Conjur cluster in dev
+  body:
+    - &variables
+$(generate_variable_body)
+
+    - !host
+      id: host
+      annotations:
+        description: host description
+
+    - !group
+      id: group
+      annotations:
+        description: group description
+
+    - !permit
+      role: !group group
+      privilege: [ read, execute ]
+      resource: *variables
+    - !grant
+      role: !group group
+      member: !host host
+EOF
+}
+
+generate_variable_body() {
+  for ((i=1; i<=SECRET_COUNT; i++)); do
+    cat <<EOF
+      - !variable
+        id: secret-$i
+        annotations:
+          description: Description for secret $i
+EOF
+  done
+}
+
+# WARNING: this is naive and only encodes forward slashes, and no other
+# characters!
+urlencode_forward_slashes_only() {
+    local string="$1"
+    echo "$string" | sed 's|/|%2F|g'
+}
+
+while true ; do
+  case "$1" in
+    --branch ) shift; BASE_POLICY_BRANCH="$1" ; shift ;;
+    --reset ) RESET_POLICY_BRANCH=true ; shift ;;
+    --id ) shift; POLICY_IDENTIFIER="$1" ; shift ;;
+    --secret-count ) shift; SECRET_COUNT="$1" ; shift ;;
+     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+  esac
+done
+
+main
+

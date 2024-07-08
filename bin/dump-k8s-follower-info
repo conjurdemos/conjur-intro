@@ -1,0 +1,94 @@
+#!/bin/bash
+
+# USAGE
+#
+# Dumps the logs of the running K8S Followers. A FOLLOWER_COUNT is used to
+# confirm that there are this number of K8S Follower Pods. If there are not,
+# the script will dump the logs of the running pods, and fail. If the info
+# service does not respond appropriately, no log is printed, and indicating a
+# failure to configure / deploy a container, and this script will fail.
+#
+# ./bin/dump-k8s-follower-logs --follower-count 3
+# ./bin/dump-k8s-follower-logs --follower-count 3
+# ./bin/dump-k8s-follower-logs --follower-count 3
+# ./bin/dump-k8s-follower-logs --no-fail --follower-count 3
+
+set -e
+
+# Always work from repo root directory
+cd "$(dirname ${0})/..";
+
+source ./bin/functions
+source ./bin/utils.sh
+
+LOG_DIR="$(k8s_log_dir)"
+FOLLOWER_LOG_DIR="$LOG_DIR/follower/info"
+NO_FAIL="false"
+FOLLOWER_COUNT=
+
+# Use this to hide WARN from docker compose...
+# WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string.
+export VERSION=
+
+main(){
+  is_failure_detected_globally="false"
+
+  echo "Beginning script: $0"
+
+  if [[ -z "$FOLLOWER_COUNT" ]]; then
+    echo "FATAL: FOLLOWER_COUNT must be specified as --follower-count"
+    exit 1
+  fi
+
+  if [ "$NO_FAIL" = "true" ]; then
+    echo "NO_FAIL is specified, this script will not fail if /info is failed to be captured."
+  fi
+
+  echo "Dumping Follower Logs at: $FOLLOWER_LOG_DIR"
+  RUNNING_PODS=$(get_k8s_follower_pod_names)
+
+  echo "$RUNNING_PODS"
+
+  RUNNING_PODS_COUNT=$(echo "$RUNNING_PODS" | wc -w)
+
+  if [ "$RUNNING_PODS_COUNT" -ne "$FOLLOWER_COUNT" ]; then
+      echo "ERROR: The number of running pods '$FOLLOWER_COUNT' is not equal to the expected FOLLOWER_COUNT: '${FOLLOWER_COUNT}'. This script will fail after attempting to dumping logs of any running pods."
+      is_failure_detected_globally="true"
+  fi
+
+  for pod in $RUNNING_PODS; do
+    local follower_health
+    local log_dir
+
+    log_dir="$FOLLOWER_LOG_DIR/$pod"
+
+    echo "Fetching info for pod: $pod"
+
+    mkdir -p "$log_dir"
+    follower_health=$(bin/kubectl "exec $pod -n $(_get_k8s_follower_namespace) -c conjur -- curl -s -k curl -k http://localhost:5611" || true)
+    if [ -z "$follower_health" ]; then
+        echo "ERROR: An info check failed for this pod, skipping!"
+        is_failure_detected_globally="true"
+        continue
+    fi
+    echo "$follower_health" | tee "$log_dir/$(file_friendly_timestamp).log"
+  done
+
+  if [ "$is_failure_detected_globally" = "true" ] && [ "$NO_FAIL" = "false" ] ; then
+    echo "FATAL: An error was detected in at least one node, see above."
+    exit 1
+  fi
+
+  echo "SUCCESS: All nodes were able to be queried successfully."
+  echo "DONE."
+}
+
+while true ; do
+  case "$1" in
+    --no-fail ) NO_FAIL='true' ; shift ;;
+    --follower-count ) shift; FOLLOWER_COUNT="$1" ; shift ;;
+     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+  esac
+done
+
+main

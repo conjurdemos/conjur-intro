@@ -4,13 +4,29 @@ repo_root() {
   git rev-parse --show-toplevel
 }
 
+utc_timestamp() {
+  date -u +"%Y-%m-%dT%H:%M:%S.000+00:00"
+}
+
 # A date timestamp separated by underscores, ideal for file names.
-timestamp() {
+file_friendly_timestamp() {
   date +"%Y_%m_%d_%I_%M_%s"
 }
 
-log_dir() {
-  echo "$(repo_root)/tmp"
+root_log_dir() {
+  echo "$(repo_root)/tmp/replication-test-logs"
+}
+
+appliance_log_dir() {
+  echo "$(root_log_dir)/replication-test"
+}
+
+k8s_log_dir() {
+  echo "$(root_log_dir)/replication-test-k8s"
+}
+
+k8s_resources_log_dir() {
+  echo "$(k8s_log_dir)/k8s-resources"
 }
 
 check_env() {
@@ -22,6 +38,12 @@ check_env() {
     echo "ENV VAR \"$1\" must be set. Try using summon and running this command again."
     exit 1
   fi
+}
+
+announce() {
+  echo "------------------------------------"
+  echo "$1"
+  echo "------------------------------------"
 }
 
 is_gnu_date() {
@@ -38,14 +60,23 @@ date_timestamp() {
 }
 
 function _get_kubectl_opts() {
-  API_SERVER_URL=$(kind get --name conjur-intro-k8s-follower kubeconfig | grep server | awk '{print $2}' | sed 's/0.0.0.0/host.docker.internal/')
+  API_SERVER_URL=$(VERSION="" run_in_kind "kind get --name conjur-intro-k8s-follower kubeconfig | grep server" | awk -F' ' '{print $2}' | sed 's/0.0.0.0/host.docker.internal/')
   KUBE_OPTS="--insecure-skip-tls-verify --server=$API_SERVER_URL --context kind-conjur-intro-k8s-follower"
   echo "$KUBE_OPTS"
+}
+
+function _get_k8s_follower_namespace() {
+  echo "cyberark-conjur"
+}
+
+function _get_k8s_operator_namespace() {
+  echo "conjur-follower-operator-system"
 }
 
 # Each command will be executed with KUBE_OPTS environment variable
 # which is defined to point to the k8s-follower-orchestrator cluster.
 # The KUBE_OPTS variable should be then used in the command to interact with the k8s-follower-orchestrator cluster.
+#
 # For example:
 # run_in_kind "get pods -n cyberark-conjur"
 function run_in_kind {
@@ -56,8 +87,28 @@ function run_in_kind {
     # as it is not relevant here
     #
     # shellcheck disable=SC2128
-    VERSION= docker compose exec -T k8s-follower-orchestrator ash -c "
+    VERSION="" docker compose exec -T k8s-follower-orchestrator ash -c "
           $_args
     "
   fi
+}
+
+# Returns a list of K8S Follower pods that have a status of Running.
+function get_k8s_follower_pod_names() {
+  bin/kubectl "get pods --field-selector=status.phase=Running -o jsonpath='{.items[*].metadata.name}' -n $(_get_k8s_follower_namespace)"
+}
+
+# WARNING: this is naive and only encodes forward slashes, and no other
+# characters! Used when fetching secrets via Conjur REST API.
+urlencode_forward_slashes_only() {
+    local string="$1"
+    echo "$string" | sed 's|/|%2F|g'
+}
+
+# Returns the active leader as reported by the Leader load balancer. Defaults
+# to the original leader container.
+function discover_leader_container() {
+  curl --max-time 3 \
+       --silent -k https://localhost:443/info \
+        | jq -r '.configuration.conjur.cluster_leader' || echo "conjur-master-1.mycompany.local"
 }

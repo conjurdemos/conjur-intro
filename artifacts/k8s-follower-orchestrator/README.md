@@ -30,6 +30,12 @@ You may specify the number of k8s-follower replicas as such:
 bin/dap --provision-k8s-follower --follower-count 3
 ```
 
+You may enable debug on the conjur container via:
+
+```shell
+bin/dap --provision-k8s-follower --k8s-follower-conjur-log-level debug
+```
+
 For specific tag version flag could be specified:
 
 ```shell
