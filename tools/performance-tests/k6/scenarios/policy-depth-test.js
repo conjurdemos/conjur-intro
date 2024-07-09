@@ -73,7 +73,7 @@ export default function () {
     policyContent
   );
 
-  if (check(policyRes, {"Status is 201": (r) => r.status === 201})) {
+  if (policyRes.status === 201) {
     successfulIterations.add(1);
   }
 }
