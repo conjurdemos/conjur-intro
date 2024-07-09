@@ -196,6 +196,17 @@ export function createUsersPolicy(identifier) {
   members: !group AutomationVault-users/lob-1-${identifier}/safe-1-${identifier}/users`;
 }
 
+export function createConflictsPolicy(identifier) {
+  return `- !policy
+  id: AutomationVault-${identifier}
+  body:
+    - !policy
+      id: lob-1-${identifier}
+      body:
+        - !policy
+          id: safe-1-${identifier}`
+}
+
 export function createNestedPolicy(level, maxLevel) {
   if (level > maxLevel) {
     return '';
