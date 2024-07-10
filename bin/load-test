@@ -114,10 +114,15 @@ move_html_report() {
   echo "Moving HTML report to $LOG_ROOT as summary.html"
   mv "$(repo_root)/tools/performance-tests/k6/reports/$(basename "$TEST_PLAN")-summary.html" "$html_report_file"
 
-#  # Move metrics.csv to LOG_ROOT
-#  local csv_report_file="$LOG_ROOT/metrics.csv"
-#  echo "Moving CSV report to $LOG_ROOT as metrics.csv"
-#  mv "$(repo_root)/tools/performance-tests/k6/reports/metrics.csv" "$csv_report_file"
+  local csv_report_file="$LOG_ROOT/metrics.csv"
+  local source_csv_file="$(repo_root)/tools/performance-tests/k6/reports/metrics.csv"
+
+  if [ -f "$source_csv_file" ]; then
+      echo "Moving CSV report to $LOG_ROOT as metrics.csv"
+      mv "$source_csv_file" "$csv_report_file"
+  else
+      echo "Source CSV file does not exist, cannot move"
+  fi
 }
 
 populate_apikeys_file() {
