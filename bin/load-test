@@ -80,8 +80,8 @@ test_k6() {
   # Run K6 test
   run_k6_test
 
-  #Move HTML report to LOG_ROOT
-  move_html_report
+  # Move reports to LOG_ROOT
+  move_reports
 
   echo "The test has completed!"
 
@@ -109,15 +109,27 @@ run_k6_test() {
   fi
 }
 
-move_html_report() {
-  local html_report_file="$LOG_ROOT/summary.html"
-  echo "Moving HTML report to $LOG_ROOT as summary.html"
-  mv "$(repo_root)/tools/performance-tests/k6/reports/$(basename "$TEST_PLAN")-summary.html" "$html_report_file"
+move_report_file() {
+  local source_file="$1"
+  local destination_file="$2"
+  local file_type="$3"
 
-  # Move metrics.csv to LOG_ROOT
+  if [ -f "$source_file" ]; then
+    echo "Moving $file_type report to $destination_file"
+    mv "$source_file" "$destination_file"
+  else
+    echo "Source $file_type report file does not exist, cannot move"
+  fi
+}
+
+move_reports() {
+  local source_html_file="$(repo_root)/tools/performance-tests/k6/reports/$(basename "$TEST_PLAN")-summary.html"
+  local html_report_file="$LOG_ROOT/summary.html"
+  move_report_file "$source_html_file" "$html_report_file" "HTML"
+
+  local source_csv_file="$(repo_root)/tools/performance-tests/k6/reports/metrics.csv"
   local csv_report_file="$LOG_ROOT/metrics.csv"
-  echo "Moving CSV report to $LOG_ROOT as metrics.csv"
-  mv "$(repo_root)/tools/performance-tests/k6/reports/metrics.csv" "$csv_report_file"
+  move_report_file "$source_csv_file" "$csv_report_file" "CSV"
 }
 
 populate_apikeys_file() {
