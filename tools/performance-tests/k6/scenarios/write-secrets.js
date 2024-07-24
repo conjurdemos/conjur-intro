@@ -49,8 +49,8 @@ export const options = {
     },
   }, thresholds: {
     // TODO: To be set later after benchmark tests are fully refactored
-    // http_reqs: ['rate > 75']
-    // checks: ['rate == 1.0']
+    http_reqs: ['rate > 40'],
+    checks: ['rate == 1.0']
   }
 };
 

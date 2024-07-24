@@ -39,14 +39,14 @@ export const options = {
     individual: {
       executor: 'shared-iterations',
       maxDuration: "3h",
-      vus: 12,
+      vus: 10,
       iterations: 64500,
       gracefulStop
     },
   }, thresholds: {
     // TODO: To be set later after benchmark tests are fully refactored
-    // http_reqs: ['rate > 75']
-    // checks: ['rate == 1.0']
+    http_reqs: ['rate > 100'],
+    checks: ['rate == 1.0']
   }
 };
 
