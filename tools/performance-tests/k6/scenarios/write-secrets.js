@@ -48,9 +48,8 @@ export const options = {
       gracefulStop
     },
   }, thresholds: {
-    // TODO: To be set later after benchmark tests are fully refactored
-    // http_reqs: ['rate > 75']
-    // checks: ['rate == 1.0']
+    iterations: ['rate > 100'],
+    checks: ['rate == 1.0']
   }
 };
 
