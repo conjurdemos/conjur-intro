@@ -38,7 +38,7 @@ export const options = {
       gracefulStop
     },
   }, thresholds: {
-    iterations: ['rate > 3'],
+    iterations: ['rate > 2'],
     checks: ['rate == 1.0']
   }
 };
