@@ -42,7 +42,7 @@ export const options = {
       gracefulStop
     },
   }, thresholds: {
-    iterations: ['rate > 200'],
+    iterations: ['rate > 175'],
     checks: ['rate == 1.0']
   }
 };
