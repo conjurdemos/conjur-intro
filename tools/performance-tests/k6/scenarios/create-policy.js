@@ -1,6 +1,6 @@
 import http from "k6/http";
 import {check} from "k6";
-import {Trend, Rate} from 'k6/metrics';
+import {Counter, Trend, Rate} from 'k6/metrics';
 import * as conjurApi from "../modules/api.js";
 import * as lib from "../modules/lib.js";
 import {htmlReport} from "https://raw.githubusercontent.com/benc-uk/k6-reporter/2.4.0/dist/bundle.js";
@@ -18,6 +18,7 @@ const requiredEnvVars = [
 const authenticateTrend = new Trend('http_req_duration_post_authn', true);
 const authenticateFailRate = new Rate('http_req_failed_post_authn');
 const createPolicyTrend = new Trend('http_req_duration_create_policy', true);
+const createPolicyCount = new Counter('iterations_create_policy');
 const createPolicyFailRate = new Rate('http_req_failed_create_policy');
 
 lib.checkRequiredEnvironmentVariables(requiredEnvVars);
@@ -86,7 +87,10 @@ export default function () {
     lib.createUsersPolicy(identifier)
   );
 
-  createPolicyTrend.add(lobsPolicyRes.timings.duration + hostsPolicyRes.timings.duration + usersPolicyRes.timings.duration);
+  createPolicyTrend.add(lobsPolicyRes.timings.duration);
+  createPolicyTrend.add(hostsPolicyRes.timings.duration);
+  createPolicyTrend.add(usersPolicyRes.timings.duration);
+  createPolicyCount.add(3);
   createPolicyFailRate.add(lobsPolicyRes.status !== 201 || hostsPolicyRes.status !== 201 || usersPolicyRes.status !== 201);
 
   check(lobsPolicyRes, {
@@ -105,7 +109,7 @@ export default function () {
 
 export function handleSummary(data) {
   const {
-    iterations: {
+    iterations_create_policy: {
       values: {rate: httpReqs}
     },
     http_req_duration_create_policy: {
