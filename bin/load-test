@@ -73,6 +73,12 @@ test_k6() {
   "$(repo_root)/bin/retrieve_cyberark_ca_cert"
   docker compose build k6 --no-cache
 
+  # Warmup
+  echo "Performing warmup - 1 minute of steady reads"
+  "$(repo_root)/tools/performance-tests/k6/bin/k6" \
+  run tools/performance-tests/k6/scenarios/warmup.js \
+  --insecure-skip-tls-verify --quiet
+
   # Start the clock
   test_start=$(date_timestamp | sed 's/ /T/g')
   echo "Starting test at: $test_start"
