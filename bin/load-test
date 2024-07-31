@@ -80,11 +80,13 @@ test_k6() {
   "$(repo_root)/bin/retrieve_cyberark_ca_cert"
   docker compose build k6 --no-cache
 
-  # Warmup
-  echo "Performing warmup - 1 minute of steady reads"
-  "$(repo_root)/tools/performance-tests/k6/bin/k6" \
-  run tools/performance-tests/k6/scenarios/warmup.js \
-  --insecure-skip-tls-verify --quiet
+  if [ "$AWS" != "true" ]; then
+    # Warmup
+    echo "Performing warmup - 1 minute of steady reads"
+    "$(repo_root)/tools/performance-tests/k6/bin/k6" \
+    run tools/performance-tests/k6/scenarios/warmup.js \
+    --insecure-skip-tls-verify --quiet
+  fi
 
   # Start the clock
   test_start=$(date_timestamp | sed 's/ /T/g')
@@ -169,9 +171,8 @@ populate_apikeys_file() {
 
   if [ "$AWS" = "true" ]; then
     echo "Chose AWS flow for API key rotation"
-    token=$(authenticate_user "xa" "$ADMIN_USER" "$PASSWORD" "$APPLIANCE_MASTER_URL")
+    token=$(authenticate_user "$CONJUR_ACCOUNT" "$ADMIN_USER" "$PASSWORD" "$APPLIANCE_MASTER_URL")
     echo "Retrieved token for authentication"
-    echo "Token: $token"
     responses=""
     IFS=' ' read -r -a hosts_array <<< "$hosts"
     for host in "${hosts_array[@]}"; do
@@ -179,7 +180,7 @@ populate_apikeys_file() {
                       --insecure \
                       --request PUT \
                       --silent \
-                      "$APPLIANCE_MASTER_URL/authn/xa/api_key?role=host:$host")
+                      "$APPLIANCE_MASTER_URL/authn/$CONJUR_ACCOUNT/api_key?role=host:$host")
       responses="$responses $response"
     done
     echo "Completed all requests"
