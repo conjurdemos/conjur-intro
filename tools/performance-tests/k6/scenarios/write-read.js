@@ -285,7 +285,7 @@ export function batchRetrieveTwoSecrets() {
     start.setTime(now.getTime())
     authn();
   }
-  const path = `/secrets?variable_ids=xa:variable:production%2Fmyapp%2Fdatabase%2Fusername`
+  const path = `/secrets?variable_ids=${env.conjurAccount}:variable:production%2Fmyapp%2Fdatabase%2Fusername`
   const res = conjurApi.get(http, env, path);
 
   readTwoSecretsBatchTrend.add(res.timings.duration);
@@ -310,7 +310,7 @@ export function batchRetrieveFourSecrets() {
     start.setTime(now.getTime())
     authn();
   }
-  const path = `/secrets?variable_ids=xa:variable:production%2Fmyapp%2Fdatabase%2Fusername,xa:variable:production%2Fmyapp%2Fdatabase%2Fpassword,xa:variable:production%2Fmyapp%2Fdatabase%2Fport,xa:variable:production%2Fmyapp%2Fdatabase%2Furl`
+  const path = `/secrets?variable_ids=${env.conjurAccount}:variable:production%2Fmyapp%2Fdatabase%2Fusername,${env.conjurAccount}:variable:production%2Fmyapp%2Fdatabase%2Fpassword,${env.conjurAccount}:variable:production%2Fmyapp%2Fdatabase%2Fport,${env.conjurAccount}:variable:production%2Fmyapp%2Fdatabase%2Furl`
   const res = conjurApi.get(http, env, path);
 
   readFourSecretsBatchTrend.add(res.timings.duration);

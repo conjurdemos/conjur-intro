@@ -85,8 +85,9 @@ export default function () {
   // It should be parametrized when dealing with running multiple load tests with different data
   const accountNumber = Math.ceil(Math.random() * 200) || 1;
   const identity = encodeURIComponent(`AutomationVault/${apiKey.lob_name}/${apiKey.safe_name}/account-${accountNumber}${uuid_suffix}`);
+  const conjurAccount = env.conjurAccount;
 
-  const path = `/secrets?variable_ids=demo:variable:${identity}%2Fvariable-1${uuid_suffix},demo:variable:${identity}%2Fvariable-2${uuid_suffix},demo:variable:${identity}%2Fvariable-3${uuid_suffix},demo:variable:${identity}%2Fvariable-4${uuid_suffix}`
+  const path = `/secrets?variable_ids=${conjurAccount}:variable:${identity}%2Fvariable-1${uuid_suffix},${conjurAccount}:variable:${identity}%2Fvariable-2${uuid_suffix},${conjurAccount}:variable:${identity}%2Fvariable-3${uuid_suffix},${conjurAccount}:variable:${identity}%2Fvariable-4${uuid_suffix}`
   const res = conjurApi.get(http, env, path);
 
   readFourSecretsBatchTrend.add(res.timings.duration);
