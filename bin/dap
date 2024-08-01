@@ -43,6 +43,8 @@ Usage: bin/dap [options]:
     --promote-standby                                         Stops the current master and promotes a standby
                                                                 (Requires configured standbys and no auto-failover).
 
+    --provision-datadog                                       Configures DataDog agent [latest].
+
     --provision-follower                                      Configures follower behind a Layer 7 load balancer
                                                                 (Requires configured master).
 
@@ -300,6 +302,13 @@ function _setup_standby {
 function _start_standby_synchronization {
   _run conjur-master-1.mycompany.local \
     "evoke replication sync start"
+}
+
+function _setup_datadog {
+  export team="conjur-enterprise"
+  docker compose up -d --no-deps datadog
+
+  echo "DataDog agent up and running"
 }
 
 function _setup_follower {
@@ -831,6 +840,7 @@ while true ; do
     -h | --help ) _print_help ; shift ;;
     --import-custom-certificates ) CMD='_import_certificates' ; shift ;;
     --promote-standby ) CMD='_perform_promotion' ; shift ;;
+    --provision-datadog ) CMD='_setup_datadog' ; shift ;;
     --provision-follower ) CMD='_setup_follower' ; shift ;;
     --provision-k8s-follower ) CMD='_setup_k8s_follower' ; shift ;;
     --provision-master ) CMD='_single_master' ; shift ;;
