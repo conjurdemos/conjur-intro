@@ -355,6 +355,9 @@ function _setup_follower {
   docker compose rm --stop --force "$follower_service_name"
   docker compose up --no-deps --detach "$follower_service_name"
 
+  # Pin the number of nginx worker processes to avoid issues running on a large test VM
+  _run "$follower_service_name" "sed -i 's/worker_processes auto;/worker_processes 4;/g' /etc/nginx/nginx.conf"
+
   # Unpack and Configure
   echo "Unpacking and configuring Follower: '$follower_service_name'..."
   _run "$follower_service_name" \
