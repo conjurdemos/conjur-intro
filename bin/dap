@@ -358,6 +358,9 @@ function _setup_follower {
   # Pin the number of nginx worker processes to avoid issues running on a large test VM
   _run "$follower_service_name" "sed -i 's/worker_processes auto;/worker_processes 4;/g' /etc/nginx/nginx.conf"
 
+  # Configure timescale db not to use all of the CPUs
+  _run "$follower_service_name" "sed -i 's/timescaledb-tune --yes/timescaledb-tune --yes --cpus=4/g' /opt/conjur/evoke/chef/cookbooks/conjur/recipes/postgres.rb"
+
   # Unpack and Configure
   echo "Unpacking and configuring Follower: '$follower_service_name'..."
   _run "$follower_service_name" \
