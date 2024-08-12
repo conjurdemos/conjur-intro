@@ -5,7 +5,7 @@ source "$(git rev-parse --show-toplevel)/tools/performance-tests/k6/bin/function
 
 # Default for statsd
 export K6_STATSD_PORT=${K6_STATSD_PORT:-"8125"}
-export K6_STATSD_ADDR=${K6_STATSD_ADDR:-"graphite-statsd:$K6_STATSD_PORT"}
+export K6_STATSD_ADDR=${K6_STATSD_ADDR:-"datadog:$K6_STATSD_PORT"}
 
 function print_help() {
   cat << EOF
@@ -25,13 +25,13 @@ exit
 }
 
 start() {
-  # start metrics services
-  docker compose up --no-deps --detach graphite-statsd
+  # start datadog agent
+  docker compose up --no-deps --detach datadog
 }
 
 stop() {
-  # stop metrics services
-  docker compose down graphite-statsd
+  # stop datadog agent
+  docker compose down datadog
 }
 
 main() {

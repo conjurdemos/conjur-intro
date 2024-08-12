@@ -226,7 +226,7 @@ Conjur Intro includes support for running a simple load test against a running i
 $ bin/dap --provision-master
 $ bin/dap --provision-follower
 
-# Locally run metrics server (statsd with graphite visualization)
+# Run datadog agent
 $ ./tools/performance-tests/k6/bin/metrics --start
 
 # Optionally, load policies and 150k secrets (this might take around an hour)

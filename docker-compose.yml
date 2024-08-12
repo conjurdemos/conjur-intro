@@ -228,21 +228,31 @@ services:
     networks:
       dap_net:
         ipv4_address: 12.16.23.21
+    environment:
+        - K6_STATSD_ADDR=host.docker.internal:8125
     volumes:
       - ./tools/performance-tests/k6:/tools/performance-tests/k6
       - ./files/conjur:/files/conjur
 
-  graphite-statsd:
-    image: graphiteapp/graphite-statsd
+  datadog:
+    image: datadog/agent:latest
     networks:
       dap_net:
-        ipv4_address: 12.16.23.22
+        ipv4_address: 12.16.23.23
     ports:
-      - "81:80"
-      - "2003-2004:2003-2004"
-      - "2023-2024:2023-2024"
-      - "${K6_STATSD_PORT:-8125}:8125/udp"
-      - "8126:8126"
+      - "8125:8125/udp"
+    deploy:
+      restart_policy:
+        condition: on-failure
+    environment:
+      - DD_SITE=datadoghq.com
+      - DD_API_KEY=${DD_API_KEY}
+      - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=1
+      - DD_TAGS=${DD_TAGS}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
 
 volumes:
   seeds:
