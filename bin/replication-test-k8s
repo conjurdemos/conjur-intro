@@ -333,13 +333,19 @@ snapshot_leader_replication_status() {
 
   timestamp=$(utc_timestamp)
   log_dir="$REPLICATION_LOG_STATS_DIR/leader/$docker_leader_container"
+
   pg_stat_replication_log_dir="$log_dir/pg_stat_replication"
   pg_stat_replication_log_dir_log_file="$pg_stat_replication_log_dir/$timestamp.log"
+
   pg_stat_activity_log_dir="$log_dir/pg_stat_activity"
   pg_stat_activity_log_dir_log_file="$pg_stat_activity_log_dir/$timestamp.log"
 
+  pg_replication_slots_log_dir="$log_dir/pg_replication_slots"
+  pg_replication_slots_log_dir_log_file="$pg_replication_slots_log_dir/$timestamp.log"
+
   mkdir -p "$pg_stat_replication_log_dir"
   mkdir -p "$pg_stat_activity_log_dir"
+  mkdir -p "$pg_replication_slots_log_dir"
 
   docker compose exec -T "$docker_leader_container" bash -c $"
         chpst -u conjur psql -c \"\\copy (SELECT * from pg_stat_replication) To '/tmp/output.csv' With CSV HEADER\"
@@ -350,6 +356,11 @@ snapshot_leader_replication_status() {
         chpst -u conjur psql -c \"\\copy (SELECT * from pg_stat_activity) To '/tmp/output.csv' With CSV HEADER\"
       " || true
   docker compose exec "$docker_leader_container" bash -c "cat /tmp/output.csv" | tee "$pg_stat_activity_log_dir_log_file" || true
+
+  docker compose exec -T "$docker_leader_container" bash -c $"
+        chpst -u conjur psql -c \"\\copy (SELECT * from pg_replication_slots) To '/tmp/output.csv' With CSV HEADER\"
+      " || true
+  docker compose exec "$docker_leader_container" bash -c "cat /tmp/output.csv" | tee "$pg_replication_slots_log_dir_log_file" || true
 }
 
 # Print information of the replication status of each Follower
