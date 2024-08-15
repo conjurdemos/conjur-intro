@@ -27,7 +27,19 @@ main(){
   do
     echo "Querying postgres in '${POD}'..."
 
-    IDENTIFIER=$(bin/kubectl exec -n "$(_get_k8s_follower_namespace)" "$POD" -c postgres -- pg-uid-wrapper "psql --username=postgres --host=/tmp --dbname=conjur --command='SELECT system_identifier FROM pg_control_system();'" 2>/dev/null | tail -3 | head -1)
+    IDENTIFIER=""
+    RETRY_COUNT=3
+    while [[ "${IDENTIFIER}" == "" && ${RETRY_COUNT} -gt 0 ]]; do
+      IDENTIFIER=$(bin/kubectl exec -n "$(_get_k8s_follower_namespace)" "$POD" -c postgres -- pg-uid-wrapper "psql --username=postgres --host=/tmp --dbname=conjur --command='SELECT system_identifier FROM pg_control_system();'" 2>/dev/null | tail -3 | head -1)
+      RETRY_COUNT=$((RETRY_COUNT - 1))
+      sleep 1
+    done
+
+    if [[ "${IDENTIFIER}" == "" ]]; then
+      echo "ERROR: Failed to retrieve PostgreSQL Identifier for '${POD}'"
+      exit 1
+    fi
+
     FOLLOWER_PG_IDENTIFIERS+=("${IDENTIFIER}")
     echo -e "\tFound Identifier: ${IDENTIFIER}"
   done
