@@ -197,16 +197,14 @@ main() {
   if [ -n "$UUID" ]; then
     UUID_SUFFIX="-$UUID"
   fi
-  echo "resource_id" > "$OUTPUT_FILE"
-  for i in $(seq 1 $LOB_COUNT); do
-    for j in $(seq 1 $SAFES_COUNT); do
-      for k in $(seq 1 $ACCOUNTS_PER_SAFE_COUNT); do
-        for l in $(seq 1 $SECRETS_PER_ACCOUNT); do
-          echo "${CONJUR_ACCOUNT}:variable:AutomationVault/lob-$i/safe-$j/account-$k${UUID_SUFFIX}/variable-${l}${UUID_SUFFIX}" >> "$OUTPUT_FILE"
-        done
-      done
-    done
-  done
+
+  docker compose run --build --rm unpopulated-secrets-generator python3 unpopulated-secrets-generator.py \
+      --uuid "$UUID" \
+      --conjur_account "$CONJUR_ACCOUNT" \
+      --account_count "$ACCOUNTS_PER_SAFE_COUNT" \
+      --secrets_per_account "$SECRETS_PER_ACCOUNT" \
+      --lob_count "$LOB_COUNT" \
+      --safe_count "$SAFES_COUNT"
 
   # Populate secrets using a k6 test file
   "$(repo_root)/tools/performance-tests/k6/bin/k6" run "$POPULATE_SECRETS_TEST_FILE" "$K6_FLAGS"
