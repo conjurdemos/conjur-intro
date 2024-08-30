@@ -68,9 +68,15 @@ export function authn() {
 
 export default function () {
   const apiKey = apiKeys.at(exec.vu.idInTest - 1);
+  const uuid = env.uuid
+
+  let uuid_suffix = '';
+  if (uuid) {
+    uuid_suffix = `-${uuid}`
+  }
 
   env.applianceUrl = env.applianceReadUrl
-  env.conjurIdentity = `host/AutomationVault-hosts/${apiKey.lob_name}/${apiKey.safe_name}/host-1`;
+  env.conjurIdentity = `host/AutomationVault-hosts/${apiKey.lob_name}/${apiKey.safe_name}/host-1${uuid_suffix}`;
   env.apiKey = apiKey.api_key;
 
   authn()
@@ -78,9 +84,10 @@ export default function () {
   // This magic number is tightly coupled with number of accounts in a default backup used in load tests.
   // It should be parametrized when dealing with running multiple load tests with different data
   const accountNumber = Math.ceil(Math.random() * 200) || 1;
-  const identity = encodeURIComponent(`AutomationVault/${apiKey.lob_name}/${apiKey.safe_name}/account-${accountNumber}`);
+  const identity = encodeURIComponent(`AutomationVault/${apiKey.lob_name}/${apiKey.safe_name}/account-${accountNumber}${uuid_suffix}`);
+  const conjurAccount = env.conjurAccount;
 
-  const path = `/secrets?variable_ids=demo:variable:${identity}%2Fvariable-1,demo:variable:${identity}%2Fvariable-2,demo:variable:${identity}%2Fvariable-3,demo:variable:${identity}%2Fvariable-4`
+  const path = `/secrets?variable_ids=${conjurAccount}:variable:${identity}%2Fvariable-1${uuid_suffix},${conjurAccount}:variable:${identity}%2Fvariable-2${uuid_suffix},${conjurAccount}:variable:${identity}%2Fvariable-3${uuid_suffix},${conjurAccount}:variable:${identity}%2Fvariable-4${uuid_suffix}`
   const res = conjurApi.get(http, env, path);
 
   readFourSecretsBatchTrend.add(res.timings.duration);

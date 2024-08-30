@@ -26,9 +26,10 @@ def create_lob_policy_file(context, lob_number, safe_number):
     """
     context['lob_iteration'] = 'lob-' + str(lob_number)
     context['safe_iteration'] = 'safe-' + str(safe_number)
-
+    
     with open(INPUT_FILE_LOBS) as t:
         template = Template(t.read())
+
     output_file = f"{POLICY_DIR}/lob-{lob_number}_safe-{safe_number}.yml"
     with open(output_file, 'w') as t:
         print("Writing LOBs Policy to: ", output_file)
@@ -41,8 +42,10 @@ def create_hosts_policy_file(context):
     immediately into Conjur. This contains a given number of Hosts and Grants
     that correspond to each safe for the generated LOB policy.
     """
+
     with open(INPUT_FILE_HOSTS) as t:
         template = Template(t.read())
+
     with open(OUTPUT_FILE_HOST_POLICIES, 'w') as t:
         print("Writing Hosts Policy to: ", OUTPUT_FILE_HOST_POLICIES)
         t.write(template.render(**context))
@@ -55,8 +58,10 @@ def create_users_policy_file(context):
     given number of Users and Grants that correspond to each safe for the
     generated LOB policy.
     """
+    
     with open(INPUT_FILE_USERS) as t:
         template = Template(t.read())
+
     with open(OUTPUT_FILE_USER_POLICIES, 'w') as t:
         print("Writing Users Policy to: ", OUTPUT_FILE_USER_POLICIES)
         t.write(template.render(**context))
@@ -80,6 +85,7 @@ def get_unique_safes(policy_id):
     """
     Returns a list of the unique safe identifiers across all LOBs.
     """
+
     safes = []
     for i in range(LOB_COUNT):
         for j in range(SAFE_COUNT):
@@ -94,16 +100,19 @@ def get_unique_safes(policy_id):
 def generate_policy():
     users_per_safe = USER_COUNT // (LOB_COUNT * SAFE_COUNT)
     hosts_per_safe = HOST_COUNT // (LOB_COUNT * SAFE_COUNT)
+    uuid_suffix = ""
+    if UUID != "":
+        uuid_suffix = f"-{UUID}"
     context = {
         'lobs': [f'lob-{x + 1}' for x in range(LOB_COUNT)],
         'safes': [f'safe-{x + 1}' for x in range(SAFE_COUNT)],
-        'accounts': [f'account-{x + 1}' for x in range(ACCOUNT_COUNT)],
-        'secrets': [f'variable-{x + 1}' for x in range(SECRETS_PER_ACCOUNT)],
-        'users': [f'user-{x + 1}' for x in range(users_per_safe)],
-        'hosts': [f'host-{x + 1}' for x in range(hosts_per_safe)],
-        'leftover_users': [f'user-{x + users_per_safe + 1}' for x in
+        'accounts': [f'account-{x + 1}{uuid_suffix}' for x in range(ACCOUNT_COUNT)],
+        'secrets': [f'variable-{x + 1}{uuid_suffix}' for x in range(SECRETS_PER_ACCOUNT)],
+        'users': [f'user-{x + 1}{uuid_suffix}' for x in range(users_per_safe)],
+        'hosts': [f'host-{x + 1}{uuid_suffix}' for x in range(hosts_per_safe)],
+        'leftover_users': [f'user-{x + users_per_safe + 1}{uuid_suffix}' for x in
                            range(USER_COUNT - (LOB_COUNT * SAFE_COUNT * users_per_safe))],
-        'leftover_hosts': [f'host-{x + hosts_per_safe + 1}' for x in
+        'leftover_hosts': [f'host-{x + hosts_per_safe + 1}{uuid_suffix}' for x in
                            range(HOST_COUNT - (LOB_COUNT * SAFE_COUNT * hosts_per_safe))]
     }
 
@@ -125,6 +134,7 @@ def create_policy_files(context):
 
 def main():
     parser = argparse.ArgumentParser(description='Generate Conjur Policy')
+    parser.add_argument('--uuid', required=False, help='UUID for the policy')
     parser.add_argument('--account_count', type=int, required=True, help='Number of accounts per safe')
     parser.add_argument('--secrets_per_account', type=int, required=True, help='Number of secrets per account')
     parser.add_argument('--lob_count', type=int, required=True, help='Number of lobs')
@@ -133,8 +143,9 @@ def main():
     parser.add_argument('--user_count', type=int, required=True, help='Number of users')
     args = parser.parse_args()
 
-    global LOB_COUNT, ACCOUNT_COUNT, SECRETS_PER_ACCOUNT, SAFE_COUNT, HOST_COUNT, USER_COUNT, TOTAL_SECRETS
+    global UUID, LOB_COUNT, ACCOUNT_COUNT, SECRETS_PER_ACCOUNT, SAFE_COUNT, HOST_COUNT, USER_COUNT, TOTAL_SECRETS
 
+    UUID = args.uuid
     LOB_COUNT = args.lob_count
     ACCOUNT_COUNT = args.account_count
     SECRETS_PER_ACCOUNT = args.secrets_per_account
@@ -142,6 +153,9 @@ def main():
     HOST_COUNT = args.host_count
     USER_COUNT = args.user_count
     TOTAL_SECRETS = ACCOUNT_COUNT * SECRETS_PER_ACCOUNT * SAFE_COUNT * LOB_COUNT
+
+    if UUID != "":
+        print("UUID: ", UUID)
 
     print("Total LOBs: ", LOB_COUNT)
     print("Total Safes per LOB: ", SAFE_COUNT)

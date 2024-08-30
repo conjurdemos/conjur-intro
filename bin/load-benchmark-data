@@ -8,11 +8,10 @@ ENABLE_STATSD=${ENABLE_STATSD:-"false"}
 export K6_STATSD_PORT=${K6_STATSD_PORT:-"8125"}
 export K6_STATSD_ADDR=${K6_STATSD_ADDR:-"datadog:$K6_STATSD_PORT"}
 
-export CONJUR_ADMIN_API_KEY=$(./bin/cli conjur user rotate-api-key | tail -n 1 | tr -d '[:space:]')
 export APPLIANCE_MASTER_URL=${APPLIANCE_MASTER_URL:-"https://conjur-master.mycompany.local:443"}
 export APPLIANCE_READ_URL=${APPLIANCE_READ_URL:-"https://conjur-follower.mycompany.local:443"}
-export CONJUR_ACCOUNT="demo"
-export CONJUR_IDENTITY="admin"
+export CONJUR_ACCOUNT=${CONJUR_ACCOUNT:-"demo"}
+export CONJUR_IDENTITY=${CONJUR_IDENTITY:-"admin"}
 export K6_FLAGS="--insecure-skip-tls-verify"
 
 POLICY_SET="secrets"
@@ -26,6 +25,7 @@ ACCOUNTS_PER_SAFE_COUNT=10
 SAFES_COUNT=50
 HOSTS_COUNT=100
 USERS_COUNT=200
+UUID=""
 ALL_PROPERTIES_SYNCHRONIZED="false"
 
 print_help() {
@@ -114,25 +114,8 @@ load_policy_set() {
   POLICY_FILE="$policy_set_dir/$POLICY_SET/users.yml" \
     "$(repo_root)/tools/performance-tests/k6/bin/k6" run "$test_plan_file" \
       "$K6_FLAGS" 2>&1 | tee -a "${policy_users_log_file}.log"
-}
 
-get_unpopulated_secrets() {
-  local container_name=$1
-  local csv_path_in_container="/opt/conjur/$CSV_FILE"
-  query="\copy (select r.resource_id from resources AS r
-            LEFT JOIN secrets s ON s.resource_id = r.resource_id
-            WHERE s.resource_id IS NULL AND r.resource_id LIKE '%variable%')
-          TO '$csv_path_in_container'
-          WITH DELIMITER ',' CSV HEADER;"
-
-  docker exec "$container_name" bash -c $"
-    chpst -u conjur psql -c \"$query\"
-  "
-
-  # Create data directory if it doesn't exist
-  mkdir -p "$(repo_root)/tools/performance-tests/k6/data"
-
-  docker cp "$container_name:$csv_path_in_container" "$OUTPUT_FILE"
+  echo $LOG_DIR
 }
 
 main() {
@@ -162,6 +145,10 @@ main() {
       USERS_COUNT="$2"
       shift 2
       ;;
+    --uuid)
+      UUID="$2"
+      shift 2
+      ;;
     --) shift;
       break
       ;;
@@ -185,8 +172,15 @@ main() {
     K6_FLAGS+=" -o output-statsd"
   fi
 
+  # Set CONJUR_ADMIN_API_KEY if not present
+  if [[ -z "${CONJUR_ADMIN_API_KEY}" ]]; then
+      echo "Generating CONJUR_ADMIN_API_KEY..."
+      export CONJUR_ADMIN_API_KEY=$(./bin/cli conjur user rotate-api-key | tail -n 1 | tr -d '[:space:]')
+  fi
+
   # Generate policy files
   docker compose run --build --rm policy-generator python3 policy-generator.py \
+    --uuid "$UUID" \
     --account_count "$ACCOUNTS_PER_SAFE_COUNT" \
     --secrets_per_account "$SECRETS_PER_ACCOUNT" \
     --lob_count "$LOB_COUNT" \
@@ -195,15 +189,29 @@ main() {
     --user_count "$USERS_COUNT"
 
   # Load policies into Conjur using previously made files
-  load_policy_set
+  log_dir=$(load_policy_set | tail -n 1)
 
-  # Get unpopulated secrets using data from the provided container
-  get_unpopulated_secrets "conjur-intro-conjur-master-1.mycompany.local-1"
+  # Generate unpopulated secrets
+  # Generate lines in loop for every lob safe account and variable
+  UUID_SUFFIX=""
+  if [ -n "$UUID" ]; then
+    UUID_SUFFIX="-$UUID"
+  fi
+
+  docker compose run --build --rm unpopulated-secrets-generator python3 unpopulated-secrets-generator.py \
+      --uuid "$UUID" \
+      --conjur_account "$CONJUR_ACCOUNT" \
+      --account_count "$ACCOUNTS_PER_SAFE_COUNT" \
+      --secrets_per_account "$SECRETS_PER_ACCOUNT" \
+      --lob_count "$LOB_COUNT" \
+      --safe_count "$SAFES_COUNT"
 
   # Populate secrets using a k6 test file
   "$(repo_root)/tools/performance-tests/k6/bin/k6" run "$POPULATE_SECRETS_TEST_FILE" "$K6_FLAGS"
 
   echo "--FINISHED LOADING BENCHMARK DATA INTO CONJUR--."
+
+  echo $log_dir
 }
 
 main "$@"

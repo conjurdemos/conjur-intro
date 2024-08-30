@@ -21,7 +21,7 @@ import * as lib from "./modules/lib.js";
 
 const MAX_RPS = 300;
 const K6_VUS = 5;
-const CSV_FILE_PATH = './data/unpopulated-secrets.csv';
+const CSV_FILE_PATH = './data/policy/secrets/unpopulated-secrets.csv';
 
 const csvData = new SharedArray('Unpopulated Secrets', function () {
   // Load CSV file and parse it using Papa Parse
