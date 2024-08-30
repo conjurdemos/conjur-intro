@@ -175,7 +175,7 @@ export function loadSecrets() {
     if (slice.length) {
       const item = slice.pop();
       // The value to write
-      const secretIdentity = item.resource_id.replace(`${conjurAccount}:variable:`, '');
+      const secretIdentity = item.resource_id.replace(`demo:variable:`, '');
       const body = item.resource_body
 
       const headers = {'Authorization': `Token token="${env.token}"`}

@@ -72,7 +72,7 @@ apply_policy() {
         --insecure \
         --request "$method" \
         --data "$(cat $policy)" \
-     "$master_url/policies/demo/policy/$namespace"
+     "$master_url/policies/$ACCOUNT/policy/$namespace"
 }
 
 load_policy() {
@@ -80,7 +80,7 @@ load_policy() {
   local policy="$2"
   local method="${3:-POST}"
   local
-  token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$master_url")
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
 
   apply_policy "$namespace" "$policy" "$token" "$method"
 }
@@ -93,7 +93,7 @@ set_variable() {
   curl --header "Authorization: Token token=\"$token\"" \
         --insecure \
         --data "$value" \
-        "$master_url/secrets/demo/variable/$variable"
+        "$master_url/secrets/$ACCOUNT/variable/$variable"
 }
 
 apply_default_policy() {
@@ -143,13 +143,13 @@ fetch_secrets() {
 # the Conjur API
 load_default_policy() {
   local token
-  token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$master_url")
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
   apply_default_policy "$token"
 }
 
 delete_policy() {
   local token
-  token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$master_url")
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
   apply_policy 'delete_branch/first-level' 'policy/delete_policy/delete.yml' "$token" 'PATCH'
 }
 
@@ -157,48 +157,48 @@ set_secret() {
   local variable_path="$1"
   local variable_value="$2"
   local token
-  token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$master_url")
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
   set_variable "$variable_path" "$variable_value" "$token"
 }
 
 load_default_values() {
   local token
-  token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$master_url")
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
   apply_default_values "$token"
 }
 
 retrieve_variables() {
   local token
-  token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$URL")
-  secrets="demo:variable:staging/my-app-1/postgres-database/url,demo:variable:staging/my-app-1/postgres-database/port,demo:variable:staging/my-app-1/postgres-database/username,demo:variable:staging/my-app-1/postgres-database/password"
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$URL")
+  secrets="$ACCOUNT:variable:staging/my-app-1/postgres-database/url,$ACCOUNT:variable:staging/my-app-1/postgres-database/port,$ACCOUNT:variable:staging/my-app-1/postgres-database/username,$ACCOUNT:variable:staging/my-app-1/postgres-database/password"
   fetch_secrets $secrets "$token" | jq .
 }
 
 load_policy_and_set_variables() {
   local token
-  token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$master_url")
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
   apply_default_policy "$token"
   apply_default_values "$token"
 }
 
 view_roles() {
   local token
-  token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$URL")
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$URL")
   curl --header "Authorization: Token token=\"$token\"" \
         --write-out "\n" \
         --insecure \
         --request GET \
-        "$URL/resources/demo" | jq .
+        "$URL/resources/$ACCOUNT" | jq .
 }
 
 view_policy_members() {
   local token
-  token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$URL")
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$URL")
   curl --header "Authorization: Token token=\"$token\"" \
         --write-out "\n" \
         --insecure \
         --request GET \
-        "$master_url/roles/demo/policy/production?members" | jq .
+        "$master_url/roles/$ACCOUNT/policy/production?members" | jq .
 }
 
 set_thousand_variables() {
@@ -207,7 +207,7 @@ set_thousand_variables() {
   local token="$3"
   local urls=""
   for j in $(seq 1 1000); do
-    urls="$master_url/secrets/demo/variable/staging-$i/myapp/secret-$j $urls"
+    urls="$master_url/secrets/$ACCOUNT/variable/staging-$i/myapp/secret-$j $urls"
   done
   curl --header "Authorization: Token token=\"$token\"" \
         --parallel \
@@ -223,16 +223,16 @@ load_large_policy_and_secrets() {
   local iterations
   # Each iteration sets 1k secret values
   iterations=150
-  auth_token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$master_url")
+  auth_token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
   apply_policy 'root' 'policy/large-policy/root.yml' "$auth_token"
   for i in $(seq 1 $iterations)
   do
     apply_policy "staging-$i" 'policy/large-policy/variables.yml' "$auth_token"
     # Periodically refresh auth token
     if [ $((i%10)) = 0 ]; then
-      auth_token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$master_url")
+      auth_token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
     fi
-    auth_token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$master_url")
+    auth_token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
     set_thousand_variables "$i" "super-secret-value!!!" "$auth_token"
     echo "loaded $i of $iterations"
   done
@@ -240,7 +240,7 @@ load_large_policy_and_secrets() {
 
 enable_seed_service() {
   local token
-  token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$master_url")
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
   apply_policy 'root' 'policy/seed-service/default.yml' "$token"
   apply_policy 'conjur' 'policy/seed-service/seed.yml' "$token"
 }
@@ -248,24 +248,24 @@ enable_seed_service() {
 rotate_api_key() {
   local user="$1"
   local token
-  token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$master_url")
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
   curl --header "Authorization: Token token=\"$token\"" \
         --write-out "\n" \
         --insecure \
         --request PUT \
-        "$master_url/authn/demo/api_key?role=user:$user"
+        "$master_url/authn/$ACCOUNT/api_key?role=user:$user"
 }
 
 rotate_multiple_host_api_keys() {
   local token
-  token=$(authenticate_user "demo" "$USER" "$PASSWORD" "$master_url")
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
   local responses=""
   for host in "$@"; do
     response=$(curl --header "Authorization: Token token=\"$token\"" \
                     --insecure \
                     --request PUT \
                     --silent \
-                    "$master_url/authn/demo/api_key?role=host:$host")
+                    "$master_url/authn/$ACCOUNT/api_key?role=host:$host")
     responses="$responses $response"
   done
   echo "$responses"
@@ -276,15 +276,19 @@ rotate_multiple_host_api_keys() {
 follower_url='http://conjur-follower.mycompany.local'
 master_url='https://conjur-master.mycompany.local'
 URL=$follower_url
+ACCOUNT='demo'
 USER='admin'
 PASSWORD='MySecretP@ss1'
 cmd=''
 
 while true ; do
   case "$1" in
+    -a | --account ) shift ; ACCOUNT=$1 ; shift ;;
     -u | --user ) shift ; USER=$1 ; shift ;;
     -p | --password ) shift ; PASSWORD=$1 ; shift ;;
-    --authenticate-user ) shift ; cmd="authenticate_user demo $USER $PASSWORD" ;;
+    --follower-url ) shift ; follower_url=$1 ; shift ;;
+    --leader-url ) shift ; master_url=$1 ; shift ;;
+    --authenticate-user ) shift ; cmd="authenticate_user $ACCOUNT $USER $PASSWORD" ;;
     -h | --help ) _print_help ;;
     --patch-policy ) shift ; cmd="load_policy $1 $2 PATCH" ; shift ; shift ;;
     --load-policy ) shift ; cmd="load_policy $1 $2" ; shift ; shift ;;
