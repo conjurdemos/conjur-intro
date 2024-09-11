@@ -12,7 +12,8 @@ import { textSummary } from "https://jslib.k6.io/k6-summary/0.0.1/index.js";
  */
 const requiredEnvVars = [
   "K6_CUSTOM_GRACEFUL_STOP",
-  "K6_CUSTOM_DURATION"
+  "K6_CUSTOM_DURATION",
+  "K6_CUSTOM_VUS"
 ];
 
 // These are custom k6 metrics that will be reported in the k6 summary.
@@ -23,6 +24,7 @@ const authenticateFailRate = new Rate('http_req_failed_post_authn');
 lib.checkRequiredEnvironmentVariables(requiredEnvVars);
 const gracefulStop = lib.getEnvVar("K6_CUSTOM_GRACEFUL_STOP");
 const testDuration = lib.getEnvVar("K6_CUSTOM_DURATION");
+const vus = lib.getEnvVar("K6_CUSTOM_VUS")
 
 const env = lib.parseEnv();
 
@@ -37,7 +39,7 @@ export const options = {
   scenarios: {
     write_secrets: {
       executor: 'constant-vus',
-      vus: 5,
+      vus: vus,
       duration: testDuration,
       gracefulStop
     },
