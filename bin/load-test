@@ -11,6 +11,7 @@ PASSWORD=${PASSWORD:-'MySecretP@ss1'}
 # Default for statsd
 export K6_STATSD_PORT=${K6_STATSD_PORT:-"8125"}
 export K6_STATSD_ADDR=${K6_STATSD_ADDR:-"datadog:$K6_STATSD_PORT"}
+export K6_CUSTOM_VUS=${K6_CUSTOM_VUS:-"12"}
 
 # Appliance URL
 export APPLIANCE_MASTER_URL=${APPLIANCE_MASTER_URL:-"https://conjur-master.mycompany.local:443"}
@@ -42,6 +43,7 @@ print_settings() {
     echo "CONJUR_ADMIN_API_KEY:       : redacted"
     echo "CONJUR_ACCOUNT              : $CONJUR_ACCOUNT"
     echo "CONJUR_IDENTITY             : $CONJUR_IDENTITY"
+    echo "K6_CUSTOM_VUS               : $K6_CUSTOM_VUS"
     echo ""
     echo "Load test and system metrics reports can be found at: $LOG_ROOT/*"
 }

@@ -255,6 +255,8 @@ Scenarios for load testing are located at:
 
 `tools/performance-tests/k6/scenarios`
 
+Number of VUs can be configured by setting `K6_CUSTOM_VUS` environment variable.
+
 Currently supported scenarios are: 
 
 - `tools/performance-tests/k6/scenarios/read-individually.js` - Read one secret at a time from Conjur by 12 VUs
@@ -267,7 +269,6 @@ Currently supported scenarios are:
 
 - `tools/performance-tests/k6/scenarios/write-secrets.js` - Write secrets to Conjur by 20 VUs. <br>
   - Secrets are located at `tools/performance-tests/k6/data/test-variable-secrets.csv` <br>
-  - Number of VUs can be configured by setting K6_CUSTOM_VUS environment variable.
 
 - `tools/performance-tests/k6/scenarios/policy-number-test.js` - Load simple policies into Conjur by 5 VUs. <br>
   - Duration of the test can be configured by setting K6_CUSTOM_DURATION environment variable.
