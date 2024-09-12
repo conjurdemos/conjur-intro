@@ -233,7 +233,6 @@ services:
       - "host.docker.internal:host-gateway"
     networks:
       dap_net:
-        ipv4_address: 12.16.23.21
     environment:
         - K6_STATSD_ADDR=host.docker.internal:8125
     volumes:

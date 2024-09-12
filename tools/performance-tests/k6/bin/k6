@@ -16,7 +16,7 @@ compose_file="$(repo_root)/docker-compose.yml"
 export POLICY_ID=${POLICY_ID:-"root"}
 # Default for reading random secrets
 export K6_CUSTOM_GRACEFUL_STOP=${K6_CUSTOM_GRACEFUL_STOP:-"30s"}
-export K6_CUSTOM_VUS=${K6_CUSTOM_VUS:-"20"}
+export K6_CUSTOM_VUS=${K6_CUSTOM_VUS:-"12"}
 export K6_CUSTOM_DURATION=${K6_CUSTOM_DURATION:-"1h"}
 
 k6() {
