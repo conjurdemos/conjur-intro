@@ -161,7 +161,6 @@ services:
     image: cyberark/conjur-cli:8
     networks:
       dap_net:
-        ipv4_address: 12.16.23.18
     working_dir: /src/cli
     environment:
       CONJUR_APPLIANCE_URL: https://conjur-master.mycompany.local
@@ -186,7 +185,6 @@ services:
     image: cyberark/conjur-cli:8
     networks:
       dap_net:
-        ipv4_address: 12.16.23.19
     working_dir: /src/cli
     environment:
       CONJUR_APPLIANCE_URL: https://conjur-follower.mycompany.local
@@ -201,7 +199,6 @@ services:
       context: ./artifacts/api-client
     networks:
       dap_net:
-        ipv4_address: 12.16.23.20
     working_dir: /src/
     volumes:
       - ./artifacts/api-client/api-script:/src/bin/api
@@ -243,7 +240,6 @@ services:
     image: datadog/agent:latest
     networks:
       dap_net:
-        ipv4_address: 12.16.23.23
     ports:
       - "8125:8125/udp"
     deploy:
