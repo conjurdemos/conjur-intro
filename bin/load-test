@@ -69,7 +69,7 @@ test_k6() {
   # The current timestamp
   SCRIPT_RUN_TIMESTAMP=$(timestamp)
   # Using the above forms the log directory for this test run
-  LOG_ROOT="$(log_dir)/$SCRIPT_RUN_TIMESTAMP-$TEST_NAME"
+  LOG_ROOT="$(log_dir)/$SCRIPT_RUN_TIMESTAMP-$(uuidgen)-$TEST_NAME"
   # Log for the script settings
   LOG_FILE_INFO="$LOG_ROOT/$TEST_NAME.log"
 
