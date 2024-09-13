@@ -5,6 +5,7 @@ source "$(git rev-parse --show-toplevel)/tools/performance-tests/k6/bin/function
 
 ENABLE_STATSD=${ENABLE_STATSD:-"false"}
 WARMUP=${WARMUP:-"true"}
+POPULATE_API_KEYS=${POPULATE_API_KEYS:-"true"}
 UUID=""
 ADMIN_USER=${ADMIN_USER:-'admin'}
 PASSWORD=${PASSWORD:-'MySecretP@ss1'}
@@ -194,7 +195,16 @@ main() {
       * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
     esac
   done
-  populate_apikeys_file
+
+  if [ "$POPULATE_API_KEYS" == "true" ]; then
+    populate_apikeys_file
+  fi
+
+  if [[ -z "$TEST_FILE" ]]; then
+    echo "No test file specified. Exiting..."
+    exit 0
+  fi
+
   eval "test_k6"
 }
 
