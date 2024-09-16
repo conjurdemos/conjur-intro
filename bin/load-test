@@ -95,17 +95,27 @@ test_k6() {
   test_start=$(date_timestamp | sed 's/ /T/g')
   echo "Starting test at: $test_start"
 
+  set +xe
   # Run K6 test
   run_k6_test
+  exit_status=$?
 
   # Move reports to LOG_ROOT
   move_reports
 
-  echo "The test has completed!"
-
   # Stop the clock
   test_end=$(date_timestamp | sed 's/ /T/g')
   echo "Test ended at: $test_start"
+
+  # Fail the build if the test failed
+  if [ $exit_status -ne 0 ]; then
+    echo "The test failed with exit status: $exit_status"
+    echo $LOG_ROOT
+
+    exit $exit_status
+  fi
+
+  echo "Test completed successfully!"
   echo $LOG_ROOT
 }
 
