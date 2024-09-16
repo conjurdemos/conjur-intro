@@ -232,11 +232,11 @@ export function create1kPolicies(id) {
   return policies;
 }
 export function checkNodeType(url) {
-  if (url.includes('conjur-master')) {
+  if (url.includes('-master')) {
     return "DAP Leader";
-  } else if (url.includes('host.docker.internal')) {
+  } else if (url.includes('host.docker.internal') || url.includes('-k8s-follower')) {
     return "K8S Follower";
-  } else if (url.includes('conjur-follower')) {
+  } else if (url.includes('-follower')) {
     return "DAP Follower";
   } else {
     return "Unknown";
