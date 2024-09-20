@@ -5,6 +5,7 @@ source "$(git rev-parse --show-toplevel)/tools/performance-tests/k6/bin/function
 
 ENABLE_STATSD=${ENABLE_STATSD:-"false"}
 WARMUP=${WARMUP:-"true"}
+POPULATE_API_KEYS=${POPULATE_API_KEYS:-"true"}
 UUID=""
 ADMIN_USER=${ADMIN_USER:-'admin'}
 PASSWORD=${PASSWORD:-'MySecretP@ss1'}
@@ -68,7 +69,7 @@ test_k6() {
   # The current timestamp
   SCRIPT_RUN_TIMESTAMP=$(timestamp)
   # Using the above forms the log directory for this test run
-  LOG_ROOT="$(log_dir)/$SCRIPT_RUN_TIMESTAMP-$TEST_NAME"
+  LOG_ROOT="$(log_dir)/$SCRIPT_RUN_TIMESTAMP-$(uuidgen)-$TEST_NAME"
   # Log for the script settings
   LOG_FILE_INFO="$LOG_ROOT/$TEST_NAME.log"
 
@@ -94,17 +95,27 @@ test_k6() {
   test_start=$(date_timestamp | sed 's/ /T/g')
   echo "Starting test at: $test_start"
 
+  set +xe
   # Run K6 test
   run_k6_test
+  exit_status=$?
 
   # Move reports to LOG_ROOT
   move_reports
 
-  echo "The test has completed!"
-
   # Stop the clock
   test_end=$(date_timestamp | sed 's/ /T/g')
   echo "Test ended at: $test_start"
+
+  # Fail the build if the test failed
+  if [ $exit_status -ne 0 ]; then
+    echo "The test failed with exit status: $exit_status"
+    echo $LOG_ROOT
+
+    exit $exit_status
+  fi
+
+  echo "Test completed successfully!"
   echo $LOG_ROOT
 }
 
@@ -194,7 +205,16 @@ main() {
       * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
     esac
   done
-  populate_apikeys_file
+
+  if [ "$POPULATE_API_KEYS" == "true" ]; then
+    populate_apikeys_file
+  fi
+
+  if [[ -z "$TEST_FILE" ]]; then
+    echo "No test file specified. Exiting..."
+    exit 0
+  fi
+
   eval "test_k6"
 }
 
