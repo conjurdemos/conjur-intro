@@ -16,6 +16,7 @@ services:
 
   conjur-master-1.mycompany.local:
     image: registry.tld/conjur-appliance:${VERSION:-5.0-stable}
+    shm_size: 1g
     networks:
       dap_net:
         ipv4_address: 12.16.23.11
@@ -37,6 +38,10 @@ services:
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
       - ./system/logs/master-1:/var/log/conjur:Z
       - ./files:/conjur_files
+      - ./policy:/policy
+      - /Users/codi.huston/git/conjur/lib:/opt/conjur/possum/lib
+      - /Users/codi.huston/git/conjur/config:/opt/conjur/possum/config
+      - /Users/codi.huston/git/conjur/app:/opt/conjur/possum/app
 
   conjur-master-2.mycompany.local:
     image: registry.tld/conjur-appliance:${VERSION:-5.0-stable}

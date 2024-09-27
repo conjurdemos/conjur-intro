@@ -1,0 +1,57 @@
+#!/bin/bash
+
+# Generate 10 MB file that conjur can accept.
+# ./bin/generate-policy 19130 test-10MB.yml
+#
+
+# Check if the number of arguments is correct
+if [ "$#" -ne 2 ]; then
+  echo "Usage: $0 <number> <output_file>"
+  exit 1
+fi
+
+# Get the number of iterations and the output file name
+N=$1
+OUTPUT_FILE=$2
+
+# Template with placeholder for identifier
+TEMPLATE=$(cat << EOL
+- !policy
+  id: example
+  body:
+EOL
+)
+
+echo "$TEMPLATE" > "$OUTPUT_FILE"
+
+TEMPLATE=$(
+  cat << EOL
+    - !policy
+      id: vault_identifier
+      body:
+        - !user user_identifier
+        - &vault_variables_identifier
+          - !variable
+            id: secret01
+            annotations: 
+              description: description
+        - !group
+          id: secret-users
+          annotations:
+            description: description
+        - !grant
+          role: !group secret-users
+          member: !user user_identifier
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_identifier
+EOL
+)
+
+# Loop from 1 to N and append the template with the identifier replaced
+for ((i=1; i<=N; i++)); do
+  echo "$TEMPLATE" | sed "s/identifier/$i/g" >> "$OUTPUT_FILE"
+done
+
+echo "File $OUTPUT_FILE created with $N entries."
