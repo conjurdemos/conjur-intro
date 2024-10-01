@@ -751,7 +751,7 @@ function _resume_autofailover {
 function _wait_for_master {
   local master_url="https://localhost:${CONJUR_MASTER_PORT}"
 
-  echo "Waiting for DAP Master to be ready..."
+  echo "Waiting for DAP Master to be ready... ${master_url}"
 
   # Wait for 10 successful connections in a row
   local COUNTER=0
@@ -759,7 +759,7 @@ function _wait_for_master {
     local response
     response=$(curl -k --silent --head "$master_url/health" || true)
 
-    if ! echo "$response" | grep -q "Conjur-Health: OK"; then
+    if ! echo "$response" | grep -iq "Conjur-Health: OK"; then
       sleep 5
       COUNTER=0
     else
