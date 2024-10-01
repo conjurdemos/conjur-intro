@@ -167,6 +167,7 @@ Usage: bin/dap single [options]
     --provision-master                Configures a DAP Master with account `demo` and password `MySecretP@ss1` behind a Layer 4 load balancer
     --provision-standbys              Deploys and configures two standbys (Requires configured master)
     --restore-from-backup             Restores a master from backup|Requires a previously created backup
+    --provision-keycloak              Configures Keycloak OIDC authenticator (Requires configured master)
     --stop                            Stops all containers and cleans up cached files
     --trigger-failover                Stops current master (Requires an auto-failover cluster)
     --trust-follower-proxy            Adds Follower load balancer as a trusted proxy (Requires a configured follower)
