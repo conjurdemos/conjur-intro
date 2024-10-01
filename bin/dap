@@ -372,8 +372,7 @@ function _setup_k8s_follower {
   bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster/identity-path -v apps
   bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster/audience -v "https://host.docker.internal"
   # Enable the JWT Authenticator in Conjur
-  _run conjur-master-1.mycompany.local \
-    "evoke variable set CONJUR_AUTHENTICATORS authn-jwt/dev-cluster,authn"
+  _append_conjur_authenticator "authn-jwt/dev-cluster"
 
   # Pull the Conjur Kubernetes Follower images on host,
   # tag them as docker.io images as load into k8s-follower-orchestrator cluster
@@ -448,6 +447,34 @@ function deploy_proxy {
   docker compose up -d --no-deps conjur-master.mycompany.local
 }
 
+function _setup_keycloak() {
+  source ./artifacts/keycloak/keycloak-functions.sh
+
+  docker compose up -d --no-deps --wait keycloak
+
+  # Fetch keycloak certificate
+  _run conjur-master-1.mycompany.local '/oauth/keycloak/scripts/fetch-certificate'
+
+  create_keycloak_users
+
+  echo "Setting keycloak policy and variable values in Conjur"
+
+  bin/cli conjur policy load -b root -f ./artifacts/keycloak/oidc-policy.yml
+
+  bin/cli conjur variable set -i "conjur/authn-oidc/keycloak/provider-uri" -v "https://keycloak:8443/auth/realms/master"
+  bin/cli conjur variable set -i "conjur/authn-oidc/keycloak/id-token-user-property" -v "preferred_username"
+  bin/cli conjur variable set -i "conjur/authn-oidc/keycloak/client-id" -v "conjurClient"
+  bin/cli conjur variable set -i "conjur/authn-oidc/keycloak/client-secret" -v "1234"
+  bin/cli conjur variable set -i "conjur/authn-oidc/keycloak/claim-mapping" -v "email"
+  bin/cli conjur variable set -i "conjur/authn-oidc/keycloak/redirect_uri" -v "http://127.0.0.1:8888/callback"
+
+  bin/cli conjur variable set -i "test-variable" -v "test-secret"
+
+  _append_conjur_authenticator "authn-oidc/keycloak"
+
+  echo "Keycloak admin console is available at: http://localhost:7777/auth/admin"
+}
+
 function _single_master {
   _start_master
   _configure_master
@@ -508,6 +535,17 @@ function _cli {
   if [[ $DRY_RUN = false ]]; then
     bin/cli conjur policy load -b $_namespace -f $_policy
   fi
+}
+
+function _append_conjur_authenticator {
+  authenticator=$1
+  if _run conjur-master-1.mycompany.local 'grep -q "CONJUR_AUTHENTICATORS" /opt/conjur/etc/conjur.conf'; then
+    authenticator=$(echo $authenticator | sed 's/\//\\\//g')
+    _run conjur-master-1.mycompany.local "sed -i 's/\(CONJUR_AUTHENTICATORS=.*\)/\1,$authenticator/' /opt/conjur/etc/conjur.conf"
+  else
+    _run conjur-master-1.mycompany.local "echo 'CONJUR_AUTHENTICATORS=authn,$authenticator' >> /opt/conjur/etc/conjur.conf"
+  fi
+  _run conjur-master-1.mycompany.local 'sv reload conjur'
 }
 
 function _disable_autofailover {
@@ -835,6 +873,7 @@ while true ; do
     --provision-k8s-follower ) CMD='_setup_k8s_follower' ; shift ;;
     --provision-master ) CMD='_single_master' ; shift ;;
     --provision-standbys ) CMD='_setup_standbys' ; shift ;;
+    --provision-keycloak ) CMD='_setup_keycloak' ; shift ;;
     --reenroll-failed-leader ) shift ; CMD="_reenroll_failed_leader $1 $2" ; shift ; shift ;;
     --restore-from-backup ) CMD='_restore_from_backup' ; shift ;;
     --rotate-custom-certificates ) CMD='_rotate_certificates' ; shift ;;

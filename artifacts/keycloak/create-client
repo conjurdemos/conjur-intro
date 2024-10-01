@@ -1,0 +1,29 @@
+#!/bin/sh
+
+set -eo pipefail
+
+keycloak/bin/kcreg.sh config credentials \
+  --server http://localhost:8080/auth \
+  --realm master \
+  --user "$KEYCLOAK_USER" \
+  --password "$KEYCLOAK_PASSWORD"
+
+keycloak/bin/kcreg.sh create \
+  -s clientId="$KEYCLOAK_CLIENT_ID" \
+  -s "redirectUris=[\"$KEYCLOAK_REDIRECT_URI\"]" \
+  -s "secret=$KEYCLOAK_CLIENT_SECRET" \
+  -s 'serviceAccountsEnabled=true'
+
+# Enable direct access to get an id token with username & password
+keycloak/bin/kcreg.sh update conjurClient -s directAccessGrantsEnabled=true
+
+keycloak/bin/kcreg.sh get "$KEYCLOAK_CLIENT_ID" | jq '.secret'
+
+# Increase token lifespan to 10 minutes (default 1m) for JWT authentication
+keycloak/bin/kcadm.sh config credentials \
+  --server http://localhost:8080/auth \
+  --realm master \
+  --user "$KEYCLOAK_USER" \
+  --password "$KEYCLOAK_PASSWORD"
+
+keycloak/bin/kcadm.sh update realms/master -s "accessTokenLifespan=600"

@@ -37,6 +37,7 @@ services:
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
       - ./system/logs/master-1:/var/log/conjur:Z
       - ./files:/conjur_files
+      - ./artifacts/keycloak/fetch-certificate:/oauth/keycloak/scripts/fetch-certificate
 
   conjur-master-2.mycompany.local:
     image: registry.tld/conjur-appliance:${VERSION:-5.0-stable}
@@ -247,13 +248,46 @@ services:
         condition: on-failure
     environment:
       - DD_SITE=datadoghq.com
-      - DD_API_KEY=${DD_API_KEY}
+      - DD_API_KEY=${DD_API_KEY:-}
       - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=1
-      - DD_TAGS=${DD_TAGS}
+      - DD_TAGS=${DD_TAGS:-}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /proc/:/host/proc/:ro
       - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+
+  keycloak:
+    image: registry.tld/jboss/keycloak:4.3.0.Final
+    networks:
+      dap_net:
+    environment:
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=admin
+      - KEYCLOAK_APP_USER=alice
+      - KEYCLOAK_APP_USER_PASSWORD=alice
+      - KEYCLOAK_APP_USER_EMAIL=alice@conjur.net
+      - KEYCLOAK_SECOND_APP_USER=bob.somebody
+      - KEYCLOAK_SECOND_APP_USER_PASSWORD=bob
+      - KEYCLOAK_SECOND_APP_USER_EMAIL=bob@conjur.net
+      - KEYCLOAK_NON_CONJUR_APP_USER=not_in_conjur
+      - KEYCLOAK_NON_CONJUR_APP_USER_PASSWORD=not_in_conjur
+      - KEYCLOAK_NON_CONJUR_APP_USER_EMAIL=not_in_conjur
+      - DB_VENDOR=H2
+      - KEYCLOAK_CLIENT_ID=conjurClient
+      - KEYCLOAK_REDIRECT_URI=http://127.0.0.1:8888/callback
+      - KEYCLOAK_CLIENT_SECRET=1234
+      - KEYCLOAK_SCOPE=openid
+    ports:
+      - "7777:8080"
+      - "7788:8443"
+    volumes:
+      - ./artifacts/keycloak:/scripts
+      - ./artifacts/keycloak/standalone.xml:/opt/jboss/keycloak/standalone/configuration/standalone.xml
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
 volumes:
   seeds:
