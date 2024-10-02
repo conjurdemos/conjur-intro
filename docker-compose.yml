@@ -240,8 +240,6 @@ services:
     image: datadog/agent:latest
     networks:
       dap_net:
-    ports:
-      - "8125:8125/udp"
     deploy:
       restart_policy:
         condition: on-failure
