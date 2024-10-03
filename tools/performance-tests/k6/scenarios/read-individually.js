@@ -34,6 +34,8 @@ const apiKeys = new SharedArray('ApiKeys', function () {
   return papaparse.parse(open("../data/api-keys.csv"), {header: true}).data;
 });
 
+let start = new Date()
+
 // Define test options
 // https://k6.io/docs/using-k6/k6-options/reference/
 export const options = {
@@ -82,7 +84,15 @@ export default function () {
   env.conjurIdentity = `host/AutomationVault-hosts/${apiKey.lob_name}/${apiKey.safe_name}/host-1${uuid_suffix}`;
   env.apiKey = apiKey.api_key;
 
-  authn()
+  if (__ITER == 0) {
+    authn();
+  }
+  let now = new Date()
+  // if 6 minutes elapsed, renew authentication
+  if (now.getTime() - start.getTime() > 360000) {
+    start.setTime(now.getTime())
+    authn();
+  }
 
   // This magic number is tightly coupled with number of accounts in a default backup used in load tests.
   // It should be parametrized when dealing with running multiple load tests with different data
