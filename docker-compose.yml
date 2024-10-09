@@ -223,6 +223,12 @@ services:
     volumes:
       - ./tools/performance-tests/k6/data:/data
 
+  authenticator-generator:
+    build:
+      context: ./artifacts/authenticator-generator
+    volumes:
+      - ./tools/performance-tests/k6/data:/data
+
   k6:
     build:
       context: ./
