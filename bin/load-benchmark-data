@@ -4,6 +4,9 @@
 source "$(git rev-parse --show-toplevel)/tools/performance-tests/k6/bin/functions"
 
 ENABLE_STATSD=${ENABLE_STATSD:-"false"}
+ADMIN_USER=${ADMIN_USER:-'admin'}
+PASSWORD=${PASSWORD:-'MySecretP@ss1'}
+
 # Default for statsd
 export K6_STATSD_PORT=${K6_STATSD_PORT:-"8125"}
 export K6_STATSD_ADDR=${K6_STATSD_ADDR:-"datadog:$K6_STATSD_PORT"}
@@ -175,7 +178,7 @@ main() {
   # Set CONJUR_ADMIN_API_KEY if not present
   if [[ -z "${CONJUR_ADMIN_API_KEY}" ]]; then
       echo "Generating CONJUR_ADMIN_API_KEY..."
-      export CONJUR_ADMIN_API_KEY=$(./bin/cli conjur user rotate-api-key | tail -n 1 | tr -d '[:space:]')
+      export CONJUR_ADMIN_API_KEY=$(curl -k -s --user "$ADMIN_USER:$PASSWORD" https://localhost/authn/demo/login)
   fi
 
   # Generate policy files

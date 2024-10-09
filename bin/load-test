@@ -52,8 +52,8 @@ print_settings() {
 test_k6() {
   # Set CONJUR_ADMIN_API_KEY if not present
   if [[ -z "${CONJUR_ADMIN_API_KEY}" ]]; then
-      echo "Generating CONJUR_ADMIN_API_KEY..."
-      export CONJUR_ADMIN_API_KEY=$(./bin/cli conjur user rotate-api-key | tail -n 1 | tr -d '[:space:]')
+      echo "Fetching CONJUR_ADMIN_API_KEY..."
+      export CONJUR_ADMIN_API_KEY=$(curl -k -s --user "$ADMIN_USER:$PASSWORD" https://localhost/authn/demo/login)
   fi
 
   check_env "APPLIANCE_MASTER_URL"
