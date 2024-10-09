@@ -1,0 +1,311 @@
+#!/bin/bash
+
+# shellcheck disable=SC1090,SC1091
+source "$(git rev-parse --show-toplevel)/tools/performance-tests/k6/bin/functions"
+source "$(repo_root)/bin/utils.sh"
+
+ADMIN_USER=${ADMIN_USER:-'admin'}
+PASSWORD=${PASSWORD:-'MySecretP@ss1'}
+
+export MASTER_CURL_URL=${MASTER_CURL_URL:-"https://localhost:443"}
+export APPLIANCE_MASTER_URL=${APPLIANCE_MASTER_URL:-"https://conjur-master.mycompany.local:443"}
+export CONJUR_ACCOUNT=${CONJUR_ACCOUNT:-"demo"}
+export CONJUR_IDENTITY=${CONJUR_IDENTITY:-"admin"}
+MASTER_CONTAINER_NAME=${MASTER_CONTAINER_NAME:-"conjur-master-1.mycompany.local"}
+COMPOSE=${COMPOSE:-"true"}
+LOAD_SECRETS_STEP=${LOAD_SECRETS_STEP:-500}
+POPULATE_API_KEYS=${POPULATE_API_KEYS:-"true"}
+
+RESULT_CSV_FILE="$(repo_root)/tmp/authenticators-benchmark.csv"
+
+# Default script arguments values
+NUMBER=10000
+OFFSET=0
+INCREMENT=1000
+
+KEEP_RESULTS=${KEEP_RESULTS:-"false"}
+
+print_help() {
+    cat << EOF
+authenticators-benchmark(1)
+
+NAME
+authenticators-benchmark
+
+SYNOPSIS
+authenticators-benchmark [-n, --number] [-o, --offset] [-i, --increment]
+
+DESCRIPTION
+
+This script is designed to run benchmark to test Conjur performance based on the number of authenticators.
+
+This script will do all of these steps in a sequential order: create temp files
+to store defined policies for authenticators, push all of those policies to Conjur incrementally,
+and check the performance in every iteration.
+
+The following options are available:
+
+  -n, --number             Defaults to 10000. This value corresponds
+                                  to the number of authenticators to be generated and added in Conjur.
+
+  -o, --offset             Defaults to 0. This value corresponds to the
+                                  offset in numbering of the authenticators.
+
+  -i, --increment          Defaults to 500. This value corresponds
+                                  to the value of authenticators loaded in every iteration.
+EOF
+}
+
+append_results() {
+  log_dir="$1"
+  num_of_authenticators="$2"
+
+  if [[ ! -f "$RESULT_CSV_FILE" ]]; then
+      echo "Number of authenticators,Node type,Action,Virtual users,Requests handled by Conjur per second,Average response time (ms),Max response time (ms),Min response time (ms)" > "$RESULT_CSV_FILE"
+  fi
+
+  # Get values from metrics file
+  if [[ ! -f "$log_dir/metrics.csv" ]]; then
+      metrics="N/A,N/A,N/A,N/A,N/A,N/A"
+  else
+      metrics=$(cat "$log_dir/metrics.csv" | tail -n 1)
+  fi
+
+  echo "$num_of_authenticators,$metrics" >> "$RESULT_CSV_FILE"
+}
+
+_exec_in_master() {
+  if [[ $COMPOSE == "true" ]]; then
+    docker compose exec -T "$MASTER_CONTAINER_NAME" bash -c "$@"
+  else
+    docker exec "$MASTER_CONTAINER_NAME" bash -c "$@"
+  fi
+}
+
+load_authenticator() {
+  iter="$1"
+
+  token=$(retry_5_times "curl \
+        --silent \
+        --insecure \
+        --header 'Accept-Encoding: base64' \
+        --request POST \
+        --data '$CONJUR_ADMIN_API_KEY' \
+        $MASTER_CURL_URL/authn/$CONJUR_ACCOUNT/$ADMIN_USER/authenticate")
+
+  retry_5_times "curl --header 'Authorization: Token token=\"$token\"' \
+        --silent \
+        --insecure \
+        --request POST \
+        --data-binary '@$(repo_root)/tools/performance-tests/k6/data/policy/authenticators/oidc-policy-$iter.yml' \
+        $MASTER_CURL_URL/policies/$CONJUR_ACCOUNT/policy/root"
+}
+
+load_secrets() {
+  iter="$1"
+
+  token=$(retry_5_times "curl \
+        --silent \
+        --insecure \
+        --header 'Accept-Encoding: base64' \
+        --request POST \
+        --data '$CONJUR_ADMIN_API_KEY' \
+        $MASTER_CURL_URL/authn/$CONJUR_ACCOUNT/$ADMIN_USER/authenticate")
+
+  retry_5_times "curl --header 'Authorization: Token token=\"$token\"' \
+        --silent \
+        --insecure \
+        --request POST \
+        --data 'https://keycloak:8443/auth/realms/master' \
+        $MASTER_CURL_URL/secrets/$CONJUR_ACCOUNT/variable/conjur%2Fauthn-oidc%2Fkeycloak-$iter%2Fprovider-uri"
+
+    retry_5_times "curl --header 'Authorization: Token token=\"$token\"' \
+        --silent \
+        --insecure \
+        --request POST \
+        --data 'preferred_username' \
+        $MASTER_CURL_URL/secrets/$CONJUR_ACCOUNT/variable/conjur%2Fauthn-oidc%2Fkeycloak-$iter%2Fid-token-user-property"
+
+    retry_5_times "curl --header 'Authorization: Token token=\"$token\"' \
+        --silent \
+        --insecure \
+        --request POST \
+        --data 'conjurClient' \
+        $MASTER_CURL_URL/secrets/$CONJUR_ACCOUNT/variable/conjur%2Fauthn-oidc%2Fkeycloak-$iter%2Fclient-id"
+
+    retry_5_times "curl --header 'Authorization: Token token=\"$token\"' \
+        --silent \
+        --insecure \
+        --request POST \
+        --data '1234' \
+        $MASTER_CURL_URL/secrets/$CONJUR_ACCOUNT/variable/conjur%2Fauthn-oidc%2Fkeycloak-$iter%2Fclient-secret"
+
+    retry_5_times "curl --header 'Authorization: Token token=\"$token\"' \
+          --silent \
+          --insecure \
+          --request POST \
+          --data 'email' \
+          $MASTER_CURL_URL/secrets/$CONJUR_ACCOUNT/variable/conjur%2Fauthn-oidc%2Fkeycloak-$iter%2Fclaim-mapping"
+
+    retry_5_times "curl --header 'Authorization: Token token=\"$token\"' \
+          --silent \
+          --insecure \
+          --request POST \
+          --data 'http://127.0.0.1:8888/callback' \
+          $MASTER_CURL_URL/secrets/$CONJUR_ACCOUNT/variable/conjur%2Fauthn-oidc%2Fkeycloak-$iter%2Fredirect_uri"
+}
+
+run_load_test() {
+  warmup="$1"
+
+  echo "Running load test...."
+
+  result=$(TEST_FILE=tools/performance-tests/k6/scenarios/read-individually.js \
+    K6_CUSTOM_ITERATIONS=6450 \
+    APPLIANCE_READ_URL="$APPLIANCE_MASTER_URL" \
+    WARMUP="$warmup" \
+    POPULATE_API_KEYS="$POPULATE_API_KEYS" \
+    "$(repo_root)"/bin/load-test)
+
+  log_dir=$(echo "$result" | tail -n 1)
+  num_of_authenticators=$(curl -s -k "$MASTER_CURL_URL/authenticators" | jq ".enabled | length")
+
+  append_results $log_dir $num_of_authenticators
+}
+
+main() {
+  while test $# -gt 0; do
+  case "$1" in
+    -h | --help)
+      print_help
+      exit 0
+      ;;
+    -n | --number)
+      NUMBER="$2"
+      shift 2
+      ;;
+    -o | --offset)
+      OFFSET="$2"
+      shift 2
+      ;;
+    -i | --increment)
+      INCREMENT="$2"
+      shift 2
+      ;;
+    --) shift;
+      break
+      ;;
+    -?*)
+      printf 'WARN: Unknown option (ignored): %s\n' "$1" >&2
+      ;;
+    *)  # Default case: No more options, so break out of the loop.
+      break
+      ;;
+  esac
+  done
+
+  echo "NUMBER: $NUMBER"
+  echo "OFFSET: $OFFSET"
+  echo "INCREMENT: $INCREMENT"
+
+  # Set CONJUR_ADMIN_API_KEY if not present
+  if [[ -z "${CONJUR_ADMIN_API_KEY}" ]]; then
+      echo "Fetching CONJUR_ADMIN_API_KEY..."
+      export CONJUR_ADMIN_API_KEY=$(curl -k -s --user "$ADMIN_USER:$PASSWORD" "$MASTER_CURL_URL"/authn/$CONJUR_ACCOUNT/login)
+  fi
+
+  # Generate policy files
+  docker compose run --build --rm authenticator-generator python3 authenticator-generator.py \
+    --number "$NUMBER" \
+    --offset "$OFFSET" \
+    --authenticators-per-policy "$INCREMENT"
+
+  # Run the whole flow (load authenticators, reload conjur, and run load test) 20 authenticators at a time, to a sum of $NUMBER of authenticators
+  iterations=$((NUMBER/INCREMENT))
+  echo "Running $iterations iteration(s) of $INCREMENT authenticators each..."
+
+  # If we don't want to keep the latest results, remove the file
+  if [[ -f "$RESULT_CSV_FILE" && "$KEEP_RESULTS" == "false" ]]; then
+    rm "$RESULT_CSV_FILE"
+  fi
+
+  # if there is no line starting with authenticators: in conjur.yml, add it
+  if ! _exec_in_master 'grep -q "^authenticators:" /etc/conjur/config/conjur.yml'; then
+    _exec_in_master 'echo authenticators: [\"authn\",\"authn-oidc/keycloak\"] >> /etc/conjur/config/conjur.yml'
+  fi
+  _exec_in_master "sed -i '/CONJUR_AUTHENTICATORS=/d' /opt/conjur/etc/conjur.conf"
+
+  # Run load test (with warmup) before loading authenticators
+  run_load_test "true"
+
+  for i in $(seq 1 $iterations); do
+    echo "Running $i/$iterations iteration..."
+
+    set -e
+
+    # Load authenticator policies into Conjur
+    echo "Loading authenticators policy..."
+    load_authenticator "$i"
+
+    # Load secrets for authenticators concurrently
+    # NOTE: to not exceed max number of forks, run 500 forks max at once, until we hit number of $INCREMENT
+    echo "Loading authenticators secrets..."
+    for j in $(seq 1 $LOAD_SECRETS_STEP $INCREMENT); do
+      for k in $(seq $j $((j+LOAD_SECRETS_STEP-1))); do
+        if [[ $k -gt $INCREMENT ]]; then
+          break
+        fi
+        load_secrets "$((OFFSET+k))" &
+      done
+      # Wait for all load secrets forks to finish
+      wait
+
+      if [[ $((j+LOAD_SECRETS_STEP-1)) -lt $INCREMENT ]]; then
+        echo "Loaded $((j+LOAD_SECRETS_STEP-1)) secrets out of $INCREMENT..."
+      else
+        echo "Loaded all secrets"
+      fi
+    done
+
+    # Ensure all remaining load secrets jobs finished
+    wait
+
+    echo "Enabling authenticators..."
+    # Enable authenticators
+
+    # Enable only 1000 authenticators at a time until we hit number of $INCREMENT
+    for j in $(seq 1 1000 $INCREMENT); do
+      authenticators="\"authn-oidc\/keycloak-$((OFFSET+j))\""
+      for k in $(seq $((j+1)) $((j+999))); do
+        if [[ $k -gt $INCREMENT ]]; then
+          break
+        fi
+        authenticators="$authenticators,\"authn-oidc\/keycloak-$((OFFSET+k))\""
+      done
+      _exec_in_master "sed -i 's/\(authenticators: \[.*\)\]/\1,$authenticators\]/' /etc/conjur/config/conjur.yml"
+
+      if [[ $((j+999)) -lt $INCREMENT ]]; then
+        echo "Enabled $((j+999)) authenticators out of $INCREMENT..."
+      else
+        echo "Enabled all authenticators"
+      fi
+    done
+
+    echo "Reloading Conjur service"
+    # Reload conjur and wait for it to be healthy
+    _exec_in_master "sv reload conjur"
+    _wait_for_master
+
+    authenticators_count=$(curl -s -k "$MASTER_CURL_URL/authenticators" | jq ".enabled | length")
+    echo "Enabled authenticators count: $authenticators_count"
+
+    set +e
+
+    # Run load test
+    run_load_test "false"
+
+    OFFSET=$((OFFSET+INCREMENT))
+  done
+}
+
+main "$@"
