@@ -10,11 +10,6 @@ import { textSummary } from "https://jslib.k6.io/k6-summary/0.0.1/index.js";
 /**
  *  Init stage
  */
-const requiredEnvVars = [
-  // "K6_CUSTOM_GRACEFUL_STOP",
-  // "K6_CUSTOM_VUS",
-  // "K6_CUSTOM_ITERATIONS"
-];
 
 // These are custom k6 metrics that will be reported in the k6 summary.
 const authenticateTrend = new Trend('http_req_duration_post_authn', true);
@@ -25,15 +20,9 @@ const readTwoSecretsBatchTrend = new Trend('http_req_duration_get_two_secrets_ba
 const readTwoSecretsBatchFailRate = new Rate('http_req_failed_get_two_secrets_batch');
 const readFourSecretsBatchTrend = new Trend('http_req_duration_get_four_secrets_batch', true);
 const readFourSecretsBatchFailRate = new Rate('http_req_failed_get_four_secrets_batch');
-const writeSecretsTrend = new Trend('http_req_duration_write_secrets', true);
-const writeSecretsFailRate = new Rate('http_req_failed_write_secrets');
-const createPolicyTrend = new Trend('http_req_duration_create_policy', true);
-const createPolicyFailRate = new Rate('http_req_failed_create_policy');
 
 lib.checkRequiredEnvironmentVariables(requiredEnvVars);
 const gracefulStop = lib.getEnvVar("K6_CUSTOM_GRACEFUL_STOP");
-const vus = lib.getEnvVar("K6_CUSTOM_VUS")
-const iterations = lib.getEnvVar("K6_CUSTOM_ITERATIONS")
 const maxDuration = '3h';
 
 const env = lib.parseEnv();
@@ -41,10 +30,6 @@ const env = lib.parseEnv();
 const csvData = new SharedArray('Secrets', function () {
   // Load CSV file and parse it using Papa Parse
   return papaparse.parse(open("../data/secrets.csv"), {header: true}).data;
-});
-const writeSecretsData = new SharedArray('WriteSecrets', function () {
-  // Load CSV file and parse it using Papa Parse
-  return papaparse.parse(open("../data/test-variable-secrets.csv"), {header: true, skipEmptyLines: true}).data;
 });
 
 const usersPolicy = open("../data/policy/users.yml");
@@ -250,7 +235,7 @@ export function authn() {
 }
 
 export function individuallyRetrieveSecrets() {
-  if (__ITER == 0) {
+  if (__ITER === 0) {
     env.applianceUrl = env.applianceReadUrl
     authn();
   }
@@ -275,7 +260,7 @@ export function individuallyRetrieveSecrets() {
 }
 
 export function batchRetrieveTwoSecrets() {
-  if (__ITER == 0) {
+  if (__ITER === 0) {
     env.applianceUrl = env.applianceReadUrl
     authn();
   }
@@ -300,7 +285,7 @@ export function batchRetrieveTwoSecrets() {
 }
 
 export function batchRetrieveFourSecrets() {
-  if (__ITER == 0) {
+  if (__ITER === 0) {
     env.applianceUrl = env.applianceReadUrl
     authn();
   }

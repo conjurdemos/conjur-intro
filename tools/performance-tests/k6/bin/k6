@@ -17,6 +17,7 @@ export POLICY_ID=${POLICY_ID:-"root"}
 # Default for reading random secrets
 export K6_CUSTOM_GRACEFUL_STOP=${K6_CUSTOM_GRACEFUL_STOP:-"30s"}
 export K6_CUSTOM_VUS=${K6_CUSTOM_VUS:-"12"}
+export K6_CUSTOM_ITERATIONS=${K6_CUSTOM_ITERATIONS:-"64500"}
 export K6_CUSTOM_DURATION=${K6_CUSTOM_DURATION:-"1h"}
 
 k6() {
@@ -31,6 +32,7 @@ k6() {
     -e CONJUR_IDENTITY \
     -e K6_CUSTOM_GRACEFUL_STOP \
     -e K6_CUSTOM_VUS \
+    -e K6_CUSTOM_ITERATIONS \
     -e K6_CUSTOM_DURATION \
     -e K6_STATSD_ADDR \
     -e POLICY_FILE \
