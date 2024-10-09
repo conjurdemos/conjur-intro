@@ -242,6 +242,10 @@ $ TEST_FILE=tools/performance-tests/k6/scenarios/read-individually.js ./bin/load
 # Or run load test with StatsD enabled
 $ ENABLE_STATSD=true TEST_FILE=tools/performance-tests/k6/scenarios/read-individually.js ./bin/load-test
 
+# Run benchmark for number of authenticators
+$ bin/dap --provision-keycloak
+$ ./bin/authenticators-benchmark
+
 ```
 
 The above test generates a report in the folder:
@@ -279,6 +283,11 @@ Currently supported scenarios are:
 - `tools/performance-tests/k6/scenarios/list-and-batch-read.js` - List all secrets in Conjur and then read a portion of them.
   - The purpose of this is to imitate how External Secrets Operator works when using the Find by Name or Find by Tag features.
     See <https://github.com/external-secrets/external-secrets/pull/3364.
+
+Benchmark scenario for number of authenticators:
+- `bin/authenticators-benchmark` - Load test for number of authenticators. <br>
+  - Runs a loop that: adds authenticators to Conjur, run `read-individually.js` scenario,
+    measure the performance and save the results. 
 
 ## Contributing
 
