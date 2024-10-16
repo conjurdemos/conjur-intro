@@ -2,7 +2,7 @@
 
 # shellcheck disable=SC1090,SC1091
 source "$(git rev-parse --show-toplevel)/tools/performance-tests/k6/bin/functions"
-source ./bin/utils.sh
+source "$(repo_root)/bin/utils.sh"
 
 ADMIN_USER=${ADMIN_USER:-'admin'}
 PASSWORD=${PASSWORD:-'MySecretP@ss1'}
@@ -86,7 +86,7 @@ load_authenticator() {
         --silent \
         --insecure \
         --request POST \
-        --data '$(cat ./tools/performance-tests/k6/data/policy/authenticators/oidc-policy-$iter.yml)' \
+        --data-binary '@$(repo_root)/tools/performance-tests/k6/data/policy/authenticators/oidc-policy-$iter.yml' \
         $MASTER_CURL_URL/policies/$CONJUR_ACCOUNT/policy/root"
 }
 
@@ -147,11 +147,13 @@ load_secrets() {
 run_load_test() {
   warmup="$1"
 
+  echo "Running load test...."
+
   result=$(TEST_FILE=tools/performance-tests/k6/scenarios/read-individually.js \
     K6_CUSTOM_ITERATIONS=6450 \
     APPLIANCE_READ_URL="$APPLIANCE_MASTER_URL" \
     WARMUP="$warmup" \
-    ./bin/load-test)
+    "$(repo_root)"/bin/load-test)
 
   log_dir=$(echo "$result" | tail -n 1)
   num_of_authenticators=$(curl -s -k "$MASTER_CURL_URL/authenticators" | jq ".enabled | length")
@@ -197,7 +199,7 @@ main() {
   # Set CONJUR_ADMIN_API_KEY if not present
   if [[ -z "${CONJUR_ADMIN_API_KEY}" ]]; then
       echo "Fetching CONJUR_ADMIN_API_KEY..."
-      export CONJUR_ADMIN_API_KEY=$(curl -k -s --user "$ADMIN_USER:$PASSWORD" "$MASTER_CURL_URL"/authn/demo/login)
+      export CONJUR_ADMIN_API_KEY=$(curl -k -s --user "$ADMIN_USER:$PASSWORD" "$MASTER_CURL_URL"/authn/$CONJUR_ACCOUNT/login)
   fi
 
   # Generate policy files
@@ -208,11 +210,18 @@ main() {
 
   # Run the whole flow (load authenticators, reload conjur, and run load test) 20 authenticators at a time, to a sum of $NUMBER of authenticators
   iterations=$((NUMBER/INCREMENT))
-  echo "Running $iterations iterations of $INCREMENT authenticators each..."
+  echo "Running $iterations iteration(s) of $INCREMENT authenticators each..."
 
+  # If we don't want to keep the latest results, remove the file
   if [[ -f "$RESULT_CSV_FILE" && "$KEEP_RESULTS" == "false" ]]; then
     rm "$RESULT_CSV_FILE"
   fi
+
+  # if there is no line starting with authenticators: in conjur.yml, add it
+  if ! docker compose exec -T "$MASTER_CONTAINER_NAME" bash -c 'grep -q "^authenticators:" /etc/conjur/config/conjur.yml'; then
+    docker compose exec -T "$MASTER_CONTAINER_NAME" bash -c 'echo authenticators: [\"authn\",\"authn-oidc/keycloak\"] >> /etc/conjur/config/conjur.yml'
+  fi
+  docker compose exec -T "$MASTER_CONTAINER_NAME" bash -c "sed -i '/CONJUR_AUTHENTICATORS=/d' /opt/conjur/etc/conjur.conf"
 
   # Run load test (with warmup) before loading authenticators
   run_load_test "true"
@@ -226,28 +235,55 @@ main() {
     echo "Loading authenticators policy..."
     load_authenticator "$i"
 
-    echo "Loading authenticators secrets..."
     # Load secrets for authenticators concurrently
-    for j in $(seq 1 $INCREMENT); do
-      load_secrets "$((OFFSET+j))" &
+    # NOTE: to not exceed max number of forks, run 500 forks max at once, until we hit number of $INCREMENT
+    echo "Loading authenticators secrets..."
+    for j in $(seq 1 500 $INCREMENT); do
+      for k in $(seq $j $((j+499))); do
+        if [[ $k -gt $INCREMENT ]]; then
+          echo "Loaded all secrets"
+          break
+        fi
+        load_secrets "$((OFFSET+k))" &
+      done
+      # Wait for all load secrets forks to finish
+      wait
+
+      if [[ $((j+499)) -lt $INCREMENT ]]; then
+        echo "Loaded $((j+499)) secrets out of $INCREMENT..."
+      fi
     done
 
-    # Wait for all load_secrets jobs to finish
-    echo "Waiting for all load secrets jobs to finish..."
+    # Ensure all remaining load secrets jobs finished
     wait
 
     echo "Enabling authenticators..."
     # Enable authenticators
-    authenticators="authn-oidc\/keycloak-$((OFFSET+1))"
-    for j in $(seq 2 $INCREMENT); do
-      authenticators="$authenticators,authn-oidc\/keycloak-$((OFFSET+j))"
+
+    # Enable only 1000 authenticators at a time until we hit number of $INCREMENT
+    for j in $(seq 1 1000 $INCREMENT); do
+      authenticators="\"authn-oidc\/keycloak-$((OFFSET+j))\""
+      for k in $(seq $((j+1)) $((j+999))); do
+        if [[ $k -gt $INCREMENT ]]; then
+          echo "Enabled all authenticators"
+          break
+        fi
+        authenticators="$authenticators,\"authn-oidc\/keycloak-$((OFFSET+k))\""
+      done
+      docker compose exec -T "$MASTER_CONTAINER_NAME" bash -c "sed -i 's/\(authenticators: \[.*\)\]/\1,$authenticators\]/' /etc/conjur/config/conjur.yml"
+
+      if [[ $((j+999)) -lt $INCREMENT ]]; then
+          echo "Enabled $((j+999)) authenticators out of $INCREMENT..."
+      fi
     done
-    docker compose exec -T "$MASTER_CONTAINER_NAME" bash -c "sed -i 's/\(CONJUR_AUTHENTICATORS=.*\)/\1,$authenticators/' /opt/conjur/etc/conjur.conf"
 
     echo "Reloading Conjur service"
     # Reload conjur and wait for it to be healthy
     docker compose exec -T "$MASTER_CONTAINER_NAME" bash -c "sv reload conjur"
     _wait_for_master
+
+    authenticators_count=$(curl -s -k "$MASTER_CURL_URL/authenticators" | jq ".enabled | length")
+    echo "Enabled authenticators count: $authenticators_count"
 
     set +e
 
