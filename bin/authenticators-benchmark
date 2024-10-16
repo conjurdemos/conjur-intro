@@ -12,6 +12,7 @@ export APPLIANCE_MASTER_URL=${APPLIANCE_MASTER_URL:-"https://conjur-master.mycom
 export CONJUR_ACCOUNT=${CONJUR_ACCOUNT:-"demo"}
 export CONJUR_IDENTITY=${CONJUR_IDENTITY:-"admin"}
 MASTER_CONTAINER_NAME=${MASTER_CONTAINER_NAME:-"conjur-master-1.mycompany.local"}
+COMPOSE=${COMPOSE:-"true"}
 
 RESULT_CSV_FILE="$(repo_root)/tmp/authenticators-benchmark.csv"
 
@@ -69,6 +70,14 @@ append_results() {
   fi
 
   echo "$num_of_authenticators,$metrics" >> "$RESULT_CSV_FILE"
+}
+
+_exec_in_master() {
+  if [[ $COMPOSE == "true" ]]; then
+    docker compose exec -T "$MASTER_CONTAINER_NAME" bash -c "$@"
+  else
+    docker exec "$MASTER_CONTAINER_NAME" bash -c "$@"
+  fi
 }
 
 load_authenticator() {
@@ -218,10 +227,10 @@ main() {
   fi
 
   # if there is no line starting with authenticators: in conjur.yml, add it
-  if ! docker compose exec -T "$MASTER_CONTAINER_NAME" bash -c 'grep -q "^authenticators:" /etc/conjur/config/conjur.yml'; then
-    docker compose exec -T "$MASTER_CONTAINER_NAME" bash -c 'echo authenticators: [\"authn\",\"authn-oidc/keycloak\"] >> /etc/conjur/config/conjur.yml'
+  if ! _exec_in_master 'grep -q "^authenticators:" /etc/conjur/config/conjur.yml'; then
+    _exec_in_master 'echo authenticators: [\"authn\",\"authn-oidc/keycloak\"] >> /etc/conjur/config/conjur.yml'
   fi
-  docker compose exec -T "$MASTER_CONTAINER_NAME" bash -c "sed -i '/CONJUR_AUTHENTICATORS=/d' /opt/conjur/etc/conjur.conf"
+  _exec_in_master "sed -i '/CONJUR_AUTHENTICATORS=/d' /opt/conjur/etc/conjur.conf"
 
   # Run load test (with warmup) before loading authenticators
   run_load_test "true"
@@ -270,7 +279,7 @@ main() {
         fi
         authenticators="$authenticators,\"authn-oidc\/keycloak-$((OFFSET+k))\""
       done
-      docker compose exec -T "$MASTER_CONTAINER_NAME" bash -c "sed -i 's/\(authenticators: \[.*\)\]/\1,$authenticators\]/' /etc/conjur/config/conjur.yml"
+      _exec_in_master "sed -i 's/\(authenticators: \[.*\)\]/\1,$authenticators\]/' /etc/conjur/config/conjur.yml"
 
       if [[ $((j+999)) -lt $INCREMENT ]]; then
           echo "Enabled $((j+999)) authenticators out of $INCREMENT..."
@@ -279,7 +288,7 @@ main() {
 
     echo "Reloading Conjur service"
     # Reload conjur and wait for it to be healthy
-    docker compose exec -T "$MASTER_CONTAINER_NAME" bash -c "sv reload conjur"
+    _exec_in_master "sv reload conjur"
     _wait_for_master
 
     authenticators_count=$(curl -s -k "$MASTER_CURL_URL/authenticators" | jq ".enabled | length")
