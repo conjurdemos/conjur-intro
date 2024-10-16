@@ -34,10 +34,3 @@
             privilege: [ read, authenticate ]
             resource: !webservice
       {%- endfor %}
-
-{%- for i in range(1, authenticators_per_policy+1) %}
-- !grant
-  role: !group conjur/authn-oidc/keycloak-{{offset+i}}/users
-  member: !user alice
-
-{%- endfor %}
