@@ -7,12 +7,13 @@ source "$(repo_root)/bin/utils.sh"
 ADMIN_USER=${ADMIN_USER:-'admin'}
 PASSWORD=${PASSWORD:-'MySecretP@ss1'}
 
-export MASTER_CURL_URL=${APPLIANCE_MASTER_URL:-"https://localhost:443"}
+export MASTER_CURL_URL=${MASTER_CURL_URL:-"https://localhost:443"}
 export APPLIANCE_MASTER_URL=${APPLIANCE_MASTER_URL:-"https://conjur-master.mycompany.local:443"}
 export CONJUR_ACCOUNT=${CONJUR_ACCOUNT:-"demo"}
 export CONJUR_IDENTITY=${CONJUR_IDENTITY:-"admin"}
 MASTER_CONTAINER_NAME=${MASTER_CONTAINER_NAME:-"conjur-master-1.mycompany.local"}
 COMPOSE=${COMPOSE:-"true"}
+LOAD_SECRETS_STEP=${LOAD_SECRETS_STEP:-500}
 
 RESULT_CSV_FILE="$(repo_root)/tmp/authenticators-benchmark.csv"
 
@@ -247,10 +248,9 @@ main() {
     # Load secrets for authenticators concurrently
     # NOTE: to not exceed max number of forks, run 500 forks max at once, until we hit number of $INCREMENT
     echo "Loading authenticators secrets..."
-    for j in $(seq 1 500 $INCREMENT); do
-      for k in $(seq $j $((j+499))); do
+    for j in $(seq 1 $LOAD_SECRETS_STEP $INCREMENT); do
+      for k in $(seq $j $((j+LOAD_SECRETS_STEP-1))); do
         if [[ $k -gt $INCREMENT ]]; then
-          echo "Loaded all secrets"
           break
         fi
         load_secrets "$((OFFSET+k))" &
@@ -258,8 +258,10 @@ main() {
       # Wait for all load secrets forks to finish
       wait
 
-      if [[ $((j+499)) -lt $INCREMENT ]]; then
-        echo "Loaded $((j+499)) secrets out of $INCREMENT..."
+      if [[ $((j+LOAD_SECRETS_STEP-1)) -lt $INCREMENT ]]; then
+        echo "Loaded $((j+LOAD_SECRETS_STEP-1)) secrets out of $INCREMENT..."
+      else
+        echo "Loaded all secrets"
       fi
     done
 
@@ -274,7 +276,6 @@ main() {
       authenticators="\"authn-oidc\/keycloak-$((OFFSET+j))\""
       for k in $(seq $((j+1)) $((j+999))); do
         if [[ $k -gt $INCREMENT ]]; then
-          echo "Enabled all authenticators"
           break
         fi
         authenticators="$authenticators,\"authn-oidc\/keycloak-$((OFFSET+k))\""
@@ -282,7 +283,9 @@ main() {
       _exec_in_master "sed -i 's/\(authenticators: \[.*\)\]/\1,$authenticators\]/' /etc/conjur/config/conjur.yml"
 
       if [[ $((j+999)) -lt $INCREMENT ]]; then
-          echo "Enabled $((j+999)) authenticators out of $INCREMENT..."
+        echo "Enabled $((j+999)) authenticators out of $INCREMENT..."
+      else
+        echo "Enabled all authenticators"
       fi
     done
 
