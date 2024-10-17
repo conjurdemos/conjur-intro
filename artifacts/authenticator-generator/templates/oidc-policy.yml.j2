@@ -1,0 +1,36 @@
+- !policy
+  id: conjur
+  body:
+    - !policy
+      id: authn-oidc
+      body:
+      {%- for i in range(1, authenticators_per_policy+1) %}
+        - !policy
+          id: keycloak-{{offset+i}}
+          body:
+          - !webservice
+            annotations:
+              description: Authentication service for Keycloak, based on Open ID Connect.
+
+          - !variable provider-uri
+          - !variable client-id
+          - !variable client-secret
+          - !variable id-token-user-property
+
+          # URI of Conjur instance
+          - !variable redirect_uri
+
+          # Defines the JWT claim to use as the Conjur identifier
+          - !variable claim-mapping
+
+          # Group with permission to authenticate
+          - !group
+            id: users
+            annotations:
+              description: Group of users who can authenticate using the authn-oidc/keycloak authenticator
+
+          - !permit
+            role: !group users
+            privilege: [ read, authenticate ]
+            resource: !webservice
+      {%- endfor %}
