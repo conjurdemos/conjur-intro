@@ -13,6 +13,7 @@ PASSWORD=${PASSWORD:-'MySecretP@ss1'}
 export K6_STATSD_PORT=${K6_STATSD_PORT:-"8125"}
 export K6_STATSD_ADDR=${K6_STATSD_ADDR:-"datadog:$K6_STATSD_PORT"}
 export K6_CUSTOM_VUS=${K6_CUSTOM_VUS:-"12"}
+export K6_CUSTOM_ITERATIONS=${K6_CUSTOM_ITERATIONS:-"64500"}
 
 # Appliance URL
 export APPLIANCE_MASTER_URL=${APPLIANCE_MASTER_URL:-"https://conjur-master.mycompany.local:443"}
@@ -45,6 +46,7 @@ print_settings() {
     echo "CONJUR_ACCOUNT              : $CONJUR_ACCOUNT"
     echo "CONJUR_IDENTITY             : $CONJUR_IDENTITY"
     echo "K6_CUSTOM_VUS               : $K6_CUSTOM_VUS"
+    echo "K6_CUSTOM_ITERATIONS        : $K6_CUSTOM_ITERATIONS"
     echo ""
     echo "Load test and system metrics reports can be found at: $LOG_ROOT/*"
 }
@@ -52,8 +54,8 @@ print_settings() {
 test_k6() {
   # Set CONJUR_ADMIN_API_KEY if not present
   if [[ -z "${CONJUR_ADMIN_API_KEY}" ]]; then
-      echo "Generating CONJUR_ADMIN_API_KEY..."
-      export CONJUR_ADMIN_API_KEY=$(./bin/cli conjur user rotate-api-key | tail -n 1 | tr -d '[:space:]')
+      echo "Fetching CONJUR_ADMIN_API_KEY..."
+      export CONJUR_ADMIN_API_KEY=$(curl -k -s --user "$ADMIN_USER:$PASSWORD" https://localhost/authn/demo/login)
   fi
 
   check_env "APPLIANCE_MASTER_URL"
@@ -105,7 +107,7 @@ test_k6() {
 
   # Stop the clock
   test_end=$(date_timestamp | sed 's/ /T/g')
-  echo "Test ended at: $test_start"
+  echo "Test ended at: $test_end"
 
   # Fail the build if the test failed
   if [ $exit_status -ne 0 ]; then

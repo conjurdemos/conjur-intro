@@ -28,7 +28,7 @@ services:
       - "5432"
     environment:
       TRUSTED_PROXIES: 123.123.1.1,123.5.1.1
-      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-}"
     security_opt:
       - "seccomp:unconfined"
     volumes:
@@ -147,7 +147,7 @@ services:
       - "443"
       - "444"
     environment:
-      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-authn}"
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-}"
     security_opt:
       - "seccomp:unconfined"
     volumes:
@@ -220,6 +220,12 @@ services:
   unpopulated-secrets-generator:
     build:
       context: ./artifacts/unpopulated-secrets-generator
+    volumes:
+      - ./tools/performance-tests/k6/data:/data
+
+  authenticator-generator:
+    build:
+      context: ./artifacts/authenticator-generator
     volumes:
       - ./tools/performance-tests/k6/data:/data
 
