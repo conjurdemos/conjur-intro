@@ -120,6 +120,9 @@ export function handleSummary(data) {
     http_req_duration_write_secrets: {
       values: {avg: avgResponseTime, max: maxResponseTime, min: minResponseTime}
     },
+    http_req_failed: {
+      values: {rate: failRate}
+    },
     vus_max: {
       values: {max: vusMax}
     }
@@ -129,7 +132,7 @@ export function handleSummary(data) {
   const nodeType = lib.checkNodeType(env.applianceMasterUrl);
 
   const csv = papaparse.unparse(
-    lib.generateMetricsArray(nodeType, testName, vusMax, httpReqs, avgResponseTime, maxResponseTime, minResponseTime)
+    lib.generateMetricsArray(nodeType, testName, vusMax, httpReqs, avgResponseTime, maxResponseTime, minResponseTime, failRate)
   );
 
   return {
