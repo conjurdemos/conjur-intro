@@ -243,9 +243,9 @@ export function checkNodeType(url) {
   }
 }
 
-export function generateMetricsArray(nodeType, testName, vusMax, httpReqs, avgResponseTime, maxResponseTime, minResponseTime) {
+export function generateMetricsArray(nodeType, testName, vusMax, httpReqs, avgResponseTime, maxResponseTime, minResponseTime, failRate) {
   return [
-    ['Node type', 'Action', 'Virtual users', 'Requests handled by Conjur per second', 'Average response time (ms)', 'Max response time (ms)', 'Min response time (ms)'],
-    [nodeType, testName, vusMax, httpReqs, avgResponseTime, maxResponseTime, minResponseTime]
+    ['Node type', 'Action', 'Virtual users', 'Requests handled by Conjur per second', 'Average response time (ms)', 'Max response time (ms)', 'Min response time (ms)', '% of failed requests'],
+    [nodeType, testName, vusMax, httpReqs, avgResponseTime, maxResponseTime, minResponseTime, failRate*100]
   ];
 }
