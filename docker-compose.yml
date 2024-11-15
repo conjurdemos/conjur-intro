@@ -16,6 +16,7 @@ services:
 
   conjur-master-1.mycompany.local:
     image: registry.tld/conjur-appliance:${VERSION:-5.0-stable}
+    shm_size: 1g
     networks:
       dap_net:
         ipv4_address: 12.16.23.11
@@ -38,6 +39,7 @@ services:
       - ./system/logs/master-1:/var/log/conjur:Z
       - ./files:/conjur_files
       - ./artifacts/keycloak/fetch-certificate:/oauth/keycloak/scripts/fetch-certificate
+      - ./policy:/policy
 
   conjur-master-2.mycompany.local:
     image: registry.tld/conjur-appliance:${VERSION:-5.0-stable}
