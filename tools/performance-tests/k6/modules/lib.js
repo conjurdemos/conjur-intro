@@ -249,3 +249,17 @@ export function generateMetricsArray(nodeType, testName, vusMax, httpReqs, avgRe
     [nodeType, testName, vusMax, httpReqs, avgResponseTime, maxResponseTime, minResponseTime, failRate*100]
   ];
 }
+
+export function retrieveApiKey(apiKeys, index, lob_name, safe_name) {
+  // If desired lob and safe is defined, fetch api key matching that lob and safe
+  if (lob_name && safe_name) {
+    // Iterate through api keys and check if lob and safe are matching
+    for (let i = 0; i < apiKeys.length; i++) {
+      if (apiKeys.at(i).lob_name === lob_name && apiKeys.at(i).safe_name === safe_name) {
+        return apiKeys.at(i);
+      }
+    }
+  } else {
+    return apiKeys.at(index);
+  }
+}
