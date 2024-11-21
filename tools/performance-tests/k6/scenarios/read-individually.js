@@ -8,6 +8,7 @@ import {SharedArray} from 'k6/data';
 import papaparse from "../modules/papaparse.min.js";
 import {htmlReport} from "https://raw.githubusercontent.com/benc-uk/k6-reporter/2.4.0/dist/bundle.js";
 import {textSummary} from "https://jslib.k6.io/k6-summary/0.0.1/index.js";
+import {retrieveApiKey} from "../modules/lib.js";
 
 
 /**
@@ -27,8 +28,10 @@ const readSecretsIndividuallyFailRate = new Rate('http_req_failed_get_secrets_in
 
 lib.checkRequiredEnvironmentVariables(requiredEnvVars);
 const gracefulStop = lib.getEnvVar("K6_CUSTOM_GRACEFUL_STOP");
-const vus = lib.getEnvVar("K6_CUSTOM_VUS")
-const iterations = lib.getEnvVar("K6_CUSTOM_ITERATIONS")
+const vus = lib.getEnvVar("K6_CUSTOM_VUS");
+const iterations = lib.getEnvVar("K6_CUSTOM_ITERATIONS");
+const desired_lob = lib.getEnvVar("DESIRED_LOB");
+const desired_safe = lib.getEnvVar("DESIRED_SAFE");
 
 const env = lib.parseEnv();
 
@@ -72,7 +75,7 @@ export function authn() {
 }
 
 export default function () {
-  const apiKey = apiKeys.at(exec.vu.idInTest - 1);
+  const apiKey = retrieveApiKey(apiKeys, exec.vu.idInTest - 1, desired_lob, desired_safe);
   const uuid = env.uuid
 
   let uuid_suffix = '';
@@ -89,7 +92,9 @@ export default function () {
   // This magic number is tightly coupled with number of accounts in a default backup used in load tests.
   // It should be parametrized when dealing with running multiple load tests with different data
   const accountNumber = Math.ceil(Math.random() * 200) || 1;
-  const identity = `AutomationVault/${apiKey.lob_name}/${apiKey.safe_name}/account-${accountNumber}${uuid_suffix}/variable-1${uuid_suffix}`;
+  // Randomize one of 5 secrets to read
+  const variableNumber = Math.ceil(Math.random() * 5) || 1;
+  const identity = `AutomationVault/${apiKey.lob_name}/${apiKey.safe_name}/account-${accountNumber}${uuid_suffix}/variable-${variableNumber}${uuid_suffix}`;
 
   const res = conjurApi.readSecret(http, env, identity);
 

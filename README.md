@@ -284,6 +284,8 @@ Currently supported scenarios are:
   - The purpose of this is to imitate how External Secrets Operator works when using the Find by Name or Find by Tag features.
     See <https://github.com/external-secrets/external-secrets/pull/3364.
 
+Note: for read scenarios, we can specify the desired safe and lob to read from by setting the `DESIRED_SAFE` and `DESIRED_LOB` environment variables. <br>
+
 Benchmark scenario for number of authenticators:
 - `bin/authenticators-benchmark` - Load test for number of authenticators. <br>
   - Runs a loop that: adds authenticators to Conjur, run `read-individually.js` scenario,
