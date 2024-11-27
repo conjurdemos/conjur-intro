@@ -1,0 +1,1123 @@
+- !policy
+  id: example
+  body:
+    - !policy
+      id: vault_1
+      body:
+        - !user user_1
+        - &vault_variables_1
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_1
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_1
+    - !policy
+      id: vault_2
+      body:
+        - !user user_2
+        - &vault_variables_2
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_2
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_2
+    - !policy
+      id: vault_3
+      body:
+        - !user user_3
+        - &vault_variables_3
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_3
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_3
+    - !policy
+      id: vault_4
+      body:
+        - !user user_4
+        - &vault_variables_4
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_4
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_4
+    - !policy
+      id: vault_5
+      body:
+        - !user user_5
+        - &vault_variables_5
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_5
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_5
+    - !policy
+      id: vault_6
+      body:
+        - !user user_6
+        - &vault_variables_6
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_6
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_6
+    - !policy
+      id: vault_7
+      body:
+        - !user user_7
+        - &vault_variables_7
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_7
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_7
+    - !policy
+      id: vault_8
+      body:
+        - !user user_8
+        - &vault_variables_8
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_8
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_8
+    - !policy
+      id: vault_9
+      body:
+        - !user user_9
+        - &vault_variables_9
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_9
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_9
+    - !policy
+      id: vault_10
+      body:
+        - !user user_10
+        - &vault_variables_10
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_10
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_10
+    - !policy
+      id: vault_11
+      body:
+        - !user user_11
+        - &vault_variables_11
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_11
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_11
+    - !policy
+      id: vault_12
+      body:
+        - !user user_12
+        - &vault_variables_12
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_12
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_12
+    - !policy
+      id: vault_13
+      body:
+        - !user user_13
+        - &vault_variables_13
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_13
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_13
+    - !policy
+      id: vault_14
+      body:
+        - !user user_14
+        - &vault_variables_14
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_14
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_14
+    - !policy
+      id: vault_15
+      body:
+        - !user user_15
+        - &vault_variables_15
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_15
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_15
+    - !policy
+      id: vault_16
+      body:
+        - !user user_16
+        - &vault_variables_16
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_16
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_16
+    - !policy
+      id: vault_17
+      body:
+        - !user user_17
+        - &vault_variables_17
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_17
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_17
+    - !policy
+      id: vault_18
+      body:
+        - !user user_18
+        - &vault_variables_18
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_18
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_18
+    - !policy
+      id: vault_19
+      body:
+        - !user user_19
+        - &vault_variables_19
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_19
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_19
+    - !policy
+      id: vault_20
+      body:
+        - !user user_20
+        - &vault_variables_20
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_20
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_20
+    - !policy
+      id: vault_21
+      body:
+        - !user user_21
+        - &vault_variables_21
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_21
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_21
+    - !policy
+      id: vault_22
+      body:
+        - !user user_22
+        - &vault_variables_22
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_22
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_22
+    - !policy
+      id: vault_23
+      body:
+        - !user user_23
+        - &vault_variables_23
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_23
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_23
+    - !policy
+      id: vault_24
+      body:
+        - !user user_24
+        - &vault_variables_24
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_24
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_24
+    - !policy
+      id: vault_25
+      body:
+        - !user user_25
+        - &vault_variables_25
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_25
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_25
+    - !policy
+      id: vault_26
+      body:
+        - !user user_26
+        - &vault_variables_26
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_26
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_26
+    - !policy
+      id: vault_27
+      body:
+        - !user user_27
+        - &vault_variables_27
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_27
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_27
+    - !policy
+      id: vault_28
+      body:
+        - !user user_28
+        - &vault_variables_28
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_28
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_28
+    - !policy
+      id: vault_29
+      body:
+        - !user user_29
+        - &vault_variables_29
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_29
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_29
+    - !policy
+      id: vault_30
+      body:
+        - !user user_30
+        - &vault_variables_30
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_30
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_30
+    - !policy
+      id: vault_31
+      body:
+        - !user user_31
+        - &vault_variables_31
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_31
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_31
+    - !policy
+      id: vault_32
+      body:
+        - !user user_32
+        - &vault_variables_32
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_32
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_32
+    - !policy
+      id: vault_33
+      body:
+        - !user user_33
+        - &vault_variables_33
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_33
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_33
+    - !policy
+      id: vault_34
+      body:
+        - !user user_34
+        - &vault_variables_34
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_34
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_34
+    - !policy
+      id: vault_35
+      body:
+        - !user user_35
+        - &vault_variables_35
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_35
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_35
+    - !policy
+      id: vault_36
+      body:
+        - !user user_36
+        - &vault_variables_36
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_36
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_36
+    - !policy
+      id: vault_37
+      body:
+        - !user user_37
+        - &vault_variables_37
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_37
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_37
+    - !policy
+      id: vault_38
+      body:
+        - !user user_38
+        - &vault_variables_38
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_38
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_38
+    - !policy
+      id: vault_39
+      body:
+        - !user user_39
+        - &vault_variables_39
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_39
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_39
+    - !policy
+      id: vault_40
+      body:
+        - !user user_40
+        - &vault_variables_40
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_40
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_40
+    - !policy
+      id: vault_41
+      body:
+        - !user user_41
+        - &vault_variables_41
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_41
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_41
+    - !policy
+      id: vault_42
+      body:
+        - !user user_42
+        - &vault_variables_42
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_42
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_42
+    - !policy
+      id: vault_43
+      body:
+        - !user user_43
+        - &vault_variables_43
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_43
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_43
+    - !policy
+      id: vault_44
+      body:
+        - !user user_44
+        - &vault_variables_44
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_44
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_44
+    - !policy
+      id: vault_45
+      body:
+        - !user user_45
+        - &vault_variables_45
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_45
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_45
+    - !policy
+      id: vault_46
+      body:
+        - !user user_46
+        - &vault_variables_46
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_46
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_46
+    - !policy
+      id: vault_47
+      body:
+        - !user user_47
+        - &vault_variables_47
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_47
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_47
+    - !policy
+      id: vault_48
+      body:
+        - !user user_48
+        - &vault_variables_48
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_48
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_48
+    - !policy
+      id: vault_49
+      body:
+        - !user user_49
+        - &vault_variables_49
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_49
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_49
+    - !policy
+      id: vault_50
+      body:
+        - !user user_50
+        - &vault_variables_50
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_50
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_50
+    - !policy
+      id: vault_51
+      body:
+        - !user user_51
+        - &vault_variables_51
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_51
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_51
+    - !policy
+      id: vault_52
+      body:
+        - !user user_52
+        - &vault_variables_52
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_52
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_52
+    - !policy
+      id: vault_53
+      body:
+        - !user user_53
+        - &vault_variables_53
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_53
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_53
+    - !policy
+      id: vault_54
+      body:
+        - !user user_54
+        - &vault_variables_54
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_54
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_54
+    - !policy
+      id: vault_55
+      body:
+        - !user user_55
+        - &vault_variables_55
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_55
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_55
+    - !policy
+      id: vault_56
+      body:
+        - !user user_56
+        - &vault_variables_56
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_56
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_56
+    - !policy
+      id: vault_57
+      body:
+        - !user user_57
+        - &vault_variables_57
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_57
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_57
+    - !policy
+      id: vault_58
+      body:
+        - !user user_58
+        - &vault_variables_58
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_58
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_58
+    - !policy
+      id: vault_59
+      body:
+        - !user user_59
+        - &vault_variables_59
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_59
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_59
+    - !policy
+      id: vault_60
+      body:
+        - !user user_60
+        - &vault_variables_60
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_60
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_60
+    - !policy
+      id: vault_61
+      body:
+        - !user user_61
+        - &vault_variables_61
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_61
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_61
+    - !policy
+      id: vault_62
+      body:
+        - !user user_62
+        - &vault_variables_62
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_62
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_62
+    - !policy
+      id: vault_63
+      body:
+        - !user user_63
+        - &vault_variables_63
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_63
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_63
+    - !policy
+      id: vault_64
+      body:
+        - !user user_64
+        - &vault_variables_64
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_64
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_64
+    - !policy
+      id: vault_65
+      body:
+        - !user user_65
+        - &vault_variables_65
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_65
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_65
+    - !policy
+      id: vault_66
+      body:
+        - !user user_66
+        - &vault_variables_66
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_66
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_66
+    - !policy
+      id: vault_67
+      body:
+        - !user user_67
+        - &vault_variables_67
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_67
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_67
+    - !policy
+      id: vault_68
+      body:
+        - !user user_68
+        - &vault_variables_68
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_68
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_68
+    - !policy
+      id: vault_69
+      body:
+        - !user user_69
+        - &vault_variables_69
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_69
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_69
+    - !policy
+      id: vault_70
+      body:
+        - !user user_70
+        - &vault_variables_70
+          - !variable
+            id: secret01
+        - !group
+          id: secret-users
+        - !grant
+          role: !group secret-users
+          member: !user user_70
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_70   

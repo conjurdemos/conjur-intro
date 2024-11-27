@@ -23,7 +23,7 @@ API_KEY_FILE="key.txt"
 
 if [ ! -f "$API_KEY_FILE" ]; then
   echo "Authenticating with Conjur..."
-  API_KEY=$(./bin/cli conjur user rotate-api-key | tr -d '\r')
+  API_KEY=$(./bin/cli conjur user rotate-api-key | tail -n 1 | tr -d '[:space:]')
   echo "$API_KEY" > "$API_KEY_FILE"
 fi
 
