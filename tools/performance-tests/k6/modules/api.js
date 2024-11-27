@@ -66,7 +66,7 @@ export function replacePolicy(client, data, policy_id, policy_body, dryrun=false
   const headers = {'Authorization': `Token token="${token}"`}
 
   return client.put(
-    `${applianceMasterUrl}/policies/${conjurAccount}/policy/${policy_id}`,
+    `${applianceMasterUrl}/policies/${conjurAccount}/policy/${policy_id}?dryRun=${dryrun}`,
     policy_body,
     {
       headers,

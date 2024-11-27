@@ -11,42 +11,64 @@ import papaparse from "../modules/papaparse.min.js";
  *  Init stage
  */
 const requiredEnvVars = [
-  "K6_CUSTOM_GRACEFUL_STOP"
+  "K6_CUSTOM_GRACEFUL_STOP",
+  "POLICY_ID"
 ];
 
 // These are custom k6 metrics that will be reported in the k6 summary.
 const authenticateTrend = new Trend('http_req_duration_post_authn', true);
 const authenticateFailRate = new Rate('http_req_failed_post_authn');
-const createPolicyTrend = new Trend('http_req_duration_create_policy', true);
-const createPolicyCount = new Counter('iterations_create_policy');
-const createPolicyFailRate = new Rate('http_req_failed_create_policy');
+const dryrunReplacePolicyTrend = new Trend('http_req_duration_dryrun_replace_policy', true);
+const dryrunReplacePolicyCount = new Counter('iterations_dryrun_replace_policy');
+const dryrunReplacePolicyFailRate = new Rate('http_req_failed_dryrun_replace_policy');
 
 lib.checkRequiredEnvironmentVariables(requiredEnvVars);
-const gracefulStop = lib.getEnvVar("K6_CUSTOM_GRACEFUL_STOP");
+const gracefulStop = '5m'
+const executor = lib.getEnvVar("DRYRUN_POLICY_EXECUTOR")
+const policyContentsSize = lib.getEnvVar("POLICY_CONTENTS_SIZE")
+const policyId = lib.getEnvVar("POLICY_ID")
+const vus = lib.getEnvVar("K6_CUSTOM_VUS")
+const iterations = lib.getEnvVar("DRYRUN_ITERATIONS")
 
 const env = lib.parseEnv();
 
-let policyContents = open(`/tools/performance-tests/k6/data/policy/test-100KB.yml`);
+let policyContents = open(`/tools/performance-tests/k6/data/policy/test-${policyContentsSize}.yml`);
+let policyPreDataContents = open(`/tools/performance-tests/k6/data/policy/pre-data-${policyContentsSize}.yml`);
 
 // Define test options
 // https://k6.io/docs/using-k6/k6-options/reference/
-export const options = {
-  scenarios: {
-    create_policy: {
-      // executor: 'constant-vus',
-      // maxDuration: "1h",
-      // We can only create one policy at a time (409 Conflict can occur because all policies are loaded into the same root policy)
-      // vus: 8,
-      // duration: '5m',
-      executor: 'per-vu-iterations',
-      vus: 1,
-      iterations: 5,
+let scenarios, thresholds;
+
+if (executor === 'constant-vus') {
+  scenarios = {
+    dryrun_replace_policy: {
+      duration: '5m',
+      executor: executor,
+      vus: vus,
       gracefulStop
     },
-  }, thresholds: {
-    iterations: ['rate > 2'],
+  };
+  thresholds = {
     checks: ['rate == 1.0']
-  }
+  };
+} else {
+  scenarios = {
+    dryrun_replace_policy: {
+      executor: executor,
+      vus: 1,
+      iterations: iterations,
+      gracefulStop,
+      maxDuration: '1h'
+    },
+  };
+  thresholds = {
+    checks: ['rate == 1.0']
+  };
+}
+
+export const options = {
+  scenarios: scenarios,
+  thresholds: thresholds
 };
 
 export function authn() {
@@ -65,39 +87,44 @@ export function authn() {
 }
 
 
-export default function () {
+export default function (data) {
   env.applianceUrl = env.applianceMasterUrl
   authn();
 
-  // Creates a unique identifier across all VUs and iterations
-  const identifier = `${__VU}-${__ITER}-${lib.uuid()}`;
-  // const {policyId} = env;
-  // const policyId = 'root';
-  const policyId = 'AutomationVault/lob-1';
-  // const policyId = 'AutomationVault%2Flob-2%2Fsafe-1';
-
-  const lobsPolicyRes = conjurApi.loadPolicy(
+  const dryrunReplacePolicyRes = conjurApi.replacePolicy(
     http,
     env,
     policyId,
     policyContents,
     true
   );
-  createPolicyTrend.add(lobsPolicyRes.timings.duration);
-  createPolicyFailRate.add(lobsPolicyRes.status !== 200);
+  dryrunReplacePolicyTrend.add(data.preLoadPolicyRes.timings.duration + dryrunReplacePolicyRes.timings.duration);
+  dryrunReplacePolicyCount.add(1);
+  dryrunReplacePolicyFailRate.add(dryrunReplacePolicyRes.status !== 201 && dryrunReplacePolicyRes.status !== 200 && data.preLoadPolicyRes.status !== 201);
 
-  check(lobsPolicyRes, {
-    "status is 200": (r) => r.status === 200,
+  check(dryrunReplacePolicyRes, {
+    "status is 200 or 201": (r) => r.status === 200 || r.status === 201,
     "status is not 500": (r) => r.status !== 500
   });
 }
 
+export function setup() {
+  const preLoadPolicyRes = conjurApi.loadPolicy(
+    http,
+    env,
+    policyId,
+    policyPreDataContents,
+  );
+  console.log('pre load policy time duration: ' + preLoadPolicyRes.timings.duration + 's' );
+  return { preLoadPolicyRes };
+}
+
 export function handleSummary(data) {
   const {
-    iterations_create_policy: {
+    iterations_dryrun_replace_policy: {
       values: {rate: httpReqs}
     },
-    http_req_duration_create_policy: {
+    http_req_duration_dryrun_replace_policy: {
       values: {
         avg: avgResponseTime,
         max: maxResponseTime,
@@ -109,7 +136,7 @@ export function handleSummary(data) {
     }
   } = data['metrics'];
 
-  const testName = "Load a policy";
+  const testName = "Dry-Run Replace a policy";
   const nodeType = lib.checkNodeType(env.applianceMasterUrl);
 
   const csv = papaparse.unparse(
@@ -118,7 +145,7 @@ export function handleSummary(data) {
 
   return {
     "./tools/performance-tests/k6/reports/metrics.csv": csv,
-    "./tools/performance-tests/k6/reports/dryrun-policy-summary.html": htmlReport(data, {title: "Dry Run Policy " + new Date().toISOString().slice(0, 16).replace('T', ' ')}),
+    "./tools/performance-tests/k6/reports/dryrun-policy-summary.html": htmlReport(data, {title: "Dry-Run Policy " + new Date().toISOString().slice(0, 16).replace('T', ' ')}),
     stdout: textSummary(data, {indent: " ", enableColors: true}),
   };
 }
