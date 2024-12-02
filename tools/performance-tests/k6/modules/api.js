@@ -38,7 +38,7 @@ export function authenticate(client, data, exitOnFailure = false) {
   return res
 }
 
-export function loadPolicy(client, data, policy_id, policy_body) {
+export function loadPolicy(client, data, policy_id, policy_body, dryrun=false) {
   const {
     applianceMasterUrl,
     conjurAccount,
@@ -47,7 +47,7 @@ export function loadPolicy(client, data, policy_id, policy_body) {
   const headers = {'Authorization': `Token token="${token}"`}
 
   return client.post(
-    `${applianceMasterUrl}/policies/${conjurAccount}/policy/${policy_id}`,
+    `${applianceMasterUrl}/policies/${conjurAccount}/policy/${policy_id}?dryRun=${dryrun}`,
     policy_body,
     {
       headers,
@@ -57,7 +57,7 @@ export function loadPolicy(client, data, policy_id, policy_body) {
   )
 }
 
-export function replacePolicy(client, data, policy_id, policy_body) {
+export function replacePolicy(client, data, policy_id, policy_body, dryrun=false) {
   const {
     applianceMasterUrl,
     conjurAccount,
@@ -66,7 +66,7 @@ export function replacePolicy(client, data, policy_id, policy_body) {
   const headers = {'Authorization': `Token token="${token}"`}
 
   return client.put(
-    `${applianceMasterUrl}/policies/${conjurAccount}/policy/${policy_id}`,
+    `${applianceMasterUrl}/policies/${conjurAccount}/policy/${policy_id}?dryRun=${dryrun}`,
     policy_body,
     {
       headers,

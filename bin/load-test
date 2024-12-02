@@ -20,6 +20,10 @@ export APPLIANCE_MASTER_URL=${APPLIANCE_MASTER_URL:-"https://conjur-master.mycom
 export APPLIANCE_READ_URL=${APPLIANCE_READ_URL:-"https://conjur-follower.mycompany.local:443"}
 export CONJUR_ACCOUNT=${CONJUR_ACCOUNT:-"demo"}
 export CONJUR_IDENTITY=${CONJUR_IDENTITY:-"admin"}
+export DRYRUN_POLICY_EXECUTOR=${DRYRUN_POLICY_EXECUTOR:-"per-vu-iterations"}
+export POLICY_CONTENTS_SIZE=${POLICY_CONTENTS_SIZE:-"100KB"}
+export DRYRUN_ITERATIONS=${DRYRUN_ITERATIONS:-"3"}
+
 
 function print_help() {
   cat << EOF
@@ -47,6 +51,10 @@ print_settings() {
     echo "CONJUR_IDENTITY             : $CONJUR_IDENTITY"
     echo "K6_CUSTOM_VUS               : $K6_CUSTOM_VUS"
     echo "K6_CUSTOM_ITERATIONS        : $K6_CUSTOM_ITERATIONS"
+    echo "DRYRUN_POLICY_EXECUTOR     : $DRYRUN_POLICY_EXECUTOR"
+    echo "POLICY_CONTENTS_SIZE        : $POLICY_CONTENTS_SIZE"
+    echo "DRYRUN_ITERATIONS          : $DRYRUN_ITERATIONS"
+    
     echo ""
     echo "Load test and system metrics reports can be found at: $LOG_ROOT/*"
 }
