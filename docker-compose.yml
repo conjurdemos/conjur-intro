@@ -30,6 +30,7 @@ services:
     environment:
       TRUSTED_PROXIES: 123.123.1.1,123.5.1.1
       CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-}"
+      CONJUR_LOG_LEVEL: debug
     security_opt:
       - "seccomp:unconfined"
     volumes:
@@ -40,6 +41,9 @@ services:
       - ./files:/conjur_files
       - ./artifacts/keycloak/fetch-certificate:/oauth/keycloak/scripts/fetch-certificate
       - ./policy:/policy
+      - /Users/codi.huston/git/conjur/lib:/opt/conjur/possum/lib
+      - /Users/codi.huston/git/conjur/config:/opt/conjur/possum/config
+      - /Users/codi.huston/git/conjur/app:/opt/conjur/possum/app
 
   conjur-master-2.mycompany.local:
     image: registry.tld/conjur-appliance:${VERSION:-5.0-stable}

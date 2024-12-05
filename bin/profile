@@ -1,0 +1,60 @@
+#!/bin/bash -ex
+
+# From the root of this project
+# NOTE: this assumes you are running against a local conjur, mounted via the
+#       docker-compose file.
+# ./bin/dap --stop
+# ./bin/dap --provision-master
+# cp -R /Users/codi.huston/git/appliance/test/load/backup system/
+# ./bin/dap --restore-from-backup
+# rm key.txt && ./bin/profile
+# ruby calculate_stats.rb profile
+
+CONTAINER_NAME="conjur-intro-conjur-master-1.mycompany.local-1"
+POLICY_SIZE="1MB" #100KB #1MB
+PRELOAD_POLICY_FILE="pre-data-$POLICY_SIZE.yml"
+TEST_POLICY_FILE="test-$POLICY_SIZE.yml"
+PROFILE_FILE="/opt/conjur/possum/tmp/profile_data.csv"
+
+for ITERATION in {1..10}; do
+  # NOTE: each iteration is executed against a different lob branch. You can
+  # make that fixed here if you want to test performance without the size of the
+  # db growing per iteration.
+  # TARGET_BRACH="AutomationVault/lob-1"
+  TARGET_BRACH="AutomationVault/lob-$ITERATION"
+  OUT_DIR="profile/iteration-$ITERATION"
+
+  mkdir -p "$OUT_DIR"
+  echo "----------------------------"
+  echo "Preload Policy: $PRELOAD_POLICY_FILE"
+  echo "Target Branch: $TARGET_BRACH"
+  echo "----------------------------"
+  # You can add your code here to perform actions for each iteration
+
+  # Note: The test files load all records under the TARGET_BRACH/example, so we
+  # empty that out for a clean slate on each iteration.
+  ./bin/load-policy PUT $TARGET_BRACH/example tools/performance-tests/k6/data/policy/00-empty.yml
+  docker exec -it $CONTAINER_NAME rm $PROFILE_FILE || true
+  ./bin/load-policy POST $TARGET_BRACH tools/performance-tests/k6/data/policy/$PRELOAD_POLICY_FILE
+  docker cp "$CONTAINER_NAME:$PROFILE_FILE" $OUT_DIR/01-preload.csv
+
+  echo "----------------------------"
+  echo "Dryrun Policy: $TEST_POLICY_FILE"
+  echo "Target Branch: $TARGET_BRACH"
+  echo "----------------------------"
+  
+  # Note: you'll see duplicate calls to the Loader::Create|Modify|ReplacePolicy
+  # because this loader is called twice, once for policy syntax validation, and
+  # another for the actual dryrun.
+  docker exec -it $CONTAINER_NAME rm $PROFILE_FILE
+  ./bin/dryrun-policy PUT $TARGET_BRACH tools/performance-tests/k6/data/policy/$TEST_POLICY_FILE
+  docker cp "$CONTAINER_NAME:$PROFILE_FILE" $OUT_DIR/02-dryrun.csv
+
+  echo "----------------------------"
+  echo "Kiad Policy: $TEST_POLICY_FILE"
+  echo "Target Branch: $TARGET_BRACH"
+  echo "----------------------------"
+  docker exec -it $CONTAINER_NAME rm $PROFILE_FILE
+  ./bin/load-policy PUT $TARGET_BRACH tools/performance-tests/k6/data/policy/$TEST_POLICY_FILE
+  docker cp "$CONTAINER_NAME:$PROFILE_FILE" $OUT_DIR/03-load.csv
+done
