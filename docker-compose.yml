@@ -38,6 +38,7 @@ services:
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
       - ./system/logs/master-1:/var/log/conjur:Z
       - ./files:/conjur_files
+      - ./files/nginx.conf:/etc/nginx/nginx.conf
       - ./artifacts/keycloak/fetch-certificate:/oauth/keycloak/scripts/fetch-certificate
       - ./policy:/policy
 
