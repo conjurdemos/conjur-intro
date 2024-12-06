@@ -51,9 +51,9 @@ print_settings() {
     echo "CONJUR_IDENTITY             : $CONJUR_IDENTITY"
     echo "K6_CUSTOM_VUS               : $K6_CUSTOM_VUS"
     echo "K6_CUSTOM_ITERATIONS        : $K6_CUSTOM_ITERATIONS"
-    echo "DRYRUN_POLICY_EXECUTOR     : $DRYRUN_POLICY_EXECUTOR"
+    echo "DRYRUN_POLICY_EXECUTOR      : $DRYRUN_POLICY_EXECUTOR"
     echo "POLICY_CONTENTS_SIZE        : $POLICY_CONTENTS_SIZE"
-    echo "DRYRUN_ITERATIONS          : $DRYRUN_ITERATIONS"
+    echo "DRYRUN_ITERATIONS           : $DRYRUN_ITERATIONS"
     
     echo ""
     echo "Load test and system metrics reports can be found at: $LOG_ROOT/*"
