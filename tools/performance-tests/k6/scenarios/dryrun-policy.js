@@ -21,6 +21,12 @@ const authenticateFailRate = new Rate('http_req_failed_post_authn');
 const dryrunReplacePolicyTrend = new Trend('http_req_duration_dryrun_replace_policy', true);
 const dryrunReplacePolicyCount = new Counter('iterations_dryrun_replace_policy');
 const dryrunReplacePolicyFailRate = new Rate('http_req_failed_dryrun_replace_policy');
+const replacePolicyTrend = new Trend('http_req_duration_replace_policy', true);
+const replacePolicyCount = new Counter('iterations_replace_policy');
+const replacePolicyFailRate = new Rate('http_req_failed_replace_policy');
+const preloadPolicyDataTrend = new Trend('http_req_duration_preload_policy_data', true);
+const preloadPolicyDataCount = new Counter('iterations_preload_policy_data');
+const preloadPolicyDataFailRate = new Rate('http_req_failed_preload_policy_data');
 
 lib.checkRequiredEnvironmentVariables(requiredEnvVars);
 const gracefulStop = '5m'
@@ -41,7 +47,7 @@ let scenarios, thresholds;
 
 if (executor === 'constant-vus') {
   scenarios = {
-    dryrun_replace_policy: {
+    dryrun_policy: {
       duration: '5m',
       executor: executor,
       vus: vus,
@@ -53,7 +59,7 @@ if (executor === 'constant-vus') {
   };
 } else {
   scenarios = {
-    dryrun_replace_policy: {
+    dryrun_policy: {
       executor: executor,
       vus: 1,
       iterations: iterations,
@@ -87,65 +93,185 @@ export function authn() {
 }
 
 
-export default function (data) {
+export default function () {
+  const iterationPolicyId = `${policyId}-${__ITER + 1}`
   env.applianceUrl = env.applianceMasterUrl
   authn();
 
-  const dryrunReplacePolicyRes = conjurApi.replacePolicy(
-    http,
-    env,
-    policyId,
-    policyContents,
-    true
-  );
-  dryrunReplacePolicyTrend.add(data.preLoadPolicyRes.timings.duration + dryrunReplacePolicyRes.timings.duration);
+  if (executor !== 'constant-vus') {
+    // preload policy data
+    const preLoadPolicyRes = conjurApi.loadPolicy(
+      http,
+      env,
+      iterationPolicyId,
+      policyPreDataContents,
+    );
+
+    preloadPolicyDataTrend.add(preLoadPolicyRes.timings.duration);
+    preloadPolicyDataFailRate.add(preLoadPolicyRes.status !== 201);
+    preloadPolicyDataCount.add(1);
+
+    check(preLoadPolicyRes, {
+      "status is 201": (r) => r.status === 201,
+      "status is not 500": (r) => r.status !== 500
+    });
+  }
+
+  // dryrun replace policy
+  const dryrunReplacePolicyRes = conjurApi.replacePolicy(http, env, iterationPolicyId, policyContents, true);
+
+  dryrunReplacePolicyTrend.add(dryrunReplacePolicyRes.timings.duration);
+  dryrunReplacePolicyFailRate.add(dryrunReplacePolicyRes.status !== 201 && dryrunReplacePolicyRes.status !== 200);
   dryrunReplacePolicyCount.add(1);
-  dryrunReplacePolicyFailRate.add(dryrunReplacePolicyRes.status !== 201 && dryrunReplacePolicyRes.status !== 200 && data.preLoadPolicyRes.status !== 201);
 
   check(dryrunReplacePolicyRes, {
     "status is 200 or 201": (r) => r.status === 200 || r.status === 201,
     "status is not 500": (r) => r.status !== 500
   });
+
+  // replace policy
+  // skip if multiple users at the same time - duplicate key PG error
+  if (executor !== 'constant-vus') {
+    const replacePolicyRes = conjurApi.replacePolicy(http, env, iterationPolicyId, policyContents);
+
+    replacePolicyTrend.add(replacePolicyRes.timings.duration);
+    replacePolicyFailRate.add(replacePolicyRes.status !== 201 && replacePolicyRes.status !== 200);
+    replacePolicyCount.add(1);
+
+    check(replacePolicyRes, {
+      "status is 200 or 201": (r) => r.status === 200 || r.status === 201,
+      "status is not 500": (r) => r.status !== 500
+    });
+  }
 }
 
-export function setup() {
+export function setup(){
+  env.applianceUrl = env.applianceMasterUrl
+  if (executor !== 'constant-vus') {
+    return
+  }
+
+  authn();
+
+  const iterationPolicyId = `${policyId}-1`
+
+  // preload policy data once
   const preLoadPolicyRes = conjurApi.loadPolicy(
     http,
     env,
-    policyId,
+    iterationPolicyId,
     policyPreDataContents,
   );
-  console.log('pre load policy time duration: ' + preLoadPolicyRes.timings.duration + 's' );
-  return { preLoadPolicyRes };
+
+  preloadPolicyDataTrend.add(preLoadPolicyRes.timings.duration);
+  preloadPolicyDataFailRate.add(preLoadPolicyRes.status !== 201);
+  preloadPolicyDataCount.add(1);
+
+  check(preLoadPolicyRes, {
+    "status is 201": (r) => r.status === 201,
+    "status is not 500": (r) => r.status !== 500
+  });
 }
 
 export function handleSummary(data) {
   const {
     iterations_dryrun_replace_policy: {
-      values: {rate: httpReqs}
+      values: { rate: httpReqsDryrunReplacePolicy }
     },
     http_req_duration_dryrun_replace_policy: {
       values: {
-        avg: avgResponseTime,
-        max: maxResponseTime,
-        min: minResponseTime
+        avg: avgResponseTimeDryrunReplacePolicy,
+        max: maxResponseTimeDryrunReplacePolicy,
+        min: minResponseTimeDryrunReplacePolicy
       }
     },
+    iterations_preload_policy_data: {
+      values: { rate: httpReqsPreloadPolicyData }
+    },
+    http_req_duration_preload_policy_data: {
+      values: {
+        avg: avgResponseTimePreloadPolicyData,
+        max: maxResponseTimePreloadPolicyData,
+        min: minResponseTimePreloadPolicyData
+      }
+    },
+    http_req_failed: {
+      values: { rate: failRate }
+    },
     vus_max: {
-      values: {max: vusMax}
+      values: { max: vusMax }
     }
   } = data['metrics'];
 
-  const testName = "Dry-Run Replace a policy";
+  let httpReqsReplacePolicy;
+  let avgResponseTimeReplacePolicy;
+  let maxResponseTimeReplacePolicy;
+  let minResponseTimeReplacePolicy;
+
+  if (executor != 'constant-vus') {
+    ({
+      iterations_replace_policy: {
+        values: { rate: httpReqsReplacePolicy }
+      },
+      http_req_duration_replace_policy: {
+        values: {
+          avg: avgResponseTimeReplacePolicy,
+          max: maxResponseTimeReplacePolicy,
+          min: minResponseTimeReplacePolicy
+        }
+      }
+    } = data['metrics']);
+  }
+
+  const testNameDryrunReplacePolicy = "Dry-Run Replace a policy";
+  const testNameReplacePolicy = "Replace a policy";
+  const testNamePreloadPolicyData = "Preload policy data";
   const nodeType = lib.checkNodeType(env.applianceMasterUrl);
 
-  const csv = papaparse.unparse(
-    lib.generateMetricsArray(nodeType, testName, vusMax, httpReqs, avgResponseTime, maxResponseTime, minResponseTime)
-  );
+  const metricsArray = [
+    ...lib.generateMetricsArray(
+      nodeType,
+      testNameDryrunReplacePolicy,
+      vusMax,
+      httpReqsDryrunReplacePolicy,
+      avgResponseTimeDryrunReplacePolicy,
+      maxResponseTimeDryrunReplacePolicy,
+      minResponseTimeDryrunReplacePolicy,
+      failRate
+    ),
+    ...lib.generateMetricsArray(
+      nodeType,
+      testNamePreloadPolicyData,
+      vusMax,
+      httpReqsPreloadPolicyData,
+      avgResponseTimePreloadPolicyData,
+      maxResponseTimePreloadPolicyData,
+      minResponseTimePreloadPolicyData,
+      failRate
+    )
+  ];
+
+  // no replace policy data for constant vus
+  if (executor !== 'constant-vus') {
+    metricsArray.push(
+      ...lib.generateMetricsArray(
+        nodeType,
+        testNameReplacePolicy,
+        vusMax,
+        httpReqsReplacePolicy,
+        avgResponseTimeReplacePolicy,
+        maxResponseTimeReplacePolicy,
+        minResponseTimeReplacePolicy,
+        failRate
+      )
+    );
+  }
+
+  const csv = papaparse.unparse(metricsArray);
 
   return {
     "./tools/performance-tests/k6/reports/metrics.csv": csv,
-    "./tools/performance-tests/k6/reports/dryrun-policy-summary.html": htmlReport(data, {title: "Dry-Run Policy " + new Date().toISOString().slice(0, 16).replace('T', ' ')}),
+    "./tools/performance-tests/k6/reports/dryrun-policy-summary.html": htmlReport(data, {title: "Performance tests summary " + new Date().toISOString().slice(0, 16).replace('T', ' ')}),
     stdout: textSummary(data, {indent: " ", enableColors: true}),
   };
 }
