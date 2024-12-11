@@ -46,6 +46,8 @@ MAX_ATTEMPTS="${MAX_ATTEMPTS:-10}"
 # The timeout in seconds to wait for the all Followers to be deployed
 # 10 Minute Default
 CONFIGURE_FOLLOWER_TIMEOUT=${CONFIGURE_FOLLOWER_TIMEOUT:-600}
+CONJUR_USER=${CONJUR_USER:-"admin"}
+CONJUR_PASSWORD=${CONJUR_PASSWORD:-"MySecretP@ss1"}
 
 # Use this to hide WARN from docker compose...
 # WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string. 
@@ -68,6 +70,11 @@ finish() {
   if [ -n "$RESOURCE_MONITOR_PID" ]; then
     echo "Killing resource monitor: $RESOURCE_MONITOR_PID..."
     kill -9 "$RESOURCE_MONITOR_PID" || true
+  fi
+
+  if [ -n "$check_followers_read_pid" ]; then
+    echo "Killing follower reader: $check_followers_read_pid..."
+    kill -9 "$check_followers_read_pid" || true
   fi
 
   ./bin/create-log-artifacts --log-directory "$LOG_DIR" --follower-count  "${FOLLOWER_COUNT}"
@@ -166,6 +173,15 @@ main(){
 
   echo "Triggering a Leader failover..."
   perform_failover
+
+  echo "Start reading from followers in the background"
+  check_followers_read_status_path=tmp/follower_check_k8s_status.txt
+  (
+    check_followers_read
+    echo $?
+  ) &
+  check_followers_read_pid=$!
+
   echo "Active Leader container is: $(discover_leader_container)"
 
   # Wait 5 minutes for all Followers to begin rebasing
@@ -174,6 +190,11 @@ main(){
 
   echo "Waiting for Follower(s) to become healthy after rebasing..."
   wait_for_followers
+
+  # kill reading from followers
+  echo "Number of failed follower reads = $(cat $check_followers_read_status_path)"
+  echo "Killing followers checker with pid = $check_followers_read_pid"
+  kill $check_followers_read_pid 2>/dev/null
 
   announce "BEGIN TEST SUITE - AFTER FAILOVER"
   for i in "${!TEST_COMMANDS[@]}"; do
@@ -186,6 +207,22 @@ main(){
 
   echo "Tests are finished executing!"
   echo "DONE."
+}
+
+check_followers_read() {
+  local -i count=0
+  echo $count > $check_followers_read_status_path
+  local api_key=$(curl -k -s --user "$CONJUR_USER:$CONJUR_PASSWORD" https://localhost:451/authn/demo/login)
+
+  while true; do
+    token=$(curl --silent  --insecure --header "Accept-Encoding: base64" --request POST --data "$api_key" "https://localhost:451/authn/demo/admin/authenticate")
+    http_status=$(curl --header "Authorization: Token token=\"$token\"" -s -k -o /dev/null -w "%{http_code}" https://localhost:451/resources/demo/variable/AutomationVault/lob-1/safe-1/account-1/variable-1)
+
+    if [ "$http_status" -ne 200 ]; then
+      count+=1
+      echo $count > $check_followers_read_status_path
+    fi
+  done
 }
 
 teardown_compose_environment() {
@@ -262,39 +299,36 @@ perform_failover() {
 }
 
 wait_for_followers() {
-  for ((i=1; i<=FOLLOWER_COUNT; i++))
+  running_pods=$(get_k8s_follower_pod_names)
+  for pod in $running_pods
   do
-    echo "Waiting for Follower conjur-follower-${i}.mycompany.local to be healthy..."
-    wait_for_follower "conjur-follower-${i}.mycompany.local"
+    echo "Waiting for Follower in pod $pod to be healthy..."
+    wait_for_follower "${pod}"
   done
 }
 
 wait_for_follower() {
-  local follower_hostname=$1
-  local container_id
+  local pod=$1
   local attempts=0
   local max_attempts=180
-
-  container_id=$(docker compose ps -q $follower_hostname)
-  if [ -z "$container_id" ]; then
-    echo "WARNING: No container ID found for service '$follower_hostname' (it is not running), skipping!"
-    return
-  fi
 
   while true; do
     attempts=$((attempts + 1))
     if [ $attempts -gt $max_attempts ]; then
-      echo "FATAL: Follower '$follower_hostname' did not become healthy after '$max_attempts' attempts!"
+      echo "FATAL: Follower in pod '$pod' did not become healthy after '$max_attempts' attempts!"
       exit 1
     fi
 
-    echo "Checking Follower '$follower_hostname' health status (attempt $attempts/$max_attempts)..."
-    if docker compose exec "$follower_hostname" curl -k --fail-with-body https://localhost/health &>/dev/null; then
-      echo "Follower '$follower_hostname' is healthy!"
+    echo "Checking Follower in pod '$pod' health status (attempt $attempts/$max_attempts)..."
+    received_lsn=$(bin/kubectl exec $pod -n "$(_get_k8s_follower_namespace)" -c info -i -- curl -s http://localhost:5611/info  | jq '.database.logical_replication_status.subscriptions[].received_lsn // empty')
+    pod_status=$(bin/kubectl get pods -n cyberark-conjur $pod -o jsonpath="{.status.phase}")
+
+    if [[ (-n "$received_lsn") && ($pod_status = "Running") ]]; then
+      echo "Follower in pod '$pod' is healthy!"
       break
     fi
 
-    echo "Follower '$follower_hostname' is not healthy yet, waiting 10 seconds before trying again..."
+    echo "Follower in pod '$pod' is not healthy yet, waiting 10 seconds before trying again..."
     sleep 10
   done
 

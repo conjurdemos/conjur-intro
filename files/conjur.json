@@ -4,7 +4,7 @@
       "log_line_prefix": "'%t '",
       "max_connections": 300,
       "max_wal_senders": 300,
-      "max_replication_slots": 1000,
+      "max_replication_slots": 300,
       "max_worker_processes": 300
     },
     "archive": {

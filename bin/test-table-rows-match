@@ -32,7 +32,8 @@ LOG_DIR="$(appliance_log_dir)/tables"
 # Note: the following tables are irrelevant for comparision in this context:
 # - policy_log
 # - schema_migrations
-TABLE_NAMES=("annotations" "authenticator_configs" "credentials" "host_factory_tokens" "permissions" "policy_versions" "resources" "resources_textsearch" "role_memberships" "roles" "schema_info" "secrets" "slosilo_keystore")
+# - schema_info
+TABLE_NAMES=("annotations" "authenticator_configs" "credentials" "host_factory_tokens" "permissions" "policy_versions" "resources" "resources_textsearch" "role_memberships" "roles" "secrets" "slosilo_keystore")
 
 # Use this to hide WARN from docker compose...
 # WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string.
