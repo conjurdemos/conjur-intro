@@ -42,6 +42,8 @@ MAX_ATTEMPTS="${MAX_ATTEMPTS:-10}"
 # The timeout in seconds to wait for the all Followers to be deployed
 # 10 Minute Default
 CONFIGURE_FOLLOWER_TIMEOUT=${CONFIGURE_FOLLOWER_TIMEOUT:-600}
+CONJUR_USER=${CONJUR_USER:-"admin"}
+CONJUR_PASSWORD=${CONJUR_PASSWORD:-"MySecretP@ss1"}
 
 # Use this to hide WARN from docker compose...
 # WARN[0000] The "VERSION" variable is not set. Defaulting to a blank string.
@@ -64,6 +66,11 @@ finish() {
   if [ -n "$pid" ]; then
     echo "Killing resource monitor: $pid..."
     kill $pid || true
+  fi
+
+  if [ -n "$check_followers_read_pid" ]; then
+    echo "Killing follower reader: $check_followers_read_pid..."
+    kill $check_followers_read_pid || true
   fi
 
   ./bin/create-log-artifacts --log-directory "$LOG_DIR" --follower-count  "${FOLLOWER_COUNT}"
@@ -156,6 +163,15 @@ main(){
 
   echo "Triggering a Leader failover..."
   perform_failover
+
+  echo "Start reading from followers in the background"
+  check_followers_read_status_path=tmp/follower_check_status.txt
+  (
+    check_followers_read
+    echo $?
+  ) &
+  check_followers_read_pid=$!
+
   echo "Active Leader container is: $(discover_leader_container)"
 
   # Wait 5 minutes for all Followers to begin rebasing
@@ -164,6 +180,11 @@ main(){
 
   echo "Waiting for Follower(s) to become healthy after rebasing..."
   wait_for_followers
+
+  # kill reading from followers
+  echo "Number of failed follower reads = $(cat $check_followers_read_status_path)"
+  echo "Killing followers checker with pid = $check_followers_read_pid"
+  kill $check_followers_read_pid 2>/dev/null
 
   announce "BEGIN TEST SUITE - AFTER FAILOVER"
   for i in "${!TEST_COMMANDS[@]}"; do
@@ -176,6 +197,22 @@ main(){
 
   echo "Tests are finished executing!"
   echo "DONE."
+}
+
+check_followers_read() {
+  local -i count=0
+  echo $count > $check_followers_read_status_path
+  local api_key=$(curl -k -s --user "$CONJUR_USER:$CONJUR_PASSWORD" https://localhost/authn/demo/login)
+
+  while true; do
+    token=$(curl --silent  --insecure --header "Accept-Encoding: base64" --request POST --data "$api_key" "http://localhost/authn/demo/admin/authenticate")
+    http_status=$(curl --header "Authorization: Token token=\"$token\"" -k -s -o /dev/null -w "%{http_code}" https://localhost:449/resources/demo/variable/AutomationVault/lob-1/safe-1/account-1/variable-1)
+
+    if [ "$http_status" -ne 200 ]; then
+      count+=1
+      echo $count > $check_followers_read_status_path
+    fi
+  done
 }
 
 teardown_compose_environment() {
@@ -274,7 +311,11 @@ wait_for_follower() {
     fi
 
     echo "Checking Follower '$follower_hostname' health status (attempt $attempts/$max_attempts)..."
-    if docker compose exec "$follower_hostname" curl -k --fail-with-body https://localhost/health &>/dev/null; then
+    health_resp=$(docker compose exec "$follower_hostname" curl -k --fail-with-body https://localhost/health)
+    degraded=$(echo $health_resp | jq .degraded)
+    ok=$(echo $health_resp | jq .ok)
+
+    if [[ ($degraded = "false") && ($ok = "true") ]]; then
       echo "Follower '$follower_hostname' is healthy!"
       break
     fi

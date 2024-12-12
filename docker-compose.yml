@@ -199,7 +199,7 @@ services:
       - ./files:/conjur_files
 
   conjur-follower.mycompany.local:
-    image: haproxy:2.1-alpine
+    image: haproxy:alpine
     platform: "linux/amd64"
     networks:
       dap_net:
@@ -209,7 +209,7 @@ services:
       - "449:443"
       - "7001:7000"
     volumes:
-      - follower-certs:/etc/ssl/certs
+      - follower-certs:/etc/ssl/certs/
       - ./files/haproxy/follower:/usr/local/etc/haproxy
 
   conjur-follower-1.mycompany.local:
@@ -231,6 +231,8 @@ services:
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
       - ./files:/conjur_files
+      - follower-certs:/opt/conjur/etc/ssl/
+
 
   conjur-follower-2.mycompany.local:
     image: registry.tld/conjur-appliance:${VERSION}
