@@ -1,0 +1,183 @@
+- !policy
+  id: example
+  body:
+    - !policy
+      id: vault_1
+      body:
+        - !user user_1
+        - &vault_variables_1
+          - !variable
+            id: secret01
+            annotations: 
+              description: description
+        - !group
+          id: secret-users
+          annotations:
+            description: description
+        - !grant
+          role: !group secret-users
+          member: !user user_1
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_1
+    - !policy
+      id: vault_2
+      body:
+        - !user user_2
+        - &vault_variables_2
+          - !variable
+            id: secret01
+            annotations: 
+              description: description
+        - !group
+          id: secret-users
+          annotations:
+            description: description
+        - !grant
+          role: !group secret-users
+          member: !user user_2
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_2
+    - !policy
+      id: vault_3
+      body:
+        - !user user_3
+        - &vault_variables_3
+          - !variable
+            id: secret01
+            annotations: 
+              description: description
+        - !group
+          id: secret-users
+          annotations:
+            description: description
+        - !grant
+          role: !group secret-users
+          member: !user user_3
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_3
+    - !policy
+      id: vault_4
+      body:
+        - !user user_4
+        - &vault_variables_4
+          - !variable
+            id: secret01
+            annotations: 
+              description: description
+        - !group
+          id: secret-users
+          annotations:
+            description: description
+        - !grant
+          role: !group secret-users
+          member: !user user_4
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_4
+    - !policy
+      id: vault_5
+      body:
+        - !user user_5
+        - &vault_variables_5
+          - !variable
+            id: secret01
+            annotations: 
+              description: description
+        - !group
+          id: secret-users
+          annotations:
+            description: description
+        - !grant
+          role: !group secret-users
+          member: !user user_5
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_5
+    - !policy
+      id: vault_6
+      body:
+        - !user user_6
+        - &vault_variables_6
+          - !variable
+            id: secret01
+            annotations: 
+              description: description
+        - !group
+          id: secret-users
+          annotations:
+            description: description
+        - !grant
+          role: !group secret-users
+          member: !user user_6
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_6
+    - !policy
+      id: vault_7
+      body:
+        - !user user_7
+        - &vault_variables_7
+          - !variable
+            id: secret01
+            annotations: 
+              description: description
+        - !group
+          id: secret-users
+          annotations:
+            description: description
+        - !grant
+          role: !group secret-users
+          member: !user user_7
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_7
+    - !policy
+      id: vault_8
+      body:
+        - !user user_8
+        - &vault_variables_8
+          - !variable
+            id: secret01
+            annotations: 
+              description: description
+        - !group
+          id: secret-users
+          annotations:
+            description: description
+        - !grant
+          role: !group secret-users
+          member: !user user_8
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_8
+    - !policy
+      id: vault_9
+      body:
+        - !user user_9
+        - &vault_variables_9
+          - !variable
+            id: secret01
+            annotations: 
+              description: description
+        - !group
+          id: secret-users
+          annotations:
+            description: description
+        - !grant
+          role: !group secret-users
+          member: !user user_9
+        - !permit
+          role: !group secret-users
+          privileges: [ read, execute ]
+          resources: *vault_variables_9
