@@ -94,11 +94,21 @@ export function authn() {
 
 
 export default function () {
-  const iterationPolicyId = `${policyId}-${__ITER + 1}`
+  const iterationPolicyId = executor !== 'constant-vus'
+  ? `${policyId}-${policyContentsSize}-${__ITER + 1}`
+  : `${policyId}-${policyContentsSize}-1`; // for constant-vus we use the same policy id
+
   env.applianceUrl = env.applianceMasterUrl
   authn();
 
   if (executor !== 'constant-vus') {
+    const createPolicy = `
+    - !policy
+      id: ${iterationPolicyId}
+      body: []
+    `;
+    conjurApi.loadPolicy(http, env, 'root', createPolicy);
+
     // preload policy data
     const preLoadPolicyRes = conjurApi.loadPolicy(
       http,
@@ -153,7 +163,14 @@ export function setup(){
 
   authn();
 
-  const iterationPolicyId = `${policyId}-1`
+  const iterationPolicyId = `${policyId}-${policyContentsSize}-1`
+
+  const createPolicy = `
+  - !policy
+    id: ${iterationPolicyId}
+    body: []
+  `;
+  conjurApi.loadPolicy(http, env, 'root', createPolicy);
 
   // preload policy data once
   const preLoadPolicyRes = conjurApi.loadPolicy(
