@@ -99,9 +99,9 @@ export default function () {
   : `${policyId}-${policyContentsSize}-1`; // for constant-vus we use the same policy id
 
   env.applianceUrl = env.applianceMasterUrl
-  authn();
 
   if (executor !== 'constant-vus') {
+    authn();
     const createPolicy = `
     - !policy
       id: ${iterationPolicyId}
@@ -162,7 +162,6 @@ export function setup(){
   }
 
   authn();
-
   const iterationPolicyId = `${policyId}-${policyContentsSize}-1`
 
   const createPolicy = `
