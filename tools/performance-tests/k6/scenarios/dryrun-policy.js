@@ -29,7 +29,7 @@ const preloadPolicyDataCount = new Counter('iterations_preload_policy_data');
 const preloadPolicyDataFailRate = new Rate('http_req_failed_preload_policy_data');
 
 lib.checkRequiredEnvironmentVariables(requiredEnvVars);
-const gracefulStop = '5m'
+const gracefulStop = '15m'
 const executor = lib.getEnvVar("DRYRUN_POLICY_EXECUTOR")
 const policyContentsSize = lib.getEnvVar("POLICY_CONTENTS_SIZE")
 const policyId = lib.getEnvVar("POLICY_ID")
