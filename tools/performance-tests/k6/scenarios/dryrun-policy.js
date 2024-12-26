@@ -49,7 +49,7 @@ let scenarios, thresholds;
 if (executor === 'constant-vus') {
   scenarios = {
     dryrun_policy: {
-      duration: '5m',
+      duration: '15m',
       executor: executor,
       vus: vus,
       gracefulStop
