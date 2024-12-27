@@ -29,7 +29,7 @@ const preloadPolicyDataCount = new Counter('iterations_preload_policy_data');
 const preloadPolicyDataFailRate = new Rate('http_req_failed_preload_policy_data');
 
 lib.checkRequiredEnvironmentVariables(requiredEnvVars);
-const gracefulStop = '15m'
+const gracefulStop = '5m'
 const executor = lib.getEnvVar("DRYRUN_POLICY_EXECUTOR")
 const policyContentsSize = lib.getEnvVar("POLICY_CONTENTS_SIZE")
 const policyId = lib.getEnvVar("POLICY_ID")
@@ -49,7 +49,7 @@ let scenarios, thresholds;
 if (executor === 'constant-vus') {
   scenarios = {
     dryrun_policy: {
-      duration: '15m',
+      duration: '5m',
       executor: executor,
       vus: vus,
       gracefulStop
@@ -132,6 +132,11 @@ export default function (data) {
 
   // dryrun replace policy
   const dryrunReplacePolicyRes = conjurApi.replacePolicy(http, env, iterationPolicyId, policyContents, true);
+  console.log(dryrunReplacePolicyRes.status)
+
+  if (![200, 201].includes(dryrunReplacePolicyRes.status)) {
+    console.log(dryrunReplacePolicyRes.body)
+  }
 
   dryrunReplacePolicyTrend.add(dryrunReplacePolicyRes.timings.duration);
   dryrunReplacePolicyFailRate.add(dryrunReplacePolicyRes.status !== 201 && dryrunReplacePolicyRes.status !== 200);
