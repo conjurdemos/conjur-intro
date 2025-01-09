@@ -37,6 +37,7 @@ const vus = lib.getEnvVar("K6_CUSTOM_VUS")
 const iterations = lib.getEnvVar("DRYRUN_ITERATIONS")
 
 const env = lib.parseEnv();
+let authToken
 
 let policyContents = open(`/tools/performance-tests/k6/data/policy/test-${policyContentsSize}.yml`);
 let policyPreDataContents = open(`/tools/performance-tests/k6/data/policy/pre-data-${policyContentsSize}.yml`);
@@ -93,12 +94,22 @@ export function authn() {
 }
 
 
-export default function () {
-  const iterationPolicyId = `${policyId}-${__ITER + 1}`
+export default function (data) {
+  const iterationPolicyId = executor !== 'constant-vus'
+  ? `${policyId}-${__ITER + 1}-${policyContentsSize}`
+  : `${policyId}-1-${policyContentsSize}`; // for constant-vus we use the same policy id
+
   env.applianceUrl = env.applianceMasterUrl
-  authn();
 
   if (executor !== 'constant-vus') {
+    authn();
+    const createPolicy = `
+    - !policy
+      id: ${iterationPolicyId}
+      body: []
+    `;
+    conjurApi.loadPolicy(http, env, 'root', createPolicy);
+
     // preload policy data
     const preLoadPolicyRes = conjurApi.loadPolicy(
       http,
@@ -115,6 +126,8 @@ export default function () {
       "status is 201": (r) => r.status === 201,
       "status is not 500": (r) => r.status !== 500
     });
+  }else{
+    env.token = data.authToken
   }
 
   // dryrun replace policy
@@ -152,8 +165,15 @@ export function setup(){
   }
 
   authn();
+  authToken = env.token;
+  const iterationPolicyId = `${policyId}-1-${policyContentsSize}`
 
-  const iterationPolicyId = `${policyId}-1`
+  const createPolicy = `
+  - !policy
+    id: ${iterationPolicyId}
+    body: []
+  `;
+  conjurApi.loadPolicy(http, env, 'root', createPolicy);
 
   // preload policy data once
   const preLoadPolicyRes = conjurApi.loadPolicy(
@@ -171,6 +191,8 @@ export function setup(){
     "status is 201": (r) => r.status === 201,
     "status is not 500": (r) => r.status !== 500
   });
+
+  return { authToken };
 }
 
 export function handleSummary(data) {
