@@ -59,19 +59,21 @@ EOF
 append_results() {
   log_dir="$1"
   num_of_authenticators="$2"
+  num_of_groups="$3"
+  num_of_hosts="$4"
 
   if [[ ! -f "$RESULT_CSV_FILE" ]]; then
-      echo "Number of authenticators,Node type,Action,Virtual users,Requests handled by Conjur per second,Average response time (ms),Max response time (ms),Min response time (ms)" > "$RESULT_CSV_FILE"
+      echo "Number of authenticators,Number of groups,Number of hosts,Node type,Action,Virtual users,Requests handled by Conjur per second,Average response time (ms),Max response time (ms),Min response time (ms)" > "$RESULT_CSV_FILE"
   fi
 
   # Get values from metrics file
   if [[ ! -f "$log_dir/metrics.csv" ]]; then
-      metrics="N/A,N/A,N/A,N/A,N/A,N/A"
+      metrics="N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A"
   else
       metrics=$(cat "$log_dir/metrics.csv" | tail -n 1)
   fi
 
-  echo "$num_of_authenticators,$metrics" >> "$RESULT_CSV_FILE"
+  echo "$num_of_authenticators,$num_of_groups,$num_of_hosts,$metrics" >> "$RESULT_CSV_FILE"
 }
 
 _exec_in_master() {
@@ -101,9 +103,7 @@ load_authenticator() {
         $MASTER_CURL_URL/policies/$CONJUR_ACCOUNT/policy/root"
 }
 
-load_secrets() {
-  iter="$1"
-
+obtain_token() {
   token=$(retry_5_times "curl \
         --silent \
         --insecure \
@@ -111,6 +111,12 @@ load_secrets() {
         --request POST \
         --data '$CONJUR_ADMIN_API_KEY' \
         $MASTER_CURL_URL/authn/$CONJUR_ACCOUNT/$ADMIN_USER/authenticate")
+}
+
+load_secrets() {
+  iter="$1"
+
+  obtain_token
 
   retry_5_times "curl --header 'Authorization: Token token=\"$token\"' \
         --silent \
@@ -155,6 +161,22 @@ load_secrets() {
           $MASTER_CURL_URL/secrets/$CONJUR_ACCOUNT/variable/conjur%2Fauthn-oidc%2Fkeycloak-$iter%2Fredirect_uri"
 }
 
+fetch_num_of_groups() {
+    obtain_token
+    num_of_groups=$(curl --header "Authorization: Token token=\"$token\"" \
+        --insecure \
+        --silent \
+        "$MASTER_CURL_URL/api/resources/${CONJUR_ACCOUNT}/group/?count=true" | jq -r '.count')
+}
+
+fetch_num_of_hosts() {
+    obtain_token
+    num_of_hosts=$(curl --header "Authorization: Token token=\"$token\"" \
+        --insecure \
+        --silent \
+        "$MASTER_CURL_URL/api/resources/${CONJUR_ACCOUNT}/host/?count=true" | jq -r '.count')
+}
+
 run_load_test() {
   warmup="$1"
 
@@ -169,8 +191,10 @@ run_load_test() {
 
   log_dir=$(echo "$result" | tail -n 1)
   num_of_authenticators=$(curl -s -k "$MASTER_CURL_URL/authenticators" | jq ".enabled | length")
+  fetch_num_of_groups
+  fetch_num_of_hosts
 
-  append_results $log_dir $num_of_authenticators
+  append_results $log_dir $num_of_authenticators $num_of_groups $num_of_hosts
 }
 
 main() {
@@ -298,6 +322,10 @@ main() {
 
     authenticators_count=$(curl -s -k "$MASTER_CURL_URL/authenticators" | jq ".enabled | length")
     echo "Enabled authenticators count: $authenticators_count"
+    fetch_num_of_groups
+    echo "Groups count: $num_of_groups"
+    fetch_num_of_hosts
+    echo "Hosts count: $num_of_hosts"
 
     set +e
 
