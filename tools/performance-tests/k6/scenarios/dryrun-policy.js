@@ -35,6 +35,7 @@ const policyContentsSize = lib.getEnvVar("POLICY_CONTENTS_SIZE")
 const policyId = lib.getEnvVar("POLICY_ID")
 const vus = lib.getEnvVar("K6_CUSTOM_VUS")
 const iterations = lib.getEnvVar("DRYRUN_ITERATIONS")
+const parallel = lib.getEnvVar("PARALLEL_TESTS")
 
 const env = lib.parseEnv();
 let authToken
@@ -129,9 +130,49 @@ export default function (data) {
   }else{
     env.token = data.authToken
   }
+  let dryrunReplacePolicyRes
+  let replacePolicyRes
 
-  // dryrun replace policy
-  const dryrunReplacePolicyRes = conjurApi.replacePolicy(http, env, iterationPolicyId, policyContents, true);
+  if (parallel == "true"){
+    if (executor !== 'constant-vus') {
+      const {
+        applianceMasterUrl,
+        conjurAccount,
+        token
+      } = env;
+
+      const headers = { 'Authorization': `Token token="${token}"` };
+      const dryrunUrl = `${applianceMasterUrl}/policies/${conjurAccount}/policy/${iterationPolicyId}?dryRun=true`;
+      const replacePolicylUrl = `${applianceMasterUrl}/policies/${conjurAccount}/policy/${iterationPolicyId}?dryRun=false`;
+      const policyBody = policyContents;
+      const responses = http.batch([
+        {
+          method: 'PUT',
+          url: dryrunUrl,
+          body: policyBody,
+          params: { headers },
+        },
+        {
+          method: 'PUT',
+          url: replacePolicylUrl,
+          body: policyBody,
+          params: { headers },
+        },
+      ]);
+
+      dryrunReplacePolicyRes = responses[0];
+      replacePolicyRes = responses[1];
+    }else{
+      dryrunReplacePolicyRes = conjurApi.replacePolicy(http, env, iterationPolicyId, policyContents, true);
+    }
+  }else{
+    // dryrun replace policy
+    dryrunReplacePolicyRes = conjurApi.replacePolicy(http, env, iterationPolicyId, policyContents, true);
+    // skip if multiple users at the same time - duplicate key PG error
+    if (executor !== 'constant-vus') {
+      replacePolicyRes = conjurApi.replacePolicy(http, env, iterationPolicyId, policyContents);
+    }
+}
 
   dryrunReplacePolicyTrend.add(dryrunReplacePolicyRes.timings.duration);
   dryrunReplacePolicyFailRate.add(dryrunReplacePolicyRes.status !== 201 && dryrunReplacePolicyRes.status !== 200);
@@ -142,11 +183,7 @@ export default function (data) {
     "status is not 500": (r) => r.status !== 500
   });
 
-  // replace policy
-  // skip if multiple users at the same time - duplicate key PG error
   if (executor !== 'constant-vus') {
-    const replacePolicyRes = conjurApi.replacePolicy(http, env, iterationPolicyId, policyContents);
-
     replacePolicyTrend.add(replacePolicyRes.timings.duration);
     replacePolicyFailRate.add(replacePolicyRes.status !== 201 && replacePolicyRes.status !== 200);
     replacePolicyCount.add(1);
