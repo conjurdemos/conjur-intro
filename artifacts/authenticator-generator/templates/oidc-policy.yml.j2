@@ -33,4 +33,94 @@
             role: !group users
             privilege: [ read, authenticate ]
             resource: !webservice
+
+          - !grant
+            role: !group users
+            member: !group /data/apps/authenticators
+
+          - !group apps
+
+          - !permit
+            role: !group apps
+            privilege: [ authenticate ]
+            resource: !webservice
+
+          - !grant
+            role: !group apps
+            member: !group /data/apps/authenticators
+
+          # Enabling possibility to check an authenticator status
+          - !webservice status
+
+          # Group of users who can check the status of the oidc Authenticator
+          - !group operators
+
+          - !permit
+            role: !group operators
+            privilege: [ read ]
+            resource: !webservice status
+
+      {%- endfor %}
+
+- !policy
+  id: data
+  body:
+    - !group apps-admins
+    - !group vault-admins
+
+    - !policy
+      id: apps
+      owner: !group apps-admins
+      body:
+        - !group authenticators
+
+        {%- for i in range(1, authenticators_per_policy+1) %}
+        - !host
+          id: system:serviceaccount:conjur-automation:onboarding-{{offset+i}}
+          annotations:
+            description: Group of users who can authenticate using the authn-oidc/<service-id> authenticator
+            authn/api-key: true
+
+        - !grant
+          role: !group authenticators
+          member: !host system:serviceaccount:conjur-automation:onboarding-{{offset+i}}
+        {%- endfor %}
+
+    {%- for i in range(1, authenticators_per_policy+1) %}
+
+    - !grant
+      role: !group apps-admins
+      member: !host apps/system:serviceaccount:conjur-automation:onboarding-{{offset+i}}
+    - !grant
+      role: !group vault-admins
+      member: !host apps/system:serviceaccount:conjur-automation:onboarding-{{offset+i}}
+    {%- endfor %}
+
+    - !policy
+      id: AutomationVault
+      owner: !group vault-admins
+      body:
+      {%- set lobs=10 %}
+      {%- set safes=15 %}
+      {%- set las=lobs*safes %}
+      {%- for i in range(1, authenticators_per_policy+1) %}
+      {%- set lobidx=(((offset+i)/las|round(method='floor'))|int) %}
+      {%- if (offset+i)%las == 1 or loop.first %}
+        - !policy
+          id: lob-{{ lobidx + 1 }}
+          body:
+      {%- endif %}
+            {%- set safeidx= (((offset+i)/safes|round(method='floor'))|int)%}
+            {%- if (offset+i-1)%safes == 0 or loop.first %}
+            - !policy
+              id: safe-{{ safeidx + 1  }}
+              body:
+                - !policy
+                  id: delegation
+                  body:
+                    - !group consumers
+            {%- endif %}
+                    - !grant
+                      role: !group consumers
+                      member: !host /data/apps/system:serviceaccount:conjur-automation:onboarding-{{offset+i}}
       {%- endfor %}
