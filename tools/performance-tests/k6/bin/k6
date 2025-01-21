@@ -42,6 +42,7 @@ k6() {
     -e DRYRUN_POLICY_EXECUTOR \
     -e POLICY_CONTENTS_SIZE \
     -e DRYRUN_ITERATIONS \
+    -e PARALLEL_TESTS \
     --entrypoint /bin/bash k6 -c "k6 $cmd"
 }
 
