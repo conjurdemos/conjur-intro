@@ -23,7 +23,7 @@ export CONJUR_IDENTITY=${CONJUR_IDENTITY:-"admin"}
 export DRYRUN_POLICY_EXECUTOR=${DRYRUN_POLICY_EXECUTOR:-"per-vu-iterations"}
 export POLICY_CONTENTS_SIZE=${POLICY_CONTENTS_SIZE:-"100KB"}
 export DRYRUN_ITERATIONS=${DRYRUN_ITERATIONS:-"3"}
-
+export PARALLEL_TESTS=${PARALLEL_TESTS:-"false"}
 
 function print_help() {
   cat << EOF
@@ -54,6 +54,7 @@ print_settings() {
     echo "DRYRUN_POLICY_EXECUTOR      : $DRYRUN_POLICY_EXECUTOR"
     echo "POLICY_CONTENTS_SIZE        : $POLICY_CONTENTS_SIZE"
     echo "DRYRUN_ITERATIONS           : $DRYRUN_ITERATIONS"
+    echo "PARALLEL_TESTS"             : $PARALLEL_TESTS
     
     echo ""
     echo "Load test and system metrics reports can be found at: $LOG_ROOT/*"
