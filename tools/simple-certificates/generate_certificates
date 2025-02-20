@@ -81,9 +81,8 @@ function ssl_proxy {
     set -x
   fi
 
-  docker run -it \
-             --rm \
-             -v "${CURRENT_DIR}:/src" \
+  docker run --rm \
+             -v "${CURRENT_DIR}:/src:rw" \
              -v "${CURRENT_DIR}/configs:/configs" \
              -w "/src/${work_dir}" \
              -e "SAN=${san}" \
@@ -232,7 +231,7 @@ done
 
 echo "Building the complete cert chain..."
 cert_chain_files=""
-for intermediate_cert_index in $(seq ${INTERMEDIATE_CERT_DEPTH} 1); do
+for intermediate_cert_index in $(seq ${INTERMEDIATE_CERT_DEPTH} -1 1); do
   intermediate_cert_name="intermediate_${intermediate_cert_index}"
   intermediate_cert_file="${intermediate_cert_name}.cert.pem"
 
@@ -283,14 +282,15 @@ for node_name in ${leaf_nodes}; do
         -extensions san_env \
         -in "/src/${node_csr_file}" \
         -out "/src/${node_cert_file}"
-    chmod 444 "${CURRENT_DIR}/${node_cert_file}"
+
+    ssl_proxy  "." chmod 444 "/src/${node_cert_file}"
 
     if [ "${DEBUG}" == "true" ]; then
       ssl_proxy "." \
         openssl x509 -noout -text -in "/src/${node_cert_file}"
     fi
 
-    chmod 400 "${CURRENT_DIR}/${node_key_file}"
+    ssl_proxy  "." chmod 444 "/src/${node_key_file}"
   fi
 done
 
