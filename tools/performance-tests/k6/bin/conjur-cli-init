@@ -1,0 +1,8 @@
+#!/bin/sh
+
+CONJUR_APPLIANCE_URL="$1"
+CONJUR_ACCOUNT="$2"
+CONJUR_PASSWORD="$3"
+
+echo y | conjur init -u "$CONJUR_APPLIANCE_URL" -a "$CONJUR_ACCOUNT" --self-signed --force
+conjur login -i admin -p "$CONJUR_PASSWORD"

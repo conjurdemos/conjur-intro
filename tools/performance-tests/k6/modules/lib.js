@@ -88,6 +88,7 @@ export function parseEnv() {
     applianceReadUrl: getEnvVar("APPLIANCE_READ_URL"),
     conjurAccount: getEnvVar("CONJUR_ACCOUNT"),
     conjurIdentity: encodeURIComponent(getEnvVar("CONJUR_IDENTITY")),
+    conjurPassword: getEnvVar("CONJUR_PASSWORD"),
     secretIdentity: getEnvVar("SECRET_IDENTITY"),
     startLobs: parseInt(getEnvVar("START_LOBS")),
     startLobSafe: parseInt(getEnvVar("START_LOB_SAFE")),
@@ -247,6 +248,13 @@ export function generateMetricsArray(nodeType, testName, vusMax, httpReqs, avgRe
   return [
     ['Node type', 'Action', 'Virtual users', 'Requests handled by Conjur per second', 'Average response time (ms)', 'Max response time (ms)', 'Min response time (ms)', '% of failed requests'],
     [nodeType, testName, vusMax, httpReqs, avgResponseTime, maxResponseTime, minResponseTime, failRate*100]
+  ];
+}
+
+export function generateBurnInMetricsArray(nodeType, testName, vusMax, iterations, avgHttpResponseTime, maxHttpResponseTime, minHttpResponseTime, avgCliResponseTime, maxCliResponseTime, minCliResponseTime, failRate, cliFailRate) {
+  return [
+    ['Node type', 'Action', 'Virtual users', 'Iterations per second', 'Average HTTP response time (ms)', 'Max HTTP response time (ms)', 'Min HTTP response time (ms)', 'Average CLI response time (ms)', 'Max CLI response time (ms)', 'Min CLI response time (ms)', '% of failed HTTP requests', '% of failed CLI calls'],
+    [nodeType, testName, vusMax, iterations, avgHttpResponseTime, maxHttpResponseTime, minHttpResponseTime, avgCliResponseTime, maxCliResponseTime, minCliResponseTime, failRate*100, cliFailRate*100]
   ];
 }
 

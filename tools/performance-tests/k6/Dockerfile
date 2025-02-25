@@ -18,15 +18,23 @@ RUN apk update && apk add git
 # k6 by default due to introducing breaking changes to the core product.
 # See: https://github.com/grafana/xk6-output-statsd
 RUN go install go.k6.io/xk6/cmd/xk6@latest
-RUN xk6 build --with github.com/LeonAdato/xk6-output-statsd
+RUN xk6 build \
+    --with github.com/LeonAdato/xk6-output-statsd \
+    --with github.com/grafana/xk6-exec@latest
+
+# Install Conjur CLI
+RUN wget https://github.com/cyberark/conjur-cli-go/releases/download/v8.0.19/conjur_linux_amd64 && \
+  mv conjur_linux_amd64 conjur && \
+  chmod +x conjur
 
 FROM alpine:latest
 
-# Install dependencies
-RUN apk update && apk add bash \
-  curl
+RUN apk update && apk add gcompat \
+    bash \
+    curl
 
 COPY --from=builder /src/k6 /usr/local/bin
+COPY --from=builder /src/conjur /usr/local/bin
 
 # Run k6
 ENTRYPOINT ["k6"]
