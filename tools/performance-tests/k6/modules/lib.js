@@ -97,7 +97,9 @@ export function parseEnv() {
     endLobSafe: parseInt(getEnvVar("END_LOB_SAFE")),
     endLobSafeSecret: parseInt(getEnvVar("END_LOB_SAFE_SECRET")),
     policyFile: getEnvVar("POLICY_FILE"),
-    policyId: getEnvVar("POLICY_ID"),
+    perfTestDynamicSecretsAwsAccessKeyId: getEnvVar("PERF_TEST_DYNAMIC_SECRETS_AWS_ACCESS_KEY_ID"),
+    perfTestDynamicSecretsAwsSecretAccessKey: getEnvVar("PERF_TEST_DYNAMIC_SECRETS_AWS_SECRET_ACCESS_KEY"),
+    perfTestDynamicSecretsAwsAssumeRoleArn: getEnvVar("PERF_TEST_DYNAMIC_SECRETS_AWS_ASSUME_ROLE_ARN"),
   }
 }
 
@@ -196,6 +198,25 @@ export function createUsersPolicy(identifier) {
 - !grant
   role: !group AutomationVault/lob-1-${identifier}/safe-1-${identifier}/delegation/consumers
   members: !group AutomationVault-users/lob-1-${identifier}/safe-1-${identifier}/users`;
+}
+
+export function createDynamicSecretsPolicy(arn) {
+  return `- !policy
+  id: data/dynamic
+  body:
+
+  - !variable
+    id: ds-assume-role
+    annotations:
+      dynamic/issuer: my-aws
+      dynamic/method: assume-role
+      dynamic/role_arn: "${arn}"
+
+  - !variable
+    id: ds-federation-token
+    annotations:
+      dynamic/issuer: my-aws
+      dynamic/method: federation-token`;
 }
 
 export function createNestedPolicy(level, maxLevel) {

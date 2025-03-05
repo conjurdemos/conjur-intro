@@ -7,23 +7,24 @@ A tool which uses the DAP API to perform various tasks.
 
 Usage: bin/api [options]
 
-    --against-master                    Runs command against the master (only relevant if command is an authenticate/read action)
-    --authenticate-user                 Login using the default username (admin) and password (MySecretP@ss1)
-    --enable-seed-service               Enables Seed Service for Standbys and Followers
-    --fetch-secrets                     Fetches previously set variables (use '--against-master' if only master is available)
-    -h, --help                          Shows this help message
-    --load-large-secrets-sample         Loads 150k variables with secrets
-    --load-policy <namespace> <policy>  Loads the provided policy into the provided namespace
-    --load-sample-policy                Loads a default set of policies to mimic a customer experience
-    --load-sample-policy-and-values     Loads policy and sets variable values (equivalent to running '--load-policy' and '--set-secrets')
-    -p, --password <password>           Password used for authentication (default is 'MySecretP@ss1')
-    --rotate-api-key                    Rotates the authenticated user's API key
-    --rotate-multiple-host-api-keys     Rotates all api keys of hosts provided in an array to the function
-    --set-secrets                       Sets variable values
-    --set-secret-value <path> <value>   Assigns the provided value to the provided variable
-    -u, --user <conjur-user>            Username to authenticate with (default is 'admin')
-    --view-roles                        Displays the user's roles
-
+    --against-master                                                   Runs command against the master (only relevant if command is an authenticate/read action)
+    --authenticate-user                                                Login using the default username (admin) and password (MySecretP@ss1)
+    --enable-seed-service                                              Enables Seed Service for Standbys and Followers
+    --fetch-secrets                                                    Fetches previously set variables (use '--against-master' if only master is available)
+    -h, --help                                                         Shows this help message
+    --load-large-secrets-sample                                        Loads 150k variables with secrets
+    --load-policy <namespace> <policy>                                 Loads the provided policy into the provided namespace
+    --load-sample-policy                                               Loads a default set of policies to mimic a customer experience
+    --load-sample-policy-and-values                                    Loads policy and sets variable values (equivalent to running '--load-policy' and '--set-secrets')
+    -p, --password <password>                                          Password used for authentication (default is 'MySecretP@ss1')
+    --rotate-api-key                                                   Rotates the authenticated user's API key
+    --rotate-multiple-host-api-keys                                    Rotates all api keys of hosts provided in an array to the function
+    --set-secrets                                                      Sets variable values
+    --set-secret-value <path> <value>                                  Assigns the provided value to the provided variable
+    -u, --user <conjur-user>                                           Username to authenticate with (default is 'admin')
+    --view-roles                                                       Displays the user's roles
+    --create-aws-issuer <name> <aws-access-key-id> <aws-secret-key>    Creates an AWS issuer using the provided name and credentials
+    --delete-aws-issuer <name>                                         Deletes an AWS issuer by the given name
 EOF
   exit
 }
@@ -271,6 +272,71 @@ rotate_multiple_host_api_keys() {
   echo "$responses"
 }
 
+create_aws_issuer() {
+  local name="$1"
+  local access_key_id="$2"
+  local secret_access_key="$3"
+  local token
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
+
+  curl --header "Authorization: Token token=\"$token\"" \
+       --header "Content-Type: application/json" \
+       --silent \
+       --write-out "\n" \
+       --insecure \
+       --request POST \
+       --data "{
+         \"id\": \"${name}\",
+         \"max_ttl\": 3600,
+         \"type\": \"aws\",
+         \"data\": {
+           \"access_key_id\": \"${access_key_id}\",
+           \"secret_access_key\": \"${secret_access_key}\"
+         }
+       }" \
+       "$master_url/api/issuers/demo" | jq
+}
+
+delete_aws_issuer() {
+  set -x
+  local name="$1"
+  local token
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
+
+  curl --header "Authorization: Token token=\"$token\"" \
+       --silent \
+       --write-out "\n" \
+       --insecure \
+       --request DELETE \
+       --verbose \
+       "$master_url/api/issuers/demo/$name"
+}
+
+list_issuers() {
+  local token
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
+
+  curl --header "Authorization: Token token=\"$token\"" \
+       --silent \
+       --write-out "\n" \
+       --insecure \
+       "$URL/api/issuers/demo" | jq
+}
+
+get_dynamic_secret() {
+  local secret_id="$1"
+  local token
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
+
+  curl --header "Authorization: Token token=\"$token\"" \
+       --write-out "\n" \
+       --insecure \
+       --silent \
+       --request GET \
+       "$URL/api/secrets/demo/variable/data/dynamic/${secret_id}" | \
+       jq '.data.secret_access_key = "****" | .data.session_token = "*****"'
+}
+
 # -- End functions called directly from CLI --
 
 follower_url='http://conjur-follower.mycompany.local'
@@ -304,6 +370,10 @@ while true ; do
     --rotate-api-key ) shift ; cmd="rotate_api_key $1" ; shift ;;
     --rotate-multiple-host-api-keys ) shift ; cmd="rotate_multiple_host_api_keys $1" ; shift ;;
     --enable-seed-service ) shift ; cmd='enable_seed_service' ;;
+    --create-aws-issuer ) shift ; cmd="create_aws_issuer $1 $2 $3"; shift; shift; shift ;;
+    --delete-aws-issuer ) shift ; cmd="delete_aws_issuer $1"; shift ;;
+    --list-issuers ) shift ; cmd="list_issuers" ;;
+    --get-dynamic-secret ) shift ; cmd="get_dynamic_secret $1" ; shift ;;
      * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
   esac
 done
