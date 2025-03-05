@@ -307,9 +307,13 @@ function _setup_follower {
   docker compose rm --stop --force conjur-follower-1.mycompany.local
   docker compose up --no-deps --detach conjur-follower-1.mycompany.local
 
+  # Create replication set
+  _run conjur-master-1.mycompany.local \
+    "evoke replication-set create test"
+
   # Generate Seed file
   _run conjur-master-1.mycompany.local \
-    "evoke seed follower conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed.tar"
+    "evoke seed follower --replication-set=test conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed.tar"
 
   # Unpack and Configure
   _run conjur-follower-1.mycompany.local \
