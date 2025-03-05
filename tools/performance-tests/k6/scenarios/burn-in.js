@@ -15,6 +15,9 @@ import shellExec from 'k6/x/exec';
  *  Init stage
  */
 const requiredEnvVars = [
+  "PERF_TEST_DYNAMIC_SECRETS_AWS_ACCESS_KEY_ID",
+  "PERF_TEST_DYNAMIC_SECRETS_AWS_SECRET_ACCESS_KEY",
+  "PERF_TEST_DYNAMIC_SECRETS_AWS_ASSUME_ROLE_ARN",
   "K6_CUSTOM_GRACEFUL_STOP",
   "K6_CUSTOM_VUS",
   "K6_CUSTOM_ITERATIONS"
@@ -55,7 +58,15 @@ const policyFetchTrend = new Trend('cli_call_duration_policy_fetch', true);
 const policyFetchFailRate = new Rate('cli_call_failed_policy_fetch');
 const policyDryRunTrend = new Trend('cli_call_duration_policy_dry_run', true);
 const policyDryRunFailRate = new Rate('cli_call_failed_policy_dry_run');
-
+// Dynamic Secrets metrics
+const createAwsIssuerTrend = new Trend('http_req_duration_create_aws_issuer', true);
+const createAwsIssuerFailRate = new Rate('http_req_failed_create_aws_issuer');
+const createDynamicSecretsPolicyTrend = new Trend('http_req_duration_create_dynamic_secrets_policy', true);
+const createDynamicSecretsPolicyFailRate = new Rate('http_req_failed_create_dynamic_secrets_policy');
+const readDynamicSecretAssumeRoleTrend = new Trend('http_req_duration_get_dynamic_secret_assume_role', true);
+const readDynamicSecretAssumeRoleFailRate = new Rate('http_req_failed_get_dynamic_secret_assume_role');
+const readDynamicSecretFederationTokenTrend = new Trend('http_req_duration_get_dynamic_secret_federation_token', true);
+const readDynamicSecretFederationTokenFailRate = new Rate('http_req_failed_get_dynamic_secret_federation_token');
 
 lib.checkRequiredEnvironmentVariables(requiredEnvVars);
 const gracefulStop = lib.getEnvVar("K6_CUSTOM_GRACEFUL_STOP");
@@ -84,6 +95,24 @@ export const options = {
       exec: "readSecret",
       gracefulStop
     },
+    // Dynamic Secrets must not exceed 600 requests per second:
+    // https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_iam-quotas.html#reference_iam-quotas-sts-requests
+    read_dynamic_secret_assume_role: {
+      executor: 'shared-iterations',
+      maxDuration: "3h",
+      vus: vus,
+      iterations: iterations,
+      exec: "readDynamicSecretAssumeRole",
+      gracefulStop
+    },
+    read_dynamic_secret_federation_token: {
+      executor: 'shared-iterations',
+      maxDuration: "3h",
+      vus: vus,
+      iterations: iterations,
+      exec: "readDynamicSecretFederationToken",
+      gracefulStop
+    },
     cli: {
       executor: 'shared-iterations',
       maxDuration: "3h",
@@ -101,6 +130,51 @@ export const options = {
 export function setup() {
   initAndLoginConjurCli(env.applianceReadUrl, env.conjurAccount, env.conjurPassword);
   runCliCommand(["policy", "load", "replace", "-b", "root", "-f", "/tools/performance-tests/k6/data/policy/burnin-policy.yml"], null, null);
+
+  // STDIN does not seem to be supported by k6/x/exec, so we cannot use Conjur
+  // CLI to load policy via STDIN (e.g. "conjur policy load -f - <<EOF ... EOF")
+  // So, we use the REST API instead, as opposed to writing this file
+  // (dynamic content) to disk.
+  setupDynamicSecrets()
+}
+
+// This function creates an AWS issuer(using the AWS access key id and secret
+// key), and the Conjur Policy Resources used to retrieve the
+// generated dynamic secrets.
+//
+// Note: if either of these entities already exist in Conjur, these requests
+// will fail, but the test will continue to execute, and any tests that query
+// these dynamic secrets should still work.
+export function setupDynamicSecrets() {
+  const dynamicSecretsPolicy = lib.createDynamicSecretsPolicy(env.perfTestDynamicSecretsAwsAssumeRoleArn);
+  env.applianceUrl = env.applianceMasterUrl;
+
+  authn()
+
+  // Create the issuer
+  let res = conjurApi.createAwsIssuer(
+    http,
+    env,
+    'my-aws',
+    env.perfTestDynamicSecretsAwsAccessKeyId,
+    env.perfTestDynamicSecretsAwsSecretAccessKey
+  );
+
+  createAwsIssuerTrend.add(res.timings.duration);
+  // Subsequent iterations will fail with a 409 if the issuer already exists,
+  // and that would be expected.
+  createAwsIssuerFailRate.add(res.status !== 201 && res.status !== 409);
+
+  // Create the dynamic secrets policy
+  res = conjurApi.loadPolicy(
+    http,
+    env,
+    'root',
+    dynamicSecretsPolicy
+  );
+
+  createDynamicSecretsPolicyTrend.add(res.timings.duration);
+  createDynamicSecretsPolicyFailRate.add(res.status !== 201);
 }
 
 export function authn() {
@@ -138,6 +212,46 @@ export function readSecret() {
 
   readSecretTrend.add(res.timings.duration);
   readSecretFailRate.add(res.status !== 200);
+
+  check(res, {
+    "HTTP status is 200": (r) => r.status === 200,
+    "HTTP status is not 404": (r) => r.status !== 404,
+    "HTTP status is not 401": (r) => r.status !== 401,
+    "HTTP status is not 500": (r) => r.status !== 500
+  });
+}
+
+export function readDynamicSecretAssumeRole() {
+  env.applianceUrl = env.applianceReadUrl;
+  env.conjurIdentity = `admin`;
+
+  authn();
+
+  const identity = `data/dynamic/ds-assume-role`;
+  const res = conjurApi.readSecret(http, env, identity);
+
+  readDynamicSecretAssumeRoleTrend.add(res.timings.duration);
+  readDynamicSecretAssumeRoleFailRate.add(res.status !== 200);
+
+  check(res, {
+    "HTTP status is 200": (r) => r.status === 200,
+    "HTTP status is not 404": (r) => r.status !== 404,
+    "HTTP status is not 401": (r) => r.status !== 401,
+    "HTTP status is not 500": (r) => r.status !== 500
+  });
+}
+
+export function readDynamicSecretFederationToken() {
+  env.applianceUrl = env.applianceReadUrl;
+  env.conjurIdentity = `admin`;
+
+  authn();
+
+  const identity = `data/dynamic/ds-federation-token`;
+  const res = conjurApi.readSecret(http, env, identity);
+
+  readDynamicSecretFederationTokenTrend.add(res.timings.duration);
+  readDynamicSecretFederationTokenFailRate.add(res.status !== 200);
 
   check(res, {
     "HTTP status is 200": (r) => r.status === 200,
