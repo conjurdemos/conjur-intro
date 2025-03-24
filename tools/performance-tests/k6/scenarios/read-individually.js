@@ -23,8 +23,10 @@ const requiredEnvVars = [
 // These are custom k6 metrics that will be reported in the k6 summary.
 const authenticateTrend = new Trend('http_req_duration_post_authn', true);
 const authenticateFailRate = new Rate('http_req_failed_post_authn');
-const readSecretsIndividuallyTrend = new Trend('http_req_duration_get_secrets_individually', true);
-const readSecretsIndividuallyFailRate = new Rate('http_req_failed_get_secrets_individually');
+const readStaticSecretsIndividuallyTrend = new Trend('http_req_duration_get_static_secrets_individually', true);
+const readStaticSecretsIndividuallyFailRate = new Rate('http_req_failed_get_static_secrets_individually');
+const readDynamicSecretsIndividuallyTrend = new Trend('http_req_duration_get_dynamic_secrets_individually', true);
+const readDynamicSecretsIndividuallyFailRate = new Rate('http_req_failed_get_dynamic_secrets_individually');
 
 lib.checkRequiredEnvironmentVariables(requiredEnvVars);
 const gracefulStop = lib.getEnvVar("K6_CUSTOM_GRACEFUL_STOP");
@@ -96,12 +98,26 @@ export default function () {
   const variableNumber = Math.ceil(Math.random() * 5) || 1;
   const identity = `AutomationVault/${apiKey.lob_name}/${apiKey.safe_name}/account-${accountNumber}${uuid_suffix}/variable-${variableNumber}${uuid_suffix}`;
 
-  const res = conjurApi.readSecret(http, env, identity);
+  // Read static secret
+  const resStatic = conjurApi.readSecret(http, env, identity);
 
-  readSecretsIndividuallyTrend.add(res.timings.duration);
-  readSecretsIndividuallyFailRate.add(res.status !== 200);
+  readStaticSecretsIndividuallyTrend.add(resStatic.timings.duration);
+  readStaticSecretsIndividuallyFailRate.add(resStatic.status !== 200);
 
-  check(res, {
+  check(resStatic, {
+    "status is 200": (r) => r.status === 200,
+    "status is not 404": (r) => r.status !== 404,
+    "status is not 401": (r) => r.status !== 401,
+    "status is not 500": (r) => r.status !== 500
+  });
+
+  // Read dynamic secret
+  const resDynamic = conjurApi.readSecret(http, env, 'data/dynamic/' + identity);
+
+  readDynamicSecretsIndividuallyTrend.add(resDynamic.timings.duration);
+  readDynamicSecretsIndividuallyFailRate.add(resDynamic.status !== 200);
+
+  check(resDynamic, {
     "status is 200": (r) => r.status === 200,
     "status is not 404": (r) => r.status !== 404,
     "status is not 401": (r) => r.status !== 401,
@@ -114,8 +130,11 @@ export function handleSummary(data) {
     iterations: {
       values: {rate: httpReqs}
     },
-    http_req_duration_get_secrets_individually: {
-      values: {avg: avgResponseTime, max: maxResponseTime, min: minResponseTime}
+    http_req_duration_get_static_secrets_individually: {
+      values: {avg: avgResponseTimeStatic, max: maxResponseTimeStatic, min: minResponseTimeStatic}
+    },
+    http_req_duration_get_dynamic_secrets_individually: {
+      values: {avg: avgResponseTimeDynamic, max: maxResponseTimeDynamic, min: minResponseTimeDynamic}
     },
     http_req_failed: {
       values: {rate: failRate}
@@ -125,11 +144,11 @@ export function handleSummary(data) {
     }
   } = data['metrics'];
 
-  const testName = "Retrieve a single secret";
+  const testName = "Retrieve a single static and dynamic secret";
   const nodeType = lib.checkNodeType(env.applianceReadUrl);
 
   const csv = papaparse.unparse(
-    lib.generateMetricsArray(nodeType, testName, vusMax, httpReqs, avgResponseTime, maxResponseTime, minResponseTime, failRate)
+    lib.generateMetricsArray(nodeType, testName, vusMax, httpReqs, avgResponseTimeStatic, maxResponseTimeStatic, minResponseTimeStatic, avgResponseTimeDynamic, maxResponseTimeDynamic, minResponseTimeDynamic, failRate)
   );
 
   return {

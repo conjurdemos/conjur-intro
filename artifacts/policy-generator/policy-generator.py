@@ -26,7 +26,7 @@ def create_lob_policy_file(context, lob_number, safe_number):
     """
     context['lob_iteration'] = 'lob-' + str(lob_number)
     context['safe_iteration'] = 'safe-' + str(safe_number)
-    
+
     with open(INPUT_FILE_LOBS) as t:
         template = Template(t.read())
 
@@ -104,6 +104,7 @@ def generate_policy():
     if UUID != "":
         uuid_suffix = f"-{UUID}"
     context = {
+        'role_arn': ROLE_ARN,
         'lobs': [f'lob-{x + 1}' for x in range(LOB_COUNT)],
         'safes': [f'safe-{x + 1}' for x in range(SAFE_COUNT)],
         'accounts': [f'account-{x + 1}{uuid_suffix}' for x in range(ACCOUNT_COUNT)],
@@ -141,9 +142,10 @@ def main():
     parser.add_argument('--safe_count', type=int, required=True, help='Number of safes')
     parser.add_argument('--host_count', type=int, required=True, help='Number of hosts')
     parser.add_argument('--user_count', type=int, required=True, help='Number of users')
+    parser.add_argument('--role_arn', type=str, required=False, help='ARN for dynamic secrets role')
     args = parser.parse_args()
 
-    global UUID, LOB_COUNT, ACCOUNT_COUNT, SECRETS_PER_ACCOUNT, SAFE_COUNT, HOST_COUNT, USER_COUNT, TOTAL_SECRETS
+    global UUID, LOB_COUNT, ACCOUNT_COUNT, SECRETS_PER_ACCOUNT, SAFE_COUNT, HOST_COUNT, USER_COUNT, TOTAL_SECRETS, ROLE_ARN
 
     UUID = args.uuid
     LOB_COUNT = args.lob_count
@@ -152,6 +154,7 @@ def main():
     SAFE_COUNT = args.safe_count
     HOST_COUNT = args.host_count
     USER_COUNT = args.user_count
+    ROLE_ARN = args.role_arn
     TOTAL_SECRETS = ACCOUNT_COUNT * SECRETS_PER_ACCOUNT * SAFE_COUNT * LOB_COUNT
 
     if UUID != "":

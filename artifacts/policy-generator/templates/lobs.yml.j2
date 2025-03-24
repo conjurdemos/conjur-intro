@@ -38,3 +38,55 @@
               privileges: [ read ]
               role: !group /AutomationVault/{{lob_iteration}}/{{safe_iteration}}/delegation/viewers
             {%- endfor %}
+
+- !policy
+  id: data/dynamic
+  body:
+    - !policy
+      id: AutomationVault
+      owner: !group /AutomationVault-admins
+      body:
+        - !policy
+          id: {{lob_iteration}}
+          owner: !group /AutomationVault/{{lob_iteration}}-admins
+          body:
+            - !policy
+              id: {{safe_iteration}}/delegation
+              owner: !group /AutomationVault/{{lob_iteration}}/{{safe_iteration}}-admins
+            - !policy
+              id: {{safe_iteration}}
+              body:
+                {%- for account in accounts %}
+                - &{{lob_iteration}}-{{safe_iteration}}-{{account}}-dynamic-variables
+                  {%- for var in secrets %}
+                  - !variable
+                    id: {{account}}/{{var}}
+                    annotations:
+                      dynamic/issuer: my-aws
+                      dynamic/method: assume-role
+                      dynamic/role_arn: {{role_arn}}
+                      dynamic/region: us-east-1
+                      dynamic/inline_policy: |
+                        {
+                          "Version": "2012-10-17",
+                          "Statement": [
+                            {
+                              "Effect": "Allow",
+                              "Action": [
+                                "ec2:DescribeInstances"
+                              ],
+                              "Resource": "*"
+                            }
+                          ]
+                        }
+                  {%- endfor %}
+
+                - !permit
+                  resource: *{{lob_iteration}}-{{safe_iteration}}-{{account}}-dynamic-variables
+                  privileges: [ read, execute ]
+                  role: !group /AutomationVault/{{lob_iteration}}/{{safe_iteration}}/delegation/consumers
+                - !permit
+                  resource: *{{lob_iteration}}-{{safe_iteration}}-{{account}}-dynamic-variables
+                  privileges: [ read ]
+                  role: !group /AutomationVault/{{lob_iteration}}/{{safe_iteration}}/delegation/viewers
+                {%- endfor %}

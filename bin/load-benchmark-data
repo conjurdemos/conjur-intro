@@ -180,7 +180,6 @@ main() {
       echo "Generating CONJUR_ADMIN_API_KEY..."
       export CONJUR_ADMIN_API_KEY=$(curl -k -s --user "$ADMIN_USER:$PASSWORD" https://localhost/authn/demo/login)
   fi
-
   # Generate policy files
   docker compose run --build --rm policy-generator python3 policy-generator.py \
     --uuid "$UUID" \
@@ -189,7 +188,12 @@ main() {
     --lob_count "$LOB_COUNT" \
     --safe_count "$SAFES_COUNT" \
     --host_count "$HOSTS_COUNT" \
-    --user_count "$USERS_COUNT"
+    --user_count "$USERS_COUNT" \
+    --role_arn "$PERF_TEST_DYNAMIC_SECRETS_AWS_ASSUME_ROLE_ARN"
+
+
+  # Create AWS dynamic secret issuer.
+  bin/api --create-aws-issuer "my-aws" "${AWS_ACCESS_KEY_ID}" "${AWS_SECRET_ACCESS_KEY}"
 
   # Load policies into Conjur using previously made files
   log_dir=$(load_policy_set | tail -n 1)
