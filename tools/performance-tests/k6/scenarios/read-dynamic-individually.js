@@ -23,8 +23,8 @@ const requiredEnvVars = [
 // These are custom k6 metrics that will be reported in the k6 summary.
 const authenticateTrend = new Trend('http_req_duration_post_authn', true);
 const authenticateFailRate = new Rate('http_req_failed_post_authn');
-const readStaticSecretsIndividuallyTrend = new Trend('http_req_duration_get_static_secrets_individually', true);
-const readStaticSecretsIndividuallyFailRate = new Rate('http_req_failed_get_static_secrets_individually');
+const readDynamicSecretsIndividuallyTrend = new Trend('http_req_duration_get_dynamic_secrets_individually', true);
+const readDynamicSecretsIndividuallyFailRate = new Rate('http_req_failed_get_dynamic_secrets_individually');
 
 lib.checkRequiredEnvironmentVariables(requiredEnvVars);
 const gracefulStop = lib.getEnvVar("K6_CUSTOM_GRACEFUL_STOP");
@@ -96,13 +96,13 @@ export default function () {
   const variableNumber = Math.ceil(Math.random() * 5) || 1;
   const identity = `AutomationVault/${apiKey.lob_name}/${apiKey.safe_name}/account-${accountNumber}${uuid_suffix}/variable-${variableNumber}${uuid_suffix}`;
 
-  // Read static secret
-  const resStatic = conjurApi.readSecret(http, env, identity);
+  // Read dynamic secret
+  const resDynamic = conjurApi.readSecret(http, env, 'data/dynamic/' + identity);
 
-  readStaticSecretsIndividuallyTrend.add(resStatic.timings.duration);
-  readStaticSecretsIndividuallyFailRate.add(resStatic.status !== 200);
+  readDynamicSecretsIndividuallyTrend.add(resDynamic.timings.duration);
+  readDynamicSecretsIndividuallyFailRate.add(resDynamic.status !== 200);
 
-  check(resStatic, {
+  check(resDynamic, {
     "status is 200": (r) => r.status === 200,
     "status is not 404": (r) => r.status !== 404,
     "status is not 401": (r) => r.status !== 401,
@@ -115,8 +115,8 @@ export function handleSummary(data) {
     iterations: {
       values: {rate: httpReqs}
     },
-    http_req_duration_get_static_secrets_individually: {
-      values: {avg: avgResponseTimeStatic, max: maxResponseTimeStatic, min: minResponseTimeStatic}
+    http_req_duration_get_dynamic_secrets_individually: {
+      values: {avg: avgResponseTimeDynamic, max: maxResponseTimeDynamic, min: minResponseTimeDynamic}
     },
     http_req_failed: {
       values: {rate: failRate}
@@ -126,16 +126,16 @@ export function handleSummary(data) {
     }
   } = data['metrics'];
 
-  const testName = "Retrieve a single static secret";
+  const testName = "Retrieve a single dynamic secret";
   const nodeType = lib.checkNodeType(env.applianceReadUrl);
 
   const csv = papaparse.unparse(
-    lib.generateMetricsArray(nodeType, testName, vusMax, httpReqs, avgResponseTimeStatic, maxResponseTimeStatic, minResponseTimeStatic, failRate)
+    lib.generateMetricsArray(nodeType, testName, vusMax, httpReqs, avgResponseTimeDynamic, maxResponseTimeDynamic, minResponseTimeDynamic, failRate)
   );
 
   return {
     "./tools/performance-tests/k6/reports/metrics.csv": csv,
-    "./tools/performance-tests/k6/reports/read-individually-summary.html": htmlReport(data, {title: "Read Secrets Individually " + new Date().toISOString().slice(0, 16).replace('T', ' ')}),
+    "./tools/performance-tests/k6/reports/read-individually-dynamic-summary.html": htmlReport(data, {title: "Read Dynamic Secrets Individually " + new Date().toISOString().slice(0, 16).replace('T', ' ')}),
     stdout: textSummary(data, {indent: " ", enableColors: true}),
   };
 }

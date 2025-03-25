@@ -200,9 +200,9 @@ export function createUsersPolicy(identifier) {
   members: !group AutomationVault-users/lob-1-${identifier}/safe-1-${identifier}/users`;
 }
 
-export function createDynamicSecretsPolicy(arn) {
+export function createDynamicSecretsPolicy(arn, identifier) {
   return `- !policy
-  id: data/dynamic
+  id: data/dynamic"${identifier}"
   body:
 
   - !variable
@@ -218,6 +218,22 @@ export function createDynamicSecretsPolicy(arn) {
       dynamic/issuer: my-aws
       dynamic/method: federation-token`;
 }
+
+
+export function createStaticSecretsPolicy(identifier) {
+  return `- !variable
+    id: ds-assume-role"${identifier}"
+    annotations:
+      dynamic/issuer: my-aws
+      dynamic/method: assume-role
+
+  - !variable
+    id: ds-federation-token
+    annotations:
+      dynamic/issuer: my-aws
+      dynamic/method: federation-token`;
+}
+
 
 export function createNestedPolicy(level, maxLevel) {
   if (level > maxLevel) {
