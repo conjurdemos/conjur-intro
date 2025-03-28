@@ -191,6 +191,8 @@ main() {
     --user_count "$USERS_COUNT" \
     --role_arn "$PERF_TEST_DYNAMIC_SECRETS_AWS_ASSUME_ROLE_ARN"
 
+  # Create AWS dynamic secret issuer.
+  bin/api --create-aws-issuer "my-aws" "${PERF_TEST_DYNAMIC_SECRETS_AWS_ACCESS_KEY_ID}" "${PERF_TEST_DYNAMIC_SECRETS_AWS_SECRET_ACCESS_KEY}"
 
   # Load policies into Conjur using previously made files
   log_dir=$(load_policy_set | tail -n 1)

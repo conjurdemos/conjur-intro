@@ -51,7 +51,7 @@ export const options = {
       executor: 'shared-iterations',
       maxDuration: "3h",
       vus: 1,
-      iterations: 500,
+      iterations: 1000,
       gracefulStop
     },
   }, thresholds: {
@@ -146,8 +146,8 @@ export default function () {
     "status is not 500": (r) => r.status !== 500
   });
 
+  // load dynamic variable policy
   identifier = '/' + identifier
-  // load dynamic variable policy  
   const loadPolicyDynamicSecretsPolicyResponse = conjurApi.loadPolicy(
     http,
     env,
