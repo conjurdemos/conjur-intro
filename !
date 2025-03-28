@@ -1,0 +1,2 @@
+export SUMMON_PROVIDER_PATH=/opt/homebrew/lib/summon
+export PATH=~/bin:/opt/openssl/bin:/Library/Frameworks/Python.framework/Versions/2.7/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/opt/homebrew/bin:/Applications/CyberArk\ EPM.app/Contents/Helpers:/usr/local/sbin
