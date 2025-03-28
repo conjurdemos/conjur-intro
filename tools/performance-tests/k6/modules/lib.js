@@ -101,6 +101,7 @@ export function parseEnv() {
     perfTestDynamicSecretsAwsSecretAccessKey: getEnvVar("PERF_TEST_DYNAMIC_SECRETS_AWS_SECRET_ACCESS_KEY"),
     perfTestDynamicSecretsAwsAssumeRoleArn: getEnvVar("PERF_TEST_DYNAMIC_SECRETS_AWS_ASSUME_ROLE_ARN"),
     policyId: getEnvVar("POLICY_ID"),
+    uniqueIdentifierPrefix: getEnvVar("UNIQUE_IDENTIFIER_PREFIX"),
   }
 }
 
