@@ -34,6 +34,7 @@ const createDynamicSecretsPolicyTrend = new Trend('http_req_duration_create_dyna
 const createDynamicSecretsPolicyFailRate = new Rate('http_req_failed_create_dynamic_secrets_policy');
 const createAwsIssuerTrend = new Trend('http_req_duration_create_aws_issuer', true);
 const createAwsIssuerFailRate = new Rate('http_req_failed_create_aws_issuer');
+const dynamicSecretsReadLatency= new Trend('http_req_duration_read_dynamic_secrets_latency');
 
 const secret = '/ds-assume-role'
 let uniqueIdentifierPrefix = Math.random().toString(36).slice(2, 12);
@@ -177,6 +178,7 @@ export default function () {
     "status is not 401": (r) => r.status !== 401,
     "status is not 500": (r) => r.status !== 500
   });
+  dynamicSecretsReadLatency.add(readDynamicSecretResponse.timings.duration - readStaticSecretResponse.timings.duration)
 }
 
 export function handleSummary(data) {
@@ -196,6 +198,9 @@ export function handleSummary(data) {
     http_req_duration_read_dynamic_secrets: {
       values: {avg: avgResponseTimeReadDynamic, max: maxResponseTimeReadDynamic, min: minResponseTimeReadDynamic}
     },
+    http_req_duration_read_dynamic_secrets_latency: {
+      values: {avg: avgResponseTimeDynamicSecretsReadLatency, max: maxResponseTimeDynamicSecretsReadLatency, min: minResponseTimeDynamicSecretsReadLatency}
+    },
     http_req_failed: {
       values: {rate: failRate}
     },
@@ -208,7 +213,7 @@ export function handleSummary(data) {
   const nodeType = lib.checkNodeType(env.applianceReadUrl);
 
   const csv = papaparse.unparse(
-    lib.generateMetricsArray(nodeType, testName, vusMax, httpReqsStaticSecret, avgResponseTimeReadStatic, maxResponseTimeReadStatic, minResponseTimeReadStatic, httpReqsDynamicSecret, avgResponseTimeWriteStatic, maxResponseTimeWriteStatic, minResponseTimeWriteStatic, avgResponseTimeReadDynamic, maxResponseTimeReadDynamic, minResponseTimeReadDynamic, failRate)
+    lib.generateMetricsArray(nodeType, testName, vusMax, httpReqsStaticSecret, avgResponseTimeReadStatic, maxResponseTimeReadStatic, minResponseTimeReadStatic, httpReqsDynamicSecret, avgResponseTimeWriteStatic, maxResponseTimeWriteStatic, minResponseTimeWriteStatic, avgResponseTimeReadDynamic, maxResponseTimeReadDynamic, minResponseTimeReadDynamic, failRate, avgResponseTimeDynamicSecretsReadLatency, maxResponseTimeDynamicSecretsReadLatency, minResponseTimeDynamicSecretsReadLatency)
   );
 
   return {
