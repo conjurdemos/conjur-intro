@@ -18,7 +18,7 @@ spec:
     spec:
       serviceAccountName: default
       containers:
-      - image: cyberark/conjur-kubernetes-authenticator:latest
+      - image: cyberark/conjur-authn-k8s-client:latest
         imagePullPolicy: IfNotPresent
         name: authenticator
         env:
