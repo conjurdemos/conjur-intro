@@ -100,6 +100,8 @@ export function parseEnv() {
     perfTestDynamicSecretsAwsAccessKeyId: getEnvVar("PERF_TEST_DYNAMIC_SECRETS_AWS_ACCESS_KEY_ID"),
     perfTestDynamicSecretsAwsSecretAccessKey: getEnvVar("PERF_TEST_DYNAMIC_SECRETS_AWS_SECRET_ACCESS_KEY"),
     perfTestDynamicSecretsAwsAssumeRoleArn: getEnvVar("PERF_TEST_DYNAMIC_SECRETS_AWS_ASSUME_ROLE_ARN"),
+    policyId: getEnvVar("POLICY_ID"),
+    uniqueIdentifierPrefix: getEnvVar("UNIQUE_IDENTIFIER_PREFIX"),
   }
 }
 
@@ -200,9 +202,9 @@ export function createUsersPolicy(identifier) {
   members: !group AutomationVault-users/lob-1-${identifier}/safe-1-${identifier}/users`;
 }
 
-export function createDynamicSecretsPolicy(arn) {
+export function createDynamicSecretsPolicy(arn, identifier) {
   return `- !policy
-  id: data/dynamic
+  id: data/dynamic${identifier}
   body:
 
   - !variable
@@ -218,6 +220,17 @@ export function createDynamicSecretsPolicy(arn) {
       dynamic/issuer: my-aws
       dynamic/method: federation-token`;
 }
+
+export function createStaticSecretsPolicy(identifier) {
+  return `- !policy
+  id: ${identifier}
+  body:
+    - !variable
+      id: ds-assume-role
+    - !variable
+      id: ds-federation-token`;
+}
+
 
 export function createNestedPolicy(level, maxLevel) {
   if (level > maxLevel) {
