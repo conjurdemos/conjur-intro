@@ -93,7 +93,7 @@ test_k6() {
 
   # build K6 image
   "$(repo_root)/bin/retrieve_cyberark_ca_cert"
-  docker compose build k6 --no-cache
+  docker compose build --pull k6
 
   if [ "$WARMUP" == "true" ]; then
     # Warmup
