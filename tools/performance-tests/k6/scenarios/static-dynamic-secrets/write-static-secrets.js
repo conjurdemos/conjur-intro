@@ -41,10 +41,9 @@ export const options = {
       iterations: iterations,
       gracefulStop
     },
-  }, thresholds: {
-    iterations: ['rate > 1'],
-    checks: ['rate == 1.0']
   }
+  // We do not need a threshold here, since we're just populating secrets for
+  // the read scenarios.
 };
 
 export function authn() {
@@ -88,11 +87,11 @@ export default function () {
 
 export function handleSummary(data) {
   const {
-    iterations_write_static_secrets_count: {
-      values: {rate: httpReqsWriteStaticSecret}
+    iterations: {
+      values: {rate: httpReqs}
     },
     http_req_duration_write_static_secrets: {
-      values: {avg: avgResponseTimeWriteStatic, max: maxResponseTimeWriteStatic, min: minResponseTimeWriteStatic}
+      values: {avg: avgResponseTime, max: maxResponseTime, min: minResponseTime}
     },
     http_req_failed: {
       values: {rate: failRate}
@@ -102,16 +101,17 @@ export function handleSummary(data) {
     }
   } = data['metrics'];
 
-  const testName = "Create Static Secrets Policy";
-  const nodeType = lib.checkNodeType(env.applianceReadUrl);
+
+  const testName = "Write Static Secrets";
+  const nodeType = lib.checkNodeType(env.applianceMasterUrl);
 
   const csv = papaparse.unparse(
-    lib.generateMetricsArray(nodeType, testName, vusMax, failRate, httpReqsWriteStaticSecret, avgResponseTimeWriteStatic, maxResponseTimeWriteStatic, minResponseTimeWriteStatic)
+    lib.generateMetricsArray(nodeType, testName, vusMax, httpReqs, avgResponseTime, maxResponseTime, minResponseTime, failRate)
   );
 
   return {
     "./tools/performance-tests/k6/reports/metrics.csv": csv,
-    "./tools/performance-tests/k6/reports/create-static-secrets-policy-summary.html": htmlReport(data, {title: "Create Static Secrets Policy" + new Date().toISOString().slice(0, 16).replace('T', ' ')}),
+    "./tools/performance-tests/k6/reports/write-static-secrets-summary.html": htmlReport(data, {title: "Write Static Secrets" + new Date().toISOString().slice(0, 16).replace('T', ' ')}),
     stdout: textSummary(data, {indent: " ", enableColors: true}),
   };
 }

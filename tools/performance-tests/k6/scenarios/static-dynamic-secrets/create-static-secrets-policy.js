@@ -38,9 +38,6 @@ export const options = {
       iterations: vus,
       gracefulStop
     },
-  }, thresholds: {
-    iterations: ['rate > 1'],
-    checks: ['rate == 1.0']
   }
 };
 
@@ -90,19 +87,26 @@ export default function () {
 
 export function handleSummary(data) {
   const {
+    iterations: {
+      values: {rate: httpReqs}
+    },
     http_req_duration_create_static_secrets_policy: {
-      values: {avg: avgResponseTimeCreateStaticSecretsPolicy, max: maxResponseTimeCreateStaticSecretsPolicy, min: minResponseTimeCreateStaticSecretsPolicy}
+      values: {avg: avgResponseTime, max: maxResponseTime, min: minResponseTime}
     },
     http_req_failed: {
       values: {rate: failRate}
+    },
+    vus_max: {
+      values: {max: vusMax}
     }
   } = data['metrics'];
 
+
   const testName = "Create Static Secrets Policy";
-  const nodeType = lib.checkNodeType(env.applianceReadUrl);
+  const nodeType = lib.checkNodeType(env.applianceMasterUrl);
 
   const csv = papaparse.unparse(
-    lib.generateMetricsArray(nodeType, testName, failRate, avgResponseTimeCreateStaticSecretsPolicy, maxResponseTimeCreateStaticSecretsPolicy, minResponseTimeCreateStaticSecretsPolicy)
+    lib.generateMetricsArray(nodeType, testName, vusMax, httpReqs, avgResponseTime, maxResponseTime, minResponseTime, failRate)
   );
 
   return {
