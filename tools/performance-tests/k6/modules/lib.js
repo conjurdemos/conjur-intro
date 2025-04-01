@@ -100,6 +100,8 @@ export function parseEnv() {
     perfTestDynamicSecretsAwsAccessKeyId: getEnvVar("PERF_TEST_DYNAMIC_SECRETS_AWS_ACCESS_KEY_ID"),
     perfTestDynamicSecretsAwsSecretAccessKey: getEnvVar("PERF_TEST_DYNAMIC_SECRETS_AWS_SECRET_ACCESS_KEY"),
     perfTestDynamicSecretsAwsAssumeRoleArn: getEnvVar("PERF_TEST_DYNAMIC_SECRETS_AWS_ASSUME_ROLE_ARN"),
+    policyId: getEnvVar("POLICY_ID"),
+    uniqueIdentifierPrefix: getEnvVar("UNIQUE_IDENTIFIER_PREFIX"),
   }
 }
 
@@ -218,6 +220,43 @@ export function createDynamicSecretsPolicy(arn) {
       dynamic/issuer: my-aws
       dynamic/method: federation-token`;
 }
+
+
+export function createBulkDynamicSecretsPolicy(arn, identifier, iterations) {
+  let policy = ``;
+
+  for (let i = 0; i <= iterations; i++) {
+    policy += `
+    - !policy
+      id: data/dynamic/${identifier}-${i}
+      body:
+        - !variable
+          id: ds-assume-role
+          annotations:
+            dynamic/issuer: my-aws
+            dynamic/method: assume-role
+            dynamic/role_arn: "${arn}"`;
+  }
+
+  return policy;
+}
+
+
+export function createBulkStaticSecretsPolicy(identifier, iterations) {
+  let policy = ``;
+
+  for (let i = 0; i <= iterations; i++) {
+    policy += `
+    - !policy
+      id: ${identifier}-${i}
+      body:
+        - !variable
+          id: ds-assume-role`;
+  }
+
+  return policy;
+}
+
 
 export function createNestedPolicy(level, maxLevel) {
   if (level > maxLevel) {
