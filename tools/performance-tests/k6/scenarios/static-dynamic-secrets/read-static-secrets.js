@@ -63,7 +63,7 @@ export function authn() {
 }
 
 export default function () {
-  env.applianceUrl = env.applianceMasterUrl
+  env.applianceUrl = env.applianceReadUrl
   authn()
   const {uniqueIdentifierPrefix} = env;
   let identifier = (uniqueIdentifierPrefix || '') + `${__VU}-${__ITER}`
