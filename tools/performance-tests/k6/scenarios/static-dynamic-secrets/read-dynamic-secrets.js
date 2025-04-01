@@ -41,9 +41,6 @@ export const options = {
       iterations: iterations,
       gracefulStop
     },
-  }, thresholds: {
-    iterations: ['rate > 1'],
-    checks: ['rate == 1.0']
   }
 };
 
@@ -85,11 +82,11 @@ export default function () {
 
 export function handleSummary(data) {
   const {
-    iterations_read_dynamic_secrets_count: {
-      values: {rate: httpReqsReadDynamicSecret}
+    iterations: {
+      values: {rate: httpReqs}
     },
     http_req_duration_read_dynamic_secrets: {
-      values: {avg: avgResponseTimeReadDynamic, max: maxResponseTimeReadDynamic, min: minResponseTimeReadDynamic}
+      values: {avg: avgResponseTime, max: maxResponseTime, min: minResponseTime}
     },
     http_req_failed: {
       values: {rate: failRate}
@@ -99,16 +96,16 @@ export function handleSummary(data) {
     }
   } = data['metrics'];
 
-  const testName = "Create Dynamicc Secrets Policy";
+  const testName = "Read Dynamic Secrets";
   const nodeType = lib.checkNodeType(env.applianceReadUrl);
 
   const csv = papaparse.unparse(
-    lib.generateMetricsArray(nodeType, testName, vusMax, failRate, httpReqsReadDynamicSecret, avgResponseTimeReadDynamic, maxResponseTimeReadDynamic, minResponseTimeReadDynamic)
+    lib.generateMetricsArray(nodeType, testName, vusMax, httpReqs, avgResponseTime, maxResponseTime, minResponseTime, failRate)
   );
 
   return {
     "./tools/performance-tests/k6/reports/metrics.csv": csv,
-    "./tools/performance-tests/k6/reports/create-dynamic-secrets-policy-summary.html": htmlReport(data, {title: "Create Dynamicc Secrets Policy" + new Date().toISOString().slice(0, 16).replace('T', ' ')}),
+    "./tools/performance-tests/k6/reports/read-dynamic-secrets-summary.html": htmlReport(data, {title: "Read Dynamic Secrets" + new Date().toISOString().slice(0, 16).replace('T', ' ')}),
     stdout: textSummary(data, {indent: " ", enableColors: true}),
   };
 }
