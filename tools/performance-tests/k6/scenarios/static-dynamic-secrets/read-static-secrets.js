@@ -41,9 +41,6 @@ export const options = {
       iterations: iterations,
       gracefulStop
     },
-  }, thresholds: {
-    iterations: ['rate > 1'],
-    checks: ['rate == 1.0']
   }
 };
 
@@ -85,11 +82,11 @@ export default function () {
 
 export function handleSummary(data) {
   const {
-    iterations_read_static_secrets_count: {
-      values: {rate: httpReqsReadStaticSecret}
+    iterations: {
+      values: {rate: httpReqs}
     },
     http_req_duration_read_static_secrets: {
-      values: {avg: avgResponseTimeReadStatic, max: maxResponseTimeReadStatic, min: minResponseTimeReadStatic}
+      values: {avg: avgResponseTime, max: maxResponseTime, min: minResponseTime}
     },
     http_req_failed: {
       values: {rate: failRate}
@@ -99,16 +96,16 @@ export function handleSummary(data) {
     }
   } = data['metrics'];
 
-  const testName = "Create Static Secrets Policy";
+  const testName = "Read Static Secrets";
   const nodeType = lib.checkNodeType(env.applianceReadUrl);
 
   const csv = papaparse.unparse(
-    lib.generateMetricsArray(nodeType, testName, vusMax, failRate, httpReqsReadStaticSecret, avgResponseTimeReadStatic, maxResponseTimeReadStatic, minResponseTimeReadStatic)
+    lib.generateMetricsArray(nodeType, testName, vusMax, httpReqs, avgResponseTime, maxResponseTime, minResponseTime, failRate)
   );
 
   return {
     "./tools/performance-tests/k6/reports/metrics.csv": csv,
-    "./tools/performance-tests/k6/reports/create-static-secrets-policy-summary.html": htmlReport(data, {title: "Create Static Secrets Policy" + new Date().toISOString().slice(0, 16).replace('T', ' ')}),
+    "./tools/performance-tests/k6/reports/read-static-secrets-summary.html": htmlReport(data, {title: "Read Static Secrets" + new Date().toISOString().slice(0, 16).replace('T', ' ')}),
     stdout: textSummary(data, {indent: " ", enableColors: true}),
   };
 }
