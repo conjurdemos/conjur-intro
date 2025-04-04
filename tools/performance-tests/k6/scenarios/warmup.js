@@ -10,6 +10,7 @@ import papaparse from "../modules/papaparse.min.js";
  *  Init stage
  */
 const env = lib.parseEnv();
+const vus = lib.getEnvVar("K6_CUSTOM_VUS");
 
 const apiKeys = new SharedArray('ApiKeys', function () {
   return papaparse.parse(open("../data/api-keys.csv"), {header: true}).data;
@@ -18,8 +19,8 @@ const apiKeys = new SharedArray('ApiKeys', function () {
 // Define test options
 // https://k6.io/docs/using-k6/k6-options/reference/
 export const options = {
-    vus: 3,
-    duration: '1m',
+    vus: vus,
+    duration: '3m',
 };
 
 export function setup() {
