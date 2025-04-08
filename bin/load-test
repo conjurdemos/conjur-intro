@@ -97,7 +97,7 @@ test_k6() {
 
   if [ "$WARMUP" == "true" ]; then
     # Warmup
-    echo "Performing warmup - 1 minute of steady reads"
+    echo "Performing warmup - 3 minutes of reads using ramping VUs"
     "$(repo_root)/tools/performance-tests/k6/bin/k6" \
     run tools/performance-tests/k6/scenarios/warmup.js \
     --insecure-skip-tls-verify --quiet

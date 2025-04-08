@@ -18,8 +18,18 @@ const apiKeys = new SharedArray('ApiKeys', function () {
 // Define test options
 // https://k6.io/docs/using-k6/k6-options/reference/
 export const options = {
-    vus: 3,
-    duration: '1m',
+  scenarios: {
+    warmup: {
+      executor: 'ramping-vus',
+      startVUs: 0,
+      stages: [
+        { duration: '1m', target: 1 },
+        { duration: '1m', target: 30 },
+        { duration: '1m', target: 50 },
+      ],
+      gracefulRampDown: '0s',
+    }
+  }
 };
 
 export function setup() {
