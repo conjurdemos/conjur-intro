@@ -282,9 +282,13 @@ export function handleSummary(data) {
     } = data['metrics']);
   }
 
-  const testNameDryrunReplacePolicy = "Dry-Run Replace a policy";
-  const testNameReplacePolicy = "Replace a policy";
-  const testNamePreloadPolicyData = "Preload policy data";
+  let nameSuffix = "";
+  if (executor === 'constant-vus') {
+    nameSuffix = ` - Multiple Users`;
+  }
+  const testNameDryrunReplacePolicy = `Dry-Run Replace a policy (${policyContentsSize})${nameSuffix}`;
+  const testNameReplacePolicy = `Replace a policy (${policyContentsSize})${nameSuffix}`;
+  const testNamePreloadPolicyData = `Preload policy data (${policyContentsSize})${nameSuffix}`;
   const nodeType = lib.checkNodeType(env.applianceMasterUrl);
 
   const metricsArray = [
@@ -298,7 +302,7 @@ export function handleSummary(data) {
       minResponseTimeDryrunReplacePolicy,
       failRate
     ),
-    ...lib.generateMetricsArray(
+    lib.generateMetricsArray(
       nodeType,
       testNamePreloadPolicyData,
       vusMax,
@@ -307,13 +311,13 @@ export function handleSummary(data) {
       maxResponseTimePreloadPolicyData,
       minResponseTimePreloadPolicyData,
       failRate
-    )
+    )[1]
   ];
 
   // no replace policy data for constant vus
   if (executor !== 'constant-vus') {
     metricsArray.push(
-      ...lib.generateMetricsArray(
+      lib.generateMetricsArray(
         nodeType,
         testNameReplacePolicy,
         vusMax,
@@ -322,7 +326,7 @@ export function handleSummary(data) {
         maxResponseTimeReplacePolicy,
         minResponseTimeReplacePolicy,
         failRate
-      )
+      )[1]
     );
   }
 
