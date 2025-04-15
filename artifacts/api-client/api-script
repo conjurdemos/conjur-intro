@@ -279,10 +279,10 @@ create_aws_issuer() {
   local token
   token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
 
-  curl --header "Authorization: Token token=\"$token\"" \
+  response=$(curl --header "Authorization: Token token=\"$token\"" \
        --header "Content-Type: application/json" \
        --silent \
-       --write-out "\n" \
+       --write-out "\n%{http_code}" \
        --insecure \
        --request POST \
        --data "{
@@ -294,7 +294,16 @@ create_aws_issuer() {
            \"secret_access_key\": \"${secret_access_key}\"
          }
        }" \
-       "$master_url/api/issuers/demo" | jq
+       "$master_url/api/issuers/demo")
+  body=$(echo "${response}" | head -n -1)
+  status=$(echo "${response}" | tail -n 1)
+
+  if [ "$status" -ne 201 ]; then
+    echo "Error creating issuer: $status"
+    echo "${body}" | jq
+    exit 1
+  fi
+  echo "${body}" | jq
 }
 
 delete_aws_issuer() {
@@ -316,11 +325,20 @@ list_issuers() {
   local token
   token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
 
-  curl --header "Authorization: Token token=\"$token\"" \
+  response=$(curl --header "Authorization: Token token=\"$token\"" \
        --silent \
-       --write-out "\n" \
+       --write-out "\n%{http_code}" \
        --insecure \
-       "$URL/api/issuers/demo" | jq
+       "$URL/api/issuers/demo")
+  body=$(echo "${response}" | head -n -1)
+  status=$(echo "${response}" | tail -n 1)
+
+  if [ "$status" -ne 200 ]; then
+    echo "Error listing issuers: $status"
+    echo "${body}" | jq
+    exit 1
+  fi
+  echo "${body}" | jq
 }
 
 get_dynamic_secret() {

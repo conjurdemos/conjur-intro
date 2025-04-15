@@ -45,6 +45,9 @@ main() {
 
     header "Exercise Upgraded and Restored $initial_version Cluster"
     exercise_cluster
+    if [ "${SKIP_DYNAMIC_SECRETS:-false}" != true ]; then
+      exercise_dynamic_secrets
+    fi
     echo
   done
 
@@ -55,6 +58,9 @@ main() {
 
   header "Exercise Cluster After Failover"
   exercise_cluster
+  if [ "${SKIP_DYNAMIC_SECRETS:-false}" != true ]; then
+    exercise_dynamic_secrets
+  fi
   echo
 
   header "Tear Down Test Environment"
@@ -103,6 +109,17 @@ exercise_cluster() {
 
   echo "Deleting policy..."
   bin/api --delete-policy
+  }
+
+exercise_dynamic_secrets() {
+  echo "Creating dynamic secret issuer..."
+  random_suffix=$(LC_CTYPE=C tr -dc 'a-zA-Z' < /dev/urandom | head -c 8)
+  random_id=$(LC_CTYPE=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 16)
+  random_key=$(LC_CTYPE=C tr -dc 'A-Za-z0-9\/+' < /dev/urandom | head -c 40)
+  bin/api --create-aws-issuer "test${random_suffix}" "ASIA${random_id}" "${random_key}"
+
+  echo "Listing dynamic secrets issuers..."
+  bin/api --list-issuers
 }
 
 failover_master() {

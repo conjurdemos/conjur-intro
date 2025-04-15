@@ -12,6 +12,10 @@ pipeline {
   parameters {
     string(name: 'FROM', description: 'Version to upgrade from', defaultValue: '')
     string(name: 'TO', description: 'Version to upgrade to', defaultValue: '')
+    booleanParam(name: 'SKIP_DYNAMIC_SECRETS', description: 'If set to true, the exercise for dynamic secrets will not be run after upgrade', defaultValue: false)
+  }
+  environment {
+    SKIP_DYNAMIC_SECRETS = "${params.SKIP_DYNAMIC_SECRETS}"
   }
 
   stages {
