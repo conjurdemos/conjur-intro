@@ -1,0 +1,25 @@
+- !host
+  id: apps/system:serviceaccount:test-app:test-app-sa
+
+  annotations:
+    authn-jwt/dev-cluster/kubernetes.io/namespace: test-app
+    authn-jwt/dev-cluster/kubernetes.io/serviceaccount/name: test-app-sa
+
+- !grant
+  roles:
+    - !group conjur/authn-jwt/dev-cluster/apps
+  members:
+    - !host apps/system:serviceaccount:test-app:test-app-sa
+
+- !variable db-credentials/url
+- !variable db-credentials/username
+- !variable db-credentials/password
+
+- !permit 
+  roles:
+    - !group conjur/authn-jwt/dev-cluster/apps
+  privileges: [ read, execute ]
+  resources:
+    - !variable db-credentials/url
+    - !variable db-credentials/username
+    - !variable db-credentials/password

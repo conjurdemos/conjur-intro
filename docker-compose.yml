@@ -184,6 +184,18 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./system/haproxy/certs:/etc/ssl/certs
 
+  csi-provider-orchestrator:
+    build:
+      context: artifacts/k8s-csi-provider
+    privileged: true
+    networks:
+      dap_net:
+    volumes:
+      - ./kubeconfig:/root/.kube/config
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./system/haproxy/certs:/etc/ssl/certs
+      - ./artifacts:/artifacts
+
   follower-client:
     image: cyberark/conjur-cli:8
     networks:

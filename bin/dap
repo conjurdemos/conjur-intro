@@ -49,6 +49,9 @@ Usage: bin/dap [options]:
     --provision-k8s-follower                                  Configures follower inside kubernetes cluster ran by kind
                                                                 (Requires configured master).
 
+    -provision-csi-provider                                   Configures Conjur CSI provider inside kubernetes cluster ran by kind
+                                                                (Requires configured master).
+
     --provision-master                                        Configures a DAP Master with account `demo` and
                                                                 password `MySecretP@ss1` behind a Layer 4 load
                                                                 balancer.
@@ -419,6 +422,99 @@ function pull_k8s_follower_images {
     docker tag "${img}" "${img_without_registry}"
     _run_in_kind "kind load docker-image ${img_without_registry} --name conjur-intro-k8s-follower"
   done
+}
+
+function _setup_csi_provider {
+  touch kubeconfig
+  docker compose rm --stop --force csi-provider-orchestrator
+  docker compose build csi-provider-orchestrator
+  docker compose up --no-deps --detach csi-provider-orchestrator
+
+  # Loop until we get a response from the Kubernetes API
+  SECONDS=0
+  TIMEOUT=300
+  while true; do
+    if docker compose exec -T csi-provider-orchestrator bash -c "kubectl get nodes" &> /dev/null; then
+      echo "The conjur-intro-csi-provider cluster is created."
+      break
+    else
+      echo "Waiting for the conjur-intro-csi-provider cluster to be created..."
+      sleep 1
+    fi
+    if [ $SECONDS -ge $TIMEOUT ]; then
+        echo "Timeout after waiting for 5 minutes. The conjur-intro-csi-provider cluster is not created."
+        echo "Printing logs from csi-provider-orchestrator container:"
+        docker compose logs csi-provider-orchestrator
+        exit 1
+      fi
+  done
+
+  # Define and enable the JWT Authenticator in Conjur
+  bin/cli conjur policy load -b root -f artifacts/k8s-csi-provider/jwt-authenticator-webservice-policy.yaml
+  jwks=$(docker compose exec -T csi-provider-orchestrator bash -c "kubectl get --raw \$(kubectl get --raw /.well-known/openid-configuration | jq -r '.jwks_uri')")
+  policy_value="{\"type\":\"jwks\",\"value\":$jwks}"
+  curl -k -X POST \
+    -H "$(bin/cli conjur authenticate -H | tail -n1)" \
+    --data "$policy_value" \
+    "https://localhost/secrets/demo/variable/conjur%2Fauthn-jwt%2Fdev-cluster%2Fpublic-keys"
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster/issuer -v https://kubernetes.default.svc.cluster.local
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster/token-app-property -v "sub"
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster/identity-path -v apps
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster/audience -v "conjur"
+  _append_conjur_authenticator "authn-jwt/dev-cluster"
+
+
+  # Prep helm repos
+  docker compose exec -T csi-provider-orchestrator bash -c "helm repo add cyberark --insecure-skip-tls-verify https://cyberark.github.io/helm-charts"
+  docker compose exec -T csi-provider-orchestrator bash -c "helm repo add secrets-store-csi-driver --insecure-skip-tls-verify https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts"
+  docker compose exec -T csi-provider-orchestrator bash -c "helm repo update"
+
+  # Install the Secrets Store CSI Driver 
+  docker compose exec -T csi-provider-orchestrator bash -c "helm install csi-secrets-store \
+      secrets-store-csi-driver/secrets-store-csi-driver \
+      --namespace csi \
+      --create-namespace \
+      --insecure-skip-tls-verify \
+      --set \"linux.providersDir=/var/run/secrets-store-csi-providers\" \
+      --set syncSecret.enabled=\"true\" \
+      --set \"tokenRequests[0].audience=conjur\"
+    "
+
+  # Load the test-app policy into Conjur and set some example variables
+  bin/cli conjur policy load -f artifacts/k8s-csi-provider/test-app-policy.yaml -b root
+  bin/cli conjur variable set -i db-credentials/url -v "https://some-db.example.com:5432"
+  bin/cli conjur variable set -i db-credentials/username -v "db-user"
+  bin/cli conjur variable set -i db-credentials/password -v "db-password"
+
+  # Install the Conjur Provider
+  docker compose exec -T csi-provider-orchestrator bash -c "helm install --debug conjur-provider \
+      cyberark/conjur-k8s-csi-provider \
+      --wait \
+      --namespace csi \
+      --insecure-skip-tls-verify \
+      --set daemonSet.image.repo=\"cyberark/conjur-k8s-csi-provider\" \
+      --set daemonSet.image.tag=\"latest\"
+    "
+
+  # Deploy a test app
+  export TEST_APP_NAMESPACE="test-app"
+  export TEST_APP_SA="test-app-sa"
+  docker compose exec -T csi-provider-orchestrator bash -c "kubectl create namespace $TEST_APP_NAMESPACE"
+  docker compose exec -T csi-provider-orchestrator bash -c "kubectl create serviceaccount $TEST_APP_SA -n $TEST_APP_NAMESPACE"
+
+  docker compose exec -T csi-provider-orchestrator bash -c "helm install test-app /artifacts/k8s-csi-provider/helm/test-app \
+    --wait --timeout \"1m\" \
+    --namespace \"$TEST_APP_NAMESPACE\" \
+    --set serviceAccount.name=\"$TEST_APP_SA\" \
+    --set conjur.configurationVersion=0.2.0 \
+    --set conjur.sslCertificate=\"$(cat ./system/haproxy/certs/conjur-master.mycompany.local.pem)\" \
+    --set conjur.applianceUrl=\"https://conjur-master.mycompany.local\" \
+    --set conjur.account=\"demo\" \
+    --set conjur.authnId=\"dev-cluster\" \
+    --set conjur.secrets=\"- \"relative/path/fileA.txt\": \"db-credentials/url\"
+- \"relative/path/fileB.txt\": \"db-credentials/username\"
+- \"relative/path/fileC.txt\": \"db-credentials/password\"\"
+"
 }
 
 #
@@ -848,6 +944,7 @@ while true ; do
     --promote-standby ) CMD='_perform_promotion' ; shift ;;
     --provision-follower ) CMD='_setup_follower' ; shift ;;
     --provision-k8s-follower ) CMD='_setup_k8s_follower' ; shift ;;
+    --provision-csi-provider ) CMD='_setup_csi_provider' ; shift ;;
     --provision-master ) CMD='_single_master' ; shift ;;
     --provision-standbys ) CMD='_setup_standbys' ; shift ;;
     --provision-keycloak ) CMD='_setup_keycloak' ; shift ;;
