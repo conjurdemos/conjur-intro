@@ -60,6 +60,14 @@ $ bin/dap --provision-k8s-follower
 More information about way of how the Follower is deployed into Kubernetes
 cluster can be found in [README.md](artifacts/k8s-follower-orchestrator/README.md)
 
+### Integration Examples
+
+Deploy the Conjur Provider for Secrets Store CSI Driver in Kubernetes (kind):
+  
+```sh
+$ bin/dap --provision-csi-provider
+```
+
 ### Working with Podman
 
 The project is enabled to work with Podman instead of Docker.
@@ -93,6 +101,7 @@ To connect to the UI in the browser, use ports 10443(through HA proxy) or 10444(
 |--provision-k8s-follower|action|• Removes follower if present<br>• Configures follower inside kubernetes cluster ran by kind|Requires configured master|
 |--provision-master|action|• Starts a DAP container and Layer 4 load balancer<br>• Configures with account `demo` and password `MySecretP@ss1`||
 |--provision-standbys|action|• Removes standbys if present<br>• Starts two DAP containers<br>• Generates standby seed files<br>• Configures standbys<br>• Enable Synchronous Standby|Requires configured master|
+|--provision-csi-provider|action|• Configures Conjur CSI Provider inside kubernetes cluster ran by kind|Requires configured master|
 |--restore-from-backup|action|• Removes auto-failover (if enabled)<br>• Stops and renames master<br>• Starts new DAP container<br>• Restores master from backup|Requires a previously created backup|
 |--stop|action|Stops and removes all containers||
 |--trigger-failover|action|• Stops current master|Requires an auto-failover cluster|
@@ -166,6 +175,7 @@ Usage: bin/dap single [options]
     --provision-k8s-follower          Configures follower inside kubernetes cluster ran by kind (Requires configured master)
     --provision-master                Configures a DAP Master with account `demo` and password `MySecretP@ss1` behind a Layer 4 load balancer
     --provision-standbys              Deploys and configures two standbys (Requires configured master)
+    -provision-csi-provider           Configures Conjur CSI provider inside kubernetes cluster ran by kind (Requires configured master)
     --restore-from-backup             Restores a master from backup|Requires a previously created backup
     --provision-keycloak              Configures Keycloak OIDC authenticator (Requires configured master)
     --stop                            Stops all containers and cleans up cached files
