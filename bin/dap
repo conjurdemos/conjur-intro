@@ -49,7 +49,7 @@ Usage: bin/dap [options]:
     --provision-k8s-follower                                  Configures follower inside kubernetes cluster ran by kind
                                                                 (Requires configured master).
 
-    -provision-csi-provider                                   Configures Conjur CSI provider inside kubernetes cluster ran by kind
+    --provision-csi-provider                                  Configures Conjur CSI provider inside kubernetes cluster ran by kind
                                                                 (Requires configured master).
 
     --provision-master                                        Configures a DAP Master with account `demo` and
