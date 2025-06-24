@@ -175,7 +175,7 @@ Usage: bin/dap single [options]
     --provision-k8s-follower          Configures follower inside kubernetes cluster ran by kind (Requires configured master)
     --provision-master                Configures a DAP Master with account `demo` and password `MySecretP@ss1` behind a Layer 4 load balancer
     --provision-standbys              Deploys and configures two standbys (Requires configured master)
-    -provision-csi-provider           Configures Conjur CSI provider inside kubernetes cluster ran by kind (Requires configured master)
+    --provision-csi-provider          Configures Conjur CSI provider inside kubernetes cluster ran by kind (Requires configured master)
     --restore-from-backup             Restores a master from backup|Requires a previously created backup
     --provision-keycloak              Configures Keycloak OIDC authenticator (Requires configured master)
     --stop                            Stops all containers and cleans up cached files
