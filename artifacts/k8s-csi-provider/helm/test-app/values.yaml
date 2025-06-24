@@ -1,0 +1,15 @@
+# Values for conjur-k8s-csi-provider-test-app. All missing values must be supplied by the user.
+
+secretProviderClass:
+  name: database-credentials
+
+conjur:
+  configurationVersion:
+  account:
+  applianceUrl:
+  authnId:
+  secrets:
+  sslCertificate:
+
+serviceAccount:
+  name:
