@@ -59,14 +59,14 @@ const policyFetchFailRate = new Rate('cli_call_failed_policy_fetch');
 const policyDryRunTrend = new Trend('cli_call_duration_policy_dry_run', true);
 const policyDryRunFailRate = new Rate('cli_call_failed_policy_dry_run');
 // Dynamic Secrets metrics
-const createAwsIssuerTrend = new Trend('http_req_duration_create_aws_issuer', true);
-const createAwsIssuerFailRate = new Rate('http_req_failed_create_aws_issuer');
+const createAwsIssuerTrend = new Trend('cli_call_duration_create_aws_issuer', true);
+const createAwsIssuerFailRate = new Rate('cli_call_failed_create_aws_issuer');
 const createDynamicSecretsPolicyTrend = new Trend('http_req_duration_create_dynamic_secrets_policy', true);
 const createDynamicSecretsPolicyFailRate = new Rate('http_req_failed_create_dynamic_secrets_policy');
-const readDynamicSecretAssumeRoleTrend = new Trend('http_req_duration_get_dynamic_secret_assume_role', true);
-const readDynamicSecretAssumeRoleFailRate = new Rate('http_req_failed_get_dynamic_secret_assume_role');
-const readDynamicSecretFederationTokenTrend = new Trend('http_req_duration_get_dynamic_secret_federation_token', true);
-const readDynamicSecretFederationTokenFailRate = new Rate('http_req_failed_get_dynamic_secret_federation_token');
+const readDynamicSecretAssumeRoleTrend = new Trend('cli_call_duration_get_dynamic_secret_assume_role', true);
+const readDynamicSecretAssumeRoleFailRate = new Rate('cli_call_failed_get_dynamic_secret_assume_role');
+const readDynamicSecretFederationTokenTrend = new Trend('cli_call_duration_get_dynamic_secret_federation_token', true);
+const readDynamicSecretFederationTokenFailRate = new Rate('cli_call_failed_get_dynamic_secret_federation_token');
 
 lib.checkRequiredEnvironmentVariables(requiredEnvVars);
 const gracefulStop = lib.getEnvVar("K6_CUSTOM_GRACEFUL_STOP");
@@ -131,10 +131,6 @@ export function setup() {
   initAndLoginConjurCli(env.applianceReadUrl, env.conjurAccount, env.conjurPassword);
   runCliCommand(["policy", "load", "replace", "-b", "root", "-f", "/tools/performance-tests/k6/data/policy/burnin-policy.yml"], null, null);
 
-  // STDIN does not seem to be supported by k6/x/exec, so we cannot use Conjur
-  // CLI to load policy via STDIN (e.g. "conjur policy load -f - <<EOF ... EOF")
-  // So, we use the REST API instead, as opposed to writing this file
-  // (dynamic content) to disk.
   setupDynamicSecrets()
 }
 
@@ -152,21 +148,31 @@ export function setupDynamicSecrets() {
   authn()
 
   // Create the issuer
-  let res = conjurApi.createAwsIssuer(
-    http,
-    env,
-    'my-aws',
-    env.perfTestDynamicSecretsAwsAccessKeyId,
-    env.perfTestDynamicSecretsAwsSecretAccessKey
+  runCliCommand(
+    [
+      "issuer",
+      "create",
+      "--id", "my-aws",
+      "--type", "aws",
+      "--max-ttl", "3600",
+      "--data", `{"access_key_id": "${env.perfTestDynamicSecretsAwsAccessKeyId}", "secret_access_key": "${env.perfTestDynamicSecretsAwsSecretAccessKey}"}`,
+    ],
+    createAwsIssuerTrend,
+    createAwsIssuerFailRate,
+    function (msg) {
+      // If the issuer already exists, we do not consider this a failure.
+      // We just want to ensure that the issuer is created if it does not exist.
+      return !msg.includes("issuer \"my-aws\" already exists");
+    }
   );
 
-  createAwsIssuerTrend.add(res.timings.duration);
-  // Subsequent iterations will fail with a 409 if the issuer already exists,
-  // and that would be expected.
-  createAwsIssuerFailRate.add(res.status !== 201 && res.status !== 409);
-
   // Create the dynamic secrets policy
-  res = conjurApi.loadPolicy(
+  //
+  // STDIN does not seem to be supported by k6/x/exec, so we cannot use Conjur
+  // CLI to load policy via STDIN (e.g. "conjur policy load -f - <<EOF ... EOF")
+  // So, we use the REST API instead, as opposed to writing this file
+  // (dynamic content) to disk.
+  let res = conjurApi.loadPolicy(
     http,
     env,
     'root',
@@ -230,15 +236,16 @@ export function readDynamicSecretAssumeRole() {
   const identity = `data/dynamic/ds-assume-role`;
   const res = conjurApi.readSecret(http, env, identity);
 
-  readDynamicSecretAssumeRoleTrend.add(res.timings.duration);
-  readDynamicSecretAssumeRoleFailRate.add(res.status !== 200);
-
-  check(res, {
-    "HTTP status is 200": (r) => r.status === 200,
-    "HTTP status is not 404": (r) => r.status !== 404,
-    "HTTP status is not 401": (r) => r.status !== 401,
-    "HTTP status is not 500": (r) => r.status !== 500
-  });
+  runCliCommand(
+    [
+      "variable",
+      "get",
+      "-i",
+      identity
+    ],
+    readDynamicSecretAssumeRoleTrend,
+    readDynamicSecretAssumeRoleFailRate
+  );
 }
 
 export function readDynamicSecretFederationToken() {
@@ -248,17 +255,17 @@ export function readDynamicSecretFederationToken() {
   authn();
 
   const identity = `data/dynamic/ds-federation-token`;
-  const res = conjurApi.readSecret(http, env, identity);
 
-  readDynamicSecretFederationTokenTrend.add(res.timings.duration);
-  readDynamicSecretFederationTokenFailRate.add(res.status !== 200);
-
-  check(res, {
-    "HTTP status is 200": (r) => r.status === 200,
-    "HTTP status is not 404": (r) => r.status !== 404,
-    "HTTP status is not 401": (r) => r.status !== 401,
-    "HTTP status is not 500": (r) => r.status !== 500
-  });
+  runCliCommand(
+    [
+      "variable",
+      "get",
+      "-i",
+      identity
+    ],
+    readDynamicSecretFederationTokenTrend,
+    readDynamicSecretFederationTokenFailRate
+  );
 }
 
 function initAndLoginConjurCli(applianceUrl, conjurAccount, password) {
@@ -267,13 +274,19 @@ function initAndLoginConjurCli(applianceUrl, conjurAccount, password) {
   console.log(runCliCommand(["whoami"], null, null));
 }
 
-function runCliCommand(args, trend, failRate) {
+function runCliCommand(args, trend, failRate, isExceptionAFailure) {
   let output = null;
   let start = new Date();
+
+  if(isExceptionAFailure === undefined) {
+    isExceptionAFailure = function(e) { return true; }
+  }
+
   try {
     output = shellExec.command("conjur",args, {
       "continue_on_error": true
     });
+
     // command passed
     if(failRate !== null) {
       failRate.add(false);
@@ -283,23 +296,30 @@ function runCliCommand(args, trend, failRate) {
       });
     }
   } catch (e) {
+    const failed = isExceptionAFailure(
+      String.fromCharCode.apply(null, e.value.stderr)
+    );
+
     // command failed - add to fail rate
     if(failRate !== null) {
-      failRate.add(true);
-      cliFailRate.add(true);
+      failRate.add(failed);
+      cliFailRate.add(failed);
       check(output, {
-        "command passed": false,
+        "command passed": !failed,
       });
     }
-    if (e.value && e.value.stderr) {
+
+    if (failed && e.value && e.value.stderr) {
       console.error(String.fromCharCode.apply(null, e.value.stderr))
     }
   }
+
   if(trend !== null) {
     let duration = new Date() - start;
     trend.add(duration);
     cliTrend.add(duration);
   }
+
   return output
 }
 

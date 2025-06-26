@@ -23,7 +23,7 @@ RUN xk6 build \
     --with github.com/grafana/xk6-exec@latest
 
 # Install Conjur CLI
-RUN wget https://github.com/cyberark/conjur-cli-go/releases/download/v8.0.19/conjur_linux_amd64 && \
+RUN wget https://github.com/cyberark/conjur-cli-go/releases/download/v8.1.2/conjur_linux_amd64 && \
   mv conjur_linux_amd64 conjur && \
   chmod +x conjur
 
