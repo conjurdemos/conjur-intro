@@ -115,38 +115,6 @@ export function writeSecret(client, data, resourceId, resourceBody) {
   );
 }
 
-export function createAwsIssuer(client, data, name, accessKeyId, awsSecretAccessKey) {
-  const {
-    applianceMasterUrl,
-    conjurAccount,
-    token
-  } = data;
-  const headers = {
-    'Authorization': `Token token="${token}"`,
-    'Content-Type': 'application/json'
-  };
-  const body = {
-    id: name,
-    max_ttl: 3600,
-    type: "aws",
-    data: {
-      access_key_id: accessKeyId,
-      secret_access_key: awsSecretAccessKey
-    }
-  };
-  const payload =  JSON.stringify(body);
-
-  return client.post(
-    `${applianceMasterUrl}/api/issuers/${conjurAccount}`,
-    payload,
-    {
-      headers,
-      timeout: '1h',
-      tags: {endpoint: 'PostIssuersURL'},
-    }
-  );
-}
-
 export function get(client, data, path) {
   const {
     applianceReadUrl,
