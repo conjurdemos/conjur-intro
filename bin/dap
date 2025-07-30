@@ -412,22 +412,30 @@ function pull_k8s_follower_images {
     "conjur-kubernetes-follower-postgres"
     "conjur-kubernetes-follower-syslog-ng"
     "conjur-kubernetes-follower-failover-rebaser"
+    "conjur-kubernetes-follower-ephemeral-secrets"
   )
 
   for image in "${images[@]}"; do
     img="registry.tld/cyberark/${image}:${K8S_FOLLOWER_TAG}"
     img_without_registry="cyberark/${image}:${K8S_FOLLOWER_TAG}"
 
-    docker pull "${img}"
-    docker tag "${img}" "${img_without_registry}"
-    _run_in_kind "kind load docker-image ${img_without_registry} --name conjur-intro-k8s-follower"
+    # Try to pull the image, but continue if it fails with "not found". This
+    # allows older Followers to be deployed when they do not have images introduced
+    # in later releases (e.g. failover-rebaser, ephemeral-secrets, etc.)
+    if ! docker pull "${img}" 2>&1 | grep -q "not found"; then
+      echo "Successfully pulled ${img} or image already exists locally"
+      docker tag "${img}" "${img_without_registry}"
+      _run_in_kind "kind load docker-image ${img_without_registry} --name conjur-intro-k8s-follower"
+    else
+      echo "Warning: Failed to pull ${img} (not found), continuing anyway..."
+    fi
   done
 }
 
 function _setup_csi_provider {
   touch kubeconfig
   docker compose rm --stop --force csi-provider-orchestrator
-  docker compose build csi-provider-orchestrator
+  docker compose build csi-providepemr-orchestrator
   docker compose up --no-deps --detach csi-provider-orchestrator
 
   # Loop until we get a response from the Kubernetes API
