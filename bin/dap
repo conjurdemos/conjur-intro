@@ -52,6 +52,9 @@ Usage: bin/dap [options]:
     --provision-csi-provider                                  Configures Conjur CSI provider inside kubernetes cluster ran by kind
                                                                 (Requires configured master).
 
+    --provision-secrets-provider                              Configures Conjur Secrets Provider inside kubernetes cluster ran by kind
+                                                                (Requires configured master).
+
     --provision-master                                        Configures a DAP Master with account `demo` and
                                                                 password `MySecretP@ss1` behind a Layer 4 load
                                                                 balancer.
@@ -432,17 +435,99 @@ function pull_k8s_follower_images {
   done
 }
 
-function _setup_csi_provider {
+function _setup_secrets_provider {
   touch kubeconfig
-  docker compose rm --stop --force csi-provider-orchestrator
-  docker compose build csi-providepemr-orchestrator
-  docker compose up --no-deps --detach csi-provider-orchestrator
+  docker compose rm --stop --force secrets-provider-orchestrator
+  docker compose build secrets-provider-orchestrator
+  docker compose up --no-deps --detach secrets-provider-orchestrator
 
-  # Loop until we get a response from the Kubernetes API
+  # Wait until we get a response from the Kubernetes API that the node is ready
   SECONDS=0
   TIMEOUT=300
   while true; do
-    if docker compose exec -T csi-provider-orchestrator bash -c "kubectl get nodes" &> /dev/null; then
+    NODE_OUTPUT="$(docker compose exec -T secrets-provider-orchestrator bash -c 'kubectl get nodes' 2>/dev/null || true)"
+    if echo "$NODE_OUTPUT" | grep -q "conjur-intro-secrets-provider-control-plane"; then
+      echo "The conjur-intro-secrets-provider cluster is created."
+      break
+    else
+      echo "Waiting for the conjur-intro-secrets-provider cluster to be created..."
+      sleep 1
+    fi
+    if [ $SECONDS -ge $TIMEOUT ]; then
+      echo "Timeout after waiting for 5 minutes. The conjur-intro-secrets-provider cluster is not created or node name is incorrect."
+      docker compose logs secrets-provider-orchestrator
+      exit 1
+    fi
+  done
+
+  # Define and enable the JWT Authenticator in Conjur
+  bin/cli conjur policy load -b root -f artifacts/k8s-secrets-provider/jwt-authenticator-webservice-policy.yaml
+  jwks=$(docker compose exec -T secrets-provider-orchestrator bash -c "kubectl get --raw \$(kubectl get --raw /.well-known/openid-configuration | jq -r '.jwks_uri')")
+  policy_value="{\"type\":\"jwks\",\"value\":$jwks}"
+  curl -k -X POST \
+    -H "$(bin/cli conjur authenticate -H | tail -n1)" \
+    --data "$policy_value" \
+    "https://localhost/secrets/demo/variable/conjur%2Fauthn-jwt%2Fdev-cluster-sp%2Fpublic-keys"
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster-sp/issuer -v https://kubernetes.default.svc.cluster.local
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster-sp/token-app-property -v "sub"
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster-sp/identity-path -v apps
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster-sp/audience -v "conjur"
+  _append_conjur_authenticator "authn-jwt/dev-cluster-sp"
+
+  # Prepare the test app namespace and service account
+  export TEST_APP_NAMESPACE="test-app"
+  export TEST_APP_SA="test-app-sa"
+  docker compose exec -T secrets-provider-orchestrator bash -c "kubectl create namespace $TEST_APP_NAMESPACE"
+  docker compose exec -T secrets-provider-orchestrator bash -c "kubectl create serviceaccount $TEST_APP_SA -n $TEST_APP_NAMESPACE"
+
+  # Prep helm repos
+  docker compose exec -T secrets-provider-orchestrator bash -c "helm repo add cyberark --insecure-skip-tls-verify https://cyberark.github.io/helm-charts"
+  docker compose exec -T secrets-provider-orchestrator bash -c "helm repo update"
+
+  # Install the Conjur ConfigMap
+  docker compose exec -T secrets-provider-orchestrator bash -c "helm install cluster-prep cyberark/conjur-config-cluster-prep \
+    --insecure-skip-tls-verify \
+    --namespace cyberark-conjur-jwt \
+    --create-namespace \
+    --set conjur.account=demo \
+    --set conjur.applianceUrl=https://conjur-master.mycompany.local \
+    --set conjur.certificateBase64=$(cat ./system/haproxy/certs/conjur-master.mycompany.local.pem | base64) \
+    --set authnK8s.authenticatorID=dev-cluster-sp \
+    --set authnK8s.clusterRole.create=false \
+    --set authnK8s.serviceAccount.create=false"
+
+  # Install the namespace prep chart
+  docker compose exec -T secrets-provider-orchestrator bash -c "helm install namespace-prep cyberark/conjur-config-namespace-prep \
+    --insecure-skip-tls-verify \
+    --namespace $TEST_APP_NAMESPACE \
+    --set conjurConfigMap.authnMethod=authn-jwt \
+    --set authnK8s.goldenConfigMap=conjur-configmap \
+    --set authnK8s.namespace=cyberark-conjur-jwt \
+    --set authnRoleBinding.create=false"
+  
+  # Load the test-app policy into Conjur and set some example variables
+  bin/cli conjur policy load -f artifacts/k8s-secrets-provider/test-app-policy.yaml -b root
+  bin/cli conjur variable set -i db-credentials/url -v "https://some-db.example.com:5432"
+  bin/cli conjur variable set -i db-credentials/username -v "db-user"
+  bin/cli conjur variable set -i db-credentials/password -v "db-password"
+
+  # Deploy the test app with Secrets Provier
+  docker compose exec -T secrets-provider-orchestrator bash -c "kubectl apply -f /artifacts/k8s-secrets-provider/manifests/test_app.yaml \
+    --namespace \"$TEST_APP_NAMESPACE\""
+}
+
+function _setup_csi_provider {
+  touch kubeconfig
+  docker compose rm --stop --force csi-provider-orchestrator
+  docker compose build csi-provider-orchestrator
+  docker compose up --no-deps --detach csi-provider-orchestrator
+
+  # Wait until we get a response from the Kubernetes API that the node is ready
+  SECONDS=0
+  TIMEOUT=300
+  while true; do
+    NODE_OUTPUT="$(docker compose exec -T csi-provider-orchestrator bash -c 'kubectl get nodes' 2>/dev/null || true)"
+    if echo "$NODE_OUTPUT" | grep -q "conjur-intro-csi-provider-control-plane"; then
       echo "The conjur-intro-csi-provider cluster is created."
       break
     else
@@ -450,11 +535,10 @@ function _setup_csi_provider {
       sleep 1
     fi
     if [ $SECONDS -ge $TIMEOUT ]; then
-        echo "Timeout after waiting for 5 minutes. The conjur-intro-csi-provider cluster is not created."
-        echo "Printing logs from csi-provider-orchestrator container:"
-        docker compose logs csi-provider-orchestrator
-        exit 1
-      fi
+      echo "Timeout after waiting for 5 minutes. The conjur-intro-csi-provider cluster is not created or node name is incorrect."
+      docker compose logs csi-provider-orchestrator
+      exit 1
+    fi
   done
 
   # Define and enable the JWT Authenticator in Conjur
@@ -464,12 +548,12 @@ function _setup_csi_provider {
   curl -k -X POST \
     -H "$(bin/cli conjur authenticate -H | tail -n1)" \
     --data "$policy_value" \
-    "https://localhost/secrets/demo/variable/conjur%2Fauthn-jwt%2Fdev-cluster%2Fpublic-keys"
-  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster/issuer -v https://kubernetes.default.svc.cluster.local
-  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster/token-app-property -v "sub"
-  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster/identity-path -v apps
-  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster/audience -v "conjur"
-  _append_conjur_authenticator "authn-jwt/dev-cluster"
+    "https://localhost/secrets/demo/variable/conjur%2Fauthn-jwt%2Fdev-cluster-csi%2Fpublic-keys"
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster-csi/issuer -v https://kubernetes.default.svc.cluster.local
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster-csi/token-app-property -v "sub"
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster-csi/identity-path -v apps
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster-csi/audience -v "conjur"
+  _append_conjur_authenticator "authn-jwt/dev-cluster-csi"
 
 
   # Prep helm repos
@@ -518,7 +602,7 @@ function _setup_csi_provider {
     --set conjur.sslCertificate=\"$(cat ./system/haproxy/certs/conjur-master.mycompany.local.pem)\" \
     --set conjur.applianceUrl=\"https://conjur-master.mycompany.local\" \
     --set conjur.account=\"demo\" \
-    --set conjur.authnId=\"dev-cluster\" \
+    --set conjur.authnId=\"dev-cluster-csi\" \
     --set conjur.secrets=\"- \"relative/path/fileA.txt\": \"db-credentials/url\"
 - \"relative/path/fileB.txt\": \"db-credentials/username\"
 - \"relative/path/fileC.txt\": \"db-credentials/password\"\"
@@ -650,6 +734,7 @@ function _append_conjur_authenticator {
     _run conjur-master-1.mycompany.local "echo 'CONJUR_AUTHENTICATORS=authn,$authenticator' >> /opt/conjur/etc/conjur.conf"
   fi
   _run conjur-master-1.mycompany.local 'sv reload conjur'
+  _wait_for_master
 }
 
 function _disable_autofailover {
@@ -953,6 +1038,7 @@ while true ; do
     --provision-follower ) CMD='_setup_follower' ; shift ;;
     --provision-k8s-follower ) CMD='_setup_k8s_follower' ; shift ;;
     --provision-csi-provider ) CMD='_setup_csi_provider' ; shift ;;
+    --provision-secrets-provider ) CMD='_setup_secrets_provider' ; shift ;;
     --provision-master ) CMD='_single_master' ; shift ;;
     --provision-standbys ) CMD='_setup_standbys' ; shift ;;
     --provision-keycloak ) CMD='_setup_keycloak' ; shift ;;

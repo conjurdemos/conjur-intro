@@ -66,6 +66,21 @@ Deploy the Conjur Provider for Secrets Store CSI Driver in Kubernetes (kind):
   
 ```sh
 $ bin/dap --provision-csi-provider
+
+# Print the mounted secret values:
+$ docker compose exec -T csi-provider-orchestrator bash -c "kubectl exec -n test-app test-app -- cat /mnt/secrets-store/relative/path/fileA.txt"
+$ docker compose exec -T csi-provider-orchestrator bash -c "kubectl exec -n test-app test-app -- cat /mnt/secrets-store/relative/path/fileB.txt"
+$ docker compose exec -T csi-provider-orchestrator bash -c "kubectl exec -n test-app test-app -- cat /mnt/secrets-store/relative/path/fileC.txt"
+```
+
+Deploy the Conjur Secrets Provider in Kubernetes (kind):
+  
+```sh
+$ bin/dap --provision-secrets-provider
+
+# Print the mounted secret values:
+$ POD_NAME=$(docker compose exec -T secrets-provider-orchestrator bash -c "kubectl get pods -n test-app -l app=test-app -o jsonpath='{.items[0].metadata.name}'")
+$ docker compose exec -T secrets-provider-orchestrator bash -c "kubectl exec -n test-app $POD_NAME -- cat /opt/secrets/conjur/db-credentials.yaml"
 ```
 
 ### Working with Podman
@@ -102,6 +117,7 @@ To connect to the UI in the browser, use ports 10443(through HA proxy) or 10444(
 |--provision-master|action|• Starts a DAP container and Layer 4 load balancer<br>• Configures with account `demo` and password `MySecretP@ss1`||
 |--provision-standbys|action|• Removes standbys if present<br>• Starts two DAP containers<br>• Generates standby seed files<br>• Configures standbys<br>• Enable Synchronous Standby|Requires configured master|
 |--provision-csi-provider|action|• Configures Conjur CSI Provider inside kubernetes cluster ran by kind|Requires configured master|
+|--provision-secrets-provider|action|• Configures Conjur Secrets Provider inside kubernetes cluster ran by kind|Requires configured master|
 |--restore-from-backup|action|• Removes auto-failover (if enabled)<br>• Stops and renames master<br>• Starts new DAP container<br>• Restores master from backup|Requires a previously created backup|
 |--stop|action|Stops and removes all containers||
 |--trigger-failover|action|• Stops current master|Requires an auto-failover cluster|
@@ -176,6 +192,7 @@ Usage: bin/dap single [options]
     --provision-master                Configures a DAP Master with account `demo` and password `MySecretP@ss1` behind a Layer 4 load balancer
     --provision-standbys              Deploys and configures two standbys (Requires configured master)
     --provision-csi-provider          Configures Conjur CSI provider inside kubernetes cluster ran by kind (Requires configured master)
+    --provision-secrets-provider      Configures Conjur Secrets Provider for Kubernetes inside a kind cluster (Requires configured master)
     --restore-from-backup             Restores a master from backup|Requires a previously created backup
     --provision-keycloak              Configures Keycloak OIDC authenticator (Requires configured master)
     --stop                            Stops all containers and cleans up cached files
