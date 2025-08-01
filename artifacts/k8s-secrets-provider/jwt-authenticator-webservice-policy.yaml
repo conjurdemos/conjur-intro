@@ -1,5 +1,5 @@
 - !policy
-  id: conjur/authn-jwt/dev-cluster-csi
+  id: conjur/authn-jwt/dev-cluster-sp
   body:
     - !webservice
 
