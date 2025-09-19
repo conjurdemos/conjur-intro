@@ -1,4 +1,4 @@
-# REPO_NAME
+# conjur-intro
 
 Description of your project goes here.
 
