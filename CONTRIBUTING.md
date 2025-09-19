@@ -1,16 +1,45 @@
 # Contributing
-  
-For general contribution and community guidelines, please see the [community repo](https://github.com/cyberark/community).
 
-## Contributing Workflow
+This document outlines the process to help get your contribution accepted.
 
-1. [Fork the project](https://help.github.com/en/github/getting-started-with-github/fork-a-repo)
-2. [Clone your fork](https://help.github.com/en/github/creating-cloning-and-archiving-repositories/cloning-a-repository)
-3. Make local changes to your fork by editing files
-3. [Commit your changes](https://help.github.com/en/github/managing-files-in-a-repository/adding-a-file-to-a-repository-using-the-command-line)
-4. [Push your local changes to the remote server](https://help.github.com/en/github/using-git/pushing-commits-to-a-remote-repository)
-5. [Create new Pull Request](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request-from-a-fork)
+## How to Contribute
 
-From here your pull request will be reviewed and once you've responded to all
-feedback it will be merged into the project. Congratulations, you're a
-contributor!
+1. Create branch, develop, and test your changes
+2. Submit a pull request and describe the change and why we need it
+
+## Local Development
+
+### Prerequisites
+
+Describe what need to be on the development station
+
+### Setup
+
+```console
+# Login to aws
+$ awssso
+
+# Create your dev environment
+$ ....
+
+# Deleting your dev environment
+$ ....
+```
+
+### Technical Requirements
+
+* Must pass CI jobs for linting and unit testing
+
+### Unit tests
+
+Run the following command:
+```console
+$ ....
+```
+
+### Integration Tests
+
+Run the following command:
+```console
+$ .....
+```
