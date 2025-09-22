@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 
 pipeline {
-  agent { label 'executor-v2' }
+  agent { label 'conjur-enterprise-common-agent' }
 
   options {
     ansiColor('xterm')
@@ -19,6 +19,15 @@ pipeline {
   }
 
   stages {
+    stage('Get InfraPool ExecutorV2 Agent') {
+      steps {
+        script {
+          // Request ExecutorV2 agents for 1 hour(s)
+          infrapool = getInfraPoolAgent.connected(type: "ExecutorV2", quantity: 1, duration: 1)[0]
+        }
+      }
+    }
+
     stage('Run upgrade test') {
       when {
         allOf {
@@ -27,7 +36,9 @@ pipeline {
         }
       }
       steps {
-        sh './bin/upgrade-test "${FROM}" "${TO}"'
+        script {
+          infrapool.agentSh "./bin/upgrade-test \"${FROM}\" \"${TO}\""
+        }
       }
     }
   }
@@ -35,7 +46,7 @@ pipeline {
   post {
     always {
       script {
-        cleanupAndNotify(currentBuild.currentResult, '#conjur-core')
+        releaseInfraPoolAgent(".infrapool/release_agents")
       }
     }
   }
