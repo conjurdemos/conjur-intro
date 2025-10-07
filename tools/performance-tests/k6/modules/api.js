@@ -1,5 +1,35 @@
 import {check, fail} from "k6";
 
+export function createAwsIssuer(client, data, issuerId, accessKeyId, secretAccessKey) {
+  const {
+    applianceMasterUrl,
+    conjurAccount,
+    token
+  } = data;
+
+  const headers = {'Authorization': `Token token="${token}"`, 'Content-Type': 'application/json'}
+  const body = `{
+    "id": "${issuerId}",
+    "max_ttl": 3600,
+    "type": "aws",
+    "data": {
+      "access_key_id": "${accessKeyId}",
+      "secret_access_key": "${secretAccessKey}"
+    }
+  }`;
+
+  return client.post(
+    `${applianceMasterUrl}/issuers/${conjurAccount}`,
+    body,
+    {
+      headers,
+      timeout: '1h',
+      tags: {endpoint: 'PostIssuersURL'},
+    }
+  )
+}
+
+
 // Returns an http response. This allows assertions on the response to be made.
 export function authenticate(client, data, exitOnFailure = false) {
   const {

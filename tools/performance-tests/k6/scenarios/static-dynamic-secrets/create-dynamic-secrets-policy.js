@@ -56,6 +56,10 @@ export function setup(){
     env.perfTestDynamicSecretsAwsSecretAccessKey
   );
 
+  if (res.status !== 201 && res.status !== 409) {
+    console.error('Failed to create AWS issuer:', res.status, res.body);
+  }
+
   createAwsIssuerTrend.add(res.timings.duration);
   // Subsequent iterations will fail with a 409 if the issuer already exists,
   // and that would be expected.
