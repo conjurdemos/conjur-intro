@@ -1,0 +1,69 @@
+- !group synchronizer-admin
+
+# -- Start New --
+- !group synchronizer-auditor
+# -- End New --
+
+- !policy
+  id: enterpise-password-vault
+  owner: !group synchronizer-admin
+  body:
+    - !group lob-1-viewer
+
+    - !group lob-1-admin
+    - !policy
+      id: lob-1
+      owner: !group lob-1-admin
+      body:
+        - !group safe-1-admin
+        - !policy
+          id: safe-1
+          owner: !group safe-1-admin
+          body:
+            - &variables
+              - !variable database-1-url
+              - !variable database-1-username
+              - !variable database-1-password
+              - !variable database-1-port
+              - !variable database-1-ca
+              - !variable database-1-certifiate
+
+            - !group consumers
+            - !permit
+              resource: *variables
+              # privileges: [ read, execute ]
+              privileges: [ execute ]
+              role: !group consumers
+
+            # -- Start New --
+            - !group viewers
+            - !permit
+              resource: *variables
+              privileges: [ read ]
+              role: !group viewers
+
+            - !grant
+              role: !group viewers
+              members:
+                - !group consumers
+                - !group lob-1-viewer
+
+            - !grant
+              member: !group /synchronizer-auditor
+              role: !group viewers
+            # -- End New --
+
+        - !policy safe-2
+        - !policy safe-3
+        - !policy safe-4
+
+    # - !grant
+    #   role: !group lob-1-admin
+    #   member: !group /synchronizer-admin
+
+
+# Create an audit user to verify via UI
+- !user jason
+- !grant
+  member: !user jason
+  role: !group synchronizer-auditor
