@@ -151,7 +151,28 @@ load_default_policy() {
 delete_policy() {
   local token
   token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
-  apply_policy 'delete_branch/first-level' 'policy/delete_policy/delete.yml' "$token" 'PATCH'
+
+  response=$(curl --header "Authorization: Token token=\"$token\"" \
+        --write-out "\n%{http_code}" \
+        --silent \
+        --insecure \
+        --request PATCH \
+        --data "$(cat policy/delete_policy/delete.yml)" \
+     "$master_url/policies/$ACCOUNT/policy/delete_branch/first-level")
+  body=$(echo "$response" | head -n -1)
+  status=$(echo "$response" | tail -n 1)
+
+  if [ "$status" -eq 404 ]; then
+    echo "Policy delete target not found (404). Continuing."
+    echo "$body" | jq || true
+    return 0
+  fi
+
+  if [ "$status" -ge 300 ]; then
+    echo "Error deleting policy: $status"
+    echo "$body" | jq
+    exit 1
+  fi
 }
 
 set_secret() {
@@ -299,6 +320,12 @@ create_aws_issuer() {
   status=$(echo "${response}" | tail -n 1)
 
   if [ "$status" -ne 201 ]; then
+    if [ "$status" -eq 404 ]; then
+      echo "Issuer API not available (404). Skipping issuer creation."
+      # Print body if present (may be empty or an HTML error), but don't fail the script
+      echo "${body}" | jq || true
+      return 0
+    fi
     echo "Error creating issuer: $status"
     echo "${body}" | jq
     exit 1

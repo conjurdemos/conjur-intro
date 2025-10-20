@@ -41,6 +41,20 @@ pipeline {
         }
       }
     }
+
+    stage('Copy Enterprise Commit') {
+      when {
+        allOf {
+          branch 'main'
+          not { triggeredBy 'TimerTrigger' }
+        }
+      }
+      steps {
+        script {
+          release.copyEnterpriseCommit(targetOrganization='conjurinc')
+        }
+      }
+    }
   }
 
   post {
