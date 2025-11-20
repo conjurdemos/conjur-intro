@@ -25,7 +25,8 @@ const createAwsIssuerFailRate = new Rate('http_req_failed_create_aws_issuer');
 
 lib.checkRequiredEnvironmentVariables(requiredEnvVars);
 const gracefulStop = lib.getEnvVar("K6_CUSTOM_GRACEFUL_STOP");
-const vus = lib.getEnvVar("K6_CUSTOM_VUS");
+// const vus = lib.getEnvVar("K6_CUSTOM_VUS");
+const vus = 200; 
 const iterations = Math.ceil(1000 / lib.getEnvVar("K6_CUSTOM_VUS"))
 const env = lib.parseEnv();
 

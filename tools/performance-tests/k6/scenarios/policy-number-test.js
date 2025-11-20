@@ -24,7 +24,8 @@ const authenticateFailRate = new Rate('http_req_failed_post_authn');
 lib.checkRequiredEnvironmentVariables(requiredEnvVars);
 const gracefulStop = lib.getEnvVar("K6_CUSTOM_GRACEFUL_STOP");
 const testDuration = lib.getEnvVar("K6_CUSTOM_DURATION");
-const vus = lib.getEnvVar("K6_CUSTOM_VUS")
+// const vus = lib.getEnvVar("K6_CUSTOM_VUS")
+const vus = 200; 
 
 const env = lib.parseEnv();
 

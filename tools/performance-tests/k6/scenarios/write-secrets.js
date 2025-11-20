@@ -25,7 +25,8 @@ const writeSecretsFailRate = new Rate('http_req_failed_write_secrets');
 
 lib.checkRequiredEnvironmentVariables(requiredEnvVars);
 const gracefulStop = lib.getEnvVar("K6_CUSTOM_GRACEFUL_STOP");
-const vus = lib.getEnvVar("K6_CUSTOM_VUS")
+// const vus = lib.getEnvVar("K6_CUSTOM_VUS")
+const vus = 200; 
 
 const env = lib.parseEnv();
 

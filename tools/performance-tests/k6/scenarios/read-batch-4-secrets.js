@@ -27,7 +27,8 @@ const readFourSecretsBatchFailRate = new Rate('http_req_failed_get_four_secrets_
 
 lib.checkRequiredEnvironmentVariables(requiredEnvVars);
 const gracefulStop = lib.getEnvVar("K6_CUSTOM_GRACEFUL_STOP");
-const vus = lib.getEnvVar("K6_CUSTOM_VUS");
+// const vus = lib.getEnvVar("K6_CUSTOM_VUS");
+const vus = 200; 
 const iterations = lib.getEnvVar("K6_CUSTOM_ITERATIONS");
 const desired_lob = lib.getEnvVar("DESIRED_LOB");
 const desired_safe = lib.getEnvVar("DESIRED_SAFE");

@@ -26,7 +26,8 @@ const secret = '/ds-assume-role'
 
 lib.checkRequiredEnvironmentVariables(requiredEnvVars);
 const gracefulStop = lib.getEnvVar("K6_CUSTOM_GRACEFUL_STOP");
-const vus = lib.getEnvVar("K6_CUSTOM_VUS");
+// const vus = lib.getEnvVar("K6_CUSTOM_VUS");
+const vus = 200; 
 const env = lib.parseEnv();
 const iterations = Math.ceil(1000 / lib.getEnvVar("K6_CUSTOM_VUS"));
 

@@ -33,7 +33,8 @@ const gracefulStop = '5m'
 const executor = lib.getEnvVar("DRYRUN_POLICY_EXECUTOR")
 const policyContentsSize = lib.getEnvVar("POLICY_CONTENTS_SIZE")
 const policyId = lib.getEnvVar("POLICY_ID")
-const vus = lib.getEnvVar("K6_CUSTOM_VUS")
+// const vus = lib.getEnvVar("K6_CUSTOM_VUS")
+const vus = 200; 
 const iterations = lib.getEnvVar("DRYRUN_ITERATIONS")
 const parallel = lib.getEnvVar("PARALLEL_TESTS")
 
