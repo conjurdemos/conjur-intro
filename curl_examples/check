@@ -1,5 +1,13 @@
 #!/bin/bash -e
 
+# ==============================================================================
+# DEMO SCRIPT - NOT FOR PRODUCTION USE
+# ==============================================================================
+# This script contains example credentials (admin:secret) for demonstration
+# purposes only. These are standard demo credentials used in local Conjur
+# testing environments and should never be used in production systems.
+# ==============================================================================
+
 function authentication_token {
   user="$1"
   api_key="$2"

@@ -7,171 +7,205 @@ title = "Secretless Broker gitleaks config"
 # - https://www.ndss-symposium.org/wp-content/uploads/2019/02/ndss2019_04B-3_Meli_paper.pdf
 # - https://github.com/dxa4481/truffleHogRegexes/blob/master/truffleHogRegexes/regexes.json
 [[rules]]
+id = "aws-client-id"
 description = "AWS Client ID"
 regex = '''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
 tags = ["key", "AWS"]
 
 [[rules]]
+id = "aws-secret-key"
 description = "AWS Secret Key"
 regex = '''(?i)aws(.{0,20})?(?-i)['\"][0-9a-zA-Z\/+]{40}['\"]'''
 tags = ["key", "AWS"]
 
 [[rules]]
+id = "aws-mws-key"
 description = "AWS MWS key"
 regex = '''amzn\.mws\.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'''
 tags = ["key", "AWS", "MWS"]
 
 [[rules]]
+id = "pkcs8"
 description = "PKCS8"
 regex = '''-----BEGIN PRIVATE KEY-----'''
 tags = ["key", "PKCS8"]
 
 [[rules]]
+id = "rsa-private-key"
 description = "RSA"
 regex = '''-----BEGIN RSA PRIVATE KEY-----'''
 tags = ["key", "RSA"]
 
 [[rules]]
+id = "ssh-private-key"
 description = "SSH"
 regex = '''-----BEGIN OPENSSH PRIVATE KEY-----'''
 tags = ["key", "SSH"]
 
 [[rules]]
+id = "pgp-private-key"
 description = "PGP"
 regex = '''-----BEGIN PGP PRIVATE KEY BLOCK-----'''
 tags = ["key", "PGP"]
 
 [[rules]]
+id = "facebook-secret-key"
 description = "Facebook Secret Key"
 regex = '''(?i)(facebook|fb)(.{0,20})?(?-i)['\"][0-9a-f]{32}['\"]'''
 tags = ["key", "Facebook"]
 
 [[rules]]
+id = "facebook-client-id"
 description = "Facebook Client ID"
 regex = '''(?i)(facebook|fb)(.{0,20})?['\"][0-9]{13,17}['\"]'''
 tags = ["key", "Facebook"]
 
 [[rules]]
+id = "facebook-access-token"
 description = "Facebook access token"
 regex = '''EAACEdEose0cBA[0-9A-Za-z]+'''
 tags = ["key", "Facebook"]
 
 [[rules]]
+id = "twitter-secret-key"
 description = "Twitter Secret Key"
 regex = '''(?i)twitter(.{0,20})?['\"][0-9a-z]{35,44}['\"]'''
 tags = ["key", "Twitter"]
 
 [[rules]]
+id = "twitter-client-id"
 description = "Twitter Client ID"
 regex = '''(?i)twitter(.{0,20})?['\"][0-9a-z]{18,25}['\"]'''
 tags = ["client", "Twitter"]
 
 [[rules]]
+id = "github-token"
 description = "Github"
 regex = '''(?i)github(.{0,20})?(?-i)['\"][0-9a-zA-Z]{35,40}['\"]'''
 tags = ["key", "Github"]
 
 [[rules]]
+id = "linkedin-client-id"
 description = "LinkedIn Client ID"
 regex = '''(?i)linkedin(.{0,20})?(?-i)['\"][0-9a-z]{12}['\"]'''
 tags = ["client", "Twitter"]
 
 [[rules]]
+id = "linkedin-secret-key"
 description = "LinkedIn Secret Key"
 regex = '''(?i)linkedin(.{0,20})?['\"][0-9a-z]{16}['\"]'''
 tags = ["secret", "Twitter"]
 
 [[rules]]
+id = "slack-token"
 description = "Slack"
 regex = '''xox[baprs]-([0-9a-zA-Z]{10,48})?'''
 tags = ["key", "Slack"]
 
 [[rules]]
+id = "ec-private-key"
 description = "EC"
 regex = '''-----BEGIN EC PRIVATE KEY-----'''
 tags = ["key", "EC"]
 
 [[rules]]
+id = "generic-api-key"
 description = "Generic API key"
 regex = '''(?i)(api_key|apikey)(.{0,20})?['|"][0-9a-zA-Z]{32,45}['|"]'''
 tags = ["key", "API", "generic"]
 
 [[rules]]
+id = "generic-secret"
 description = "Generic Secret"
 regex = '''(?i)secret(.{0,20})?['|"][0-9a-zA-Z]{32,45}['|"]'''
 tags = ["key", "Secret", "generic"]
 
 [[rules]]
+id = "google-api-key"
 description = "Google API key"
 regex = '''AIza[0-9A-Za-z\\-_]{35}'''
 tags = ["key", "Google"]
 
 [[rules]]
+id = "google-gcp-api-key"
 description = "Google Cloud Platform API key"
 regex = '''(?i)(google|gcp|youtube|drive|yt)(.{0,20})?['\"][AIza[0-9a-z\\-_]{35}]['\"]'''
 tags = ["key", "Google", "GCP"]
 
 [[rules]]
+id = "google-oauth"
 description = "Google OAuth"
 regex = '''(?i)(google|gcp|auth)(.{0,20})?['"][0-9]+-[0-9a-z_]{32}\.apps\.googleusercontent\.com['"]'''
 tags = ["key", "Google", "OAuth"]
 
 [[rules]]
+id = "google-oauth-access-token"
 description = "Google OAuth access token"
 regex = '''ya29\.[0-9A-Za-z\-_]+'''
 tags = ["key", "Google", "OAuth"]
 
 [[rules]]
+id = "heroku-api-key"
 description = "Heroku API key"
 regex = '''(?i)heroku(.{0,20})?['"][0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}['"]'''
 tags = ["key", "Heroku"]
 
 [[rules]]
+id = "mailchimp-api-key"
 description = "MailChimp API key"
 regex = '''(?i)(mailchimp|mc)(.{0,20})?['"][0-9a-f]{32}-us[0-9]{1,2}['"]'''
 tags = ["key", "Mailchimp"]
 
 [[rules]]
+id = "mailgun-api-key"
 description = "Mailgun API key"
 regex = '''(?i)(mailgun|mg)(.{0,20})?['"][0-9a-z]{32}['"]'''
 tags = ["key", "Mailgun"]
 
 [[rules]]
+id = "password-in-url"
 description = "Password in URL"
 regex = '''[a-zA-Z]{3,10}:\/\/[^\/\s:@]{3,20}:[^\/\s:@]{3,20}@.{1,100}\/?.?'''
 tags = ["key", "URL", "generic"]
 
 [[rules]]
+id = "paypal-braintree-access-token"
 description = "PayPal Braintree access token"
 regex = '''access_token\$production\$[0-9a-z]{16}\$[0-9a-f]{32}'''
 tags = ["key", "Paypal"]
 
 [[rules]]
+id = "picatic-api-key"
 description = "Picatic API key"
 regex = '''sk_live_[0-9a-z]{32}'''
 tags = ["key", "Picatic"]
 
 [[rules]]
+id = "slack-webhook"
 description = "Slack Webhook"
 regex = '''https://hooks.slack.com/services/T[a-zA-Z0-9_]{8}/B[a-zA-Z0-9_]{8}/[a-zA-Z0-9_]{24}'''
 tags = ["key", "slack"]
 
 [[rules]]
+id = "stripe-api-key"
 description = "Stripe API key"
 regex = '''(?i)stripe(.{0,20})?['\"][sk|rk]_live_[0-9a-zA-Z]{24}'''
 tags = ["key", "Stripe"]
 
 [[rules]]
+id = "square-access-token"
 description = "Square access token"
 regex = '''sq0atp-[0-9A-Za-z\-_]{22}'''
 tags = ["key", "square"]
 
 [[rules]]
+id = "square-oauth-secret"
 description = "Square OAuth secret"
 regex = '''sq0csp-[0-9A-Za-z\\-_]{43}'''
 tags = ["key", "square"]
 
 [[rules]]
+id = "twilio-api-key"
 description = "Twilio API key"
 regex = '''(?i)twilio(.{0,20})?['\"][0-9a-f]{32}['\"]'''
 tags = ["key", "twilio"]
