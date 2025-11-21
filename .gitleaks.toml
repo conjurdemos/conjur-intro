@@ -228,7 +228,11 @@ commits = [
   "406dc7268f9b014bb8bc8acc7854a18114ac5346", # old commit with vagrant priv key
   "6e9dcb3698a8a339c7112cf395cf7c2389d4150d", # old commit with vagrant priv key
   "4fb1c3251079b8d38b15459b17204be87243cf0b", # original commit with demo files (Pin cfssl build)
-  "c643a869a8b044cea6f50cff8086e6b2b076beb6" # rewritten commit (replaced 4fb1c32)
+  "c643a869a8b044cea6f50cff8086e6b2b076beb6", # rewritten commit (replaced 4fb1c32)
+  "e065bcd3bc5791df8938d1fda68b37622f14fb4e", # system config certs
+  "32296112d1650287f54ac45643462cdce8fb20a1", # vagrant private key
+  "809002eb5bd37672026fe2f1f4912af28e4f1f66", # ldap demo cert
+  "3d94d4565bcb9f8f5176d49895280d00e9a3f149"  # simple-cluster demo cert
 ]
 
 # Additional Examples
