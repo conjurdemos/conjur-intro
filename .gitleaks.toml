@@ -218,6 +218,9 @@ files = [
   "demos/aws-authentication/jason-conjur-test.pem", # sample cert for aws auth
   "curl_examples/check", # example script with demo credentials
   "demos/certificate-authority/mutual-tls/README.md", # tutorial with example output
+  "system/configuration/certificates/*.key.pem", # system config certs
+  "vm/.vagrant/machines/default/virtualbox/private_key", # vagrant private key
+  "demos/ldap-integration/certs/ldap.key", # ldap demo cert
 ]
 regexes = [
 ]
