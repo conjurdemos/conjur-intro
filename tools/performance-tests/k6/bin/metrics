@@ -1,0 +1,68 @@
+#!/bin/bash -e
+
+# shellcheck disable=SC1090,SC1091
+source "$(git rev-parse --show-toplevel)/tools/performance-tests/k6/bin/functions"
+
+# Default for statsd
+export K6_STATSD_PORT=${K6_STATSD_PORT:-"8125"}
+export K6_STATSD_ADDR=${K6_STATSD_ADDR:-"datadog:$K6_STATSD_PORT"}
+
+function print_help() {
+  cat << EOF
+NAME
+    Runs metric services.
+
+SYNOPSIS
+    metrics [global options]
+
+GLOBAL OPTIONS
+    -h, --help                - Show this message.
+    --start                   - Starts all the metric services.
+    --stop                    - Stops metric services and performs cleanup.
+
+EOF
+exit
+}
+
+start() {
+  # start datadog agent
+  docker compose up --no-deps --detach datadog
+}
+
+stop() {
+  # stop datadog agent
+  docker compose down datadog
+}
+
+main() {
+    while test $# -gt 0; do
+    case "$1" in
+        -h | --help)
+            CMD="print_help"
+            shift
+            ;;
+        --start)
+            CMD="start"
+            shift
+            ;;
+        --stop)
+            CMD="stop"
+            shift
+            ;;
+        --) shift; 
+            break 
+            ;;
+        -?*)
+            printf 'WARN: Unknown option (ignored): %s\n' "$1" >&2
+            ;;
+        *)  # Default case: No more options, so break out of the loop.
+            break
+            ;;
+    esac
+    done
+
+    eval $CMD
+    echo "DONE."
+}
+
+main "$@"

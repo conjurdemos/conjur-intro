@@ -1,0 +1,29 @@
+#!/bin/bash -e
+
+if [ "$#" -lt 3 ]; then
+  echo "ERROR: Usage: '$0 <MASTER_HOSTNAME> <ACCOUNT> <ADMIN_API_KEY> [<FOLLOWER_HOSTNAME>]'"
+  exit 1
+fi
+
+export MASTER_HOSTNAME="$1"
+export ACCOUNT="$2"
+export ADMIN_API_KEY="$3"
+export FOLLOWER_HOSTNAME="$4"
+
+MOUNT_POINT=/tmp/data
+
+# This must match the policy document
+CREDENTIAL_ID="test-password"
+
+CLI_CMD="$MOUNT_POINT/save-and-watch $MOUNT_POINT/policy.yml ${CREDENTIAL_ID} test-password-value"
+
+set -x
+docker run --rm \
+           -it \
+           -v "$(pwd)/cli_files:$MOUNT_POINT" \
+           -e MASTER_HOSTNAME \
+           -e FOLLOWER_HOSTNAME \
+           -e ACCOUNT \
+           -e ADMIN_API_KEY \
+           --entrypoint bash \
+           cyberark/conjur-cli:8 -c "$CLI_CMD"

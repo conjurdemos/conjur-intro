@@ -1,0 +1,399 @@
+#!/bin/ash -e
+
+_print_help() {
+  cat << EOF
+
+A tool which uses the DAP API to perform various tasks.
+
+Usage: bin/api [options]
+
+    --against-master                                                   Runs command against the master (only relevant if command is an authenticate/read action)
+    --authenticate-user                                                Login using the default username (admin) and password (MySecretP@ss1)
+    --enable-seed-service                                              Enables Seed Service for Standbys and Followers
+    --fetch-secrets                                                    Fetches previously set variables (use '--against-master' if only master is available)
+    -h, --help                                                         Shows this help message
+    --load-large-secrets-sample                                        Loads 150k variables with secrets
+    --load-policy <namespace> <policy>                                 Loads the provided policy into the provided namespace
+    --load-sample-policy                                               Loads a default set of policies to mimic a customer experience
+    --load-sample-policy-and-values                                    Loads policy and sets variable values (equivalent to running '--load-policy' and '--set-secrets')
+    -p, --password <password>                                          Password used for authentication (default is 'MySecretP@ss1')
+    --rotate-api-key                                                   Rotates the authenticated user's API key
+    --rotate-multiple-host-api-keys                                    Rotates all api keys of hosts provided in an array to the function
+    --set-secrets                                                      Sets variable values
+    --set-secret-value <path> <value>                                  Assigns the provided value to the provided variable
+    -u, --user <conjur-user>                                           Username to authenticate with (default is 'admin')
+    --view-roles                                                       Displays the user's roles
+    --create-aws-issuer <name> <aws-access-key-id> <aws-secret-key>    Creates an AWS issuer using the provided name and credentials
+    --delete-aws-issuer <name>                                         Deletes an AWS issuer by the given name
+EOF
+  exit
+}
+
+# General Helper Functions. Any of these functions that communicate with the API should
+# accept an auth token as an input. This greatly increases performance when dealing
+# with multiple API calls.
+retrieve_authentication_token() {
+  local account="$1"
+  local user="$2"
+  # Allow hosts to be used instead of just users
+  user=$(echo "$user" | sed -e "s/\//%2F/g")
+  local api_key="$3"
+  local url="${4:-$URL}"
+  token="$(curl \
+      --silent \
+      --insecure \
+      --header "Accept-Encoding: base64" \
+      --request POST \
+      --data "$api_key" \
+      "$url/authn/$account/$user/authenticate")"
+  echo "$token"
+}
+
+authenticate_user() {
+  local account="$1"
+  local user="$2"
+  local password="$3"
+  local url="${4:-$URL}"
+  api_key="$(curl \
+      --silent \
+      --insecure \
+      --user "$user:$password" \
+      "$url/authn/$account/login")"
+  token=$(retrieve_authentication_token "$account" "$user" "$api_key" "$url")
+  echo "$token"
+}
+
+apply_policy() {
+  local namespace="$1"
+  local policy="$2"
+  local token="$3"
+  local method="${4:-POST}"
+  curl --header "Authorization: Token token=\"$token\"" \
+        --write-out "\n" \
+        --insecure \
+        --request "$method" \
+        --data "$(cat $policy)" \
+     "$master_url/policies/$ACCOUNT/policy/$namespace"
+}
+
+load_policy() {
+  local namespace="$1"
+  local policy="$2"
+  local method="${3:-POST}"
+  local
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
+
+  apply_policy "$namespace" "$policy" "$token" "$method"
+}
+
+set_variable() {
+  local variable="$1"
+  local value="$2"
+  local token="$3"
+
+  curl --header "Authorization: Token token=\"$token\"" \
+        --insecure \
+        --data "$value" \
+        "$master_url/secrets/$ACCOUNT/variable/$variable"
+}
+
+apply_default_policy() {
+  local environments='staging production'
+  local numbers='1 2 3 4 5 6'
+  local token="$token"
+
+  apply_policy 'root' 'policy/modular/root.yml' "$token"
+
+  for environment in $environments; do
+    apply_policy "$environment" 'policy/modular/apps/applications.yml' "$token"
+    for num in $numbers; do
+      apply_policy "$environment/my-app-$num" 'policy/modular/apps/generic-application.yml' "$token"
+      apply_policy "$environment/my-app-$num" 'policy/modular/services/pg-database.yml' "$token"
+      apply_policy "$environment/my-app-$num" 'policy/modular/pg-entitlement.yml' "$token"
+    done
+  done
+}
+
+apply_default_values() {
+  local token="$1"
+  local environments='staging production'
+  local numbers='1 2 3 4 5 6'
+
+  for environment in $environments; do
+    for num in $numbers; do
+      set_variable "$environment/my-app-$num/postgres-database/url" "$environment.my-app-$num.staging.mycompany-postgres.com/my-app" "$token"
+      set_variable "$environment/my-app-$num/postgres-database/port" "5432" "$token"
+      set_variable "$environment/my-app-$num/postgres-database/username" "my-app-$num" "$token"
+      set_variable "$environment/my-app-$num/postgres-database/password" "secret-p@ssword-$environment-my-app-$num" "$token"
+    done
+  done
+}
+
+fetch_secrets() {
+  local variables="$1"
+  local token="$2"
+  curl --header "Authorization: Token token=\"$token\"" \
+        --write-out "\n" \
+        --insecure \
+        --request GET \
+        "$master_url/secrets?variable_ids=$variables"
+}
+
+# The following functions are called directly from the CLI using flags. These functions
+# need to retrieve a token to be passed to the functions interacting directly with
+# the Conjur API
+load_default_policy() {
+  local token
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
+  apply_default_policy "$token"
+}
+
+delete_policy() {
+  local token
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
+  apply_policy 'delete_branch/first-level' 'policy/delete_policy/delete.yml' "$token" 'PATCH'
+}
+
+set_secret() {
+  local variable_path="$1"
+  local variable_value="$2"
+  local token
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
+  set_variable "$variable_path" "$variable_value" "$token"
+}
+
+load_default_values() {
+  local token
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
+  apply_default_values "$token"
+}
+
+retrieve_variables() {
+  local token
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$URL")
+  secrets="$ACCOUNT:variable:staging/my-app-1/postgres-database/url,$ACCOUNT:variable:staging/my-app-1/postgres-database/port,$ACCOUNT:variable:staging/my-app-1/postgres-database/username,$ACCOUNT:variable:staging/my-app-1/postgres-database/password"
+  fetch_secrets $secrets "$token" | jq .
+}
+
+load_policy_and_set_variables() {
+  local token
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
+  apply_default_policy "$token"
+  apply_default_values "$token"
+}
+
+view_roles() {
+  local token
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$URL")
+  curl --header "Authorization: Token token=\"$token\"" \
+        --write-out "\n" \
+        --insecure \
+        --request GET \
+        "$URL/resources/$ACCOUNT" | jq .
+}
+
+view_policy_members() {
+  local token
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$URL")
+  curl --header "Authorization: Token token=\"$token\"" \
+        --write-out "\n" \
+        --insecure \
+        --request GET \
+        "$master_url/roles/$ACCOUNT/policy/production?members" | jq .
+}
+
+set_thousand_variables() {
+  local i="$1"
+  local value="$2"
+  local token="$3"
+  local urls=""
+  for j in $(seq 1 1000); do
+    urls="$master_url/secrets/$ACCOUNT/variable/staging-$i/myapp/secret-$j $urls"
+  done
+  curl --header "Authorization: Token token=\"$token\"" \
+        --parallel \
+        --parallel-immediate \
+        --parallel-max "$(nproc --all)" \
+        --insecure \
+        --data "$value" \
+        $urls
+}
+
+load_large_policy_and_secrets() {
+  local auth_token
+  local iterations
+  # Each iteration sets 1k secret values
+  iterations=150
+  auth_token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
+  apply_policy 'root' 'policy/large-policy/root.yml' "$auth_token"
+  for i in $(seq 1 $iterations)
+  do
+    apply_policy "staging-$i" 'policy/large-policy/variables.yml' "$auth_token"
+    # Periodically refresh auth token
+    if [ $((i%10)) = 0 ]; then
+      auth_token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
+    fi
+    auth_token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
+    set_thousand_variables "$i" "super-secret-value!!!" "$auth_token"
+    echo "loaded $i of $iterations"
+  done
+}
+
+enable_seed_service() {
+  local token
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
+  apply_policy 'root' 'policy/seed-service/default.yml' "$token"
+  apply_policy 'conjur' 'policy/seed-service/seed.yml' "$token"
+}
+
+rotate_api_key() {
+  local user="$1"
+  local token
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
+  curl --header "Authorization: Token token=\"$token\"" \
+        --write-out "\n" \
+        --insecure \
+        --request PUT \
+        "$master_url/authn/$ACCOUNT/api_key?role=user:$user"
+}
+
+rotate_multiple_host_api_keys() {
+  local token
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
+  local responses=""
+  for host in "$@"; do
+    response=$(curl --header "Authorization: Token token=\"$token\"" \
+                    --insecure \
+                    --request PUT \
+                    --silent \
+                    "$master_url/authn/$ACCOUNT/api_key?role=host:$host")
+    responses="$responses $response"
+  done
+  echo "$responses"
+}
+
+create_aws_issuer() {
+  local name="$1"
+  local access_key_id="$2"
+  local secret_access_key="$3"
+  local token
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
+
+  response=$(curl --header "Authorization: Token token=\"$token\"" \
+       --header "Content-Type: application/json" \
+       --silent \
+       --write-out "\n%{http_code}" \
+       --insecure \
+       --request POST \
+       --data "{
+         \"id\": \"${name}\",
+         \"max_ttl\": 3600,
+         \"type\": \"aws\",
+         \"data\": {
+           \"access_key_id\": \"${access_key_id}\",
+           \"secret_access_key\": \"${secret_access_key}\"
+         }
+       }" \
+       "$master_url/api/issuers/demo")
+  body=$(echo "${response}" | head -n -1)
+  status=$(echo "${response}" | tail -n 1)
+
+  if [ "$status" -ne 201 ]; then
+    echo "Error creating issuer: $status"
+    echo "${body}" | jq
+    exit 1
+  fi
+  echo "${body}" | jq
+}
+
+delete_aws_issuer() {
+  set -x
+  local name="$1"
+  local token
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
+
+  curl --header "Authorization: Token token=\"$token\"" \
+       --silent \
+       --write-out "\n" \
+       --insecure \
+       --request DELETE \
+       --verbose \
+       "$master_url/api/issuers/demo/$name"
+}
+
+list_issuers() {
+  local token
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
+
+  response=$(curl --header "Authorization: Token token=\"$token\"" \
+       --silent \
+       --write-out "\n%{http_code}" \
+       --insecure \
+       "$URL/api/issuers/demo")
+  body=$(echo "${response}" | head -n -1)
+  status=$(echo "${response}" | tail -n 1)
+
+  if [ "$status" -ne 200 ]; then
+    echo "Error listing issuers: $status"
+    echo "${body}" | jq
+    exit 1
+  fi
+  echo "${body}" | jq
+}
+
+get_dynamic_secret() {
+  local secret_id="$1"
+  local token
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
+
+  curl --header "Authorization: Token token=\"$token\"" \
+       --write-out "\n" \
+       --insecure \
+       --silent \
+       --request GET \
+       "$URL/api/secrets/demo/variable/data/dynamic/${secret_id}" | \
+       jq '.data.secret_access_key = "****" | .data.session_token = "*****"'
+}
+
+# -- End functions called directly from CLI --
+
+follower_url='http://conjur-follower.mycompany.local'
+master_url='https://conjur-master.mycompany.local'
+URL=$follower_url
+ACCOUNT='demo'
+USER='admin'
+PASSWORD='MySecretP@ss1'
+cmd=''
+
+while true ; do
+  case "$1" in
+    -a | --account ) shift ; ACCOUNT=$1 ; shift ;;
+    -u | --user ) shift ; USER=$1 ; shift ;;
+    -p | --password ) shift ; PASSWORD=$1 ; shift ;;
+    --follower-url ) shift ; follower_url=$1 ; shift ;;
+    --leader-url ) shift ; master_url=$1 ; shift ;;
+    --authenticate-user ) shift ; cmd="authenticate_user $ACCOUNT $USER $PASSWORD" ;;
+    -h | --help ) _print_help ;;
+    --patch-policy ) shift ; cmd="load_policy $1 $2 PATCH" ; shift ; shift ;;
+    --load-policy ) shift ; cmd="load_policy $1 $2" ; shift ; shift ;;
+    --load-sample-policy-and-values ) shift ; cmd="load_policy_and_set_variables" ;;
+    --load-sample-policy ) shift ; cmd='load_default_policy' ;;
+    --load-large-secrets-sample ) shift ; cmd='load_large_policy_and_secrets' ;;
+    --delete-policy ) shift; cmd='delete_policy' ;;
+    --set-secrets ) shift ; cmd='load_default_values' ;;
+    --set-secret-value ) shift ; cmd="set_secret $1 $2"; shift ; shift ;;
+    --against-master ) shift ; URL=$master_url ;;
+    --fetch-secrets ) shift ; cmd="retrieve_variables" ;;
+    --view-roles ) cmd="view_roles" ; shift ;;
+    --rotate-api-key ) shift ; cmd="rotate_api_key $1" ; shift ;;
+    --rotate-multiple-host-api-keys ) shift ; cmd="rotate_multiple_host_api_keys $1" ; shift ;;
+    --enable-seed-service ) shift ; cmd='enable_seed_service' ;;
+    --create-aws-issuer ) shift ; cmd="create_aws_issuer $1 $2 $3"; shift; shift; shift ;;
+    --delete-aws-issuer ) shift ; cmd="delete_aws_issuer $1"; shift ;;
+    --list-issuers ) shift ; cmd="list_issuers" ;;
+    --get-dynamic-secret ) shift ; cmd="get_dynamic_secret $1" ; shift ;;
+     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+  esac
+done
+
+eval $cmd

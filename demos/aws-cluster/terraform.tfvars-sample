@@ -1,0 +1,14 @@
+# (REQUIRED) VPC to provision Load Balancer and Nodes into
+vpc_id = ""
+
+# (REQUIRED) AMI to use for Conjur Master nodes
+ami_id = ""
+
+# (REQUIRED) Name of SSH key pair to attach to Conjur Master nodes
+key_name = ""
+
+# (OPTIONAL) Names of availability zones to use for nodes,
+# defaults to the value below
+# availability_zones = ["us-east-1a", "us-east-1b"]
+
+resource_prefix = ""

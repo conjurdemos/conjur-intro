@@ -1,0 +1,1065 @@
+#!/usr/bin/env bash
+
+set -e
+
+# Always work from repo root directory
+cd "$(dirname ${0})/..";
+
+source ./bin/utils.sh
+
+# Make sure .env envvars are available
+dotenv > /dev/null 2>&1 || true
+
+CONJUR_MASTER_PORT=${CONJUR_MASTER_PORT:-443}
+CONJUR_FOLLOWER_PORT=${CONJUR_FOLLOWER_PORT:-450}
+CONJUR_K8S_FOLLOWER_PORT=${CONJUR_K8S_FOLLOWER_PORT:-451}
+_admin_password="MySecretP@ss1"
+
+function _print_help {
+  cat << EOF
+
+A tool that provides a variety of DAP lifecycle workflows.
+
+Synopsis: bin/dap [command options]
+
+Usage: bin/dap [options]:
+
+    --create-backup                                           Creates a backup (Requires configured master).
+
+    --dry-run                                                 Print configuration commands with executing.
+
+    --enable-auto-failover                                    Configures Master cluster with auto-failover
+                                                                (Requires configured master and standbys).
+
+    --generate-dh                                             Don't mount pre-generated DH params into the
+                                                                appliance containers (will cause a _lot_ more
+                                                                CPU consumption).
+
+    --h, --help                                               Shows this help message.
+
+    --import-custom-certificates                              Imports pre-generated 3rd-party certificates
+                                                                (Requires configured master).
+
+    --promote-standby                                         Stops the current master and promotes a standby
+                                                                (Requires configured standbys and no auto-failover).
+
+    --provision-follower                                      Configures follower behind a Layer 7 load balancer
+                                                                (Requires configured master).
+
+    --provision-k8s-follower                                  Configures follower inside kubernetes cluster ran by kind
+                                                                (Requires configured master).
+
+    --provision-csi-provider                                  Configures Conjur CSI provider inside kubernetes cluster ran by kind
+                                                                (Requires configured master).
+
+    --provision-secrets-provider                              Configures Conjur Secrets Provider inside kubernetes cluster ran by kind
+                                                                (Requires configured master).
+
+    --provision-master                                        Configures a DAP Master with account `demo` and
+                                                                password `MySecretP@ss1` behind a Layer 4 load
+                                                                balancer.
+
+    --provision-standbys                                      Deploys and configures two standbys (Requires
+                                                                configured master).
+
+    --reenroll-failed-leader <old-leader-id> <new-leader-id>  Performs a re-enroll of the previous master
+                                                                following a failover event.
+
+    --restore-from-backup                                     Restores a master from backup|Requires a previously
+                                                                created backup.
+
+    --rotate-custom-certificates                              Regenerates custom certificates and applies the new
+                                                                certificates to each node.
+
+    --standby-count <count>                                   Number of Standbys to deploy (defaults to 2).
+
+    --stop                                                    Stops all containers and cleans up cached files.
+
+    --trigger-failover                                        Stops current master (Requires an auto-failover
+                                                                cluster).
+
+    --trust-follower-proxy                                    Adds Follower load balancer as a trusted proxy
+                                                                (Requires a configured follower).
+
+    --upgrade-master <version>                                Restores master from backup (Requires configured
+                                                                master).
+
+    --wait-for-master                                         Blocks until the Master is healthy.
+
+    --version <version>                                       Version of DAP to use (defaults to latest build).
+
+    --k8s-follower-version <version>                          Version of K8S-Follower to use (defaults to latest build).
+
+    --wait-for-master                                         Waits for Conjur Master to become healthy.
+
+    --follower-to-master-connection <on/off>                  Pauses or unpauses follower connection to master.
+                                                                (Requires a configured master).
+
+
+EOF
+  exit
+}
+
+function _set_master_multi_node_proxy_config {
+  cat << EOF > files/haproxy/master/haproxy.cfg
+global
+  daemon
+  maxconn 256
+  log-send-hostname
+
+defaults
+  mode tcp
+  timeout connect 5000ms
+  timeout client  50000ms
+  timeout server  50000ms
+
+#
+# Peform SSL Pass-Through to proxy HTTPS requests to DAP
+#
+frontend www
+  mode tcp
+  bind *:443
+  option tcplog
+  default_backend www-backend
+
+#
+# Peform SSL pass-through to proxy Postgres TCP requests from standbys/followers to DAP Master
+#
+frontend postgres
+  mode tcp
+  bind *:5432
+  option tcplog
+  default_backend postgres-backend
+
+#
+# Peform SSL pass-through to proxy Syslog TCP requests from followers to DAP Master
+#
+frontend syslog
+  mode tcp
+  bind *:1999
+  option tcplog
+  default_backend syslog-backend
+
+#
+# Performs Layer 4 proxy
+# Uses DAP's HTTP health endpoint to determine master
+#
+backend www-backend
+  mode tcp
+  balance roundrobin
+  option httpchk GET /health
+  server conjur-master-1 conjur-master-1.mycompany.local:443 check port 443 check-ssl ca-file /etc/ssl/certs/ca.pem
+$(_standby_backend_www_lines)
+
+#
+# Performs Layer 4 proxy
+# Uses DAP's HTTP health endpoint to determine master
+#
+backend postgres-backend
+  mode tcp
+  balance roundrobin
+  option httpchk GET /health
+  server conjur-master-1 conjur-master-1.mycompany.local:5432 check port 443 check-ssl ca-file /etc/ssl/certs/ca.pem
+$(_standby_backend_postgres_lines)
+
+#
+# Performs Layer 4 proxy
+# Uses DAP's HTTP health endpoint to determine master
+#
+backend syslog-backend
+  mode tcp
+  balance roundrobin
+  option httpchk GET /health
+  server conjur-master-1 conjur-master-1.mycompany.local:1999 check port 443 check-ssl ca-file /etc/ssl/certs/ca.pem
+$(_standby_backend_syslog_lines)
+
+#
+# Enables HAProxy's UI for debugging
+#
+listen stats
+  mode http
+  bind *:7000
+  stats enable
+  stats uri /
+EOF
+}
+
+_standby_backend_www_lines() {
+  declare -a standby_servers
+
+  # The identifier for the Leader is 1, so we start at 2 for Standbys
+  for ((i=2; i<=STANDBY_COUNT+1; i++))
+  do
+    standby_servers+=("  server conjur-master-$i conjur-master-$i.mycompany.local:443 check port 443 check-ssl ca-file /etc/ssl/certs/ca.pem")
+  done
+
+  printf '%s' "$(IFS=$'\n' ; echo "${standby_servers[*]}")"
+}
+
+_standby_backend_postgres_lines() {
+  declare -a standby_servers
+
+  # The identifier for the Leader is 1, so we start at 2 for Standbys
+  for ((i=2; i<=STANDBY_COUNT+1; i++))
+  do
+    standby_servers+=("  server conjur-master-$i conjur-master-$i.mycompany.local:5432 check port 443 check-ssl ca-file /etc/ssl/certs/ca.pem")
+  done
+
+  printf '%s' "$(IFS=$'\n' ; echo "${standby_servers[*]}")"
+}
+
+_standby_backend_syslog_lines() {
+    declare -a standby_servers
+
+  # The identifier for the Leader is 1, so we start at 2 for Standbys
+  for ((i=2; i<=STANDBY_COUNT+1; i++))
+  do
+    standby_servers+=("  server conjur-master-$i conjur-master-$i.mycompany.local:1999 check port 443 check-ssl ca-file /etc/ssl/certs/ca.pem")
+  done
+
+  printf '%s' "$(IFS=$'\n' ; echo "${standby_servers[*]}")"
+}
+
+function _set_master_single_node_proxy_config {
+  cp files/haproxy/master/single/haproxy.cfg files/haproxy/master/haproxy.cfg
+}
+
+function _run {
+  local _all_args=("$@")
+  local _node_name=$1
+  local _args=("${_all_args[@]:1}")
+
+  echo "Running Command (on $_node_name): docker exec cyberark-dap $_args"
+
+  if [[ $DRY_RUN = false ]]; then
+    docker compose exec -T $_node_name bash -c "
+      $_args
+    "
+  fi
+}
+
+# Each command will be executed with KUBE_OPTS environment variable
+# which is defined to point to the k8s-follower-orchestrator cluster.
+# The KUBE_OPTS variable should be then used in the command to interact with the k8s-follower-orchestrator cluster.
+# For example:
+# _run_in_kind "kubectl \$KUBE_OPTS get pods"
+function _run_in_kind {
+  local _args=("$@")
+
+  if [[ $DRY_RUN = false ]]; then
+    # shellcheck disable=SC2128
+    docker compose exec -T k8s-follower-orchestrator ash -c "
+      API_SERVER_URL=\$(kind get --name conjur-intro-k8s-follower kubeconfig | grep server | awk '{print \$2}' | sed 's/0.0.0.0/host.docker.internal/'); \
+      KUBE_OPTS=\"--insecure-skip-tls-verify --server=\$API_SERVER_URL --context kind-conjur-intro-k8s-follower\"; \
+      $_args
+    "
+  fi
+}
+
+function _start_master {
+  if [[ $DRY_RUN = false ]]; then
+
+    if [[ "$PULL_IMAGES" = "true" ]]; then
+      docker compose pull
+    fi
+
+    docker compose up -d --no-deps conjur-master-1.mycompany.local
+  fi
+}
+
+function _start_l7_load_balancer {
+  if [[ $DRY_RUN = false ]]; then
+    docker compose up -d --no-deps conjur-follower.mycompany.local
+  fi
+}
+
+function _configure_master {
+  # Copy DH Param
+  docker cp files/dhparam.pem "$(docker compose ps -q conjur-master-1.mycompany.local)":${DHPATH}/dhparam.pem
+
+  _cmd="evoke configure master"
+  _cmd="$_cmd --accept-eula"
+  _cmd="$_cmd --hostname conjur-master.mycompany.local"
+  _cmd="$_cmd --master-altnames conjur-master-1.mycompany.local,$(_standby_altnames)"
+  _cmd="$_cmd --admin-password $_admin_password"
+  _cmd="$_cmd demo"
+
+  _run conjur-master-1.mycompany.local \
+    "$_cmd"
+}
+
+function _setup_standby {
+  local _standby_number=$1
+
+  docker compose rm --stop --force "conjur-master-$_standby_number.mycompany.local"
+  docker compose up --no-deps --detach "conjur-master-$_standby_number.mycompany.local"
+
+  # Generate a Seed File
+  _run conjur-master-1.mycompany.local \
+    "evoke seed standby conjur-master-$_standby_number.mycompany.local conjur-master-1.mycompany.local > /opt/cyberark/dap/seeds/standby-seed-$_standby_number.tar"
+
+  # Unpack and Configure
+  _run conjur-master-$_standby_number.mycompany.local \
+    "evoke unpack seed /opt/cyberark/dap/seeds/standby-seed-$_standby_number.tar && evoke configure standby"
+}
+
+function _start_standby_synchronization {
+  _run conjur-master-1.mycompany.local \
+    "evoke replication sync start"
+}
+
+function _setup_follower {
+
+  docker compose rm --stop --force conjur-follower-1.mycompany.local
+  docker compose up --no-deps --detach conjur-follower-1.mycompany.local
+
+  # Generate Seed file
+  _run conjur-master-1.mycompany.local \
+    "evoke seed follower conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed.tar"
+
+  # Unpack and Configure
+  _run conjur-follower-1.mycompany.local \
+    "evoke unpack seed /opt/cyberark/dap/seeds/follower-seed.tar && evoke configure follower"
+
+  # Copy certs for HAProxy
+  _run conjur-follower-1.mycompany.local \
+    "cp /opt/conjur/etc/ssl/conjur-follower.mycompany.local.key /opt/conjur/etc/ssl/conjur-follower.mycompany.local.pem.key"
+  _run conjur-follower-1.mycompany.local \
+    "chown 99:99 /opt/conjur/etc/ssl/conjur-follower.mycompany.local.pem.key"
+
+  _start_l7_load_balancer
+  echo "DAP Follower instance available at: 'https://localhost:${CONJUR_FOLLOWER_PORT}'"
+}
+
+function _setup_k8s_follower {
+  # Create a kubeconfig file to be used by the k8s-follower-orchestrator cluster
+  touch kubeconfig
+  # Setup k8s-follower-orchestrator cluster
+  docker compose build \
+    --build-arg K8S_FOLLOWER_TAG="$K8S_FOLLOWER_TAG" \
+    --build-arg CONJUR_K8S_FOLLOWER_PORT="$CONJUR_K8S_FOLLOWER_PORT" \
+    k8s-follower-orchestrator
+  docker compose up -d --no-deps k8s-follower-orchestrator
+
+  # Wait a little bit to create k8s-follower-orchestrator cluster
+  SECONDS=0
+  TIMEOUT=300
+  while true; do
+    if _run_in_kind "kubectl \$KUBE_OPTS get nodes | grep -q \"Ready\"" &> /dev/null; then
+      echo "The conjur-intro-k8s-follower cluster is created."
+      break
+    else
+      echo "Waiting for the conjur-intro-k8s-follower cluster to be created..."
+      sleep 1
+    fi
+    if [ $SECONDS -ge $TIMEOUT ]; then
+        echo "Timeout after waiting for 5 minutes. The conjur-intro-k8s-follower cluster is not created."
+        echo "Printing logs from k8s-follower-orchestrator container:"
+        docker logs conjur-intro-k8s-follower-orchestrator-1
+        echo "Printing logs from docker logs k8s-follower-control-plane container:"
+        docker logs conjur-intro-k8s-follower-control-plane
+        exit 1
+      fi
+  done
+
+  # Discover Kubernetes resources
+  jwks=$(_run_in_kind "kubectl \$KUBE_OPTS get --raw \$(kubectl \$KUBE_OPTS get --raw /.well-known/openid-configuration | jq -r '.jwks_uri')")
+  policy_value="{\"type\":\"jwks\",\"value\":$jwks}"
+
+  # Define the JWT Authenticator in Conjur
+  bin/cli conjur policy load -b root -f artifacts/k8s-follower-orchestrator/jwt-authenticator-webservice-policy.yaml
+  # Populate the policy variables
+  curl -k -X POST \
+    -H "$(bin/cli conjur authenticate -H | tail -n1)" \
+    --data "$policy_value" \
+    "https://localhost/secrets/demo/variable/conjur%2Fauthn-jwt%2Fdev-cluster%2Fpublic-keys"
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster/issuer -v https://kubernetes.default.svc.cluster.local
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster/token-app-property -v "sub"
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster/identity-path -v apps
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster/audience -v "https://host.docker.internal"
+  # Enable the JWT Authenticator in Conjur
+  _append_conjur_authenticator "authn-jwt/dev-cluster"
+
+  # Pull the Conjur Kubernetes Follower images on host,
+  # tag them as docker.io images as load into k8s-follower-orchestrator cluster
+  pull_k8s_follower_images
+
+  # Deploy the Conjur Kubernetes Follower
+  _run_in_kind "kubectl \$KUBE_OPTS apply -f /manifests/operator"
+  bin/cli conjur policy load -f artifacts/k8s-follower-orchestrator/seed-generation-policy.yaml -b root
+  bin/cli conjur policy load -f artifacts/k8s-follower-orchestrator/conjur-kubernetes-follower-policy.yaml -b root
+
+  # Ensure certs are up to date
+  docker cp "$(docker compose ps -q conjur-master-1.mycompany.local)":/opt/conjur/etc/ssl/. ./system/haproxy/certs
+  _run_in_kind "kubectl \$KUBE_OPTS create configmap -n cyberark-conjur conjur-cert --from-file=/etc/ssl/certs/conjur-master.mycompany.local.pem"
+
+  # Apply manifest with Conjur Follower
+  _run_in_kind "kubectl \$KUBE_OPTS apply -f /manifests/samples"
+
+  echo "Waiting for the conjur-follower deployment to be running..."
+  _run_in_kind "kubectl \$KUBE_OPTS wait --namespace=cyberark-conjur --for=condition=available --timeout=5m deployment/conjur-follower"
+
+  # Deploy NodePort that will expose Conjur Follower endpoint
+  _run_in_kind "kubectl \$KUBE_OPTS apply -f conjur-follower-node-port.yaml"
+
+  echo "K8S Follower instance deployed and available at https://localhost:${CONJUR_K8S_FOLLOWER_PORT}"
+}
+
+function pull_k8s_follower_images {
+  local images=(
+    "conjur-kubernetes-follower-operator"
+    "conjur-kubernetes-follower-configurator"
+    "conjur-kubernetes-follower-conjur"
+    "conjur-kubernetes-follower-info"
+    "conjur-kubernetes-follower-nginx"
+    "conjur-kubernetes-follower-postgres"
+    "conjur-kubernetes-follower-syslog-ng"
+    "conjur-kubernetes-follower-failover-rebaser"
+    "conjur-kubernetes-follower-ephemeral-secrets"
+  )
+
+  for image in "${images[@]}"; do
+    img="registry.tld/cyberark/${image}:${K8S_FOLLOWER_TAG}"
+    img_without_registry="cyberark/${image}:${K8S_FOLLOWER_TAG}"
+
+    # Try to pull the image, but continue if it fails with "not found". This
+    # allows older Followers to be deployed when they do not have images introduced
+    # in later releases (e.g. failover-rebaser, ephemeral-secrets, etc.)
+    if ! docker pull "${img}" 2>&1 | grep -q "not found"; then
+      echo "Successfully pulled ${img} or image already exists locally"
+      docker tag "${img}" "${img_without_registry}"
+      _run_in_kind "kind load docker-image ${img_without_registry} --name conjur-intro-k8s-follower"
+    else
+      echo "Warning: Failed to pull ${img} (not found), continuing anyway..."
+    fi
+  done
+}
+
+function _setup_secrets_provider {
+  touch kubeconfig
+  docker compose rm --stop --force secrets-provider-orchestrator
+  docker compose build secrets-provider-orchestrator
+  docker compose up --no-deps --detach secrets-provider-orchestrator
+
+  # Wait until we get a response from the Kubernetes API that the node is ready
+  SECONDS=0
+  TIMEOUT=300
+  while true; do
+    NODE_OUTPUT="$(docker compose exec -T secrets-provider-orchestrator bash -c 'kubectl get nodes' 2>/dev/null || true)"
+    if echo "$NODE_OUTPUT" | grep -q "conjur-intro-secrets-provider-control-plane"; then
+      echo "The conjur-intro-secrets-provider cluster is created."
+      break
+    else
+      echo "Waiting for the conjur-intro-secrets-provider cluster to be created..."
+      sleep 1
+    fi
+    if [ $SECONDS -ge $TIMEOUT ]; then
+      echo "Timeout after waiting for 5 minutes. The conjur-intro-secrets-provider cluster is not created or node name is incorrect."
+      docker compose logs secrets-provider-orchestrator
+      exit 1
+    fi
+  done
+
+  # Define and enable the JWT Authenticator in Conjur
+  bin/cli conjur policy load -b root -f artifacts/k8s-secrets-provider/jwt-authenticator-webservice-policy.yaml
+  jwks=$(docker compose exec -T secrets-provider-orchestrator bash -c "kubectl get --raw \$(kubectl get --raw /.well-known/openid-configuration | jq -r '.jwks_uri')")
+  policy_value="{\"type\":\"jwks\",\"value\":$jwks}"
+  curl -k -X POST \
+    -H "$(bin/cli conjur authenticate -H | tail -n1)" \
+    --data "$policy_value" \
+    "https://localhost/secrets/demo/variable/conjur%2Fauthn-jwt%2Fdev-cluster-sp%2Fpublic-keys"
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster-sp/issuer -v https://kubernetes.default.svc.cluster.local
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster-sp/token-app-property -v "sub"
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster-sp/identity-path -v apps
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster-sp/audience -v "conjur"
+  _append_conjur_authenticator "authn-jwt/dev-cluster-sp"
+
+  # Prepare the test app namespace and service account
+  export TEST_APP_NAMESPACE="test-app"
+  export TEST_APP_SA="test-app-sa"
+  docker compose exec -T secrets-provider-orchestrator bash -c "kubectl create namespace $TEST_APP_NAMESPACE"
+  docker compose exec -T secrets-provider-orchestrator bash -c "kubectl create serviceaccount $TEST_APP_SA -n $TEST_APP_NAMESPACE"
+
+  # Prep helm repos
+  docker compose exec -T secrets-provider-orchestrator bash -c "helm repo add cyberark --insecure-skip-tls-verify https://cyberark.github.io/helm-charts"
+  docker compose exec -T secrets-provider-orchestrator bash -c "helm repo update"
+
+  # Install the Conjur ConfigMap
+  docker compose exec -T secrets-provider-orchestrator bash -c "helm install cluster-prep cyberark/conjur-config-cluster-prep \
+    --insecure-skip-tls-verify \
+    --namespace cyberark-conjur-jwt \
+    --create-namespace \
+    --set conjur.account=demo \
+    --set conjur.applianceUrl=https://conjur-master.mycompany.local \
+    --set conjur.certificateBase64=$(cat ./system/haproxy/certs/conjur-master.mycompany.local.pem | base64) \
+    --set authnK8s.authenticatorID=dev-cluster-sp \
+    --set authnK8s.clusterRole.create=false \
+    --set authnK8s.serviceAccount.create=false"
+
+  # Install the namespace prep chart
+  docker compose exec -T secrets-provider-orchestrator bash -c "helm install namespace-prep cyberark/conjur-config-namespace-prep \
+    --insecure-skip-tls-verify \
+    --namespace $TEST_APP_NAMESPACE \
+    --set conjurConfigMap.authnMethod=authn-jwt \
+    --set authnK8s.goldenConfigMap=conjur-configmap \
+    --set authnK8s.namespace=cyberark-conjur-jwt \
+    --set authnRoleBinding.create=false"
+  
+  # Load the test-app policy into Conjur and set some example variables
+  bin/cli conjur policy load -f artifacts/k8s-secrets-provider/test-app-policy.yaml -b root
+  bin/cli conjur variable set -i db-credentials/url -v "https://some-db.example.com:5432"
+  bin/cli conjur variable set -i db-credentials/username -v "db-user"
+  bin/cli conjur variable set -i db-credentials/password -v "db-password"
+
+  # Deploy the test app with Secrets Provier
+  docker compose exec -T secrets-provider-orchestrator bash -c "kubectl apply -f /artifacts/k8s-secrets-provider/manifests/test_app.yaml \
+    --namespace \"$TEST_APP_NAMESPACE\""
+}
+
+function _setup_csi_provider {
+  touch kubeconfig
+  docker compose rm --stop --force csi-provider-orchestrator
+  docker compose build csi-provider-orchestrator
+  docker compose up --no-deps --detach csi-provider-orchestrator
+
+  # Wait until we get a response from the Kubernetes API that the node is ready
+  SECONDS=0
+  TIMEOUT=300
+  while true; do
+    NODE_OUTPUT="$(docker compose exec -T csi-provider-orchestrator bash -c 'kubectl get nodes' 2>/dev/null || true)"
+    if echo "$NODE_OUTPUT" | grep -q "conjur-intro-csi-provider-control-plane"; then
+      echo "The conjur-intro-csi-provider cluster is created."
+      break
+    else
+      echo "Waiting for the conjur-intro-csi-provider cluster to be created..."
+      sleep 1
+    fi
+    if [ $SECONDS -ge $TIMEOUT ]; then
+      echo "Timeout after waiting for 5 minutes. The conjur-intro-csi-provider cluster is not created or node name is incorrect."
+      docker compose logs csi-provider-orchestrator
+      exit 1
+    fi
+  done
+
+  # Define and enable the JWT Authenticator in Conjur
+  bin/cli conjur policy load -b root -f artifacts/k8s-csi-provider/jwt-authenticator-webservice-policy.yaml
+  jwks=$(docker compose exec -T csi-provider-orchestrator bash -c "kubectl get --raw \$(kubectl get --raw /.well-known/openid-configuration | jq -r '.jwks_uri')")
+  policy_value="{\"type\":\"jwks\",\"value\":$jwks}"
+  curl -k -X POST \
+    -H "$(bin/cli conjur authenticate -H | tail -n1)" \
+    --data "$policy_value" \
+    "https://localhost/secrets/demo/variable/conjur%2Fauthn-jwt%2Fdev-cluster-csi%2Fpublic-keys"
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster-csi/issuer -v https://kubernetes.default.svc.cluster.local
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster-csi/token-app-property -v "sub"
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster-csi/identity-path -v apps
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster-csi/audience -v "conjur"
+  _append_conjur_authenticator "authn-jwt/dev-cluster-csi"
+
+
+  # Prep helm repos
+  docker compose exec -T csi-provider-orchestrator bash -c "helm repo add cyberark --insecure-skip-tls-verify https://cyberark.github.io/helm-charts"
+  docker compose exec -T csi-provider-orchestrator bash -c "helm repo add secrets-store-csi-driver --insecure-skip-tls-verify https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts"
+  docker compose exec -T csi-provider-orchestrator bash -c "helm repo update"
+
+  # Install the Secrets Store CSI Driver 
+  docker compose exec -T csi-provider-orchestrator bash -c "helm install csi-secrets-store \
+      secrets-store-csi-driver/secrets-store-csi-driver \
+      --namespace csi \
+      --create-namespace \
+      --insecure-skip-tls-verify \
+      --set \"linux.providersDir=/var/run/secrets-store-csi-providers\" \
+      --set syncSecret.enabled=\"true\" \
+      --set \"tokenRequests[0].audience=conjur\"
+    "
+
+  # Load the test-app policy into Conjur and set some example variables
+  bin/cli conjur policy load -f artifacts/k8s-csi-provider/test-app-policy.yaml -b root
+  bin/cli conjur variable set -i db-credentials/url -v "https://some-db.example.com:5432"
+  bin/cli conjur variable set -i db-credentials/username -v "db-user"
+  bin/cli conjur variable set -i db-credentials/password -v "db-password"
+
+  # Install the Conjur Provider
+  docker compose exec -T csi-provider-orchestrator bash -c "helm install --debug conjur-provider \
+      cyberark/conjur-k8s-csi-provider \
+      --wait \
+      --namespace csi \
+      --insecure-skip-tls-verify \
+      --set daemonSet.image.repo=\"cyberark/conjur-k8s-csi-provider\" \
+      --set daemonSet.image.tag=\"latest\"
+    "
+
+  # Deploy a test app
+  export TEST_APP_NAMESPACE="test-app"
+  export TEST_APP_SA="test-app-sa"
+  docker compose exec -T csi-provider-orchestrator bash -c "kubectl create namespace $TEST_APP_NAMESPACE"
+  docker compose exec -T csi-provider-orchestrator bash -c "kubectl create serviceaccount $TEST_APP_SA -n $TEST_APP_NAMESPACE"
+
+  docker compose exec -T csi-provider-orchestrator bash -c "helm install test-app /artifacts/k8s-csi-provider/helm/test-app \
+    --wait --timeout \"1m\" \
+    --namespace \"$TEST_APP_NAMESPACE\" \
+    --set serviceAccount.name=\"$TEST_APP_SA\" \
+    --set conjur.configurationVersion=0.2.0 \
+    --set conjur.sslCertificate=\"$(cat ./system/haproxy/certs/conjur-master.mycompany.local.pem)\" \
+    --set conjur.applianceUrl=\"https://conjur-master.mycompany.local\" \
+    --set conjur.account=\"demo\" \
+    --set conjur.authnId=\"dev-cluster-csi\" \
+    --set conjur.secrets=\"- \"relative/path/fileA.txt\": \"db-credentials/url\"
+- \"relative/path/fileB.txt\": \"db-credentials/username\"
+- \"relative/path/fileC.txt\": \"db-credentials/password\"\"
+"
+}
+
+#
+## Failover & Promotion
+#
+function _perform_promotion {
+  # Stop current master
+  if [[ $DRY_RUN = false ]]; then
+    docker compose stop conjur-master-1.mycompany.local
+  fi
+
+  # Promote Standby to Master
+  _run conjur-master-2.mycompany.local \
+    "evoke role promote"
+
+  # Repoint Standby to updated Master
+  _run conjur-master-3.mycompany.local \
+    "evoke replication rebase conjur-master-2.mycompany.local"
+}
+
+function deploy_proxy {
+  _set_master_single_node_proxy_config
+  # Copy Conjur generated certificates to HAProxy
+  mkdir -p ./system/haproxy/certs
+  docker cp "$(docker compose ps -q conjur-master-1.mycompany.local)":/opt/conjur/etc/ssl/. ./system/haproxy/certs
+  docker compose up -d --no-deps conjur-master.mycompany.local
+}
+
+function _setup_keycloak() {
+  source ./artifacts/keycloak/keycloak-functions.sh
+
+  docker compose up -d --no-deps --wait keycloak
+
+  # Fetch keycloak certificate
+  _run conjur-master-1.mycompany.local '/oauth/keycloak/scripts/fetch-certificate'
+
+  create_keycloak_users
+
+  echo "Setting keycloak policy and variable values in Conjur"
+
+  bin/cli conjur policy load -b root -f ./artifacts/keycloak/oidc-policy.yml
+
+  bin/cli conjur variable set -i "conjur/authn-oidc/keycloak/provider-uri" -v "https://keycloak:8443/auth/realms/master"
+  bin/cli conjur variable set -i "conjur/authn-oidc/keycloak/id-token-user-property" -v "preferred_username"
+  bin/cli conjur variable set -i "conjur/authn-oidc/keycloak/client-id" -v "conjurClient"
+  bin/cli conjur variable set -i "conjur/authn-oidc/keycloak/client-secret" -v "1234"
+  bin/cli conjur variable set -i "conjur/authn-oidc/keycloak/claim-mapping" -v "email"
+  bin/cli conjur variable set -i "conjur/authn-oidc/keycloak/redirect_uri" -v "http://127.0.0.1:8888/callback"
+
+  bin/cli conjur variable set -i "test-variable" -v "test-secret"
+
+  _append_conjur_authenticator "authn-oidc/keycloak"
+
+  echo "Keycloak admin console is available at: http://localhost:7777/auth/admin"
+}
+
+function _single_master {
+  _start_master
+  _configure_master
+  deploy_proxy
+  echo "DAP instance available at: 'https://localhost:${CONJUR_MASTER_PORT}'"
+  echo "Login using with the username/password: 'admin'/'$_admin_password'"
+}
+
+function _reload_container {
+  name="$1"
+  docker compose rm --stop --force $name
+  docker compose up --no-deps --detach $name
+
+}
+
+function _setup_standbys {
+  for ((i=2; i<=STANDBY_COUNT+1; i++))
+  do
+    _setup_standby "$i"
+  done
+  _start_standby_synchronization
+
+  # Reload load balancer to serve cluster
+  _set_master_multi_node_proxy_config
+  _reload_container 'conjur-master.mycompany.local'
+}
+
+function _command {
+  docker run --rm -w /dap-intro -v "$(pwd):/dap-intro" alpine "$@"
+}
+
+function _stop {
+  echo "stopping...."
+  docker compose down -v
+  docker network remove dap_net || true
+
+  _command rm -rf cli_cache
+  _command rm -rf system/backup
+  _command rm -rf system/logs
+  _command rm -rf system/haproxy/certs
+  _command rm files/haproxy/master/haproxy.cfg || true
+  _command rm kubeconfig || true
+  echo "stopped"
+  exit
+}
+
+function _cli {
+  local _namespace=$1
+  local _policy=$2
+
+  echo "Loading Policy '$_policy':"
+  cat $_policy
+  echo ''
+  echo "with command: 'conjur policy load -b $_namespace -f $_policy'"
+  echo ''
+  echo ''
+
+  if [[ $DRY_RUN = false ]]; then
+    bin/cli conjur policy load -b $_namespace -f $_policy
+  fi
+}
+
+function _append_conjur_authenticator {
+  authenticator=$1
+  if _run conjur-master-1.mycompany.local 'grep -q "CONJUR_AUTHENTICATORS" /opt/conjur/etc/conjur.conf'; then
+    authenticator=$(echo $authenticator | sed 's/\//\\\//g')
+    _run conjur-master-1.mycompany.local "sed -i 's/\(CONJUR_AUTHENTICATORS=.*\)/\1,$authenticator/' /opt/conjur/etc/conjur.conf"
+  else
+    _run conjur-master-1.mycompany.local "echo 'CONJUR_AUTHENTICATORS=authn,$authenticator' >> /opt/conjur/etc/conjur.conf"
+  fi
+  _run conjur-master-1.mycompany.local 'sv reload conjur'
+  _wait_for_master
+}
+
+function _disable_autofailover {
+  for ((i=2; i<=STANDBY_COUNT+1; i++))
+  do
+    _run "conjur-master-$i.mycompany.local" "evoke cluster member remove conjur-master-$i.mycompany.local"
+  done
+}
+
+function _enable_autofailover {
+  autofailover=$(curl -k https://localhost:${CONJUR_MASTER_PORT}/info | jq .configuration.conjur.cluster_name)
+
+  if [ "$autofailover" = 'production' ]; then
+    for ((i=2; i<=STANDBY_COUNT+1; i++))
+    do
+      _run "conjur-master-$i.mycompany.local" "evoke cluster enroll --reenroll --cluster-machine-name conjur-master-$i.mycompany.local --master-name conjur-master-1.mycompany.local production"
+    done
+  else
+    _cli root "policy/base.yml"
+
+    _set_cluster_policy_file
+    _cli conjur/cluster policy/cluster.yml
+
+    _run conjur-master-1.mycompany.local "evoke cluster enroll --cluster-machine-name conjur-master-1.mycompany.local production"
+    for ((i=2; i<=STANDBY_COUNT+1; i++))
+    do
+      _run "conjur-master-$i.mycompany.local" "evoke cluster enroll --cluster-machine-name conjur-master-$i.mycompany.local --master-name conjur-master-1.mycompany.local production"
+    done
+  fi
+}
+
+_set_cluster_policy_file() {
+  cat << EOF > policy/cluster.yml
+- !policy
+  id: production
+  annotations:
+    ttl: 30
+  body:
+    - !layer
+
+    # Host nodes to be enrolled in the `production` auto-failover cluster
+    - &hosts
+      - !host conjur-master-1.mycompany.local
+$(_standby_host_lines)
+
+    - !grant
+      role: !layer
+      member: *hosts
+EOF
+}
+
+_standby_host_lines() {
+    declare -a standby_servers
+
+  # The identifier for the Leader is 1, so we start at 2 for Standbys
+  for ((i=2; i<=STANDBY_COUNT+1; i++))
+  do
+    standby_servers+=("      - !host conjur-master-$i.mycompany.local")
+  done
+
+  printf '%s' "$(IFS=$'\n' ; echo "${standby_servers[*]}")"
+}
+
+function _stop_replication {
+  for ((i=2; i<=STANDBY_COUNT+1; i++))
+  do
+    if [[ $(docker ps --quiet --filter "name=conjur-master-$i.mycompany.local") ]]; then
+      _run "conjur-master-$i.mycompany.local" "evoke replication stop"
+    fi
+  done
+}
+
+function _stop_and_rename {
+  local container_name="$1"
+  local rename_to="$2"
+  docker compose stop $container_name
+  image_id=$(docker ps --all --quiet --filter "name=$container_name")
+  docker rename $image_id $rename_to
+}
+
+function _upgrade_via_backup_restore {
+  upgrade_to="$1"
+
+  autofailover=$(curl -k https://localhost:${CONJUR_MASTER_PORT}/info | jq .configuration.conjur.cluster_name)
+
+  if [ "$autofailover" = 'production' ]; then
+    _disable_autofailover
+  fi
+  _upgrade_master_via_backup_restore $upgrade_to
+}
+
+function _stop_and_remove_master {
+  docker compose rm --stop --force conjur-master-1.mycompany.local
+}
+
+function _restore_from_backup {
+  _stop_and_remove_master
+  _start_master
+
+  # Unpack the backup with docker exec <container> evoke unpack backup -k /opt/conjur/backup/key /opt/conjur/backup/<yourbackupfile>
+  _run conjur-master-1.mycompany.local 'evoke unpack backup --key /opt/conjur/backup/key /opt/conjur/backup/$(ls -1t /opt/conjur/backup | grep gpg | head -1)'
+
+  # Configure the new master with docker exec <container> evoke restore master
+  _run conjur-master-1.mycompany.local "evoke restore --accept-eula"
+}
+
+function _upgrade_master_via_backup_restore {
+  upgrade_to="$1"
+  # Run evoke replication stop on existing standbys and followers
+  _stop_replication
+
+  # Generate a backup on the existing master using evoke backup
+  _create_backup
+
+  # Stop the existing master container with docker stop <container> and rename
+  _stop_and_rename 'conjur-master-1.mycompany.local' 'conjur-master-1.mycompany.local_backup'
+
+  # Start a container using the new version image (this will become the new master)
+  export VERSION=$upgrade_to
+  _restore_from_backup
+
+  # Confirm master is healthy
+  # ...
+}
+
+function _create_backup {
+  _run conjur-master-1.mycompany.local \
+    "evoke backup"
+}
+
+function _add_follower_proxy {
+  _run conjur-follower-1.mycompany.local \
+    "evoke proxy add 12.16.23.15"
+}
+
+function _trigger_master_failover_failover {
+  docker compose kill conjur-master-1.mycompany.local
+  echo 'Auto-failover takes about a minute to complete.'
+}
+
+function _reenroll_failed_leader {
+  old_leader_number=$1
+  new_leader_number=$2
+
+  _run "conjur-master-$new_leader_number.mycompany.local" "evoke cluster member remove conjur-master-$old_leader_number.mycompany.local"
+  docker compose rm --stop --force conjur-master-$old_leader_number.mycompany.local
+
+  docker compose up --no-deps --detach "conjur-master-$old_leader_number.mycompany.local"
+
+  # Generate a Seed File
+  _run "conjur-master-$new_leader_number.mycompany.local" \
+    "evoke seed standby conjur-master-$old_leader_number.mycompany.local conjur-master-$new_leader_number.mycompany.local > /opt/cyberark/dap/seeds/standby-seed-$old_leader_number.tar"
+
+  # Unpack and Configure
+  _run "conjur-master-$old_leader_number.mycompany.local" \
+    "evoke unpack seed /opt/cyberark/dap/seeds/standby-seed-1.tar && evoke configure standby"
+
+  _run "conjur-master-$new_leader_number.mycompany.local" \
+    "evoke cluster member add conjur-master-$old_leader_number.mycompany.local"
+
+  _run "conjur-master-$old_leader_number.mycompany.local" \
+    "evoke cluster enroll --reenroll --cluster-machine-name conjur-master-$old_leader_number.mycompany.local --master-name conjur-master-$new_leader_number.mycompany.local production"
+
+  _run "conjur-master-$new_leader_number.mycompany.local" \
+    "evoke replication sync start"
+}
+
+function _import_certificates {
+  bin/generate-certs
+
+  local cert_path='/opt/cyberark/dap/configuration/certificates'
+  _run conjur-master-1.mycompany.local \
+    "evoke ca import --force --root $cert_path/ca-chain.pem"
+  _run conjur-master-1.mycompany.local \
+    "evoke ca import --force --key $cert_path/dap_master/dap-master-key.pem --set $cert_path/dap_master/dap-master.pem"
+  _run conjur-master-1.mycompany.local \
+    "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
+}
+
+function _rotate_certificates {
+  bin/generate-certs --rotate-server --force
+
+  # Disable auto-failover while rotating the Master cluster certificates
+  # to prevent an unintended failover.
+  _pause_autofailover
+
+  # Import the new certificate into the active DAP Master
+  local cert_path='/opt/cyberark/dap/configuration/certificates'
+  _run conjur-master-1.mycompany.local \
+    "evoke ca import --force --key $cert_path/dap_master/dap-master-key.pem --set $cert_path/dap_master/dap-master.pem"
+
+  # Import the new Follower certificate into the active DAP master so that it
+  # is available through the seed service
+  _run conjur-master-1.mycompany.local \
+    "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
+
+  # Import the new certificate into the DAP Standbys
+  for ((i=2; i<=STANDBY_COUNT+1; i++))
+  do
+    if [[ $(docker ps --quiet --filter "name=conjur-master-$i.mycompany.local") ]]; then
+      _run "conjur-master-$i.mycompany.local" \
+        "evoke ca import --force --key $cert_path/dap_master/dap-master-key.pem --set $cert_path/dap_master/dap-master.pem"
+
+      # Import the new Follower certificate into each DAP Standby so that it
+      # is available through the seed service if the Standby is promoted.
+      _run "conjur-master-$i.mycompany.local" \
+        "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
+    fi
+  done
+
+  # Re-enable auto-failover for the Master cluster
+  _resume_autofailover
+
+  if [[ $(docker ps --quiet --filter "name=conjur-follower-1.mycompany.local") ]]; then
+    # Import the new certificate into each Follower
+    _run conjur-follower-1.mycompany.local \
+      "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem --set $cert_path/dap_follower/dap-follower.pem"
+  fi
+}
+
+function _pause_autofailover {
+  autofailover=$(curl -k https://localhost:${CONJUR_MASTER_PORT}/info | jq -r .configuration.conjur.cluster_name)
+  if [ "$autofailover" = 'production' ]; then
+    for ((i=2; i<=STANDBY_COUNT+1; i++))
+    do
+      _run "conjur-master-$i.mycompany.local" "sv down cluster"
+    done
+  fi
+}
+
+function _resume_autofailover {
+  autofailover=$(curl -k https://localhost:${CONJUR_MASTER_PORT}/info | jq -r .configuration.conjur.cluster_name)
+  if [ "$autofailover" = 'production' ]; then
+    for ((i=2; i<=STANDBY_COUNT+1; i++))
+    do
+      _run conjur-master-3.mycompany.local "sv up cluster"
+    done
+  fi
+}
+
+function _follower_to_master_connection {
+  if [ "$1" == "on" ]; then
+      local action="unpause"
+  elif [ "$1" == "off" ]; then
+      local action="pause"
+  else
+      echo "Invalid action. Use either 'on' or 'off'"
+      exit 1
+  fi
+
+  docker container $action conjur-intro-conjur-master-1.mycompany.local-1
+}
+
+_standby_altnames() {
+
+  declare -a standby_altnames
+
+  # The identifier for the Leader is 1, so we start at 2 for Standbys
+  for ((i=2; i<=STANDBY_COUNT+1; i++))
+  do
+    standby_altnames+=("conjur-master-$i.mycompany.local")
+  done
+
+  # Output the command delimited string
+  echo "$(IFS=, ; echo "${standby_altnames[*]}")"
+}
+
+create_docker_network() {
+
+  # Cleanup any old, unused networks, including the previous DAP Docker Compose
+  # networks.
+  docker network prune --force
+
+  dap_net_pid=$(docker network ls --quiet --filter name=dap_net)
+  if [[ -z "$dap_net_pid" ]]; then
+    docker network create \
+      --driver bridge \
+      --ipam-driver default \
+      --subnet 12.16.23.0/27 \
+      dap_net
+  fi
+}
+
+TAG=5.0-stable
+K8S_FOLLOWER_TAG=edge
+DRY_RUN=false
+PULL_IMAGES=false
+CMD=""
+export DHPATH="${DHPATH:-/etc/ssl}"
+STANDBY_COUNT=2
+
+while true ; do
+  case "$1" in
+    --create-backup ) CMD='_create_backup' ; shift ;;
+    --dry-run ) DRY_RUN=true ; shift ;;
+    --enable-auto-failover ) CMD='_enable_autofailover' ; shift ;;
+    --generate-dh ) export DHPATH=/tmp ; shift ;;
+    -h | --help ) _print_help ; shift ;;
+    --import-custom-certificates ) CMD='_import_certificates' ; shift ;;
+    --promote-standby ) CMD='_perform_promotion' ; shift ;;
+    --provision-follower ) CMD='_setup_follower' ; shift ;;
+    --provision-k8s-follower ) CMD='_setup_k8s_follower' ; shift ;;
+    --provision-csi-provider ) CMD='_setup_csi_provider' ; shift ;;
+    --provision-secrets-provider ) CMD='_setup_secrets_provider' ; shift ;;
+    --provision-master ) CMD='_single_master' ; shift ;;
+    --provision-standbys ) CMD='_setup_standbys' ; shift ;;
+    --provision-keycloak ) CMD='_setup_keycloak' ; shift ;;
+    --reenroll-failed-leader ) shift ; CMD="_reenroll_failed_leader $1 $2" ; shift ; shift ;;
+    --restore-from-backup ) CMD='_restore_from_backup' ; shift ;;
+    --rotate-custom-certificates ) CMD='_rotate_certificates' ; shift ;;
+    --standby-count ) shift; STANDBY_COUNT=$1 ; shift ;;
+    --stop ) _stop ; shift ;;
+    --trigger-failover ) CMD='_trigger_master_failover_failover' ; shift ;;
+    --trust-follower-proxy ) CMD='_add_follower_proxy' ; shift ;;
+    --upgrade-master ) shift ; CMD="_upgrade_via_backup_restore $1" ; shift ;;
+    --version ) shift ; TAG=$1 ; shift ;;
+    --k8s-follower-version ) shift ; K8S_FOLLOWER_TAG=$1 ; shift ;;
+    --wait-for-master ) CMD='_wait_for_master' ; shift ;;
+    --follower-to-master-connection ) shift ; CMD="_follower_to_master_connection $1" ; shift ;;
+     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+  esac
+done
+
+export VERSION=$TAG
+
+create_docker_network
+
+eval $CMD

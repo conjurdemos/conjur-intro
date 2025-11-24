@@ -1,0 +1,3 @@
+- !grant
+  member: !layer application
+  role: !group postgres-database/secrets-users

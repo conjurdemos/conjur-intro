@@ -1,0 +1,50 @@
+#!/bin/bash -e
+
+# Generate private key for client and certificate signing request (CSR)
+if [ ! -f /client/client.key ]; then
+  openssl genrsa -out /client/client.key 2048
+  chmod 400 /client/client.key
+fi
+
+openssl req -new -sha256 \
+        -subj "/C=US/ST=./L=./O=./CN=client" \
+        -key /client/client.key \
+        -out /client/client.csr
+
+# Read Password
+echo -n Password for $CONJUR_AUTHN_LOGIN: 
+read -s api_key
+echo
+
+urlencode() {
+    # urlencode <string>
+    old_lc_collate=$LC_COLLATE
+    LC_COLLATE=C
+    
+    local length="${#1}"
+    for (( i = 0; i < length; i++ )); do
+        local c="${1:i:1}"
+        case $c in
+            [a-zA-Z0-9.~_-]) printf "$c" ;;
+            *) printf '%%%02X' "'$c" ;;
+        esac
+    done
+    
+    LC_COLLATE=$old_lc_collate
+}
+
+# Authenticate with Conjur as a host
+# api_key=$(curl -v --user "$CONJUR_AUTHN_LOGIN:$password" \
+#             "$CONJUR_APPLIANCE_URL/authn/$CONJUR_ACCOUNT/login")
+encoded_login=$(urlencode "$CONJUR_AUTHN_LOGIN")
+token=$(curl -s -X POST -d $api_key \
+          "$CONJUR_APPLIANCE_URL/authn/$CONJUR_ACCOUNT/host%2F$encoded_login/authenticate" \
+          | base64 | tr -d '\r\n')
+
+# Request a certificate from the CA configured in Conjur
+ca_response=$(curl -s -X POST -d "ttl=P1D" --data-urlencode "csr@/client/client.csr" \
+                -H "Authorization: Token token=\"$token\"" \
+                "$CONJUR_APPLIANCE_URL/ca/$CONJUR_ACCOUNT/$CA_SERVICE_ID/sign")
+
+echo $ca_response | jq .
+echo $ca_response | jq -r .certificate > /client/client.crt

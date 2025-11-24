@@ -1,0 +1,329 @@
+services:
+  conjur-master.mycompany.local:
+    image: haproxy:alpine
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.10
+    ports:
+      - "${CONJUR_MASTER_PORT:-443}:443"
+      - "7000:7000"
+    expose:
+      - "1999"
+      - "5432"
+    volumes:
+      - ./system/haproxy/certs:/etc/ssl/certs
+      - ./files/haproxy/master:/usr/local/etc/haproxy
+
+  conjur-master-1.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION:-5.0-stable}
+    shm_size: 1g
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.11
+    ports:
+      - "444:443"
+    expose:
+      - "443"
+      - "444"
+      - "1999"
+      - "5432"
+    environment:
+      TRUSTED_PROXIES: 123.123.1.1,123.5.1.1
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-}"
+    security_opt:
+      - "seccomp:unconfined"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/master-1:/var/log/conjur:Z
+      - ./files:/conjur_files
+      - ./artifacts/keycloak/fetch-certificate:/oauth/keycloak/scripts/fetch-certificate
+      - ./policy:/policy
+
+  conjur-master-2.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION:-5.0-stable}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.12
+    ports:
+      - "445:443"
+    expose:
+      - "443"
+      - "444"
+      - "1999"
+      - "5432"
+    security_opt:
+      - "seccomp:unconfined"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/master-2:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-master-3.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION:-5.0-stable}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.13
+    ports:
+      - "446:443"
+    expose:
+      - "443"
+      - "444"
+      - "1999"
+      - "5432"
+    security_opt:
+      - "seccomp:unconfined"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/master-3:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-master-4.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION:-5.0-stable}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.14
+    ports:
+      - "447:443"
+    expose:
+      - "443"
+      - "444"
+      - "1999"
+      - "5432"
+    security_opt:
+      - "seccomp:unconfined"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/master-4:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-master-5.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION:-5.0-stable}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.15
+    ports:
+      - "448:443"
+    expose:
+      - "443"
+      - "444"
+      - "1999"
+      - "5432"
+    security_opt:
+      - "seccomp:unconfined"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/master-5:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-follower.mycompany.local:
+    image: haproxy:alpine
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.16
+    ports:
+      - "80:80"
+      - "449:443"
+      - "7001:7000"
+    volumes:
+      - follower-certs:/etc/ssl/certs
+      - ./files/haproxy/follower:/usr/local/etc/haproxy
+
+  conjur-follower-1.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION:-5.0-stable}
+    networks:
+      dap_net:
+        ipv4_address: 12.16.23.17
+    ports:
+      - "${CONJUR_FOLLOWER_PORT:-450}:443"
+    expose:
+      - "443"
+      - "444"
+    environment:
+      CONJUR_AUTHENTICATORS: "${CONJUR_AUTHENTICATORS:-}"
+    security_opt:
+      - "seccomp:unconfined"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - follower-certs:/opt/conjur/etc/ssl/
+      - ./system/backup:/opt/conjur/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs/follower:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  client:
+    image: cyberark/conjur-cli:8
+    networks:
+      dap_net:
+    working_dir: /src/cli
+    environment:
+      CONJUR_APPLIANCE_URL: https://conjur-master.mycompany.local
+      CONJUR_ACCOUNT: demo
+      CONJUR_AUTHN_LOGIN: admin
+    volumes:
+      - .:/src/cli
+      - ./cli_cache/master:/root
+
+  k8s-follower-orchestrator:
+    build:
+      context: artifacts/k8s-follower-orchestrator
+    privileged: true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./kubeconfig:/root/.kube/config
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./system/haproxy/certs:/etc/ssl/certs
+
+  csi-provider-orchestrator:
+    build:
+      context: artifacts/k8s-csi-provider
+    privileged: true
+    networks:
+      dap_net:
+    volumes:
+      - ./kubeconfig:/root/.kube/config
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./system/haproxy/certs:/etc/ssl/certs
+      - ./artifacts:/artifacts
+
+  secrets-provider-orchestrator:
+    build:
+      context: artifacts/k8s-secrets-provider
+    privileged: true
+    networks:
+      dap_net:
+    volumes:
+      - ./kubeconfig:/root/.kube/config
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./system/haproxy/certs:/etc/ssl/certs
+      - ./artifacts:/artifacts
+      - ./bin/build_ca_certificate/cyberark_root.crt:/usr/share/ca-certificates/cyberark_root.crt
+
+  follower-client:
+    image: cyberark/conjur-cli:8
+    networks:
+      dap_net:
+    working_dir: /src/cli
+    environment:
+      CONJUR_APPLIANCE_URL: https://conjur-follower.mycompany.local
+      CONJUR_ACCOUNT: demo
+      CONJUR_AUTHN_LOGIN: admin
+    volumes:
+      - .:/src/cli
+      - ./cli_cache/follower:/root
+
+  api-client:
+    build:
+      context: ./artifacts/api-client
+    networks:
+      dap_net:
+    working_dir: /src/
+    volumes:
+      - ./artifacts/api-client/api-script:/src/bin/api
+      - ./policy:/src/policy
+
+  certificate-generator:
+    build:
+      context: ./artifacts/certificate-generator
+    volumes:
+      - ./system/configuration/certificates:/src/certificates
+
+  policy-generator:
+    build:
+      context: ./artifacts/policy-generator
+    volumes:
+      - ./tools/performance-tests/k6/data:/data
+
+  unpopulated-secrets-generator:
+    build:
+      context: ./artifacts/unpopulated-secrets-generator
+    volumes:
+      - ./tools/performance-tests/k6/data:/data
+
+  authenticator-generator:
+    build:
+      context: ./artifacts/authenticator-generator
+    volumes:
+      - ./tools/performance-tests/k6/data:/data
+
+  k6:
+    build:
+      context: ./
+      dockerfile: ./tools/performance-tests/k6/Dockerfile
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      dap_net:
+    environment:
+        - K6_STATSD_ADDR=host.docker.internal:8125
+    volumes:
+      - ./tools/performance-tests/k6:/tools/performance-tests/k6
+      - ./files/conjur:/files/conjur
+
+  datadog:
+    image: datadog/agent:latest
+    networks:
+      dap_net:
+    deploy:
+      restart_policy:
+        condition: on-failure
+    environment:
+      - DD_SITE=datadoghq.com
+      - DD_API_KEY=${DD_API_KEY:-}
+      - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=1
+      - DD_TAGS=${DD_TAGS:-}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+
+  keycloak:
+    image: registry.tld/jboss/keycloak:4.3.0.Final
+    networks:
+      dap_net:
+    environment:
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=admin
+      - KEYCLOAK_APP_USER=alice
+      - KEYCLOAK_APP_USER_PASSWORD=alice
+      - KEYCLOAK_APP_USER_EMAIL=alice@conjur.net
+      - KEYCLOAK_SECOND_APP_USER=bob.somebody
+      - KEYCLOAK_SECOND_APP_USER_PASSWORD=bob
+      - KEYCLOAK_SECOND_APP_USER_EMAIL=bob@conjur.net
+      - KEYCLOAK_NON_CONJUR_APP_USER=not_in_conjur
+      - KEYCLOAK_NON_CONJUR_APP_USER_PASSWORD=not_in_conjur
+      - KEYCLOAK_NON_CONJUR_APP_USER_EMAIL=not_in_conjur
+      - DB_VENDOR=H2
+      - KEYCLOAK_CLIENT_ID=conjurClient
+      - KEYCLOAK_REDIRECT_URI=http://127.0.0.1:8888/callback
+      - KEYCLOAK_CLIENT_SECRET=1234
+      - KEYCLOAK_SCOPE=openid
+    ports:
+      - "7777:8080"
+      - "7788:8443"
+    volumes:
+      - ./artifacts/keycloak:/scripts
+      - ./artifacts/keycloak/standalone.xml:/opt/jboss/keycloak/standalone/configuration/standalone.xml
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  seeds:
+  follower-certs:
+
+networks:
+  dap_net:
+    external: true

@@ -1,0 +1,3 @@
+- !policy
+  id: first-level
+  owner: !user /admin

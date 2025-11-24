@@ -1,0 +1,19 @@
+---
+# =================================================
+# == Register the seed generation service
+# =================================================
+- !policy
+  id: conjur/seed-generation
+  body:
+    # This webservice represents the Seed service API
+    - !webservice
+
+      # Hosts that can generate seeds become members of the
+    # `consumers` group.
+    - !group consumers
+
+    # Authorize `consumers` to request seeds
+    - !permit
+      role: !group consumers
+      privilege: [ "execute" ]
+      resource: !webservice

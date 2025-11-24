@@ -1,0 +1,61 @@
+#!/bin/bash -eu
+
+set -o pipefail
+
+USAGE="Usage: $0 <POLICY_PATH> <CREDENTIAL_ID> <CREDENTIAL_VALUE>"
+
+if [ "$MASTER_HOSTNAME" == "" ]; then
+  echo "ERROR: MASTER_HOSTNAME not defined!"
+  exit 1
+fi
+
+if [ "$ACCOUNT" == "" ]; then
+  echo "ERROR: ACCOUNT not defined!"
+  exit 1
+fi
+
+if [ "$ADMIN_API_KEY" == "" ]; then
+  echo "ERROR: ADMIN_API_KEY not defined!"
+  exit 1
+fi
+
+if [ $# -lt 3 ]; then
+  echo "ERROR: $USAGE"
+  exit 1
+fi
+
+POLICY_PATH="$1"
+CREDENTIAL_ID="$2"
+CREDENTIAL_VALUE="$3"
+
+conjur_login() {
+  local HOSTNAME="$1"
+   echo "Initializing CLI ($ACCOUNT@https://$HOSTNAME)..."
+
+   echo y | conjur init --force --self-signed \
+                        -u "https://$HOSTNAME" \
+                        -a "$ACCOUNT"
+
+   echo "Logging in..."
+   conjur login -i admin -p "$ADMIN_API_KEY"
+   conjur whoami
+}
+
+conjur_login "$MASTER_HOSTNAME"
+echo "Loading policy..."
+conjur policy replace -b root -v "$1"
+
+echo "Persisting variable value ('$CREDENTIAL_VALUE' -> $CREDENTIAL_ID)..."
+conjur variable set -i "$CREDENTIAL_ID" -v "$CREDENTIAL_VALUE"
+
+echo "Credential $CREDENTIAL_ID set to $CREDENTIAL_VALUE!"
+
+if [[ "$FOLLOWER_HOSTNAME" != "" ]]; then
+  conjur_login "$FOLLOWER_HOSTNAME"
+fi
+
+echo "Fetching value ($CREDENTIAL_ID)..."
+while true; do
+  echo $(date): $(conjur variable get -i "$CREDENTIAL_ID")
+  sleep 2
+done

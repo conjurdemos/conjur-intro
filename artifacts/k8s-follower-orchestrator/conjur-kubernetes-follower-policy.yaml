@@ -1,0 +1,20 @@
+- !host
+  id: system:serviceaccount:cyberark-conjur:conjur-follower
+
+  annotations:
+    authn-jwt/dev-cluster/kubernetes.io/namespace: cyberark-conjur
+    authn-jwt/dev-cluster/kubernetes.io/serviceaccount/name: conjur-follower
+
+- !host
+  id: apps/system:serviceaccount:cyberark-conjur:conjur-follower
+
+  annotations:
+    authn-jwt/dev-cluster/kubernetes.io/namespace: cyberark-conjur
+    authn-jwt/dev-cluster/kubernetes.io/serviceaccount/name: conjur-follower
+
+- !grant
+  roles:
+    - !group conjur/authn-jwt/dev-cluster/apps
+    - !group conjur/seed-generation/consumers
+  members:
+    - !host apps/system:serviceaccount:cyberark-conjur:conjur-follower

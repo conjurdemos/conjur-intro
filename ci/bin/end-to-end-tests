@@ -1,0 +1,47 @@
+#!/bin/bash -e
+set -o pipefail
+
+# Array of versions to be used in testing
+versions=('11.6.0' '11.7.0' '12.0.0')
+# Array of providers to run end-to-end tests against
+providers=('docker')
+
+prepare_environment() {
+  # With Docker in Docker, the network context seems not to be passed correctly.
+  # We'll create it here and provide it to the Docker Compose.
+  docker network prune --force
+  docker network create \
+    --driver bridge \
+    --ipam-driver default \
+    --subnet 12.16.23.0/27 \
+    dap_net
+
+  # Docker in Docker container won't have permission to pull images, so
+  # we need to pull them before we start.
+  for version in "${versions[@]}"; do
+    docker pull registry.tld/conjur-appliance:$version
+  done
+
+  # Build Docker in Docker image
+  docker build -t cucumber --file ci/assets/Dockerfile.ci .
+}
+
+
+main() {
+  # Prepare the exterior environment for Docker in Docker
+  prepare_environment
+
+  for provider in "${providers[@]}"; do
+    docker run \
+      --rm \
+      -it \
+      -v /var/run/docker.sock:/var/run/docker.sock \
+      --network dap_net \
+      -v "$(pwd):$(pwd)" \
+      --env PROVIDER=$provider \
+      --workdir "$(pwd)" \
+      cucumber /bin/bash -c "rake features"
+  done
+}
+
+main

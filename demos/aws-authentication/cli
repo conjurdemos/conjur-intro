@@ -1,0 +1,21 @@
+#!/bin/bash -e
+
+host="https://ec2-34-224-2-198.compute-1.amazonaws.com"
+
+cmd="$@"
+docker run \
+  --rm \
+  -it \
+  --entrypoint /bin/bash \
+  -e "CONJUR_APPLIANCE_URL=$host" \
+  -e "CONJUR_ACCOUNT=demo" \
+  -e "CONJUR_AUTHN_LOGIN=admin" \
+  -v "$(pwd)/policy:/policy" \
+  -v "$(pwd)/cli_cache:/root" \
+  cyberark/conjur-cli:8 -c "
+    if [ ! -e /root/conjur-server.pem ]; then
+      echo y | conjur init -u $host --self-signed --force
+    fi
+    conjur login -i admin -p secret
+    eval exec \"$cmd\"
+  "

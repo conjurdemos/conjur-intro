@@ -1,0 +1,13 @@
+#!/bin/bash -eu
+
+echo "Creating temporary directory for terraform plan..."
+mkdir -p ./tmp/terraform
+
+# Make sure terraform dependencies and modules are loaded
+terraform init
+
+# Generate the terraform execution plan
+terraform plan -out=./tmp/terraform/conjur-ha.plan
+
+# Execute the plan to create the AWS resources
+terraform apply ./tmp/terraform/conjur-ha.plan

@@ -1,0 +1,120 @@
+#!/bin/bash -eu
+
+source bin/lib/conjur_context
+
+DROPPED_NODE_ID=$1
+NEW_MASTER_ID=$2
+
+DROPPED_NODE_INDEX=$((DROPPED_NODE_ID - 1))
+NEW_MASTER_INDEX=$((NEW_MASTER_ID - 1))
+
+MASTER_PRIVATE=$(terraform output -json conjur_master_nodes_private | jq -r ".[$NEW_MASTER_INDEX]")
+MASTER_PUBLIC=$(terraform output -json conjur_master_nodes_public | jq -r ".[$NEW_MASTER_INDEX]")
+
+STANDBY_PRIVATE=$(terraform output -json conjur_master_nodes_private | jq -r ".[$DROPPED_NODE_INDEX]")
+STANDBY_PUBLIC=$(terraform output -json conjur_master_nodes_public | jq -r ".[$DROPPED_NODE_INDEX]")
+
+SEED_DIR="./tmp/conjur/seeds"
+
+current_master=$MASTER_PUBLIC
+
+function recreate_standby() {
+  local standby_public=$1
+  local standby_private=$2
+
+  # Configure node
+  ssh -i "$SSH_KEY_FILE" \
+    -o "StrictHostKeyChecking no" \
+    core@$standby_public /bin/bash << EOF
+    
+    docker stop conjur-appliance
+    docker rm conjur-appliance
+
+    docker run --name conjur-appliance \
+      -d --restart=always --privileged \
+      --log-driver=journald \
+      -v /var/log/conjur:/var/log/conjur \
+      -v /opt/conjur/backup:/opt/conjur/backup \
+      -p "443:443" -p "636:636" -p "5432:5432" -p "1999:1999" \
+      registry.tld/conjur-appliance:11.4.0
+EOF
+}
+
+function create_standby_seed() {
+  local standby_private=$1
+  local filename=$2
+
+  mkdir -p $SEED_DIR
+
+  # Create Standby Seed
+  ssh -i "$SSH_KEY_FILE" \
+    -o "StrictHostKeyChecking no" \
+    core@$current_master /bin/bash << EOF
+    docker exec conjur-appliance bash -c " \
+      evoke seed standby "$standby_private" "$MASTER_PRIVATE" > "/opt/conjur/backup/$filename"
+    "
+EOF
+
+  # Copy seed to host
+  scp -i "$SSH_KEY_FILE" \
+    -o "StrictHostKeyChecking no" \
+    "core@$current_master:/opt/conjur/backup/$filename" \
+    "$SEED_DIR/$filename"
+}
+
+function configure_standby() {
+  local standby_public=$1
+  local filename=$2
+
+  # Copy seed
+  scp -i "$SSH_KEY_FILE" \
+    -o "StrictHostKeyChecking no" \
+    "$SEED_DIR/$filename" \
+    "core@$standby_public:~/$filename"
+    
+  # Configure node
+  ssh -i "$SSH_KEY_FILE" \
+    -o "StrictHostKeyChecking no" \
+    core@$standby_public /bin/bash << EOF
+    sudo mv "\$HOME/$filename" "/opt/conjur/backup/$filename"
+    
+    docker exec conjur-appliance \
+      evoke unpack seed "/opt/conjur/backup/$filename"
+
+    docker exec conjur-appliance \
+      evoke configure standby -a "$MASTER_PRIVATE"
+EOF
+}
+
+function add_cluster_member() {
+  ssh -i "$SSH_KEY_FILE" \
+    -o "StrictHostKeyChecking no" \
+    core@$MASTER_PUBLIC /bin/bash << EOF
+    docker exec conjur-appliance \
+      evoke cluster member add $STANDBY_PRIVATE
+EOF
+}
+
+function reenroll_node() {
+  ssh -i "$SSH_KEY_FILE" \
+    -o "StrictHostKeyChecking no" \
+    core@$STANDBY_PUBLIC /bin/bash << EOF
+    docker exec conjur-appliance \
+      evoke cluster enroll \
+      --reenroll \
+      -n $STANDBY_PRIVATE \
+      -m $MASTER_PRIVATE \
+      $CONJUR_CLUSTER_NAME
+EOF
+}
+
+echo "Recreating Conjur appliance container on failed host..."
+recreate_standby $STANDBY_PUBLIC $STANDBY_PRIVATE
+
+echo "Configuring new appliance as standby..."
+create_standby_seed $STANDBY_PRIVATE "master-${DROPPED_NODE_ID}-seed.tar"
+configure_standby $STANDBY_PUBLIC "master-${DROPPED_NODE_ID}-seed.tar"
+
+echo "Enrolling the new standby into the existing master cluster..."
+add_cluster_member
+reenroll_node

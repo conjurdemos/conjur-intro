@@ -1,0 +1,154 @@
+# ---
+# - name: Run using a project directory
+#   hosts: localhost
+#   gather_facts: no
+#   tasks:
+#     - docker_compose:
+#         project_src: ../demos/cluster
+#         state: present
+#
+---
+- hosts: localhost
+  # gather_facts: true
+  # become: true
+  tasks:
+    # - debug:
+    #     msg: "{{ hostvars[item]['inventory_hostname'] }} - {{ hostvars[item]['conjur_port'] }}"
+    #   loop: "{{ groups['conjur_autofailover_cluster_nodes'] }}"
+
+    - name: Create a network
+      docker_network:
+        name: conjur-network
+
+    - name: docker | Start Conjur containers
+      loop: "{{ groups['conjur_autofailover_cluster_nodes'] }}"
+      include_role:
+        name: common
+      vars:
+        hostname: "{{ hostvars[item]['inventory_hostname'] }}"
+        conjur_port: "{{ hostvars[item]['conjur_port'] }}"
+        container_network: conjur-network # only for local development
+
+    - name: Configure master
+    # - hosts: "conjur-master-1.mycompany.local"
+      import_role:
+        role: conjur-master
+      vars:
+        conjur_config:
+          host_fqdn: "conjur-master-1.mycompany.local"
+          # master_cluster_fqdn: "conjur.mycompany.com"
+          master_cluster_fqdn: conjur-master-1.mycompany.local
+          type: "master"
+          account: "demo"
+          admin_password: "secret"
+          cluster_name: 'conjur-cluster'
+        standby_nodes:
+          - "conjur-master-2.mycompany.local"
+          - "conjur-master-3.mycompany.local"
+
+    - debug:
+        msg: "standby hf token: {{ standby_host_factory_token }}"
+
+
+    - name: Configure standby
+    # - hosts: "conjur-master-1.mycompany.local"
+      import_role:
+        role: conjur-standby
+      vars:
+        conjur_config:
+          hf_token: "{{ standby_host_factory_token }}"
+          # image: "conjur-appliance:5.3"
+          host_fqdn: "conjur-master-2.mycompany.local"
+          # master_cluster_fqdn: "conjur.mycompany.com"
+          master_fqdn: "conjur-master-1.mycompany.local"
+          type: "standby"
+          cluster_name: 'conjur-cluster'
+          account: "demo" # this can be removed in favor of parsing enr
+
+
+    # - name: Configure standby
+    #   import_role:
+    #     - role: conjur-standby
+      # vars:
+      #   conjur_config:
+      #     hf_token: "{{ standby_host_factory_token }}"
+      #     # image: "conjur-appliance:5.3"
+      #     host_fqdn: "conjur-2.mycompany.com"
+      #     # master_cluster_fqdn: "conjur.mycompany.com"
+      #     master_fqdn: "conjur-1.mycompany.com"
+      #     type: "standby"
+      #     cluster_name: 'conjur-cluster'
+
+
+      # docker_container:
+      #   name: "{{ hostvars[item]['inventory_hostname'] }}"
+      #   image: 'registry.tld/conjur-appliance:5.0-stable'
+      #   security_opts: 'seccomp:unconfined'
+      #   published_ports:
+      #     - "{{ hostvars[item]['conjur_port'] }}:443"
+      #   networks:
+      #     - name: conjur-network
+      #   state: 'started'
+
+
+
+
+# - name: Create a network
+#   docker_network:
+#     name: conjur-network
+
+# - name: Start Conjur containers
+#   hosts: conjur_autofailover_cluster_nodes
+#   gather_facts: no
+#   tasks:
+#     - loop: "{{ master_nodes }}"
+#     - docker_container:
+#         name: "conjur-{{ item.name }}"
+#         image: 'registry.tld/conjur-appliance:5.0-stable'
+#         security_opts: 'seccomp:unconfined'
+#         published_ports:
+#           - "{{ item.conjur_port }}:443"
+#         # networks:
+#         #   - name: conjur-network
+#         state: 'started'
+
+
+
+# tasks:
+    # For encryption using a master key
+    # master_key_encryption: "{{ lookup('file', '/path/to/master-key') }}"
+
+    # For encrypting using KMS
+    # kms_key_encryption:
+    #   aws_access_key_id: ''
+    #   aws_secret_access_key: ''
+    #   ??: ''
+
+    # For encryption using a master key
+    # hsm_encryption:
+    #   library: ''
+    #   wrapping_key: ''
+    #   parameters: ''
+    #   slot: ''
+    #   pin: ''
+
+# - hosts: conjur_autofailover_cluster_nodes
+#   vars:
+#     master_cluster_fqdn: conjur.mycompany.com
+#   roles:
+#   - role: conjur
+#     vars:
+#       node_type: auto-failover
+#       # certificate_chain: "{{ lookup('file', '/path/to/cert_chain') }}"
+#
+# - hosts: conjur_disaster_recovery_nodes
+#   roles:
+#   - role: conjur
+#     vars:
+#       node_type: disaster-recovery
+#
+# - hosts: conjur_follower_nodes
+#   roles:
+#   - role: conjur
+#     vars:
+#       node_type: follower

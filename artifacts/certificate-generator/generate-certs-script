@@ -1,0 +1,147 @@
+#!/bin/ash -e
+set -o pipefail
+
+config_path="/src/configuration"
+certificate_path="/src/certificates"
+
+# Generated Cert paths
+root_destination="$certificate_path/root_ca/ca"
+intermediate_destination="$certificate_path/intermediate_ca/intermediate"
+master_destination="$certificate_path/dap_master/dap-master"
+follower_destination="$certificate_path/dap_follower/dap-follower"
+
+GENERATE_CA=true
+GENERATE_SERVER=true
+FORCE=false
+
+main() {
+  echo "$@"
+  while true ; do
+    case "$1" in
+      --rotate-server ) GENERATE_CA=false; shift ;;
+      --force ) FORCE=true; shift ;;
+      -h | --help ) print_help ; shift ;;
+      * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+    esac
+  done
+
+  create_folders
+  generate_certificates
+}
+
+print_help() {
+  cat << EOF
+
+Generates a Root, Intermediate, DAP Master and Follower certificates
+
+Usage: bin/generate-certs [options]
+
+    -h, --help        Shows this help message.
+    --rotate-server   Only generate new server certificates
+    --force           Generate certificates even if they already exist
+
+EOF
+  exit
+}
+
+create_folders() {
+  folders='root_ca intermediate_ca dap_master dap_follower'
+  for folder in $folders ; do
+    mkdir -p "$certificate_path/$folder"
+  done
+}
+
+generate_certificates() {
+  if [ "$GENERATE_CA" = true ]; then
+    # Generate Root Certificate if it does not exist
+    if [ ! -f "$root_destination.pem" ] || [ "$FORCE" = true ]; then
+      cfssl gencert -initca "$config_path/root_ca.json" | \
+      cfssljson -bare $root_destination
+    fi
+
+    # Generate and sign intermediate certificate if it does not exist
+    if [ ! -f "$intermediate_destination.pem" ] || [ "$FORCE" = true ]; then
+      # Generate Intermediate Certificate
+      cfssl gencert -initca $config_path/intermediate_ca.json | \
+      cfssljson -bare $intermediate_destination
+
+      # Sign Intermediate with Root
+      cfssl sign \
+        -ca $root_destination.pem \
+        -ca-key $root_destination-key.pem \
+        -config $config_path/cfssl.conf \
+        -profile intermediate_ca \
+        $intermediate_destination.csr | cfssljson -bare $intermediate_destination
+    fi
+
+    cat $certificate_path/intermediate_ca/intermediate.pem \
+      $certificate_path/root_ca/ca.pem > \
+      $certificate_path/ca-chain.pem
+  fi
+
+  # Generate and sign master certificate w/ intermediate
+  if [ "$GENERATE_SERVER" = true ]; then
+    if [ ! -f "$master_destination-key.pem" ]; then
+      generate_master_key      
+    fi
+
+    if [ ! -f "$master_destination.pem" ] || [ "$FORCE" = true ]; then
+      generate_master_csr
+      issue_master_certificate
+    fi
+    
+    if [ ! -f "$follower_destination-key.pem" ]; then
+      generate_follower_key      
+    fi
+
+    # Generate and sign follower certificate w/ intermediate
+    if [ ! -f "$follower_destination.pem" ] || [ "$FORCE" = true ]; then
+      generate_follower_csr
+      issue_follower_certificate
+    fi
+  fi
+}
+
+generate_master_key() {
+  cfssl genkey \
+    -config $config_path/cfssl.conf \
+    $config_path/dap-master.json | cfssljson -bare $master_destination
+}
+
+generate_master_csr() {
+  cfssl gencsr \
+    -key "$master_destination-key.pem" \
+    $config_path/dap-master.json | cfssljson -bare $master_destination
+}
+
+issue_master_certificate() {
+  cfssl sign \
+    -ca $intermediate_destination.pem \
+    -ca-key $intermediate_destination-key.pem \
+    -config $config_path/cfssl.conf \
+    -profile=peer \
+    $master_destination.csr | cfssljson -bare $master_destination
+}
+
+generate_follower_key() {
+  cfssl genkey \
+    -config $config_path/cfssl.conf \
+    $config_path/dap-follower.json | cfssljson -bare $follower_destination
+}
+
+generate_follower_csr() {
+  cfssl gencsr \
+    -key "$follower_destination-key.pem" \
+    $config_path/dap-follower.json | cfssljson -bare $follower_destination
+}
+
+issue_follower_certificate() {
+  cfssl sign \
+    -ca $intermediate_destination.pem \
+    -ca-key $intermediate_destination-key.pem \
+    -config $config_path/cfssl.conf \
+    -profile=peer \
+    $follower_destination.csr | cfssljson -bare $follower_destination
+}
+
+main "$@"

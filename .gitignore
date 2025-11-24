@@ -1,0 +1,51 @@
+cli_cache/*
+**/cli_cache/*
+*.tar
+
+tools/simple-certificates/certificates/*
+.DS_Store
+.idea
+
+logs/*
+**/logs/*
+
+# Editor files
+*.sw[po]
+vm/.vagrant
+
+#K6 results
+tools/performance-tests/k6/tmp/**
+tools/performance-tests/k6/reports/**
+tmp/**
+
+**/backup/*
+
+files/haproxy/master/haproxy.cfg
+
+# Generated Certificates
+bin/build_ca_certificate/cyberark_root.crt
+**/certificates/ca-chain.pem
+**/certificates/dap_follower/
+**/certificates/dap_master/
+**/certificates/intermediate_ca/
+**/certificates/root_ca/
+
+# Versions plugin backup file (use git history instead)
+**/pom.xml.versionsBackup
+
+# Ignore HAProxy SSL files
+system/haproxy/certs/**
+
+kubeconfig
+
+.env
+
+# Files created by policy-generator
+tools/performance-tests/k6/data/unpopulated-secrets.csv
+tools/performance-tests/k6/data/api-keys.csv
+tools/performance-tests/k6/data/policy/secrets
+
+# Files created by authenticator-generator
+tools/performance-tests/k6/data/policy/authenticators
+
+key.txt

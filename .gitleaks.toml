@@ -1,0 +1,266 @@
+title = "Secretless Broker gitleaks config"
+
+# This is the config file for gitleaks. You can configure gitleaks what to search for and what to whitelist.
+# If GITLEAKS_CONFIG environment variable
+# is set, gitleaks will load configurations from that path. If option --config-path is set, gitleaks will load
+# configurations from that path. Gitleaks does not whitelist anything by default.
+# - https://www.ndss-symposium.org/wp-content/uploads/2019/02/ndss2019_04B-3_Meli_paper.pdf
+# - https://github.com/dxa4481/truffleHogRegexes/blob/master/truffleHogRegexes/regexes.json
+[[rules]]
+id = "aws-client-id"
+description = "AWS Client ID"
+regex = '''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
+tags = ["key", "AWS"]
+
+[[rules]]
+id = "aws-secret-key"
+description = "AWS Secret Key"
+regex = '''(?i)aws(.{0,20})?(?-i)['\"][0-9a-zA-Z\/+]{40}['\"]'''
+tags = ["key", "AWS"]
+
+[[rules]]
+id = "aws-mws-key"
+description = "AWS MWS key"
+regex = '''amzn\.mws\.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'''
+tags = ["key", "AWS", "MWS"]
+
+[[rules]]
+id = "pkcs8"
+description = "PKCS8"
+regex = '''-----BEGIN PRIVATE KEY-----'''
+tags = ["key", "PKCS8"]
+
+[[rules]]
+id = "rsa-private-key"
+description = "RSA"
+regex = '''-----BEGIN RSA PRIVATE KEY-----'''
+tags = ["key", "RSA"]
+
+[[rules]]
+id = "ssh-private-key"
+description = "SSH"
+regex = '''-----BEGIN OPENSSH PRIVATE KEY-----'''
+tags = ["key", "SSH"]
+
+[[rules]]
+id = "pgp-private-key"
+description = "PGP"
+regex = '''-----BEGIN PGP PRIVATE KEY BLOCK-----'''
+tags = ["key", "PGP"]
+
+[[rules]]
+id = "facebook-secret-key"
+description = "Facebook Secret Key"
+regex = '''(?i)(facebook|fb)(.{0,20})?(?-i)['\"][0-9a-f]{32}['\"]'''
+tags = ["key", "Facebook"]
+
+[[rules]]
+id = "facebook-client-id"
+description = "Facebook Client ID"
+regex = '''(?i)(facebook|fb)(.{0,20})?['\"][0-9]{13,17}['\"]'''
+tags = ["key", "Facebook"]
+
+[[rules]]
+id = "facebook-access-token"
+description = "Facebook access token"
+regex = '''EAACEdEose0cBA[0-9A-Za-z]+'''
+tags = ["key", "Facebook"]
+
+[[rules]]
+id = "twitter-secret-key"
+description = "Twitter Secret Key"
+regex = '''(?i)twitter(.{0,20})?['\"][0-9a-z]{35,44}['\"]'''
+tags = ["key", "Twitter"]
+
+[[rules]]
+id = "twitter-client-id"
+description = "Twitter Client ID"
+regex = '''(?i)twitter(.{0,20})?['\"][0-9a-z]{18,25}['\"]'''
+tags = ["client", "Twitter"]
+
+[[rules]]
+id = "github-token"
+description = "Github"
+regex = '''(?i)github(.{0,20})?(?-i)['\"][0-9a-zA-Z]{35,40}['\"]'''
+tags = ["key", "Github"]
+
+[[rules]]
+id = "linkedin-client-id"
+description = "LinkedIn Client ID"
+regex = '''(?i)linkedin(.{0,20})?(?-i)['\"][0-9a-z]{12}['\"]'''
+tags = ["client", "Twitter"]
+
+[[rules]]
+id = "linkedin-secret-key"
+description = "LinkedIn Secret Key"
+regex = '''(?i)linkedin(.{0,20})?['\"][0-9a-z]{16}['\"]'''
+tags = ["secret", "Twitter"]
+
+[[rules]]
+id = "slack-token"
+description = "Slack"
+regex = '''xox[baprs]-([0-9a-zA-Z]{10,48})?'''
+tags = ["key", "Slack"]
+
+[[rules]]
+id = "ec-private-key"
+description = "EC"
+regex = '''-----BEGIN EC PRIVATE KEY-----'''
+tags = ["key", "EC"]
+
+[[rules]]
+id = "generic-api-key"
+description = "Generic API key"
+regex = '''(?i)(api_key|apikey)(.{0,20})?['|"][0-9a-zA-Z]{32,45}['|"]'''
+tags = ["key", "API", "generic"]
+
+[[rules]]
+id = "generic-secret"
+description = "Generic Secret"
+regex = '''(?i)secret(.{0,20})?['|"][0-9a-zA-Z]{32,45}['|"]'''
+tags = ["key", "Secret", "generic"]
+
+[[rules]]
+id = "google-api-key"
+description = "Google API key"
+regex = '''AIza[0-9A-Za-z\\-_]{35}'''
+tags = ["key", "Google"]
+
+[[rules]]
+id = "google-gcp-api-key"
+description = "Google Cloud Platform API key"
+regex = '''(?i)(google|gcp|youtube|drive|yt)(.{0,20})?['\"][AIza[0-9a-z\\-_]{35}]['\"]'''
+tags = ["key", "Google", "GCP"]
+
+[[rules]]
+id = "google-oauth"
+description = "Google OAuth"
+regex = '''(?i)(google|gcp|auth)(.{0,20})?['"][0-9]+-[0-9a-z_]{32}\.apps\.googleusercontent\.com['"]'''
+tags = ["key", "Google", "OAuth"]
+
+[[rules]]
+id = "google-oauth-access-token"
+description = "Google OAuth access token"
+regex = '''ya29\.[0-9A-Za-z\-_]+'''
+tags = ["key", "Google", "OAuth"]
+
+[[rules]]
+id = "heroku-api-key"
+description = "Heroku API key"
+regex = '''(?i)heroku(.{0,20})?['"][0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}['"]'''
+tags = ["key", "Heroku"]
+
+[[rules]]
+id = "mailchimp-api-key"
+description = "MailChimp API key"
+regex = '''(?i)(mailchimp|mc)(.{0,20})?['"][0-9a-f]{32}-us[0-9]{1,2}['"]'''
+tags = ["key", "Mailchimp"]
+
+[[rules]]
+id = "mailgun-api-key"
+description = "Mailgun API key"
+regex = '''(?i)(mailgun|mg)(.{0,20})?['"][0-9a-z]{32}['"]'''
+tags = ["key", "Mailgun"]
+
+[[rules]]
+id = "password-in-url"
+description = "Password in URL"
+regex = '''[a-zA-Z]{3,10}:\/\/[^\/\s:@]{3,20}:[^\/\s:@]{3,20}@.{1,100}\/?.?'''
+tags = ["key", "URL", "generic"]
+
+[[rules]]
+id = "paypal-braintree-access-token"
+description = "PayPal Braintree access token"
+regex = '''access_token\$production\$[0-9a-z]{16}\$[0-9a-f]{32}'''
+tags = ["key", "Paypal"]
+
+[[rules]]
+id = "picatic-api-key"
+description = "Picatic API key"
+regex = '''sk_live_[0-9a-z]{32}'''
+tags = ["key", "Picatic"]
+
+[[rules]]
+id = "slack-webhook"
+description = "Slack Webhook"
+regex = '''https://hooks.slack.com/services/T[a-zA-Z0-9_]{8}/B[a-zA-Z0-9_]{8}/[a-zA-Z0-9_]{24}'''
+tags = ["key", "slack"]
+
+[[rules]]
+id = "stripe-api-key"
+description = "Stripe API key"
+regex = '''(?i)stripe(.{0,20})?['\"][sk|rk]_live_[0-9a-zA-Z]{24}'''
+tags = ["key", "Stripe"]
+
+[[rules]]
+id = "square-access-token"
+description = "Square access token"
+regex = '''sq0atp-[0-9A-Za-z\-_]{22}'''
+tags = ["key", "square"]
+
+[[rules]]
+id = "square-oauth-secret"
+description = "Square OAuth secret"
+regex = '''sq0csp-[0-9A-Za-z\\-_]{43}'''
+tags = ["key", "square"]
+
+[[rules]]
+id = "twilio-api-key"
+description = "Twilio API key"
+regex = '''(?i)twilio(.{0,20})?['\"][0-9a-f]{32}['\"]'''
+tags = ["key", "twilio"]
+
+[whitelist]
+files = [
+  ".gitleaks.toml",
+  "demos/cluster/files/certs/*", # sample certs for demos
+  "demos/simple-cluster/files/certs/*", # sample certs for demos
+  "demos/aws-authentication/jason-conjur-test.pem", # sample cert for aws auth
+  "curl_examples/check", # example script with demo credentials
+  "demos/certificate-authority/mutual-tls/README.md", # tutorial with example output
+  "system/configuration/certificates/*.key.pem", # system config certs
+  "vm/.vagrant/machines/default/virtualbox/private_key", # vagrant private key
+  "demos/ldap-integration/certs/ldap.key", # ldap demo cert
+]
+regexes = [
+]
+commits = [
+  "406dc7268f9b014bb8bc8acc7854a18114ac5346", # old commit with vagrant priv key
+  "6e9dcb3698a8a339c7112cf395cf7c2389d4150d", # old commit with vagrant priv key
+  "4fb1c3251079b8d38b15459b17204be87243cf0b", # original commit with demo files (Pin cfssl build)
+  "c643a869a8b044cea6f50cff8086e6b2b076beb6", # rewritten commit (replaced 4fb1c32)
+  "e065bcd3bc5791df8938d1fda68b37622f14fb4e", # system config certs
+  "32296112d1650287f54ac45643462cdce8fb20a1", # vagrant private key
+  "809002eb5bd37672026fe2f1f4912af28e4f1f66", # ldap demo cert
+  "3d94d4565bcb9f8f5176d49895280d00e9a3f149"  # simple-cluster demo cert
+]
+
+# Additional Examples
+
+# [[rules]]
+# description = "Generic Key"
+# regex = '''(?i)key(.{0,6})?(:|=|=>|:=)'''
+# entropies = [
+#     "4.1-4.3",
+#     "5.5-6.3",
+# ]
+# entropyROI = "line"
+# filetypes = [".go", ".py", ".c"]
+# tags = ["key"]
+# severity = "8"
+#
+#
+# [[rules]]
+# description = "Generic Key"
+# regex = '''(?i)key(.{0,6})?(:|=|=>|:=)'''
+# entropies = ["4.1-4.3"]
+# filetypes = [".gee"]
+# entropyROI = "line"
+# tags = ["key"]
+# severity = "medium"
+
+# [[rules]]
+# description = "Any pem file"
+# filetypes = [".key"]
+# tags = ["pem"]
+# severity = "high"

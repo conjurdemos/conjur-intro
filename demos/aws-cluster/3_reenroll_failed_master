@@ -1,0 +1,13 @@
+#!/bin/bash -eu
+
+# Provides ACTIVE_MASTER_NUM
+source bin/lib/active_master
+
+failed_node_num=$(<./tmp/script/last_master_killed)
+
+./bin/util/reenroll_node $failed_node_num $ACTIVE_MASTER_NUM
+
+echo "Waiting for master cluster..."
+
+# Wait for the cluster to recover
+./bin/util/wait_for_master

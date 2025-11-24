@@ -1,0 +1,92 @@
+
+
+- hosts: master_node
+  roles:
+    - role: cyberark.conjur
+  vars:
+    conjur_config:
+      host_fqdn: "conjur-1.mycompany.com"
+      master_cluster_fqdn: "conjur.mycompany.com"
+      type: "master"
+      account: "demo"
+      admin_password: "secret"
+      cluster_name: 'conjur-cluster'
+      master_key: "/path/to/key"
+      certs:
+        master_certificate: ""
+        master_key: ""
+        host_certificate: ""
+        host_key: ""
+
+- hosts: standby_node_1
+  roles:
+    - role: cyberark.conjur
+  vars:
+    conjur_credentials:
+      hf_token: ""
+      resource_id: "" # alternative to hf_token when combinded with api_key
+      api_key: ""
+    conjur_config:
+      # master_host: master_node
+      host_fqdn: "conjur-2.mycompany.com"
+      master_cluster_fqdn: "conjur.mycompany.com"
+      type: "standby"
+      cluster_name: 'conjur-cluster'
+      master_key: "/path/to/key"
+      certs:
+        host_certificate: ""
+        host_key: ""
+
+- hosts: standby_node_2
+  roles:
+    - role: cyberark.conjur
+  vars:
+    conjur_credentials:
+      hf_token: ""
+      resource_id: "" # alternative to hf_token when combinded with api_key
+      api_key: ""
+    conjur_config:
+      host_fqdn: "conjur-3.mycompany.com"
+      master_cluster_fqdn: "conjur.mycompany.com"
+      type: "standby"
+      cluster_name: 'conjur-cluster'
+      master_key: "/path/to/key"
+      certs:
+        host_certificate: ""
+        host_key: ""
+
+- hosts: dr_standby_node_1
+  roles:
+    - role: cyberark.conjur
+  vars:
+    conjur_credentials:
+      hf_token: ""
+      resource_id: "" # alternative to hf_token when combinded with api_key
+      api_key: ""
+    conjur_config:
+      host_fqdn: "conjur-dr-1.mycompany.com"
+      master_cluster_fqdn: "conjur.mycompany.com"
+      type: "standby"
+      master_key: "/path/to/key"
+      certs:
+        host_certificate: ""
+        host_key: ""
+
+
+- hosts: follower_node_1
+  roles:
+    - role: cyberark.conjur
+  vars:
+    conjur_credentials:
+      hf_token: ""
+      resource_id: "" # alternative to hf_token when combinded with api_key
+      api_key: ""
+    conjur_config:
+      #master_host: master_node
+      host_fqdn: "conjur-follower-1.mycompany.com"
+      load_balancer_fqdn: "conjur.mycompany.com"
+      type: "follower" # master|standby|follower
+      master_key: "/path/to/key"
+      certs:
+        host_certificate: ""
+        host_key: ""

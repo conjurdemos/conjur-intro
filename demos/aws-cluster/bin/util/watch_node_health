@@ -1,0 +1,10 @@
+#!/bin/bash -eu
+
+node_num=$1
+node_index=$((node_num - 1))
+
+public_dns=$(terraform output -json conjur_master_nodes_public | jq -r ".[$node_index]")
+
+watch -n 2 \
+  curl -k --silent --head --fail \
+    https://$public_dns/health

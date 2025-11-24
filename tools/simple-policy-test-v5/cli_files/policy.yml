@@ -1,0 +1,5 @@
+---
+- !variable
+  id: test-password
+  annotations:
+    mime_type: text/plain

@@ -1,0 +1,547 @@
+#!/bin/bash -e
+_admin_password="MySecretP@ss1"
+
+function _print_help {
+  cat << EOF
+
+A tool that provides a variety of DAP lifecycle workflows.
+
+Synopsis: bin/dap [command options]
+
+Usage: bin/dap [options]:
+
+    --create-backup               Creates a backup|Requires configured master
+    --dry-run                     Print configuration commands with executing
+    --enable-auto-failover        Configures Master cluster with auto-failover (Requires configured master and standbys)
+    --generate-dh                 Don't mount pre-generated DH params into the appliance containers (will cause a _lot_ more CPU consumption)
+    --h, --help                   Shows this help message
+    --import-custom-certificates  Imports pre-generated 3rd-party certificates (Requires configured master)
+    --promote-standby             Stops the current master and promotes a standby (Requires configured standbys and no auto-failover)
+    --provision-follower          Configures follower behind a Layer 7 load balancer (Requires configured master)
+    --provision-master            Configures a DAP Master with account `demo` and password `MySecretP@ss1` behind a Layer 4 load balancer
+    --provision-standbys          Deploys and configures two standbys (Requires configured master)
+    --restore-from-backup         Restores a master from backup|Requires a previously created backup
+    --stop                        Stops all containers and cleans up cached files
+    --trigger-failover            Stops current master (Requires an auto-failover cluster)
+    --trust-follower-proxy        Adds Follower load balancer as a trusted proxy (Requires a configured follower)
+    --upgrade-master <version>    Restores master from backup (Requires configured master)
+    --wait-for-master             Blocks until the Master is healthy
+    --version <version>           Version of DAP to use (defaults to latest build)
+
+
+EOF
+  exit
+}
+
+function _set_master_multi_node_proxy_config {
+  cp files/haproxy/master/multi-node/haproxy.cfg files/haproxy/master/haproxy.cfg
+}
+
+function _set_master_single_node_proxy_config {
+  cp files/haproxy/master/single/haproxy.cfg files/haproxy/master/haproxy.cfg
+}
+
+function _run {
+  local _all_args=("$@")
+  local _node_name=$1
+  local _args=("${_all_args[@]:1}")
+
+  echo "Running Command (on $_node_name): podman exec cyberark-dap $_args"
+
+  if [[ $DRY_RUN = false ]]; then
+    podman exec $_node_name bash -c "
+      $_args
+    "
+  fi
+}
+
+function _start_master {
+  if [[ $DRY_RUN = false ]]; then
+
+    if [[ "$PULL_IMAGES" = "true" ]]; then
+      podman pull haproxy:alpine
+      podman pull registry.tld/conjur-appliance:$VERSION
+    fi
+
+    _set_master_single_node_proxy_config
+
+    podman run --name conjur-master.mycompany.local \
+    -d --privileged --restart=unless-stopped \
+    --security-opt seccomp=unconfined \
+    --publish "10443:443" \
+    --publish "7000:7000" \
+    --log-driver journald \
+    --network dap_net \
+    --volume master-certs:/etc/ssl/certs:Z \
+    --volume ./files/haproxy/master:/usr/local/etc/haproxy:Z \
+    haproxy:alpine
+
+    mkdir -p ./system/backup
+    mkdir -p ./system/logs/master-1
+
+    podman run --name conjur-master-1.mycompany.local \
+    -d --privileged --restart=unless-stopped \
+    --security-opt seccomp=unconfined \
+    --publish "10444:443" \
+    --publish "5432:5432" \
+    --publish "1999:1999" \
+    --log-driver journald \
+    --network dap_net \
+    --volume seeds:/opt/cyberark/dap/seeds \
+    --volume master-certs:/opt/conjur/etc/ssl \
+    --volume ./system/backup:/opt/conjur/backup:Z \
+    --volume ./system/configuration:/opt/cyberark/dap/configuration:Z \
+    --volume ./system/logs/master-1:/var/log/conjur:Z \
+    --volume ./files:/conjur_files \
+    --volume ./files/dhparam.pem:${DHPATH}/dhparam.pem \
+    --volume ./files/cluster.conf:/opt/conjur/etc/cluster.conf \
+    --volume ./files/etcd.conf:/etc/etcd/etcd.conf \
+    registry.tld/conjur-appliance:$VERSION
+  fi
+}
+
+function _start_l7_load_balancer {
+  if [[ $DRY_RUN = false ]]; then
+      podman run --name conjur-follower.mycompany.local \
+    -d --privileged --restart=unless-stopped \
+    --security-opt seccomp=unconfined \
+    --publish "10450:443" \
+    --publish "7001:7000" \
+    --log-driver journald \
+    --network dap_net \
+    --volume follower-certs:/etc/ssl/certs:Z \
+    --volume ./files/haproxy/follower:/usr/local/etc/haproxy:Z \
+    haproxy:alpine
+  fi
+}
+
+function _configure_master {
+  _cmd="evoke configure master"
+  _cmd="$_cmd --accept-eula"
+  _cmd="$_cmd --hostname conjur-master.mycompany.local"
+  _cmd="$_cmd --master-altnames conjur-master-1.mycompany.local,conjur-master-2.mycompany.local,conjur-master-3.mycompany.local,conjur-master-4.mycompany.local,conjur-master-5.mycompany.local"
+  _cmd="$_cmd --admin-password $_admin_password"
+  _cmd="$_cmd demo"
+
+  _run conjur-master-1.mycompany.local \
+    "$_cmd"
+}
+
+function _setup_standby {
+  local _standby_number=$1
+
+  mkdir -p ./system/logs/master-$_standby_number
+
+  podman run --name conjur-master-$_standby_number.mycompany.local \
+  -d --privileged --restart=unless-stopped \
+  --security-opt seccomp=unconfined \
+  --publish "$((10443 + $1)):443" \
+  --publish "$((5432 + $1)):5432" \
+  --publish "$((1999 + $1)):1999" \
+  --log-driver journald \
+  --network dap_net \
+  --volume seeds:/opt/cyberark/dap/seeds \
+  --volume master-certs:/opt/conjur/etc/ssl \
+  --volume ./system/backup:/opt/conjur/backup:Z \
+  --volume ./system/configuration:/opt/cyberark/dap/configuration:Z \
+  --volume ./system/logs/master-$_standby_number:/var/log/conjur:Z \
+  --volume ./files:/conjur_files \
+  --volume ./files/cluster.conf:/opt/conjur/etc/cluster.conf \
+  --volume ./files/etcd.conf:/etc/etcd/etcd.conf \
+  registry.tld/conjur-appliance:$VERSION
+
+  # Generate a Seed File
+  _run conjur-master-1.mycompany.local \
+    "evoke seed standby conjur-master-$_standby_number.mycompany.local conjur-master-1.mycompany.local > /opt/cyberark/dap/seeds/standby-seed-$_standby_number.tar"
+
+  # Unpack and Configure
+  _run conjur-master-$_standby_number.mycompany.local \
+    "evoke unpack seed /opt/cyberark/dap/seeds/standby-seed-$_standby_number.tar && evoke configure standby"
+}
+
+function _start_standby_synchronization {
+  _run conjur-master-1.mycompany.local \
+    "evoke replication sync start"
+}
+
+function _setup_follower {
+
+  mkdir -p ./system/logs/follower-1
+
+  podman run --name conjur-follower-1.mycompany.local\
+  -d --privileged --restart=unless-stopped \
+  --security-opt seccomp=unconfined \
+  --publish "10449:443" \
+  --publish "5440:5432" \
+  --publish "2010:1999" \
+  --log-driver journald \
+  --network dap_net \
+  --volume seeds:/opt/cyberark/dap/seeds \
+  --volume follower-certs:/opt/conjur/etc/ssl \
+  --volume ./system/backup:/opt/conjur/backup:Z \
+  --volume ./system/configuration:/opt/cyberark/dap/configuration:Z \
+  --volume ./system/logs/follower-1:/var/log/conjur:Z \
+  --volume ./files:/conjur_files \
+  --volume ./files/cluster.conf:/opt/conjur/etc/cluster.conf \
+  --volume ./files/etcd.conf:/etc/etcd/etcd.conf \
+  registry.tld/conjur-appliance:$VERSION
+
+  # Generate Seed file
+  _run conjur-master-1.mycompany.local \
+    "evoke seed follower conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed.tar"
+
+  # Unpack and Configure
+  _run conjur-follower-1.mycompany.local \
+    "evoke unpack seed /opt/cyberark/dap/seeds/follower-seed.tar && evoke configure follower"
+
+  _start_l7_load_balancer
+}
+
+#
+## Failover & Promotion
+#
+function _perform_promotion {
+  # Stop current master
+  if [[ $DRY_RUN = false ]]; then
+    podman stop conjur-master-1.mycompany.local
+  fi
+
+  # Promote Standby to Master
+  _run conjur-master-2.mycompany.local \
+    "evoke role promote"
+
+  # Repoint Standby to updated Master
+  _run conjur-master-3.mycompany.local \
+    "evoke replication rebase conjur-master-2.mycompany.local"
+}
+
+function _single_master {
+  _start_master
+  _configure_master
+  echo "DAP instance available at: 'https://localhost'"
+  echo "Login using with the username/password: 'admin'/'$_admin_password'"
+}
+
+function _setup_standbys {
+  _setup_standby 2
+  _setup_standby 3
+  _setup_standby 4
+  _setup_standby 5
+  _start_standby_synchronization
+
+  # Reload load balancer to serve cluster
+  _set_master_multi_node_proxy_config
+
+  podman stop conjur-master.mycompany.local
+  podman rm conjur-master.mycompany.local
+  podman run --name conjur-master.mycompany.local \
+  -d --privileged --restart=unless-stopped \
+  --security-opt seccomp=unconfined \
+  --publish "10443:443" \
+  --publish "7000:7000" \
+  --log-driver journald \
+  --network dap_net \
+  --volume master-certs:/etc/ssl/certs:Z \
+  --volume ./files/haproxy/master:/usr/local/etc/haproxy:Z \
+  haproxy:alpine
+}
+
+function _command {
+  podman run --rm -w /dap-intro -v "$(pwd):/dap-intro" alpine "$@"
+}
+
+function _stop {
+  echo "stopping...."
+  podman stop -a
+  podman rm -a
+
+  _command rm -rf cli_cache
+  _command rm -rf system/backup
+  _command rm -rf system/logs
+  _command rm files/haproxy/master/haproxy.cfg || true
+  echo "stopped"
+  exit
+}
+
+function _cli {
+  local _namespace=$1
+  local _policy=$2
+
+  echo "Loading Policy '$_policy':"
+  cat $_policy
+  echo ''
+  echo "with command: 'conjur policy load -b $_namespace -f $_policy'"
+  echo ''
+  echo ''
+
+  if [[ $DRY_RUN = false ]]; then
+    bin/podman-cli conjur policy load -b $_namespace -f $_policy
+  fi
+}
+
+function _disable_autofailover {
+  _run conjur-master-5.mycompany.local "evoke cluster member remove conjur-master-5.mycompany.local"
+  _run conjur-master-4.mycompany.local "evoke cluster member remove conjur-master-4.mycompany.local"
+  _run conjur-master-3.mycompany.local "evoke cluster member remove conjur-master-3.mycompany.local"
+  _run conjur-master-2.mycompany.local "evoke cluster member remove conjur-master-2.mycompany.local"
+}
+
+function _enable_autofailover {
+  autofailover=$(curl -k https://localhost:10444/info | jq -r .configuration.conjur.cluster_name)
+
+  if [ "$autofailover" = 'production' ]; then
+    _run conjur-master-2.mycompany.local "evoke cluster enroll --reenroll --cluster-machine-name conjur-master-2.mycompany.local --master-name conjur-master-1.mycompany.local production"
+    _run conjur-master-3.mycompany.local "evoke cluster enroll --reenroll --cluster-machine-name conjur-master-3.mycompany.local --master-name conjur-master-1.mycompany.local production"
+    _run conjur-master-4.mycompany.local "evoke cluster enroll --reenroll --cluster-machine-name conjur-master-4.mycompany.local --master-name conjur-master-1.mycompany.local production"
+    _run conjur-master-5.mycompany.local "evoke cluster enroll --reenroll --cluster-machine-name conjur-master-5.mycompany.local --master-name conjur-master-1.mycompany.local production"
+  else
+    _cli root "policy/base.yml"
+    _cli conjur/cluster policy/cluster.yml
+
+    _run conjur-master-1.mycompany.local "evoke cluster enroll --cluster-machine-name conjur-master-1.mycompany.local production"
+    _run conjur-master-2.mycompany.local "evoke cluster enroll --cluster-machine-name conjur-master-2.mycompany.local --master-name conjur-master-1.mycompany.local production"
+    _run conjur-master-3.mycompany.local "evoke cluster enroll --cluster-machine-name conjur-master-3.mycompany.local --master-name conjur-master-1.mycompany.local production"
+    _run conjur-master-4.mycompany.local "evoke cluster enroll --cluster-machine-name conjur-master-4.mycompany.local --master-name conjur-master-1.mycompany.local production"
+    _run conjur-master-5.mycompany.local "evoke cluster enroll --cluster-machine-name conjur-master-5.mycompany.local --master-name conjur-master-1.mycompany.local production"
+  fi
+}
+
+function _stop_replication {
+  if [[ $(podman ps --quiet --filter "name=conjur-master-2.mycompany.local") ]]; then
+    _run conjur-master-2.mycompany.local "evoke replication stop"
+  fi
+  if [[ $(podman ps --quiet --filter "name=conjur-master-3.mycompany.local") ]]; then
+    _run conjur-master-3.mycompany.local "evoke replication stop"
+  fi
+  if [[ $(podman ps --quiet --filter "name=conjur-master-4.mycompany.local") ]]; then
+    _run conjur-master-4.mycompany.local "evoke replication stop"
+  fi
+  if [[ $(podman ps --quiet --filter "name=conjur-master-5.mycompany.local") ]]; then
+    _run conjur-master-5.mycompany.local "evoke replication stop"
+  fi
+}
+
+function _stop_and_rename {
+  local container_name="$1"
+  local rename_to="$2"
+  podman stop $container_name
+  image_id=$(podman ps --all --quiet --filter "name=$container_name")
+  podman rename $image_id $rename_to
+}
+
+function _upgrade_via_backup_restore {
+  upgrade_to="$1"
+
+  autofailover=$(curl -k https://localhost/info | jq -r .configuration.conjur.cluster_name)
+
+  if [ "$autofailover" = 'production' ]; then
+    _disable_autofailover
+  fi
+  _upgrade_master_via_backup_restore $upgrade_to
+}
+
+function _stop_and_remove_master {
+  podman stop conjur-master-1.mycompany.local 
+  podman rm conjur-master-1.mycompany.local
+}
+
+function _restore_from_backup {
+  _stop_and_remove_master
+  _start_master
+
+  # Unpack the backup with podman exec <container> evoke unpack backup -k /opt/conjur/backup/key /opt/conjur/backup/<yourbackupfile>
+  _run conjur-master-1.mycompany.local 'evoke unpack backup --key /opt/conjur/backup/key /opt/conjur/backup/$(ls -1t /opt/conjur/backup | grep gpg | head -1)'
+
+  # Configure the new master with podman exec <container> evoke restore master
+  _run conjur-master-1.mycompany.local "evoke restore --accept-eula"
+}
+
+function _upgrade_master_via_backup_restore {
+  upgrade_to="$1"
+  # Run evoke replication stop on existing standbys and followers
+  _stop_replication
+
+  # Generate a backup on the existing master using evoke backup
+  _create_backup
+
+  # Stop the existing master container with podman stop <container> and rename
+  _stop_and_rename 'conjur-master-1.mycompany.local' 'conjur-master-1.mycompany.local_backup'
+
+  # Start a container using the new version image (this will become the new master)
+  export VERSION=$upgrade_to
+  _restore_from_backup
+
+  # Confirm master is healthy
+  # ...
+}
+
+function _create_backup {
+  _run conjur-master-1.mycompany.local \
+    "evoke backup"
+}
+
+function _add_follower_proxy {
+  _run conjur-follower-1.mycompany.local \
+    "evoke proxy add 12.16.23.15"
+}
+
+function _trigger_master_failover_failover {
+  _run conjur-master-1.mycompany.local \
+    "sv stop conjur"
+  echo 'Auto-failover takes about a minute to complete.'
+}
+
+function _import_certificates {
+  bin/generate-certs
+
+  local cert_path='/opt/cyberark/dap/configuration/certificates'
+  _run conjur-master-1.mycompany.local \
+    "evoke ca import --force --root $cert_path/ca-chain.pem"
+  _run conjur-master-1.mycompany.local \
+    "evoke ca import --force --key $cert_path/dap_master/dap-master-key.pem --set $cert_path/dap_master/dap-master.pem"
+  _run conjur-master-1.mycompany.local \
+    "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
+}
+
+function _rotate_certificates {
+  bin/generate-certs --rotate-server --force
+
+  # Disable auto-failover while rotating the Master cluster certificates
+  # to prevent an unintended failover.
+  _pause_autofailover
+
+  # Import the new certificate into the active DAP Master
+  local cert_path='/opt/cyberark/dap/configuration/certificates'
+  _run conjur-master-1.mycompany.local \
+    "evoke ca import --force --key $cert_path/dap_master/dap-master-key.pem --set $cert_path/dap_master/dap-master.pem"
+  
+  # Import the new Follower certificate into the active DAP master so that it
+  # is available through the seed service
+  _run conjur-master-1.mycompany.local \
+    "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
+
+  # Import the new certificate into the DAP Standbys
+  if [[ $(podman ps --quiet --filter "name=conjur-master-2.mycompany.local") ]]; then
+    _run conjur-master-2.mycompany.local \
+      "evoke ca import --force --key $cert_path/dap_master/dap-master-key.pem --set $cert_path/dap_master/dap-master.pem"
+  
+    # Import the new Follower certificate into each DAP Standby so that it
+    # is available through the seed service if the Standby is promoted.
+    _run conjur-master-2.mycompany.local \
+      "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
+  fi
+  
+  if [[ $(podman ps --quiet --filter "name=conjur-master-3.mycompany.local") ]]; then
+    _run conjur-master-3.mycompany.local \
+      "evoke ca import --force --key $cert_path/dap_master/dap-master-key.pem --set $cert_path/dap_master/dap-master.pem"
+  
+    # Import the new Follower certificate into each DAP Standby so that it
+    # is available through the seed service if the Standby is promoted.
+    _run conjur-master-3.mycompany.local \
+      "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
+  fi
+
+  # Re-enable auto-failover for the Master cluster
+  _resume_autofailover
+
+  if [[ $(podman ps --quiet --filter "name=conjur-follower-1.mycompany.local") ]]; then
+    # Import the new certificate into each Follower
+    _run conjur-follower-1.mycompany.local \
+      "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem --set $cert_path/dap_follower/dap-follower.pem"
+  fi
+}
+
+function _pause_autofailover {
+  autofailover=$(curl -k https://localhost/info | jq -r .configuration.conjur.cluster_name)
+  if [ "$autofailover" = 'production' ]; then
+    _run conjur-master-2.mycompany.local "sv down cluster"
+    _run conjur-master-3.mycompany.local "sv down cluster"
+    _run conjur-master-4.mycompany.local "sv down cluster"
+    _run conjur-master-5.mycompany.local "sv down cluster"
+  fi
+}
+
+function _resume_autofailover {
+  autofailover=$(curl -k https://localhost/info | jq -r .configuration.conjur.cluster_name)
+  if [ "$autofailover" = 'production' ]; then
+    _run conjur-master-2.mycompany.local "sv up cluster"
+    _run conjur-master-3.mycompany.local "sv up cluster"
+    _run conjur-master-4.mycompany.local "sv up cluster"
+    _run conjur-master-5.mycompany.local "sv up cluster"
+  fi
+}
+
+function _wait_for_master {
+  local master_url="https://localhost"
+
+  echo "Waiting for DAP Master to be ready..."
+
+  # Wait for 10 successful connections in a row
+  local COUNTER=0
+  while [ $COUNTER -lt 10 ]; do
+    local response
+    response=$(curl -k --silent --head "$master_url/health" || true)
+
+    if ! echo "$response" | grep -q "Conjur-Health: OK"; then
+      sleep 5
+      COUNTER=0
+    else
+      (( COUNTER=COUNTER+1 ))
+    fi
+
+    sleep 1
+    echo "Successful Health Checks: $COUNTER"
+  done
+}
+
+create_podman_network() {
+
+  # Cleanup any old, unused networks, including the previous DAP podman Compose
+  # networks.
+  podman network prune --force
+
+  dap_net_pid=$(podman network ls --quiet --filter name=dap_net)
+  if [[ -z "$dap_net_pid" ]]; then
+    podman network create \
+      --driver bridge \
+      --subnet 12.16.23.0/27 \
+      dap_net
+  fi
+}
+
+TAG=5.0-stable
+DRY_RUN=false
+PULL_IMAGES=false
+CMD=""
+export DHPATH="${DHPATH:-/etc/ssl}"
+
+while true ; do
+  case "$1" in
+    --provision-master ) CMD='_single_master' ; shift ;;
+    --promote-standby ) CMD='_perform_promotion' ; shift ;;
+    --import-custom-certificates ) CMD='_import_certificates' ; shift ;;
+    --rotate-custom-certificates ) CMD='_rotate_certificates' ; shift ;;
+    --provision-standbys ) CMD='_setup_standbys' ; shift ;;
+    --enable-auto-failover ) CMD='_enable_autofailover' ; shift ;;
+    --provision-follower ) CMD='_setup_follower' ; shift ;;
+    --upgrade-master ) shift ; CMD="_upgrade_via_backup_restore $1" ; shift ;;
+    --version ) shift ; TAG=$1 ; shift ;;
+    --dry-run ) DRY_RUN=true ; shift ;;
+    -h | --help ) _print_help ; shift ;;
+    --trigger-failover ) CMD='_trigger_master_failover_failover' ; shift ;;
+    --create-backup ) CMD='_create_backup' ; shift ;;
+    --restore-from-backup ) CMD='_restore_from_backup' ; shift ;;
+    --trust-follower-proxy ) CMD='_add_follower_proxy' ; shift ;;
+    --wait-for-master ) CMD='_wait_for_master' ; shift ;;
+    --generate-dh ) export DHPATH=/tmp ; shift ;;
+    --stop ) _stop ; shift ;;
+    --add-standby ) shift ; CMD="_setup_standby $1" ; shift ;;
+     * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+  esac
+done
+
+export VERSION=$TAG
+
+create_podman_network
+
+eval $CMD

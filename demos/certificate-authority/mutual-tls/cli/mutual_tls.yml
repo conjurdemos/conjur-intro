@@ -1,0 +1,33 @@
+- !policy 
+  id: conjur/mutual-tls/ca
+  body:
+
+    - !variable private-key
+    - !variable cert-chain
+
+    # Signed certificates will be valid for up to a year
+    - !webservice
+        annotations:
+          ca/private-key: conjur/mutual-tls/ca/private-key
+          ca/certificate-chain: conjur/mutual-tls/ca/cert-chain
+          ca/max_ttl: P1D
+
+    - !group clients
+
+    # Allow hosts in the `clients` group to be signed 
+    - !permit
+      role: !group clients
+      privilege: [ sign ]
+      resource: !webservice
+
+- !policy
+  id: mutual-tls
+  body:
+    - !host server
+    - !host client
+
+- !grant
+  role: !group conjur/mutual-tls/ca/clients
+  members:
+    - !host mutual-tls/server
+    - !host mutual-tls/client

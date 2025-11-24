@@ -1,0 +1,12 @@
+#!/bin/bash -eu
+
+node_num=$1
+node_index=$((node_num - 1))
+
+public_dns=$(terraform output -json conjur_master_nodes_public | jq -r ".[$node_index]")
+
+echo "Killing node $node_num ($public_dns)..."
+
+ssh -i "$SSH_KEY_FILE" \
+    -o "StrictHostKeyChecking no" \
+    "core@$public_dns" docker kill conjur-appliance > /dev/null

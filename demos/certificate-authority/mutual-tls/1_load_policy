@@ -1,0 +1,14 @@
+#!/bin/bash -eu
+
+docker compose run --rm cli -c "echo y | conjur init --force -u \$CONJUR_APPLIANCE_URL -a \$CONJUR_ACCOUNT --self-signed"
+docker compose run --rm cli -c "conjur login -i \$CONJUR_AUTHN_LOGIN"
+host_logins=$(docker compose run --rm -T cli -c "conjur policy load -b root -f /src/cli/mutual_tls.yml")
+echo "$host_logins" > cli/host_logins
+
+server_password=$(cat cli/host_logins | jq -r '.created_roles | .["cucumber:host:mutual-tls/server"] | .api_key')
+client_password=$(cat cli/host_logins | jq -r '.created_roles | .["cucumber:host:mutual-tls/client"] | .api_key')
+
+echo "-------------------------------------------"
+echo "Server password: $server_password"
+echo "Client password: $client_password"
+echo "-------------------------------------------"

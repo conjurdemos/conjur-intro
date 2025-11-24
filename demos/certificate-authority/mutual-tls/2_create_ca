@@ -1,0 +1,23 @@
+#!/bin/bash -eu
+
+# Generate root and intermediate CA certificates
+
+if [ ! -d ca/ca ]; then
+  docker compose run --rm --user $(id -u) ca
+fi
+
+auth_header=$(docker compose run --rm -T cli -c 'conjur authenticate -H') 
+
+echo Store the intermediate CA private key in Conjur...
+curl --data-binary "@ca/ca/intermediate.key" \
+     -H "$auth_header" \
+     "http://localhost:8080/secrets/cucumber/variable/conjur/mutual-tls/ca/private-key"
+
+echo Store the intermediate certificate chain in Conjur...
+curl --data-binary "@ca/ca/ca-chain.crt" \
+     -H "$auth_header" \
+     "http://localhost:8080/secrets/cucumber/variable/conjur/mutual-tls/ca/cert-chain"
+
+rm -rf server/ca-chain.crt client/ca-chain.crt
+cp ca/ca/ca-chain.crt server/ca-chain.crt
+cp ca/ca/ca-chain.crt client/ca-chain.crt

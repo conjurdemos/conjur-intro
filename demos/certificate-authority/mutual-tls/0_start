@@ -1,0 +1,26 @@
+#!/bin/bash -eu
+
+echo "Pulling latest images..."
+docker compose pull > /dev/null 2>&1
+docker compose build > /dev/null 2>&1
+
+# Generate Conjur data key if it doesn't exist
+if [ ! -f conjur/data_key ]; then
+    echo "Generating Conjur data key..."
+    docker compose run --no-deps -T --rm conjur data-key generate > conjur/data_key
+fi
+
+echo "Starting Conjur..."
+export CONJUR_DATA_KEY="$(< conjur/data_key)"
+docker compose up -d conjur > /dev/null 2>&1
+
+# Wait for Conjur to be ready
+docker compose exec conjur conjurctl wait
+
+# Create cucumber account and admin role
+docker compose exec -T conjur conjurctl account create cucumber > conjur/admin_info
+
+admin_secret=$(cat conjur/admin_info | sed -n -e 's/^.*API key for admin: //p')
+echo "------------------------------"
+echo "Admin secret is: $admin_secret"
+echo "------------------------------"

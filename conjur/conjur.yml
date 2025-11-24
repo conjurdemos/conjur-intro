@@ -1,0 +1,54 @@
+---
+- hosts: localhost
+  vars:
+    master_nodes:
+    - name: master1
+      port: 443
+    - name: master2
+      port: 444
+    - name: master3
+      port: 445
+    - name: master4
+      port: 446
+    follower_nodes:
+    - name: follower1
+      port: 447
+    - name: follower2
+      port: 448
+  tasks:
+  - name: Create a network
+    docker_network:
+      name: conjur-network
+
+  - name: Start Conjur containers
+    loop: "{{ master_nodes }}"
+    docker_container:
+      name: "conjur-{{ item.name }}"
+      image: 'registry.tld/conjur-appliance:5.0-stable'
+      security_opts: 'seccomp:unconfined'
+      published_ports:
+        - "{{ item.port }}:443"
+      networks:
+        - name: conjur-network
+      state: 'started'
+
+  - name: Configure the master
+    shell: |
+      if [[ $(docker exec conjur-{{ master_nodes[0].name }} /bin/sh -c "evoke role") == 'blank' ]]; then
+        docker exec conjur-{{ master_nodes[0].name }} /bin/sh -c "evoke configure master -h conjur-{{master_nodes[0].name}} -p secret demo"
+      fi
+
+  - name: Create Standby seeds and copy locally
+    loop: "{{ master_nodes[1:] }}"
+    shell: |
+      docker exec conjur-{{ master_nodes[0].name }} /bin/sh -c "evoke seed standby conjur-{{ item.name }} conjur-master1 > /opt/{{ item.name }}.tar"
+      docker cp conjur-{{ master_nodes[0].name }}:/opt/{{ item.name }}.tar tmp/{{ item.name }}.tar
+
+  - name: Configure Standbys
+    loop: "{{ master_nodes[1:] }}"
+    shell: |
+      if [[ $(docker exec conjur-{{ item.name }} /bin/sh -c "evoke role") == 'blank' ]]; then
+        docker cp tmp/{{ item.name }}.tar conjur-{{ item.name }}:/opt/{{ item.name }}.tar
+        docker exec conjur-{{ item.name }} /bin/sh -c "evoke unpack seed /opt/{{ item.name }}.tar"
+        docker exec conjur-{{ item.name }} /bin/sh -c "evoke configure standby"
+      fi

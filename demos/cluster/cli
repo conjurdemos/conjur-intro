@@ -1,0 +1,29 @@
+#!/bin/bash -e
+
+function print_help() {
+  cat << EOF
+NAME
+    cli - Development tool to simplify working with a Conjur container. CLI
+          proxies commands into the Conjur CLI container to simplify the process
+          of managing policy for development.
+
+SYNOPSIS
+    cli [global options] command [command options] [arguments...]
+GLOBAL OPTIONS
+    --help                                    - Show this message
+EOF
+exit
+}
+
+function proxy_command {
+  cmd="$@"
+  docker compose run --rm -w /src/cli --entrypoint /bin/bash client -c "
+    if [ ! -e /root/conjur-server.pem ]; then
+      echo y | conjur init -i https://conjur-master-1.mycompany.local -a demo --self-signed
+    fi
+    conjur login -i admin -p MySecretP@ss1
+    eval exec \"$cmd\"
+  "
+}
+
+proxy_command "$@"

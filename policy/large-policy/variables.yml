@@ -1,0 +1,5051 @@
+- !policy
+  id: myapp
+  body:
+  - &variables
+    - !variable
+      id: database/url
+      annotations:
+        description: Database URL
+    - !variable
+      id: database/port
+      annotations:
+        description: Database port
+    - !variable
+      id: database/username
+      annotations:
+        description: Application database username
+    - !variable
+      id: database/password
+      annotations:
+        description: Application database password
+
+    - !variable
+      id: secret-1
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-2
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-3
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-4
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-5
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-6
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-7
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-8
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-9
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-10
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-11
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-12
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-13
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-14
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-15
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-16
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-17
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-18
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-19
+      annotations:
+        description: Application secret
+
+
+    - !variable
+      id: secret-20
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-21
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-22
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-23
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-24
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-25
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-26
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-27
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-28
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-29
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-30
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-31
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-32
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-33
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-34
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-35
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-36
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-37
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-38
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-39
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-40
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-41
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-42
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-43
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-44
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-45
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-46
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-47
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-48
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-49
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-50
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-51
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-52
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-53
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-54
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-55
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-56
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-57
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-58
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-59
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-60
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-61
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-62
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-63
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-64
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-65
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-66
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-67
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-68
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-69
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-70
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-71
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-72
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-73
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-74
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-75
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-76
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-77
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-78
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-79
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-80
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-81
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-82
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-83
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-84
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-85
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-86
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-87
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-88
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-89
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-90
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-91
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-92
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-93
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-94
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-95
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-96
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-97
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-98
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-99
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-100
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-101
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-102
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-103
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-104
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-105
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-106
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-107
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-108
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-109
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-110
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-111
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-112
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-113
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-114
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-115
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-116
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-117
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-118
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-119
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-120
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-121
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-122
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-123
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-124
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-125
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-126
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-127
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-128
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-129
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-130
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-131
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-132
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-133
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-134
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-135
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-136
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-137
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-138
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-139
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-140
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-141
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-142
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-143
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-144
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-145
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-146
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-147
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-148
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-149
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-150
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-151
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-152
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-153
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-154
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-155
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-156
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-157
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-158
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-159
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-160
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-161
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-162
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-163
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-164
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-165
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-166
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-167
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-168
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-169
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-170
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-171
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-172
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-173
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-174
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-175
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-176
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-177
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-178
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-179
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-180
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-181
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-182
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-183
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-184
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-185
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-186
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-187
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-188
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-189
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-190
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-191
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-192
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-193
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-194
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-195
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-196
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-197
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-198
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-199
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-200
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-201
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-202
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-203
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-204
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-205
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-206
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-207
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-208
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-209
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-210
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-211
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-212
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-213
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-214
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-215
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-216
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-217
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-218
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-219
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-220
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-221
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-222
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-223
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-224
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-225
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-226
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-227
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-228
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-229
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-230
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-231
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-232
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-233
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-234
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-235
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-236
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-237
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-238
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-239
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-240
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-241
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-242
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-243
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-244
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-245
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-246
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-247
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-248
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-249
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-250
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-251
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-252
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-253
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-254
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-255
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-256
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-257
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-258
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-259
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-260
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-261
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-262
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-263
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-264
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-265
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-266
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-267
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-268
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-269
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-270
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-271
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-272
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-273
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-274
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-275
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-276
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-277
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-278
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-279
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-280
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-281
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-282
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-283
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-284
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-285
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-286
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-287
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-288
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-289
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-290
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-291
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-292
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-293
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-294
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-295
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-296
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-297
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-298
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-299
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-300
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-301
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-302
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-303
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-304
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-305
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-306
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-307
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-308
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-309
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-310
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-311
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-312
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-313
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-314
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-315
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-316
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-317
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-318
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-319
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-320
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-321
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-322
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-323
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-324
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-325
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-326
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-327
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-328
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-329
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-330
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-331
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-332
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-333
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-334
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-335
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-336
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-337
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-338
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-339
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-340
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-341
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-342
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-343
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-344
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-345
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-346
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-347
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-348
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-349
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-350
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-351
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-352
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-353
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-354
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-355
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-356
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-357
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-358
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-359
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-360
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-361
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-362
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-363
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-364
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-365
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-366
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-367
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-368
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-369
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-370
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-371
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-372
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-373
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-374
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-375
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-376
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-377
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-378
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-379
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-380
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-381
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-382
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-383
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-384
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-385
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-386
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-387
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-388
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-389
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-390
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-391
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-392
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-393
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-394
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-395
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-396
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-397
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-398
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-399
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-400
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-401
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-402
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-403
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-404
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-405
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-406
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-407
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-408
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-409
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-410
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-411
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-412
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-413
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-414
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-415
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-416
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-417
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-418
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-419
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-420
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-421
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-422
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-423
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-424
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-425
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-426
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-427
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-428
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-429
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-430
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-431
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-432
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-433
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-434
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-435
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-436
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-437
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-438
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-439
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-440
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-441
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-442
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-443
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-444
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-445
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-446
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-447
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-448
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-449
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-450
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-451
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-452
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-453
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-454
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-455
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-456
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-457
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-458
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-459
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-460
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-461
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-462
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-463
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-464
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-465
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-466
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-467
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-468
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-469
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-470
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-471
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-472
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-473
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-474
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-475
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-476
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-477
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-478
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-479
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-480
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-481
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-482
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-483
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-484
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-485
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-486
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-487
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-488
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-489
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-490
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-491
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-492
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-493
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-494
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-495
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-496
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-497
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-498
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-499
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-500
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-501
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-502
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-503
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-504
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-505
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-506
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-507
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-508
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-509
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-510
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-511
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-512
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-513
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-514
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-515
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-516
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-517
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-518
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-519
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-520
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-521
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-522
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-523
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-524
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-525
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-526
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-527
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-528
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-529
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-530
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-531
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-532
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-533
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-534
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-535
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-536
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-537
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-538
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-539
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-540
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-541
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-542
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-543
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-544
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-545
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-546
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-547
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-548
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-549
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-550
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-551
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-552
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-553
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-554
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-555
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-556
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-557
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-558
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-559
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-560
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-561
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-562
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-563
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-564
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-565
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-566
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-567
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-568
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-569
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-570
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-571
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-572
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-573
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-574
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-575
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-576
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-577
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-578
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-579
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-580
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-581
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-582
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-583
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-584
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-585
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-586
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-587
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-588
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-589
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-590
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-591
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-592
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-593
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-594
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-595
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-596
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-597
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-598
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-599
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-600
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-601
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-602
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-603
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-604
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-605
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-606
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-607
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-608
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-609
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-610
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-611
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-612
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-613
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-614
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-615
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-616
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-617
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-618
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-619
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-620
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-621
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-622
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-623
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-624
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-625
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-626
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-627
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-628
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-629
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-630
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-631
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-632
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-633
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-634
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-635
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-636
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-637
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-638
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-639
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-640
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-641
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-642
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-643
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-644
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-645
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-646
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-647
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-648
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-649
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-650
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-651
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-652
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-653
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-654
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-655
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-656
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-657
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-658
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-659
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-660
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-661
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-662
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-663
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-664
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-665
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-666
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-667
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-668
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-669
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-670
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-671
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-672
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-673
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-674
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-675
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-676
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-677
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-678
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-679
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-680
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-681
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-682
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-683
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-684
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-685
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-686
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-687
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-688
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-689
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-690
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-691
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-692
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-693
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-694
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-695
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-696
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-697
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-698
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-699
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-700
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-701
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-702
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-703
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-704
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-705
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-706
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-707
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-708
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-709
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-710
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-711
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-712
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-713
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-714
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-715
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-716
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-717
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-718
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-719
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-720
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-721
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-722
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-723
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-724
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-725
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-726
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-727
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-728
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-729
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-730
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-731
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-732
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-733
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-734
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-735
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-736
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-737
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-738
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-739
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-740
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-741
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-742
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-743
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-744
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-745
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-746
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-747
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-748
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-749
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-750
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-751
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-752
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-753
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-754
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-755
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-756
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-757
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-758
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-759
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-760
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-761
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-762
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-763
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-764
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-765
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-766
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-767
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-768
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-769
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-770
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-771
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-772
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-773
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-774
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-775
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-776
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-777
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-778
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-779
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-780
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-781
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-782
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-783
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-784
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-785
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-786
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-787
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-788
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-789
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-790
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-791
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-792
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-793
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-794
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-795
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-796
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-797
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-798
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-799
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-800
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-801
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-802
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-803
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-804
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-805
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-806
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-807
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-808
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-809
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-810
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-811
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-812
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-813
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-814
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-815
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-816
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-817
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-818
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-819
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-820
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-821
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-822
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-823
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-824
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-825
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-826
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-827
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-828
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-829
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-830
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-831
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-832
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-833
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-834
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-835
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-836
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-837
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-838
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-839
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-840
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-841
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-842
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-843
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-844
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-845
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-846
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-847
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-848
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-849
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-850
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-851
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-852
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-853
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-854
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-855
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-856
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-857
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-858
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-859
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-860
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-861
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-862
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-863
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-864
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-865
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-866
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-867
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-868
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-869
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-870
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-871
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-872
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-873
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-874
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-875
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-876
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-877
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-878
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-879
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-880
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-881
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-882
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-883
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-884
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-885
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-886
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-887
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-888
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-889
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-890
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-891
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-892
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-893
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-894
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-895
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-896
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-897
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-898
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-899
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-900
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-901
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-902
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-903
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-904
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-905
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-906
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-907
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-908
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-909
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-910
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-911
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-912
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-913
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-914
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-915
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-916
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-917
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-918
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-919
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-920
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-921
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-922
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-923
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-924
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-925
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-926
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-927
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-928
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-929
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-930
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-931
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-932
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-933
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-934
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-935
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-936
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-937
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-938
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-939
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-940
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-941
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-942
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-943
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-944
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-945
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-946
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-947
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-948
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-949
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-950
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-951
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-952
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-953
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-954
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-955
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-956
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-957
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-958
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-959
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-960
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-961
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-962
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-963
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-964
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-965
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-966
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-967
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-968
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-969
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-970
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-971
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-972
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-973
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-974
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-975
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-976
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-977
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-978
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-979
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-980
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-981
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-982
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-983
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-984
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-985
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-986
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-987
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-988
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-989
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-990
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-991
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-992
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-993
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-994
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-995
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-996
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-997
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-998
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-999
+      annotations:
+        description: Application secret
+
+    - !variable
+      id: secret-1000
+      annotations:
+        description: Application secret
+
+  - !layer
+
+  - !host-factory
+    layer: [ !layer ]
+
+  - !group secrets-users
+  - !group secrets-managers
+
+  # secrets-users can read and execute
+  - !permit
+    resource: *variables
+    privileges: [ read, execute ]
+    role: !group secrets-users
+
+  # secrets-managers can update (and read and execute, via role grant)
+  - !permit
+    resource: *variables
+    privileges: [ update ]
+    role: !group secrets-managers
+
+  # secrets-managers has role secrets-users
+  - !grant
+    member: !group secrets-managers
+    role: !group secrets-users
+
+  # Application layer has the secrets-users role
+  - !grant
+    member: !layer
+    role: !group secrets-users

@@ -1,0 +1,119 @@
+services:
+  conjur-master-1.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
+    ports:
+      - "443:443"
+    expose:
+      - "443"
+      - "5432"
+      - "1999"
+    environment:
+      RESTCLIENT_LOG: stdout
+    security_opt:
+        - "seccomp:unconfined"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - ./system/backup:/opt/cyberark/dap/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-master-2.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
+    ports:
+      - "444:443"
+    expose:
+      - "443"
+      - "5432"
+    security_opt:
+        - "seccomp:unconfined"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - ./system/backup:/opt/cyberark/dap/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-master-3.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
+    ports:
+      - "445:443"
+    expose:
+      - "443"
+      - "5432"
+      - "1999"
+    security_opt:
+        - "seccomp:unconfined"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - ./system/backup:/opt/cyberark/dap/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  conjur-master-4.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
+    ports:
+      - "446:443"
+    expose:
+      - "443"
+      - "5432"
+    security_opt:
+        - "seccomp:unconfined"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - ./system/backup:/opt/cyberark/dap/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  # conjur-standby.mycompany.local:
+  #   image: registry.tld/conjur-appliance:5.0-stable
+  #   expose:
+  #     - "443"
+  #     - "5432"
+  #   security_opt:
+  #       - "seccomp:unconfined"
+  #   volumes:
+  #     - seeds:/opt/cyberark/dap/seeds
+  #     - ./files:/conjur_files
+
+  conjur-follower.mycompany.local:
+    image: registry.tld/conjur-appliance:${VERSION}
+    ports:
+      - "447:443"
+    expose:
+      - "443"
+    security_opt:
+        - "seccomp:unconfined"
+    volumes:
+      - seeds:/opt/cyberark/dap/seeds
+      - ./system/backup:/opt/cyberark/dap/backup:Z
+      - ./system/configuration:/opt/cyberark/dap/configuration:Z
+      - ./system/logs:/var/log/conjur:Z
+      - ./files:/conjur_files
+
+  client:
+    image: cyberark/conjur-cli:8
+    working_dir:  /src/cli
+    environment:
+      CONJUR_APPLIANCE_URL: https://conjur-master-1.mycompany.local
+      CONJUR_ACCOUNT: demo
+      CONJUR_AUTHN_LOGIN: admin
+    volumes:
+      - .:/src/cli
+      - ./cli_cache/master:/root
+
+  follower-client:
+    image: cyberark/conjur-cli:8
+    working_dir:  /src/cli
+    environment:
+      CONJUR_APPLIANCE_URL: https://conjur-follower.mycompany.local
+      CONJUR_ACCOUNT: demo
+      CONJUR_AUTHN_LOGIN: admin
+    volumes:
+      - .:/src/cli
+      - ./cli_cache/follower:/root
+
+volumes:
+  seeds:

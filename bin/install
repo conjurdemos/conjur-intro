@@ -1,0 +1,23 @@
+#!/bin/bash -e
+
+# Always work from repo root directory
+cd "$(dirname ${0})/..";
+
+source ./bin/utils.sh
+
+# Make sure .env envvars are available
+dotenv > /dev/null 2>&1 || true
+
+container=$(docker ps -aqf "name=master-1.mycompany.local")
+if [ "$1" != "" ]; then
+  while [ "$1" != "" ]; do
+    filename=$(basename "$1")
+
+    docker cp $1 $container:/tmp/$filename
+    docker exec $container dpkg -i /tmp/$filename
+
+    shift
+  done
+  docker exec $container sv stop conjur
+  docker exec $container sv start conjur
+fi

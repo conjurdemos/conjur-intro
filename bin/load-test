@@ -1,0 +1,233 @@
+#!/bin/bash -x
+set -eo pipefail
+
+source "$(git rev-parse --show-toplevel)/tools/performance-tests/k6/bin/functions"
+
+ENABLE_STATSD=${ENABLE_STATSD:-"false"}
+WARMUP=${WARMUP:-"true"}
+POPULATE_API_KEYS=${POPULATE_API_KEYS:-"true"}
+UUID=""
+ADMIN_USER=${ADMIN_USER:-'admin'}
+PASSWORD=${PASSWORD:-'MySecretP@ss1'}
+# Default for statsd
+export K6_STATSD_PORT=${K6_STATSD_PORT:-"8125"}
+export K6_STATSD_ADDR=${K6_STATSD_ADDR:-"datadog:$K6_STATSD_PORT"}
+export K6_CUSTOM_VUS=${K6_CUSTOM_VUS:-"12"}
+export K6_CUSTOM_ITERATIONS=${K6_CUSTOM_ITERATIONS:-"64500"}
+
+# Appliance URL
+export APPLIANCE_MASTER_URL=${APPLIANCE_MASTER_URL:-"https://conjur-master.mycompany.local:443"}
+export APPLIANCE_READ_URL=${APPLIANCE_READ_URL:-"https://conjur-follower.mycompany.local:443"}
+export CONJUR_ACCOUNT=${CONJUR_ACCOUNT:-"demo"}
+export CONJUR_IDENTITY=${CONJUR_IDENTITY:-"admin"}
+export CONJUR_PASSWORD=${PASSWORD:-"MySecretP@ss1"}
+export DRYRUN_POLICY_EXECUTOR=${DRYRUN_POLICY_EXECUTOR:-"per-vu-iterations"}
+export POLICY_CONTENTS_SIZE=${POLICY_CONTENTS_SIZE:-"100KB"}
+export DRYRUN_ITERATIONS=${DRYRUN_ITERATIONS:-"3"}
+export PARALLEL_TESTS=${PARALLEL_TESTS:-"false"}
+
+function print_help() {
+  cat << EOF
+NAME
+    Runs a load test against the configured Conjur Enterprise deployment.
+
+SYNOPSIS
+    load [global options]
+
+GLOBAL OPTIONS
+    -h, --help                - Show this message.
+
+EOF
+exit
+}
+
+print_settings() {
+    announce "Load Test - Script Settings and Enviroment Variables"
+    echo "TEST_NAME                   : $TEST_NAME"
+    announce "K6 Settings"
+    echo "APPLIANCE_MASTER_URL        : $APPLIANCE_MASTER_URL"
+    echo "APPLIANCE_READ_URL          : $APPLIANCE_READ_URL"
+    echo "CONJUR_ADMIN_API_KEY:       : redacted"
+    echo "CONJUR_ACCOUNT              : $CONJUR_ACCOUNT"
+    echo "CONJUR_IDENTITY             : $CONJUR_IDENTITY"
+    echo "K6_CUSTOM_VUS               : $K6_CUSTOM_VUS"
+    echo "K6_CUSTOM_ITERATIONS        : $K6_CUSTOM_ITERATIONS"
+    echo "DRYRUN_POLICY_EXECUTOR      : $DRYRUN_POLICY_EXECUTOR"
+    echo "POLICY_CONTENTS_SIZE        : $POLICY_CONTENTS_SIZE"
+    echo "DRYRUN_ITERATIONS           : $DRYRUN_ITERATIONS"
+    echo "PARALLEL_TESTS"             : $PARALLEL_TESTS
+    
+    echo ""
+    echo "Load test and system metrics reports can be found at: $LOG_ROOT/*"
+}
+
+test_k6() {
+  # Set CONJUR_ADMIN_API_KEY if not present
+  if [[ -z "${CONJUR_ADMIN_API_KEY}" ]]; then
+      echo "Fetching CONJUR_ADMIN_API_KEY..."
+      export CONJUR_ADMIN_API_KEY=$(curl -k -s --user "$ADMIN_USER:$PASSWORD" https://localhost/authn/demo/login)
+  fi
+
+  check_env "APPLIANCE_MASTER_URL"
+  check_env "APPLIANCE_READ_URL"
+  check_env "CONJUR_ACCOUNT"
+  check_env "CONJUR_IDENTITY"
+  check_env "CONJUR_ADMIN_API_KEY"
+
+  # The name of the test plan file (no extension)
+  TEST_PLAN=$(basename -s .js "$TEST_FILE")
+  # The name of this test (for logging purposes)
+  TEST_NAME="k6-$(basename "$TEST_PLAN")"
+  # The current timestamp
+  SCRIPT_RUN_TIMESTAMP=$(timestamp)
+  # Using the above forms the log directory for this test run
+  LOG_ROOT="$(log_dir)/$SCRIPT_RUN_TIMESTAMP-$(uuidgen)-$TEST_NAME"
+  # Log for the script settings
+  LOG_FILE_INFO="$LOG_ROOT/$TEST_NAME.log"
+
+  # Ensure log output dir exists
+  mkdir -p "$LOG_ROOT"
+
+  # Display debug information
+  print_settings | tee "$LOG_FILE_INFO"
+
+  # build K6 image
+  "$(repo_root)/bin/retrieve_cyberark_ca_cert"
+  docker compose build --pull k6
+
+  if [ "$WARMUP" == "true" ]; then
+    # Warmup
+    echo "Performing warmup - 3 minutes of reads using ramping VUs"
+    "$(repo_root)/tools/performance-tests/k6/bin/k6" \
+    run tools/performance-tests/k6/scenarios/warmup.js \
+    --insecure-skip-tls-verify --quiet
+  fi
+
+  # Start the clock
+  test_start=$(date_timestamp | sed 's/ /T/g')
+  echo "Starting test at: $test_start"
+
+  set +xe
+  # Run K6 test
+  run_k6_test
+  exit_status=$?
+
+  # Move reports to LOG_ROOT
+  move_reports
+
+  # Stop the clock
+  test_end=$(date_timestamp | sed 's/ /T/g')
+  echo "Test ended at: $test_end"
+
+  # Fail the build if the test failed
+  if [ $exit_status -ne 0 ]; then
+    echo "The test failed with exit status: $exit_status"
+    echo $LOG_ROOT
+
+    exit $exit_status
+  fi
+
+  echo "Test completed successfully!"
+  echo $LOG_ROOT
+}
+
+run_k6_test() {
+  local log_file="$LOG_ROOT/k6.log"
+
+  echo "Starting k6 test in quiet mode, summary will be printed when completed..."
+  echo "See log file at: $log_file"
+
+  if [ "$ENABLE_STATSD" = "true" ]; then
+    echo "Configuring k6 to report load testing data points to StatsD"
+
+    "$(repo_root)/tools/performance-tests/k6/bin/k6" run "$TEST_FILE" \
+      -o output-statsd \
+      --insecure-skip-tls-verify \
+      --quiet 2>&1 | tee "$log_file"
+  else
+    "$(repo_root)/tools/performance-tests/k6/bin/k6" run "$TEST_FILE" \
+      --insecure-skip-tls-verify \
+      --quiet 2>&1 | tee "$log_file"
+  fi
+}
+
+move_report_file() {
+  local source_file="$1"
+  local destination_file="$2"
+  local file_type="$3"
+
+  if [ -f "$source_file" ]; then
+    echo "Moving $file_type report to $destination_file"
+    mv "$source_file" "$destination_file"
+  else
+    echo "Source $file_type report file does not exist, cannot move"
+  fi
+}
+
+move_reports() {
+  local source_html_file="$(repo_root)/tools/performance-tests/k6/reports/$(basename "$TEST_PLAN")-summary.html"
+  local html_report_file="$LOG_ROOT/summary.html"
+  move_report_file "$source_html_file" "$html_report_file" "HTML"
+
+  local source_csv_file="$(repo_root)/tools/performance-tests/k6/reports/metrics.csv"
+  local csv_report_file="$LOG_ROOT/metrics.csv"
+  move_report_file "$source_csv_file" "$csv_report_file" "CSV"
+}
+
+populate_apikeys_file() {
+  local file_name="$(repo_root)/tools/performance-tests/k6/data/api-keys.csv"
+  echo "lob_name,safe_name,api_key" > "$file_name"
+
+  local lob_number=10
+  local safe_number=15
+  set +x
+
+  if [[ $UUID != "" ]]; then
+    UUID_SUFFIX="-$UUID"
+  else
+    UUID_SUFFIX=""
+  fi
+
+  for ((i=1; i<=lob_number; i++)); do
+    for ((j=1; j<=safe_number; j++)); do
+      hosts+="AutomationVault-hosts/lob-$i/safe-$j/host-1${UUID_SUFFIX} "
+    done
+  done
+
+  read -r -a api_keys <<< "$(./bin/api --account $CONJUR_ACCOUNT --user $ADMIN_USER --password $PASSWORD --leader-url $APPLIANCE_MASTER_URL --rotate-multiple-host-api-keys "${hosts[@]}" | tail -n 1)"
+
+  local idx=0;
+
+  for ((i=1; i<=lob_number; i++)); do
+    for ((j=1; j<=safe_number; j++)); do
+      echo "lob-$i,safe-$j,${api_keys[$idx]}" >> "$file_name"
+      idx=$((idx+1))
+    done
+  done
+
+  set -x
+  echo "API keys have been written to $file_name"
+}
+
+main() {
+  while true ; do
+    case "$1" in
+      --uuid ) export UUID="$2" ; shift 2 ;;
+      -h | --help ) print_help ; shift ;;
+      * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
+    esac
+  done
+
+  if [ "$POPULATE_API_KEYS" == "true" ]; then
+    populate_apikeys_file
+  fi
+
+  if [[ -z "$TEST_FILE" ]]; then
+    echo "No test file specified. Exiting..."
+    exit 0
+  fi
+
+  eval "test_k6"
+}
+
+main "$@"

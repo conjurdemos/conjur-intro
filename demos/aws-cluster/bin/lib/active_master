@@ -1,0 +1,11 @@
+#!/bin/bash -eu
+
+source bin/lib/aws_context
+source bin/lib/conjur_context
+
+info_response=$(curl -ks "https://$LB_DNS/info")
+
+export ACTIVE_MASTER_PRIVATE_DNS=$(echo $info_response | jq -r '.configuration.conjur.hostname')
+
+private_node_dns_list=$(terraform output -json conjur_master_nodes_private)
+export ACTIVE_MASTER_NUM=$(echo $private_node_dns_list | jq ". | index(\"$ACTIVE_MASTER_PRIVATE_DNS\") + 1")

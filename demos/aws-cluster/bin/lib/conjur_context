@@ -1,0 +1,14 @@
+#!/bin/bash -eu
+
+# Generate admin password if it doesn't exist
+CONJUR_PASSWORD_FILE="./tmp/conjur/admin_password"
+if [ ! -f "$CONJUR_PASSWORD_FILE" ]; then
+    echo "Generating Conjur Password..."
+    mkdir -p "$(dirname "$CONJUR_PASSWORD_FILE")"
+    openssl rand -base64 32 > "$CONJUR_PASSWORD_FILE"
+fi
+
+export CONJUR_ADMIN_PASSWORD=$(<"$CONJUR_PASSWORD_FILE")
+
+export CONJUR_ACCOUNT="${CONJUR_ACCOUNT:-conjur}"
+export CONJUR_CLUSTER_NAME="${CONJUR_CLUSTER_NAME:-master}"

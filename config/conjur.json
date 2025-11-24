@@ -1,0 +1,13 @@
+{
+  "postgresql": {
+    "config": {
+      "max_connections": 155,
+      "max_wal_senders": 55
+    }
+  },
+  "nginx": {
+    "ssl": {
+      "ciphers": "ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256"
+    }
+  }
+}

@@ -1,0 +1,33 @@
+# This playbook covers common tasks that need to be run on all nodes
+
+- name: Start Conjur container (local)
+  when: container_network | default('') != ''
+  docker_container:
+    name: "{{ hostname | default('conjur') }}"
+    image: 'registry.tld/conjur-appliance:5.0-stable'
+    security_opts: 'seccomp:unconfined'
+    published_ports:
+      - "{{ conjur_port | default('443') }}:443"
+    networks:
+      - name: conjur-network
+    state: 'started'
+
+- name: Start Conjur container
+  when: container_network | default('') == ''
+  docker_container:
+    name: "{{ hostname | default('conjur') }}"
+    image: 'registry.tld/conjur-appliance:5.0-stable'
+    security_opts: 'seccomp:unconfined'
+    published_ports:
+      - "{{ conjur_port | default('443') }}:443"
+    state: 'started'
+
+
+    # name: 'conjur'
+    # image: 'registry.tld/conjur-appliance:5.0-stable'
+    # security_opts: 'seccomp:unconfined'
+    # published_ports:
+    #   - "{{ conjur_port }}:443"
+    # interactive: yes
+    # # state: absent
+    # state: 'started'

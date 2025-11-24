@@ -1,0 +1,12 @@
+---
+# This policy defines an authn-k8s endpoint, CA creds and a layer for whitelisted identities permitted to authenticate to it
+- !policy
+  id: variables
+  body:
+  - !variable
+    id: mypassword
+
+  - !permit
+    resource: !variable mypassword
+    privilege: [ read, execute ]
+    role: !host /conjur/authn-k8s/{{ AUTHENTICATOR }}/apps/{{ PROJECT_NAME }}/*/*
