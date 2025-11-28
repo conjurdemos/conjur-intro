@@ -328,6 +328,6 @@ export function retrieveApiKey(apiKeys, index, lob_name, safe_name) {
       }
     }
   } else {
-    return apiKeys.at(index);
+    return apiKeys.at(index % (apiKeys.length - 1));
   }
 }
