@@ -45,7 +45,7 @@ export function authn() {
 }
 
 export default function () {
-  const apiKey = apiKeys.at(exec.vu.idInTest - 1);
+  const apiKey = apiKeys.at((exec.vu.idInTest - 1) % (apiKeys.length - 1));
 
   env.applianceUrl = env.applianceReadUrl
   env.conjurIdentity = `host/AutomationVault-hosts/${apiKey.lob_name}/${apiKey.safe_name}/host-1`;
