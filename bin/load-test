@@ -128,6 +128,11 @@ test_k6() {
     exit $exit_status
   fi
 
+  if [ "$ENABLE_JSON_OUTPUT" = "true" ]; then
+      echo -e "\nCalculating standard deviation metrics from k6 json report..."
+      "$(repo_root)/tools/performance-tests/k6/bin/std-dev" "$LOG_ROOT/results.json"
+  fi
+
   echo "Test completed successfully!"
   echo $LOG_ROOT
 }

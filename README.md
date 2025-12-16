@@ -270,6 +270,7 @@ $ TEST_FILE=tools/performance-tests/k6/scenarios/read-individually.js ./bin/load
 $ ENABLE_STATSD=true TEST_FILE=tools/performance-tests/k6/scenarios/read-individually.js ./bin/load-test
 
 # To get raw results in json format set ENABLE_JSON_OUTPUT flag (disabled by default)
+# Additionally, when ENABLE_JSON_OUTPUT flag is enabled, standard deviation will be calculated
 # Note: resulted json file can have hundreds of megabytes
 $ ENABLE_JSON_OUTPUT=true TEST_FILE=tools/performance-tests/k6/scenarios/read-individually.js ./bin/load-test
 
