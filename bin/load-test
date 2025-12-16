@@ -4,6 +4,7 @@ set -eo pipefail
 source "$(git rev-parse --show-toplevel)/tools/performance-tests/k6/bin/functions"
 
 ENABLE_STATSD=${ENABLE_STATSD:-"false"}
+ENABLE_JSON_OUTPUT=${ENABLE_JSON_OUTPUT:-"false"}
 WARMUP=${WARMUP:-"true"}
 POPULATE_API_KEYS=${POPULATE_API_KEYS:-"true"}
 UUID=""
@@ -137,18 +138,22 @@ run_k6_test() {
   echo "Starting k6 test in quiet mode, summary will be printed when completed..."
   echo "See log file at: $log_file"
 
+  local output_args=""
+
+  if [ "$ENABLE_JSON_OUTPUT" = "true" ]; then
+    echo "Configuring k6 to report testing data points in json format"
+    output_args="$output_args -o json=/tools/performance-tests/k6/reports/results.json"
+  fi
+
   if [ "$ENABLE_STATSD" = "true" ]; then
     echo "Configuring k6 to report load testing data points to StatsD"
-
-    "$(repo_root)/tools/performance-tests/k6/bin/k6" run "$TEST_FILE" \
-      -o output-statsd \
-      --insecure-skip-tls-verify \
-      --quiet 2>&1 | tee "$log_file"
-  else
-    "$(repo_root)/tools/performance-tests/k6/bin/k6" run "$TEST_FILE" \
-      --insecure-skip-tls-verify \
-      --quiet 2>&1 | tee "$log_file"
+    output_args="$output_args -o output-statsd"
   fi
+
+  "$(repo_root)/tools/performance-tests/k6/bin/k6" run "$TEST_FILE" \
+    "$output_args" \
+    --insecure-skip-tls-verify \
+    --quiet 2>&1 | tee "$log_file"
 }
 
 move_report_file() {
@@ -172,6 +177,12 @@ move_reports() {
   local source_csv_file="$(repo_root)/tools/performance-tests/k6/reports/metrics.csv"
   local csv_report_file="$LOG_ROOT/metrics.csv"
   move_report_file "$source_csv_file" "$csv_report_file" "CSV"
+
+  if [ "$ENABLE_JSON_OUTPUT" = "true" ]; then
+    local source_json_file="$(repo_root)/tools/performance-tests/k6/reports/results.json"
+    local json_report_file="$LOG_ROOT/results.json"
+    move_report_file "$source_json_file" "$json_report_file" "JSON"
+  fi
 }
 
 populate_apikeys_file() {
