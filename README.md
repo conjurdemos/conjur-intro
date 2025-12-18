@@ -269,6 +269,11 @@ $ TEST_FILE=tools/performance-tests/k6/scenarios/read-individually.js ./bin/load
 # Or run load test with StatsD enabled
 $ ENABLE_STATSD=true TEST_FILE=tools/performance-tests/k6/scenarios/read-individually.js ./bin/load-test
 
+# To get raw results in json format set ENABLE_JSON_OUTPUT flag (disabled by default)
+# Additionally, when ENABLE_JSON_OUTPUT flag is enabled, standard deviation will be calculated
+# Note: resulted json file can have hundreds of megabytes
+$ ENABLE_JSON_OUTPUT=true TEST_FILE=tools/performance-tests/k6/scenarios/read-individually.js ./bin/load-test
+
 # Run benchmark for number of authenticators
 $ bin/dap --provision-keycloak
 $ ./bin/authenticators-benchmark

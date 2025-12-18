@@ -1,0 +1,57 @@
+#!/bin/bash
+
+metric="iteration_duration"
+json_file="$1"
+
+if [ -z "$json_file" ]; then
+    echo "Usage: $0 <json_file>"
+    exit 1
+fi
+
+if [ ! -f "$json_file" ]; then
+    echo "Error: File $json_file not found"
+    exit 1
+fi
+
+# Check if jq is available
+if ! command -v jq >/dev/null 2>&1; then
+    echo "Error: jq is not installed. Please install jq to use this script."
+    exit 1
+fi
+
+# Main execution
+echo "Processing JSON file: $json_file"
+
+# Process entire file with single jq call and calculate statistics
+result=$(jq -s --arg metric "$metric" '
+    map(select(.metric == $metric and .type == "Point" and .data.value != null)) |
+    map(.data.value) |
+    if length == 0 then
+        {count: 0, min: 0, max: 0, stddev: 0}
+    else
+        . as $values |
+        (length) as $count |
+        (min) as $min |
+        (max) as $max |
+        (add / length) as $mean |
+        (map(. - $mean | . * .) | add / length) as $variance |
+        ($variance | if . > 0 then sqrt else 0 end) as $stddev |
+        {count: $count, min: $min, max: $max, stddev: $stddev}
+    end
+' "$json_file")
+
+# Extract values using jq
+count=$(echo "$result" | jq -r '.count')
+min=$(echo "$result" | jq -r '.min')
+max=$(echo "$result" | jq -r '.max')
+stddev=$(echo "$result" | jq -r '.stddev')
+
+if [ "$count" -gt 0 ]; then
+    echo -e "Processed $count data points for $metric metrics."
+    printf "\tMin is:    %.6f\n" "$min"
+    printf "\tMax is:    %.6f\n" "$max"
+    printf "\tStdDev is: %.6f\n\n" "$stddev"
+else
+    echo -e "No $metric data found in the JSON.\n"
+fi
+
