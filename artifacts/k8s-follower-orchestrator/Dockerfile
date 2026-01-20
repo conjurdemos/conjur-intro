@@ -19,7 +19,7 @@ RUN sed -i "s/hostPort: 451/hostPort: ${CONJUR_K8S_FOLLOWER_PORT}/g" kind-config
 
 COPY --from=operator-manifests /manifests /manifests/operator
 # Replace image version in form <version-tag> with either specified by user or default (edge)
-RUN sed -i "s/conjur-kubernetes-follower-operator:.*/conjur-kubernetes-follower-operator:${K8S_FOLLOWER_TAG}/g" /manifests/operator/operator.yaml
+RUN sed -i "s/conjur-kubernetes-follower-operator.*/conjur-kubernetes-follower-operator:${K8S_FOLLOWER_TAG}/g" /manifests/operator/operator.yaml
 # Replace ImagePullPolicy: Always with ImagePullPolicy: Never
 RUN sed -i "s/default: Always/default: Never/g" /manifests/operator/crds.yaml
 RUN sed -i "s/imagePullPolicy: Always/imagePullPolicy: Never/g" /manifests/operator/operator.yaml
