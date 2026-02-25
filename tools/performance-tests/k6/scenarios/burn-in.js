@@ -95,24 +95,6 @@ export const options = {
       exec: "readSecret",
       gracefulStop
     },
-    // Dynamic Secrets must not exceed 600 requests per second:
-    // https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_iam-quotas.html#reference_iam-quotas-sts-requests
-    read_dynamic_secret_assume_role: {
-      executor: 'shared-iterations',
-      maxDuration: "3h",
-      vus: vus,
-      iterations: iterations,
-      exec: "readDynamicSecretAssumeRole",
-      gracefulStop
-    },
-    read_dynamic_secret_federation_token: {
-      executor: 'shared-iterations',
-      maxDuration: "3h",
-      vus: vus,
-      iterations: iterations,
-      exec: "readDynamicSecretFederationToken",
-      gracefulStop
-    },
     cli: {
       executor: 'shared-iterations',
       maxDuration: "3h",
@@ -227,14 +209,8 @@ export function readSecret() {
   });
 }
 
-export function readDynamicSecretAssumeRole() {
-  env.applianceUrl = env.applianceReadUrl;
-  env.conjurIdentity = `admin`;
-
-  authn();
-
+export function runReadDynamicSecretAssumeRole() {
   const identity = `data/dynamic/ds-assume-role`;
-  const res = conjurApi.readSecret(http, env, identity);
 
   runCliCommand(
     [
@@ -248,12 +224,7 @@ export function readDynamicSecretAssumeRole() {
   );
 }
 
-export function readDynamicSecretFederationToken() {
-  env.applianceUrl = env.applianceReadUrl;
-  env.conjurIdentity = `admin`;
-
-  authn();
-
+export function runReadDynamicSecretFederationToken() {
   const identity = `data/dynamic/ds-federation-token`;
 
   runCliCommand(
@@ -387,6 +358,8 @@ export function cli() {
   runAuthenticationCommands(env.conjurPassword);
   runPolicyFetchCommands(branch);
   runPolicyDryRunCommands(dryRunPolicySize);
+  runReadDynamicSecretAssumeRole();
+  runReadDynamicSecretFederationToken();
 }
 
 export function handleSummary(data) {
