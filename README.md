@@ -83,6 +83,18 @@ $ POD_NAME=$(docker compose exec -T secrets-provider-orchestrator bash -c "kubec
 $ docker compose exec -T secrets-provider-orchestrator bash -c "kubectl exec -n test-app $POD_NAME -- cat /opt/secrets/conjur/db-credentials.yaml"
 ```
 
+Deploy Secretless Broker as a sidecar in Kubernetes (kind):
+  
+```sh
+$ bin/dap --provision-secretless-broker
+
+# Check secretless-broker connectivity:
+$ docker compose exec -T secretless-broker-orchestrator bash -c "kubectl exec -n test-app deploy/test-app -c test-app -- nc -zv localhost 5432"
+
+# Check secretless-broker logs:
+$ docker compose exec -T secretless-broker-orchestrator bash -c "kubectl logs -n test-app deploy/test-app -c secretless-broker"
+```
+
 ### Working with Podman
 
 The project is enabled to work with Podman instead of Docker.
@@ -118,6 +130,7 @@ To connect to the UI in the browser, use ports 10443(through HA proxy) or 10444(
 |--provision-standbys|action|• Removes standbys if present<br>• Starts two DAP containers<br>• Generates standby seed files<br>• Configures standbys<br>• Enable Synchronous Standby|Requires configured master|
 |--provision-csi-provider|action|• Configures Conjur CSI Provider inside kubernetes cluster ran by kind|Requires configured master|
 |--provision-secrets-provider|action|• Configures Conjur Secrets Provider inside kubernetes cluster ran by kind|Requires configured master|
+|--provision-secretless-broker|action|• Configures Secretless Broker as a sidecar inside kubernetes cluster ran by kind|Requires configured master|
 |--restore-from-backup|action|• Removes auto-failover (if enabled)<br>• Stops and renames master<br>• Starts new DAP container<br>• Restores master from backup|Requires a previously created backup|
 |--stop|action|Stops and removes all containers||
 |--trigger-failover|action|• Stops current master|Requires an auto-failover cluster|
@@ -193,6 +206,7 @@ Usage: bin/dap single [options]
     --provision-standbys              Deploys and configures two standbys (Requires configured master)
     --provision-csi-provider          Configures Conjur CSI provider inside kubernetes cluster ran by kind (Requires configured master)
     --provision-secrets-provider      Configures Conjur Secrets Provider for Kubernetes inside a kind cluster (Requires configured master)
+    --provision-secretless-broker     Configures Secretless Broker as a sidecar inside a kind cluster (Requires configured master)
     --restore-from-backup             Restores a master from backup|Requires a previously created backup
     --provision-keycloak              Configures Keycloak OIDC authenticator (Requires configured master)
     --stop                            Stops all containers and cleans up cached files
