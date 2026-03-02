@@ -55,6 +55,9 @@ Usage: bin/dap [options]:
     --provision-secrets-provider                              Configures Conjur Secrets Provider inside kubernetes cluster ran by kind
                                                                 (Requires configured master).
 
+    --provision-secretless-broker                             Configures Secretless Broker as a sidecar inside kubernetes cluster ran by kind
+                                                                (Requires configured master).
+
     --provision-master                                        Configures a DAP Master with account `demo` and
                                                                 password `MySecretP@ss1` behind a Layer 4 load
                                                                 balancer.
@@ -609,6 +612,97 @@ function _setup_csi_provider {
 "
 }
 
+function _setup_secretless_broker {
+  touch kubeconfig
+  docker compose rm --stop --force secretless-broker-orchestrator
+  docker compose build secretless-broker-orchestrator
+  docker compose up --no-deps --detach secretless-broker-orchestrator
+
+  # Wait until the KinD node appears as Ready
+  SECONDS=0
+  TIMEOUT=300
+  while true; do
+    NODE_OUTPUT="$(docker compose exec -T secretless-broker-orchestrator bash -c 'kubectl get nodes' 2>/dev/null || true)"
+    if echo "$NODE_OUTPUT" | grep -q "conjur-intro-secretless-broker-control-plane"; then
+      echo "The conjur-intro-secretless-broker cluster is created."
+      break
+    else
+      echo "Waiting for the conjur-intro-secretless-broker cluster to be created..."
+      sleep 1
+    fi
+    if [ $SECONDS -ge $TIMEOUT ]; then
+      echo "Timeout after waiting for 5 minutes. The conjur-intro-secretless-broker cluster is not created or node name is incorrect."
+      docker compose logs secretless-broker-orchestrator
+      exit 1
+    fi
+  done
+
+  # Define and enable the JWT Authenticator in Conjur
+  bin/cli conjur policy load -b root -f artifacts/k8s-secretless-broker/jwt-authenticator-webservice-policy.yaml
+  jwks=$(docker compose exec -T secretless-broker-orchestrator bash -c "kubectl get --raw \$(kubectl get --raw /.well-known/openid-configuration | jq -r '.jwks_uri')")
+  policy_value="{\"type\":\"jwks\",\"value\":$jwks}"
+  curl -k -X POST \
+    -H "$(bin/cli conjur authenticate -H | tail -n1)" \
+    --data "$policy_value" \
+    "https://localhost/secrets/demo/variable/conjur%2Fauthn-jwt%2Fdev-cluster-sb%2Fpublic-keys"
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster-sb/issuer -v https://kubernetes.default.svc.cluster.local
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster-sb/token-app-property -v "sub"
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster-sb/identity-path -v apps
+  bin/cli conjur variable set -i conjur/authn-jwt/dev-cluster-sb/audience -v "conjur"
+  _append_conjur_authenticator "authn-jwt/dev-cluster-sb"
+
+  # Prepare the test app namespace and service account
+  export TEST_APP_NAMESPACE="test-app"
+  export TEST_APP_SA="test-app-sa"
+  docker compose exec -T secretless-broker-orchestrator bash -c "kubectl create namespace $TEST_APP_NAMESPACE"
+
+  # Prep helm repos
+  docker compose exec -T secretless-broker-orchestrator bash -c "helm repo add cyberark --insecure-skip-tls-verify https://cyberark.github.io/helm-charts"
+  docker compose exec -T secretless-broker-orchestrator bash -c "helm repo update"
+
+  # Install the Conjur connection ConfigMap via cluster-prep chart
+  docker compose exec -T secretless-broker-orchestrator bash -c "helm install cluster-prep cyberark/conjur-config-cluster-prep \
+    --insecure-skip-tls-verify \
+    --namespace cyberark-conjur-jwt \
+    --create-namespace \
+    --set conjur.account=demo \
+    --set conjur.applianceUrl=https://conjur-master.mycompany.local \
+    --set conjur.certificateBase64=$(cat ./system/haproxy/certs/conjur-master.mycompany.local.pem | base64) \
+    --set authnK8s.authenticatorID=dev-cluster-sb \
+    --set authnK8s.clusterRole.create=false \
+    --set authnK8s.serviceAccount.create=false"
+
+  # Install the namespace prep chart so the conjur-connect ConfigMap is available in test-app
+  docker compose exec -T secretless-broker-orchestrator bash -c "helm install namespace-prep cyberark/conjur-config-namespace-prep \
+    --insecure-skip-tls-verify \
+    --namespace $TEST_APP_NAMESPACE \
+    --set conjurConfigMap.authnMethod=authn-jwt \
+    --set authnK8s.goldenConfigMap=conjur-configmap \
+    --set authnK8s.namespace=cyberark-conjur-jwt \
+    --set authnRoleBinding.create=false"
+
+  # Load the test-app policy and set credential variables
+  bin/cli conjur policy load -f artifacts/k8s-secretless-broker/test-app-policy.yaml -b root
+  bin/cli conjur variable set -i db-credentials/username -v "db-user"
+  bin/cli conjur variable set -i db-credentials/password -v "db-password"
+
+  # Deploy the secretless-broker ConfigMap and test app
+  docker compose exec -T secretless-broker-orchestrator bash -c "kubectl apply -f /artifacts/k8s-secretless-broker/manifests/secretless-config.yaml \
+    --namespace \"$TEST_APP_NAMESPACE\""
+  docker compose exec -T secretless-broker-orchestrator bash -c "kubectl apply -f /artifacts/k8s-secretless-broker/manifests/test_app.yaml \
+    --namespace \"$TEST_APP_NAMESPACE\""
+
+  # Wait for the test app deployment to become available
+  docker compose exec -T secretless-broker-orchestrator bash -c \
+    "kubectl wait --for=condition=available --timeout=5m deployment/test-app --namespace \"$TEST_APP_NAMESPACE\""
+
+  # Validate that secretless-broker is intercepting connections
+  echo "Validating secretless-broker connectivity..."
+  docker compose exec -T secretless-broker-orchestrator bash -c \
+    "kubectl exec -n $TEST_APP_NAMESPACE deploy/test-app -c test-app -- nc -z localhost 5432"
+  echo "Secretless Broker is accepting connections on localhost:5432."
+}
+
 #
 ## Failover & Promotion
 #
@@ -1039,6 +1133,7 @@ while true ; do
     --provision-k8s-follower ) CMD='_setup_k8s_follower' ; shift ;;
     --provision-csi-provider ) CMD='_setup_csi_provider' ; shift ;;
     --provision-secrets-provider ) CMD='_setup_secrets_provider' ; shift ;;
+    --provision-secretless-broker ) CMD='_setup_secretless_broker' ; shift ;;
     --provision-master ) CMD='_single_master' ; shift ;;
     --provision-standbys ) CMD='_setup_standbys' ; shift ;;
     --provision-keycloak ) CMD='_setup_keycloak' ; shift ;;

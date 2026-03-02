@@ -209,6 +209,19 @@ services:
       - ./artifacts:/artifacts
       - ./bin/build_ca_certificate/cyberark_root.crt:/usr/share/ca-certificates/cyberark_root.crt
 
+  secretless-broker-orchestrator:
+    build:
+      context: artifacts/k8s-secretless-broker
+    privileged: true
+    networks:
+      dap_net:
+    volumes:
+      - ./kubeconfig:/root/.kube/config
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./system/haproxy/certs:/etc/ssl/certs
+      - ./artifacts:/artifacts
+      - ./bin/build_ca_certificate/cyberark_root.crt:/usr/share/ca-certificates/cyberark_root.crt
+
   follower-client:
     image: cyberark/conjur-cli:8
     networks:
