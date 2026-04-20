@@ -34,6 +34,7 @@ services:
       - "seccomp:unconfined"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
+      - mke:/secrets
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
       - ./system/logs/master-1:/var/log/conjur:Z
@@ -57,6 +58,7 @@ services:
       - "seccomp:unconfined"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
+      - mke:/secrets
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
       - ./system/logs/master-2:/var/log/conjur:Z
@@ -78,6 +80,7 @@ services:
       - "seccomp:unconfined"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
+      - mke:/secrets
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
       - ./system/logs/master-3:/var/log/conjur:Z
@@ -99,6 +102,7 @@ services:
       - "seccomp:unconfined"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
+      - mke:/secrets
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
       - ./system/logs/master-4:/var/log/conjur:Z
@@ -120,6 +124,7 @@ services:
       - "seccomp:unconfined"
     volumes:
       - seeds:/opt/cyberark/dap/seeds
+      - mke:/secrets
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
       - ./system/logs/master-5:/var/log/conjur:Z
@@ -155,6 +160,7 @@ services:
     volumes:
       - seeds:/opt/cyberark/dap/seeds
       - follower-certs:/opt/conjur/etc/ssl/
+      - mke:/secrets
       - ./system/backup:/opt/conjur/backup:Z
       - ./system/configuration:/opt/cyberark/dap/configuration:Z
       - ./system/logs/follower:/var/log/conjur:Z
@@ -323,6 +329,7 @@ services:
 volumes:
   seeds:
   follower-certs:
+  mke:
 
 networks:
   dap_net:

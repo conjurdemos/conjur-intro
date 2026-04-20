@@ -298,9 +298,20 @@ function _setup_standby {
   _run conjur-master-1.mycompany.local \
     "evoke seed standby conjur-master-$_standby_number.mycompany.local conjur-master-1.mycompany.local > /opt/cyberark/dap/seeds/standby-seed-$_standby_number.tar"
 
+  keys_exec=""
+  if _mke_enabled; then 
+    keys_exec="evoke keys exec -m /secrets/master.key --"
+  fi
+
   # Unpack and Configure
   _run conjur-master-$_standby_number.mycompany.local \
-    "evoke unpack seed /opt/cyberark/dap/seeds/standby-seed-$_standby_number.tar && evoke configure standby"
+    "evoke unpack seed /opt/cyberark/dap/seeds/standby-seed-$_standby_number.tar && $keys_exec evoke configure standby"
+
+  if _mke_enabled; then 
+    _run conjur-master-$_standby_number.mycompany.local \
+      "cat /secrets/master.key | evoke keys unlock -"
+  fi
+
 }
 
 function _start_standby_synchronization {
@@ -313,13 +324,36 @@ function _setup_follower {
   docker compose rm --stop --force conjur-follower-1.mycompany.local
   docker compose up --no-deps --detach conjur-follower-1.mycompany.local
 
+  if _mke_enabled; then
+    # Need to decrypot the keys before seeding because certificate issue requires them to be decrypted
+    _run conjur-master-1.mycompany.local \
+      "cat /secrets/master.key | evoke keys decrypt-all -"
+  fi
+
   # Generate Seed file
   _run conjur-master-1.mycompany.local \
     "evoke seed follower conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed.tar"
 
+  if _mke_enabled; then 
+    # Re-encrypt master after seeding our follower
+    _run conjur-master-1.mycompany.local \
+      "cat /secrets/master.key | evoke keys encrypt -"
+    _run conjur-master-1.mycompany.local \
+      "cat /secrets/master.key | evoke keys unlock -"
+    sleep 5 # Allow leaders services to become healthy before configuring follower
+  fi
+
   # Unpack and Configure
   _run conjur-follower-1.mycompany.local \
     "evoke unpack seed /opt/cyberark/dap/seeds/follower-seed.tar && evoke configure follower"
+
+  if _mke_enabled; then 
+    _run conjur-follower-1.mycompany.local \
+      "cat /secrets/master.key | evoke keys encrypt -"
+
+    _run conjur-follower-1.mycompany.local \
+      "cat /secrets/master.key | evoke keys unlock -"
+  fi
 
   # Copy certs for HAProxy
   _run conjur-follower-1.mycompany.local \
@@ -988,6 +1022,25 @@ function _follower_to_master_connection {
   docker container $action conjur-intro-conjur-master-1.mycompany.local-1
 }
 
+function _mke_enabled {
+  # Returns 0 if MKE is enabled 1 otherwise
+  docker compose exec conjur-master-1.mycompany.local bash -c "[ -f /secrets/master.key ]"
+  return $?
+}
+
+function _enable_mke {
+  echo "Enabling MKE"
+  cat << EOF
+    WARNING: MKE must be enabled after provisioning a leader but before
+    provisioning any other nodes. Also it is currently only available for standard
+    standbys/followers in conjur-intro.
+EOF
+  # Generate key file to be used for MKE
+  _run conjur-master-1.mycompany.local "openssl rand 32 > /secrets/master.key"
+  _run conjur-master-1.mycompany.local "cat /secrets/master.key | evoke keys encrypt -"
+  _run conjur-master-1.mycompany.local "cat /secrets/master.key | evoke keys unlock -"
+}
+
 _standby_altnames() {
 
   declare -a standby_altnames
@@ -1040,6 +1093,7 @@ while true ; do
     --provision-csi-provider ) CMD='_setup_csi_provider' ; shift ;;
     --provision-secrets-provider ) CMD='_setup_secrets_provider' ; shift ;;
     --provision-master ) CMD='_single_master' ; shift ;;
+    --enable-mke ) CMD="_enable_mke" ; shift ;;
     --provision-standbys ) CMD='_setup_standbys' ; shift ;;
     --provision-keycloak ) CMD='_setup_keycloak' ; shift ;;
     --reenroll-failed-leader ) shift ; CMD="_reenroll_failed_leader $1 $2" ; shift ; shift ;;
