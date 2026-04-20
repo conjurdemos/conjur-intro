@@ -419,6 +419,7 @@ function pull_k8s_follower_images {
     "conjur-kubernetes-follower-syslog-ng"
     "conjur-kubernetes-follower-failover-rebaser"
     "conjur-kubernetes-follower-ephemeral-secrets"
+    "conjur-kubernetes-follower-authenticator"
   )
 
   for image in "${images[@]}"; do
@@ -431,7 +432,9 @@ function pull_k8s_follower_images {
     if ! docker pull "${img}" 2>&1 | grep -q "not found"; then
       echo "Successfully pulled ${img} or image already exists locally"
       docker tag "${img}" "${img_without_registry}"
-      _run_in_kind "kind load docker-image ${img_without_registry} --name conjur-intro-k8s-follower"
+      _run_in_kind "mkdir -p /tmp/cyberark"
+      _run_in_kind "docker save \"${img_without_registry}\" -o /tmp/${img_without_registry}.tar"
+      _run_in_kind "docker exec --privileged -i conjur-intro-k8s-follower-worker ctr --namespace=k8s.io images import - < /tmp/${img_without_registry}.tar"
     else
       echo "Warning: Failed to pull ${img} (not found), continuing anyway..."
     fi
