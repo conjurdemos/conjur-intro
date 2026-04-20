@@ -1,4 +1,4 @@
-ARG K8S_FOLLOWER_TAG
+ARG K8S_FOLLOWER_TAG=edge
 
 FROM registry.tld/cyberark/conjur-kubernetes-follower-operator-manifests:$K8S_FOLLOWER_TAG AS operator-manifests
 
@@ -33,7 +33,8 @@ RUN sed -i "s/conjur-kubernetes-follower-configurator/conjur-kubernetes-follower
     sed -i "s/conjur-kubernetes-follower-postgres/conjur-kubernetes-follower-postgres:${K8S_FOLLOWER_TAG}/g" /manifests/samples/conjur_v1_conjurfollower.yaml && \
     sed -i "s/conjur-kubernetes-follower-syslog-ng/conjur-kubernetes-follower-syslog-ng:${K8S_FOLLOWER_TAG}/g" /manifests/samples/conjur_v1_conjurfollower.yaml && \
     sed -i "s/conjur-kubernetes-follower-failover-rebaser/conjur-kubernetes-follower-failover-rebaser:${K8S_FOLLOWER_TAG}/g" /manifests/samples/conjur_v1_conjurfollower.yaml && \
-    sed -i "s/conjur-kubernetes-follower-ephemeral-secrets/conjur-kubernetes-follower-ephemeral-secrets:${K8S_FOLLOWER_TAG}/g" /manifests/samples/conjur_v1_conjurfollower.yaml
+    sed -i "s/conjur-kubernetes-follower-ephemeral-secrets/conjur-kubernetes-follower-ephemeral-secrets:${K8S_FOLLOWER_TAG}/g" /manifests/samples/conjur_v1_conjurfollower.yaml && \
+    sed -i "s/conjur-kubernetes-follower-authenticator/conjur-kubernetes-follower-authenticator:${K8S_FOLLOWER_TAG}/g" /manifests/samples/conjur_v1_conjurfollower.yaml
 
 # Replace values for sample ConjurFollower
 RUN sed -i 's|https://conjur.host.name/|https://host.docker.internal|g' /manifests/samples/conjur_v1_conjurfollower.yaml && \
