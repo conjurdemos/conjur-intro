@@ -785,6 +785,7 @@ function _setup_standbys {
   # Reload load balancer to serve cluster
   _set_master_multi_node_proxy_config
   _reload_container 'conjur-master.mycompany.local'
+  _wait_for_master
 }
 
 function _command {
@@ -850,6 +851,9 @@ function _enable_autofailover {
       _run "conjur-master-$i.mycompany.local" "evoke cluster enroll --reenroll --cluster-machine-name conjur-master-$i.mycompany.local --master-name conjur-master-1.mycompany.local production"
     done
   else
+
+    _wait_for_master
+
     _cli root "policy/base.yml"
 
     _set_cluster_policy_file
