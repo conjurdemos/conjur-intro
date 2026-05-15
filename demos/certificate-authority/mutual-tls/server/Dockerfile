@@ -3,6 +3,7 @@ FROM nginx
 # Security patches
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
+      gpgv \
       openssl \
       libssl3 && \
     rm -rf /var/lib/apt/lists/*
