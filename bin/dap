@@ -766,6 +766,24 @@ function deploy_proxy {
   mkdir -p ./system/haproxy/certs
   docker cp "$(docker compose ps -q conjur-master-1.mycompany.local)":/opt/conjur/etc/ssl/. ./system/haproxy/certs
   docker compose up -d --no-deps conjur-master.mycompany.local
+  _verify_proxy_network
+}
+
+function _verify_proxy_network {
+  local proxy_running
+  proxy_running="$(docker compose ps --status running -q conjur-master.mycompany.local)"
+
+  if [[ -z "$proxy_running" ]]; then
+    echo ""
+    echo "ERROR: The HAProxy container failed to start."
+    echo "This is usually caused by host port ${CONJUR_MASTER_PORT:-443} already being"
+    echo "in use by another process or container."
+    echo ""
+    echo "To use a different host port, set CONJUR_MASTER_PORT in a .env file:"
+    echo "  echo 'CONJUR_MASTER_PORT=8443' > .env"
+    echo ""
+    exit 1
+  fi
 }
 
 function _setup_keycloak() {
