@@ -1,5 +1,11 @@
 FROM ubuntu:latest
 
+# Security patches
+RUN apt-get update -y && \
+    apt-get install -y --no-install-recommends \
+      sed && \
+    rm -rf /var/lib/apt/lists/*
+
 ARG GO_VERSION=1.24.4
 ARG KIND_VERSION=0.29.0
 ARG KUBECTL_VERSION=1.33.2
