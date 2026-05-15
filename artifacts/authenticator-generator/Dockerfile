@@ -4,6 +4,7 @@ FROM python:3-slim-bookworm
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
       gpgv \
+      libc-bin \
       libgnutls30 \
       libk5crypto3 \
       libpam-modules \
