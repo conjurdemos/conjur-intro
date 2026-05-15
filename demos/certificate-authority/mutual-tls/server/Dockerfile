@@ -4,6 +4,7 @@ FROM nginx
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
       gpgv \
+      libgnutls30 \
       openssl \
       libssl3 && \
     rm -rf /var/lib/apt/lists/*
