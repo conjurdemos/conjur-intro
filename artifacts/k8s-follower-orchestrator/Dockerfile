@@ -7,7 +7,7 @@ FROM golang:alpine
 ARG K8S_FOLLOWER_TAG
 ARG CONJUR_K8S_FOLLOWER_PORT
 
-RUN apk add docker-cli kubectl curl jq && \
+RUN apk add docker-cli kubectl curl jq nghttp2-libs && \
     go install sigs.k8s.io/kind@v0.20.0
 
 WORKDIR /

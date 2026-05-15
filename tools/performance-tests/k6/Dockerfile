@@ -31,7 +31,8 @@ FROM alpine:latest
 
 RUN apk update && apk add gcompat \
     bash \
-    curl
+    curl \
+    nghttp2-libs
 
 COPY --from=builder /src/k6 /usr/local/bin
 COPY --from=builder /src/conjur /usr/local/bin
