@@ -9,6 +9,7 @@ RUN apt-get update -y && \
       libgnutls30 \
       libk5crypto3 \
       libpam-modules \
+      openssh-client \
       openssl \
       libssl3 && \
     rm -rf /var/lib/apt/lists/*
