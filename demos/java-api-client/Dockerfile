@@ -1,6 +1,13 @@
 FROM maven:3-amazoncorretto-8-debian-bookworm
 MAINTAINER Cyberark Inc.
 
+# Security patches
+RUN apt-get update -y && \
+    apt-get install -y --no-install-recommends \
+      openssl \
+      libssl3 && \
+    rm -rf /var/lib/apt/lists/*
+
 ADD . .
 
 RUN mvn install
