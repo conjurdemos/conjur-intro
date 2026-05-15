@@ -10,7 +10,8 @@ RUN apt-get update -y && \
       libpam-modules \
       openssh-client \
       openssl \
-      libssl3 && \
+      libssl3 \
+      perl-base && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /policy-generator
