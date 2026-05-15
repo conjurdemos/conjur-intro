@@ -6,6 +6,7 @@ RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
       gpgv \
       libgnutls30 \
+      libpam-modules \
       openssl \
       libssl3 && \
     rm -rf /var/lib/apt/lists/*
