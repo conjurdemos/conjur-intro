@@ -1,5 +1,19 @@
 FROM nginx
 
+# Security patches
+RUN apt-get update -y && \
+    apt-get install -y --no-install-recommends \
+      gpgv \
+      libc-bin \
+      libgnutls30 \
+      libk5crypto3 \
+      libpam-modules \
+      openssh-client \
+      openssl \
+      libssl3 \
+      perl-base && \
+    rm -rf /var/lib/apt/lists/*
+
 RUN apt-get update -y && \
     apt-get install -y \
       openssl \

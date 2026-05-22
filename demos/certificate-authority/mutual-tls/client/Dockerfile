@@ -1,5 +1,11 @@
 FROM ubuntu
 
+# Security patches
+RUN apt-get update -y && \
+    apt-get install -y --no-install-recommends \
+      sed && \
+    rm -rf /var/lib/apt/lists/*
+
 RUN apt-get update -y && \
     apt-get install -y \
       openssl \
