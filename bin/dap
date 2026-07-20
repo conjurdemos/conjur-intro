@@ -360,11 +360,17 @@ function _setup_follower {
       "cat /secrets/master.key | evoke keys unlock -"
   fi
 
-  # Copy certs for HAProxy
+  # Copy certs for HAProxy. Use the conjur.pem/conjur.key symlinks (resolve
+  # to the client-facing/external cert under cert-separated appliance
+  # builds, or the flat cert on pre-cert-separation builds) rather than the
+  # hardcoded hostname-named files, which no longer exist once cert
+  # separation migrates certs under ssl/external/.
   _run conjur-follower-1.mycompany.local \
-    "cp /opt/conjur/etc/ssl/conjur-follower.mycompany.local.key /opt/conjur/etc/ssl/conjur-follower.mycompany.local.pem.key"
+    "cp /opt/conjur/etc/ssl/conjur.pem /opt/conjur/etc/ssl/conjur-follower.mycompany.local.pem"
   _run conjur-follower-1.mycompany.local \
-    "chown 99:99 /opt/conjur/etc/ssl/conjur-follower.mycompany.local.pem.key"
+    "cp /opt/conjur/etc/ssl/conjur.key /opt/conjur/etc/ssl/conjur-follower.mycompany.local.pem.key"
+  _run conjur-follower-1.mycompany.local \
+    "chown 99:99 /opt/conjur/etc/ssl/conjur-follower.mycompany.local.pem /opt/conjur/etc/ssl/conjur-follower.mycompany.local.pem.key"
 
   _start_l7_load_balancer
   echo "DAP Follower instance available at: 'https://localhost:${CONJUR_FOLLOWER_PORT}'"
@@ -428,9 +434,15 @@ function _setup_k8s_follower {
   bin/cli conjur policy load -f artifacts/k8s-follower-orchestrator/seed-generation-policy.yaml -b root
   bin/cli conjur policy load -f artifacts/k8s-follower-orchestrator/conjur-kubernetes-follower-policy.yaml -b root
 
-  # Ensure certs are up to date
+  # Ensure certs are up to date. The follower bootstraps trust with the leader
+  # over its external/client-facing HTTPS endpoint, so use the "conjur.pem"
+  # symlink, which resolves to the external cert under cert-separated
+  # appliance builds (ssl/external/<host>.pem) or the flat cert on
+  # pre-cert-separation builds. The configmap key must stay
+  # "conjur-master.mycompany.local.pem" -- it's referenced by name in the
+  # ConjurFollower CR generated from artifacts/k8s-follower-orchestrator/Dockerfile.
   docker cp "$(docker compose ps -q conjur-master-1.mycompany.local)":/opt/conjur/etc/ssl/. ./system/haproxy/certs
-  _run_in_kind "kubectl \$KUBE_OPTS create configmap -n cyberark-conjur conjur-cert --from-file=/etc/ssl/certs/conjur-master.mycompany.local.pem"
+  _run_in_kind "kubectl \$KUBE_OPTS create configmap -n cyberark-conjur conjur-cert --from-file=conjur-master.mycompany.local.pem=/etc/ssl/certs/conjur.pem"
 
   # Apply manifest with Conjur Follower
   _run_in_kind "kubectl \$KUBE_OPTS apply -f /manifests/samples"
@@ -477,18 +489,37 @@ function pull_k8s_follower_images {
     img="registry.tld/cyberark/${image}:${K8S_FOLLOWER_TAG}"
     img_without_registry="cyberark/${image}:${K8S_FOLLOWER_TAG}"
 
-    # Try to pull the image, but continue if it fails with "not found". This
-    # allows older Followers to be deployed when they do not have images introduced
-    # in later releases (e.g. failover-rebaser, ephemeral-secrets, etc.)
-    if ! docker pull "${img}" 2>&1 | grep -q "not found"; then
-      echo "Successfully pulled ${img} or image already exists locally"
-      docker tag "${img}" "${img_without_registry}"
-      _run_in_kind "mkdir -p /tmp/cyberark"
-      _run_in_kind "docker save \"${img_without_registry}\" -o /tmp/${img_without_registry}.tar"
-      _run_in_kind "docker exec --privileged -i conjur-intro-k8s-follower-worker ctr --namespace=k8s.io images import - < /tmp/${img_without_registry}.tar"
+    # Skip the pull entirely if the image is already present locally (e.g.
+    # a locally-built image tagged to match ${K8S_FOLLOWER_TAG}).
+    #
+    # Otherwise, try to pull the image, but continue if it fails with "not
+    # found". This allows older Followers to be deployed when they do not
+    # have images introduced in later releases (e.g. failover-rebaser,
+    # ephemeral-secrets, etc.)
+    if [[ -n "$(docker images -q "${img}" 2> /dev/null)" ]]; then
+      echo "Using local image ${img}"
+    elif ! docker pull "${img}" 2>&1 | grep -q "not found"; then
+      echo "Successfully pulled ${img}"
     else
       echo "Warning: Failed to pull ${img} (not found), continuing anyway..."
+      continue
     fi
+
+    docker tag "${img}" "${img_without_registry}"
+    _run_in_kind "mkdir -p /tmp/cyberark"
+
+    # The operator's Deployment manifest (built via bin/build-raw with a
+    # registry.tld/... IMG) keeps the full registry prefix, unlike the
+    # follower images' manifest (conjur_v1_conjurfollower.yaml), which
+    # references bare cyberark/... names. imagePullPolicy: Never requires an
+    # exact reference match, so import the operator image under both names;
+    # the extra import is a no-op for the other images (same layers, just
+    # tagged twice).
+    _run_in_kind "docker save \"${img}\" -o /tmp/${image}-with-registry.tar"
+    _run_in_kind "docker exec --privileged -i conjur-intro-k8s-follower-worker ctr --namespace=k8s.io images import - < /tmp/${image}-with-registry.tar"
+
+    _run_in_kind "docker save \"${img_without_registry}\" -o /tmp/${img_without_registry}.tar"
+    _run_in_kind "docker exec --privileged -i conjur-intro-k8s-follower-worker ctr --namespace=k8s.io images import - < /tmp/${img_without_registry}.tar"
   done
 }
 
@@ -548,7 +579,7 @@ function _setup_secrets_provider {
     --create-namespace \
     --set conjur.account=demo \
     --set conjur.applianceUrl=https://conjur-master.mycompany.local \
-    --set conjur.certificateBase64=$(cat ./system/haproxy/certs/conjur-master.mycompany.local.pem | base64) \
+    --set conjur.certificateBase64=$(cat ./system/haproxy/certs/conjur.pem | base64) \
     --set authnK8s.authenticatorID=dev-cluster-sp \
     --set authnK8s.clusterRole.create=false \
     --set authnK8s.serviceAccount.create=false"
@@ -656,7 +687,7 @@ function _setup_csi_provider {
     --namespace \"$TEST_APP_NAMESPACE\" \
     --set serviceAccount.name=\"$TEST_APP_SA\" \
     --set conjur.configurationVersion=0.2.0 \
-    --set conjur.sslCertificate=\"$(cat ./system/haproxy/certs/conjur-master.mycompany.local.pem)\" \
+    --set conjur.sslCertificate=\"$(cat ./system/haproxy/certs/conjur.pem)\" \
     --set conjur.applianceUrl=\"https://conjur-master.mycompany.local\" \
     --set conjur.account=\"demo\" \
     --set conjur.authnId=\"dev-cluster-csi\" \
@@ -721,7 +752,7 @@ function _setup_secretless_broker {
     --create-namespace \
     --set conjur.account=demo \
     --set conjur.applianceUrl=https://conjur-master.mycompany.local \
-    --set conjur.certificateBase64=$(cat ./system/haproxy/certs/conjur-master.mycompany.local.pem | base64) \
+    --set conjur.certificateBase64=$(cat ./system/haproxy/certs/conjur.pem | base64) \
     --set authnK8s.authenticatorID=dev-cluster-sb \
     --set authnK8s.clusterRole.create=false \
     --set authnK8s.serviceAccount.create=false"
