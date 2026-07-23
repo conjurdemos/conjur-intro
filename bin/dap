@@ -1040,6 +1040,15 @@ function _restore_from_backup {
 
   # Configure the new master with docker exec <container> evoke restore master
   _run conjur-master-1.mycompany.local "evoke restore --accept-eula"
+
+  # evoke restore re-runs the certificate recipe, which can regenerate the
+  # external/internal certs (e.g. dual-CA migration, SAN mismatch after
+  # restore). HAProxy validates backend certs against a snapshot copied at
+  # provision time (see deploy_proxy) and won't see this change on its own,
+  # so refresh the snapshot and reload haproxy to pick up the new CA/certs.
+  mkdir -p ./system/haproxy/certs
+  docker cp "$(docker compose ps -q conjur-master-1.mycompany.local)":/opt/conjur/etc/ssl/. ./system/haproxy/certs
+  _reload_container 'conjur-master.mycompany.local'
 }
 
 function _upgrade_master_via_backup_restore {
