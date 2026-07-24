@@ -385,6 +385,8 @@ function _setup_k8s_follower {
   pull_k8s_follower_images
 
   # Deploy the Conjur Kubernetes Follower
+  set -x
+  _run_in_kind "cat /manifests/operator/operator.yaml" || true
   _run_in_kind "kubectl \$KUBE_OPTS apply -f /manifests/operator"
   bin/cli conjur policy load -f artifacts/k8s-follower-orchestrator/seed-generation-policy.yaml -b root
   bin/cli conjur policy load -f artifacts/k8s-follower-orchestrator/conjur-kubernetes-follower-policy.yaml -b root
@@ -397,6 +399,11 @@ function _setup_k8s_follower {
   _run_in_kind "kubectl \$KUBE_OPTS apply -f /manifests/samples"
 
   echo "Waiting for the conjur-follower deployment to be running..."
+  _run_in_kind "kubectl \$KUBE_OPTS get deployments -A" || true
+  _run_in_kind "kubectl \$KUBE_OPTS describe conjurfollower my-conjur-follower -n cyberark-conjur" || true
+  _run_in_kind "kubectl \$KUBE_OPTS get pods -A" || true
+  _run_in_kind "kubectl \$KUBE_OPTS logs -n conjur-follower-operator-system deployment/conjur-follower-operator-controller-manage" || true
+
   # This kind cluster is often provisioned alongside several other
   # concurrent k8s-follower clusters on shared CI infra (e.g. parallel
   # nightly load-test stages), so pod scheduling/startup can be slower
@@ -404,6 +411,10 @@ function _setup_k8s_follower {
   # local run would need, and dump diagnostics before failing so a
   # genuine failure (as opposed to a slow-but-healthy rollout) is easy
   # to tell apart from contention after the fact.
+  sleep 10
+  _run_in_kind "kubectl \$KUBE_OPTS describe deployment conjur-follower -n cyberark-conjur" || true
+  _run_in_kind "kubectl \$KUBE_OPTS logs -n cyberark-conjur deployment/conjur-follower -c configurator" || true
+  set +x
   if ! _run_in_kind "kubectl \$KUBE_OPTS wait --namespace=cyberark-conjur --for=condition=available --timeout=10m deployment/conjur-follower"; then
     echo "Timed out waiting for the conjur-follower deployment. Dumping diagnostics:"
     _run_in_kind "kubectl \$KUBE_OPTS get pods -n cyberark-conjur -o wide" || true
