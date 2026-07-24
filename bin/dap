@@ -440,6 +440,7 @@ function pull_k8s_follower_images {
     "conjur-kubernetes-follower-syslog-ng"
     "conjur-kubernetes-follower-failover-rebaser"
     "conjur-kubernetes-follower-ephemeral-secrets"
+    "conjur-kubernetes-follower-authenticator"
   )
 
   for image in "${images[@]}"; do
