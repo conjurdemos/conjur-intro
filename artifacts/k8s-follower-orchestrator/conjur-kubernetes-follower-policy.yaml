@@ -16,6 +16,7 @@
   roles:
     - !group conjur/authn-jwt/dev-cluster/apps
     - !group conjur/seed-generation/consumers
+    - !group conjur/seed-generation/follower/plaintext/consumers
   members:
     - !host system:serviceaccount:cyberark-conjur:conjur-follower
     - !host apps/system:serviceaccount:cyberark-conjur:conjur-follower

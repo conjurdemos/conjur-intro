@@ -1,4 +1,3 @@
----
 # =================================================
 # == Register the seed generation service
 # =================================================
@@ -8,7 +7,7 @@
     # This webservice represents the Seed service API
     - !webservice
 
-      # Hosts that can generate seeds become members of the
+    # Hosts that can generate seeds become members of the
     # `consumers` group.
     - !group consumers
 
@@ -17,3 +16,21 @@
       role: !group consumers
       privilege: [ "execute" ]
       resource: !webservice
+
+    # =================================================
+    # == Plaintext Follower Seed Service (Conjur 13.8.1+)
+    # =================================================
+    - !policy
+      id: follower
+      body:
+        - !policy
+          id: plaintext
+          body:
+            - !webservice
+
+            - !group consumers
+
+            - !permit
+              role: !group consumers
+              privilege: [ "execute" ]
+              resource: !webservice
