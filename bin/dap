@@ -382,7 +382,7 @@ function _setup_k8s_follower {
 
   # Wait a little bit to create k8s-follower-orchestrator cluster
   SECONDS=0
-  TIMEOUT=300
+  TIMEOUT=600
   while true; do
     if _run_in_kind "kubectl \$KUBE_OPTS get nodes | grep -q \"Ready\"" &> /dev/null; then
       echo "The conjur-intro-k8s-follower cluster is created."
@@ -392,7 +392,7 @@ function _setup_k8s_follower {
       sleep 1
     fi
     if [ $SECONDS -ge $TIMEOUT ]; then
-        echo "Timeout after waiting for 5 minutes. The conjur-intro-k8s-follower cluster is not created."
+        echo "Timeout after waiting for 10 minutes. The conjur-intro-k8s-follower cluster is not created."
         echo "Printing logs from k8s-follower-orchestrator container:"
         docker logs conjur-intro-k8s-follower-orchestrator-1
         echo "Printing logs from docker logs k8s-follower-control-plane container:"
@@ -448,6 +448,8 @@ function _setup_k8s_follower {
     _run_in_kind "kubectl \$KUBE_OPTS get pods -n cyberark-conjur -o wide" || true
     _run_in_kind "kubectl \$KUBE_OPTS describe deployment/conjur-follower -n cyberark-conjur" || true
     _run_in_kind "kubectl \$KUBE_OPTS get events -n cyberark-conjur --sort-by=.lastTimestamp" || true
+    _run_in_kind "kubectl \$KUBE_OPTS logs -n cyberark-conjur --all-containers --prefix --tail=200 deployment/conjur-follower" || true
+    _run_in_kind "kubectl \$KUBE_OPTS logs -n cyberark-conjur --all-containers --prefix --tail=200 --previous deployment/conjur-follower" || true
     exit 1
   fi
 
