@@ -16,5 +16,11 @@
   roles:
     - !group conjur/authn-jwt/dev-cluster/apps
     - !group conjur/seed-generation/consumers
+    - !group conjur/seed-generation/follower/plaintext/consumers
   members:
+    # bin/dap sets identity-path=apps, so the JWT authenticator resolves the follower
+    # as apps/system:serviceaccount:cyberark-conjur:conjur-follower. The non-prefixed
+    # host below is for deployments that omit identity-path, where the sub claim is
+    # used directly as the host ID.
+    - !host system:serviceaccount:cyberark-conjur:conjur-follower
     - !host apps/system:serviceaccount:cyberark-conjur:conjur-follower

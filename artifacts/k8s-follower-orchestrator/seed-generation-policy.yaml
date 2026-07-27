@@ -17,3 +17,25 @@
       role: !group consumers
       privilege: [ "execute" ]
       resource: !webservice
+
+    # =================================================
+    # == Authorize plaintext follower seed retrieval
+    # =================================================
+    # Conjur 13.8.1 added a second authorization check on plaintext seed
+    # retrieval. The seed service is not new, but requesting a plaintext
+    # seed now also requires `execute` on this webservice, so policy that
+    # was sufficient in earlier releases no longer is.
+    - !policy
+      id: follower
+      body:
+        - !policy
+          id: plaintext
+          body:
+            - !webservice
+
+            - !group consumers
+
+            - !permit
+              role: !group consumers
+              privilege: [ "execute" ]
+              resource: !webservice
