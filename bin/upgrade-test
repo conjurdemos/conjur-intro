@@ -159,6 +159,12 @@ rollout_cluster() {
   _run conjur-master-1.mycompany.local \
     "evoke variable set CONJUR_AUTHENTICATORS authn-jwt/fake-authenticator,authn"
 
+  # evoke variable set restarts conjur, nginx, and both postgres clusters.
+  # Wait for the master to be healthy before provisioning standbys, otherwise
+  # `evoke configure standby` fails its leader DB health check while the DB
+  # is still coming back up.
+  bin/dap --wait-for-master
+
   echo "Provisioning $version Standbys..."
   bin/dap --provision-standbys --version "$version"
 
