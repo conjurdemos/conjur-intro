@@ -18,4 +18,4 @@ WORKDIR /authenticator-generator
 
 COPY . /authenticator-generator
 
-RUN pip install --no-cache-dir jinja2
+RUN pip install --no-cache-dir --require-hashes -r requirements.txt

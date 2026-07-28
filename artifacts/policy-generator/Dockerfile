@@ -18,4 +18,4 @@ WORKDIR /policy-generator
 
 COPY . /policy-generator
 
-RUN pip install --no-cache-dir jinja2
+RUN pip install --no-cache-dir --require-hashes -r requirements.txt
