@@ -37,7 +37,7 @@ pipeline {
       }
       steps {
         script {
-          infrapool.agentSh "./bin/upgrade-test \"${FROM}\" \"${TO}\""
+          infrapool.agentSh "SKIP_DYNAMIC_SECRETS=\"${SKIP_DYNAMIC_SECRETS}\" ./bin/upgrade-test \"${FROM}\" \"${TO}\""
         }
       }
     }
