@@ -113,10 +113,11 @@ exercise_cluster() {
 
 exercise_dynamic_secrets() {
   echo "Creating dynamic secret issuer..."
-  random_suffix=$(LC_ALL=C tr -dc 'a-zA-Z' < /dev/urandom | head -c 8)
-  random_id=$(LC_ALL=C tr -dc 'A-Z0-9' < /dev/urandom | head -c 16)
-  random_key=$(LC_ALL=C tr -dc 'A-Za-z0-9\/+' < /dev/urandom | head -c 40)
-  bin/api --create-aws-issuer "test${random_suffix}" "ASIA${random_id}" "${random_key}"
+  # Generate from openssl (clean ASCII output) rather than piping raw
+  # /dev/urandom through tr, which mangles bytes under BSD tr / UTF-8 locales.
+  local access_key_id="AKIA$(openssl rand -hex 8 | tr '[:lower:]' '[:upper:]')"
+  local secret_access_key=$(openssl rand -base64 60 | tr -dc 'A-Za-z0-9' | head -c 40)
+  bin/api --create-aws-issuer "test${RANDOM}${RANDOM}" "$access_key_id" "$secret_access_key"
 
   echo "Listing dynamic secrets issuers..."
   bin/api --list-issuers

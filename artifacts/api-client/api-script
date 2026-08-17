@@ -279,6 +279,16 @@ create_aws_issuer() {
   local token
   token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
 
+  # AWS issuers no longer accept inline credentials; 'data' must reference
+  # Conjur variables holding the credentials, which Conjur resolves and
+  # AWS-format-validates at create time.
+  local key_id_ref='dynamic-secrets/aws-access-key-id'
+  local secret_key_ref='dynamic-secrets/aws-secret-access-key'
+
+  apply_policy 'root' 'policy/dynamic-secrets/issuer-credentials.yml' "$token" > /dev/null
+  set_variable "$key_id_ref" "$access_key_id" "$token" > /dev/null
+  set_variable "$secret_key_ref" "$secret_access_key" "$token" > /dev/null
+
   response=$(curl --header "Authorization: Token token=\"$token\"" \
        --header "Content-Type: application/json" \
        --silent \
@@ -290,8 +300,8 @@ create_aws_issuer() {
          \"max_ttl\": 3600,
          \"type\": \"aws\",
          \"data\": {
-           \"access_key_id\": \"${access_key_id}\",
-           \"secret_access_key\": \"${secret_access_key}\"
+           \"access_key_id_secret_ref\": { \"id\": \"${key_id_ref}\" },
+           \"secret_access_key_secret_ref\": { \"id\": \"${secret_key_ref}\" }
          }
        }" \
        "$master_url/api/issuers/demo")
