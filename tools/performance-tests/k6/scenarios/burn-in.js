@@ -132,13 +132,25 @@ export function setupDynamicSecrets() {
 
   // AWS issuers no longer accept inline credentials; the credentials must be
   // stored as Conjur variables and referenced by the issuer. Declare those
-  // variables via policy, then populate them.
+  // variables via policy, then populate them. The credentials are written via
+  // the HTTP API (request body) rather than the CLI, to avoid exposing them as
+  // subprocess arguments.
   const accessKeyIdVariable = "dynamic-secrets/aws-access-key-id";
   const secretAccessKeyVariable = "dynamic-secrets/aws-secret-access-key";
 
   conjurApi.loadPolicy(http, env, "root", issuerCredentialsPolicy);
-  runCliCommand(["variable", "set", "-i", accessKeyIdVariable, "-v", env.perfTestDynamicSecretsAwsAccessKeyId], null, null);
-  runCliCommand(["variable", "set", "-i", secretAccessKeyVariable, "-v", env.perfTestDynamicSecretsAwsSecretAccessKey], null, null);
+  conjurApi.writeSecret(
+    http,
+    env,
+    encodeURIComponent(accessKeyIdVariable),
+    env.perfTestDynamicSecretsAwsAccessKeyId,
+  );
+  conjurApi.writeSecret(
+    http,
+    env,
+    encodeURIComponent(secretAccessKeyVariable),
+    env.perfTestDynamicSecretsAwsSecretAccessKey,
+  );
 
   // Create the issuer
   runCliCommand(
