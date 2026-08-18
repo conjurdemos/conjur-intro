@@ -47,13 +47,32 @@ export function setup(){
   env.applianceUrl = env.applianceMasterUrl
   authn();
 
+  // AWS issuers no longer accept inline credentials; store them as Conjur
+  // variables and reference them from the issuer.
+  const accessKeyIdVariable = "dynamic-secrets/aws-access-key-id";
+  const secretAccessKeyVariable = "dynamic-secrets/aws-secret-access-key";
+
+  conjurApi.loadPolicy(http, env, "root", lib.createIssuerCredentialsPolicy());
+  conjurApi.writeSecret(
+    http,
+    env,
+    encodeURIComponent(accessKeyIdVariable),
+    env.perfTestDynamicSecretsAwsAccessKeyId,
+  );
+  conjurApi.writeSecret(
+    http,
+    env,
+    encodeURIComponent(secretAccessKeyVariable),
+    env.perfTestDynamicSecretsAwsSecretAccessKey,
+  );
+
   // Create the issuer
   let res = conjurApi.createAwsIssuer(
     http,
     env,
-    'my-aws',
-    env.perfTestDynamicSecretsAwsAccessKeyId,
-    env.perfTestDynamicSecretsAwsSecretAccessKey
+    "my-aws",
+    accessKeyIdVariable,
+    secretAccessKeyVariable,
   );
 
   createAwsIssuerTrend.add(res.timings.duration);

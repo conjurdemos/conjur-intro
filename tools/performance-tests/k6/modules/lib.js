@@ -202,6 +202,17 @@ export function createUsersPolicy(identifier) {
   members: !group AutomationVault-users/lob-1-${identifier}/safe-1-${identifier}/users`;
 }
 
+// Declares the Conjur variables that hold the AWS credentials referenced by the
+// dynamic-secrets issuer. AWS issuers no longer accept inline credentials, so
+// the credentials must be stored as variables and referenced by the issuer.
+export function createIssuerCredentialsPolicy() {
+  return `- !policy
+  id: dynamic-secrets
+  body:
+    - !variable aws-access-key-id
+    - !variable aws-secret-access-key`;
+}
+
 export function createDynamicSecretsPolicy(arn) {
   return `- !policy
   id: data/dynamic
