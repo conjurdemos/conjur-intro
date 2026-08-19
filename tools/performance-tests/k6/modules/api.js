@@ -115,7 +115,13 @@ export function writeSecret(client, data, resourceId, resourceBody) {
   );
 }
 
-export function createAwsIssuer(client, data, name, accessKeyId, awsSecretAccessKey) {
+export function createAwsIssuer(
+  client,
+  data,
+  name,
+  accessKeyIdVariable,
+  secretAccessKeyVariable,
+) {
   const {
     applianceMasterUrl,
     conjurAccount,
@@ -125,13 +131,16 @@ export function createAwsIssuer(client, data, name, accessKeyId, awsSecretAccess
     'Authorization': `Token token="${token}"`,
     'Content-Type': 'application/json'
   };
+  // AWS issuers no longer accept inline credentials; 'data' must reference the
+  // Conjur variables holding the credentials, which Conjur resolves at create
+  // time.
   const body = {
     id: name,
     max_ttl: 3600,
     type: "aws",
     data: {
-      access_key_id: accessKeyId,
-      secret_access_key: awsSecretAccessKey
+      access_key_id_secret_ref: { id: accessKeyIdVariable },
+      secret_access_key_secret_ref: { id: secretAccessKeyVariable },
     }
   };
   const payload =  JSON.stringify(body);

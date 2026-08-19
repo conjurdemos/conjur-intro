@@ -124,10 +124,33 @@ export function setup() {
 // will fail, but the test will continue to execute, and any tests that query
 // these dynamic secrets should still work.
 export function setupDynamicSecrets() {
+  const issuerCredentialsPolicy = lib.createIssuerCredentialsPolicy();
   const dynamicSecretsPolicy = lib.createDynamicSecretsPolicy(env.perfTestDynamicSecretsAwsAssumeRoleArn);
   env.applianceUrl = env.applianceMasterUrl;
 
   authn()
+
+  // AWS issuers no longer accept inline credentials; the credentials must be
+  // stored as Conjur variables and referenced by the issuer. Declare those
+  // variables via policy, then populate them. The credentials are written via
+  // the HTTP API (request body) rather than the CLI, to avoid exposing them as
+  // subprocess arguments.
+  const accessKeyIdVariable = "dynamic-secrets/aws-access-key-id";
+  const secretAccessKeyVariable = "dynamic-secrets/aws-secret-access-key";
+
+  conjurApi.loadPolicy(http, env, "root", issuerCredentialsPolicy);
+  conjurApi.writeSecret(
+    http,
+    env,
+    encodeURIComponent(accessKeyIdVariable),
+    env.perfTestDynamicSecretsAwsAccessKeyId,
+  );
+  conjurApi.writeSecret(
+    http,
+    env,
+    encodeURIComponent(secretAccessKeyVariable),
+    env.perfTestDynamicSecretsAwsSecretAccessKey,
+  );
 
   // Create the issuer
   runCliCommand(
@@ -137,7 +160,7 @@ export function setupDynamicSecrets() {
       "--id", "my-aws",
       "--type", "aws",
       "--max-ttl", "3600",
-      "--data", `{"access_key_id": "${env.perfTestDynamicSecretsAwsAccessKeyId}", "secret_access_key": "${env.perfTestDynamicSecretsAwsSecretAccessKey}"}`,
+      "--data", `{"access_key_id_secret_ref": {"id": "${accessKeyIdVariable}"}, "secret_access_key_secret_ref": {"id": "${secretAccessKeyVariable}"}}`,
     ],
     createAwsIssuerTrend,
     createAwsIssuerFailRate,
