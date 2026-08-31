@@ -17,9 +17,15 @@ RUN apk update && apk add git
 # This plugin introduces support for statsd output, and is not a part of
 # k6 by default due to introducing breaking changes to the core product.
 # See: https://github.com/grafana/xk6-output-statsd
+#
+# xk6-output-statsd is pinned to v0.2.3 because v0.2.5 (2026-08-27) moved to
+# the go.k6.io/k6/v2 module path, while xk6-exec is still on the pre-v2
+# go.k6.io/k6 path - building both together makes xk6 pick one module major
+# for the k6 core, silently breaking whichever extension depends on the
+# other. Pinning here keeps both extensions on the compatible pre-v2 path.
 RUN go install go.k6.io/xk6/cmd/xk6@latest
 RUN xk6 build \
-    --with github.com/LeonAdato/xk6-output-statsd \
+    --with github.com/LeonAdato/xk6-output-statsd@v0.2.3 \
     --with github.com/grafana/xk6-exec@latest
 
 # Install Conjur CLI
