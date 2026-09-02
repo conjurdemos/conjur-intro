@@ -13,6 +13,7 @@ pipeline {
     string(name: 'FROM', description: 'Version to upgrade from', defaultValue: '')
     string(name: 'TO', description: 'Version to upgrade to', defaultValue: '')
     booleanParam(name: 'SKIP_DYNAMIC_SECRETS', description: 'If set to true, the exercise for dynamic secrets will not be run after upgrade', defaultValue: false)
+    booleanParam(name: 'COPY_ENTERPRISE_COMMIT', description: 'Copy the main branch commit to the public conjurinc GitHub organization', defaultValue: true)
   }
   environment {
     SKIP_DYNAMIC_SECRETS = "${params.SKIP_DYNAMIC_SECRETS}"
