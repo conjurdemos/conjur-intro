@@ -304,7 +304,7 @@ function runCliCommand(args, trend, failRate, isExceptionAFailure) {
     }
 
     if (failed && e.value && e.value.stderr) {
-      console.error(String.fromCharCode.apply(null, e.value.stderr))
+      console.error(`command failed for args: ${args}, error: ${String.fromCharCode.apply(null, e.value.stderr)}`)
     }
   }
 
