@@ -336,7 +336,6 @@ function runHostFactoryCommands() {
 
 function runRandomIntensiveTasks(identity, lob_name, safe_name) {
   runCliCommand(["list", "--inspect", "-l", "10"], randomIntensiveTrend, randomIntensiveFailRate);
-  runCliCommand(["pubkeys", "admin"], randomIntensiveTrend, randomIntensiveFailRate);
   runCliCommand(["resource", "exists", `variable:${identity}`], randomIntensiveTrend, randomIntensiveFailRate);
   runCliCommand(["resource", "permitted-roles", `variable:${identity}`, "execute"], randomIntensiveTrend, randomIntensiveFailRate);
   runCliCommand(["role", "members", "-v", `group:AutomationVault/${lob_name}/${safe_name}-admins`], randomIntensiveTrend, randomIntensiveFailRate);
