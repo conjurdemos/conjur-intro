@@ -176,10 +176,10 @@ bin/cli conjur policy load -f artifacts/k8s-follower-orchestrator/conjur-kuberne
 
 ##### Create a ConfigMap for the Conjur certificate
 
-Load `conjur-master.mycompany.local.pem` into configmap
+Load the Conjur leader's external cert (`conjur.pem`) into the configmap, keyed as `conjur-master.mycompany.local.pem` (the name expected by the ConjurFollower CR)
 
 ```shell
-kubectl $KUBE_OPTS create configmap -n cyberark-conjur conjur-cert --from-file=/etc/ssl/certs/conjur-master.mycompany.local.pem
+kubectl $KUBE_OPTS create configmap -n cyberark-conjur conjur-cert --from-file=conjur-master.mycompany.local.pem=/etc/ssl/certs/conjur.pem
 ```
 
 ##### Deploy the Conjur Kubernetes Follower
