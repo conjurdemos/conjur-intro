@@ -24,14 +24,25 @@ EOF
 exit
 }
 
+compose() {
+  # Runs on both docker-ce hosts and podman-only hosts, so pick whichever
+  # compose CLI is present (podman-compose reads the same compose YAML).
+  if command -v docker > /dev/null 2>&1; then
+    docker compose "$@"
+  else
+    export HOST_CONTAINER_SOCK="/run/podman/podman.sock"
+    podman-compose "$@"
+  fi
+}
+
 start() {
   # start datadog agent
-  docker compose up --no-deps --detach datadog
+  compose up --no-deps --detach datadog
 }
 
 stop() {
   # stop datadog agent
-  docker compose down datadog
+  compose down datadog
 }
 
 main() {

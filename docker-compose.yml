@@ -302,7 +302,10 @@ services:
       - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=1
       - DD_TAGS=${DD_TAGS:-}
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # On podman-only hosts, HOST_CONTAINER_SOCK is set to podman's rootful
+      # socket (/run/podman/podman.sock) - it speaks the same Docker-API
+      # wire protocol the datadog agent expects at this in-container path.
+      - ${HOST_CONTAINER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock:ro
       - /proc/:/host/proc/:ro
       - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
 
