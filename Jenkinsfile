@@ -52,7 +52,7 @@ pipeline {
       }
       steps {
         script {
-          release.copyEnterpriseCommit(targetOrganization='conjurinc')
+          release.copyEnterpriseCommit(targetOrganization='conjurdemos')
         }
       }
     }
