@@ -366,7 +366,7 @@ function _setup_follower {
   # hardcoded hostname-named files, which no longer exist once cert
   # separation migrates certs under ssl/external/.
   _run conjur-follower-1.mycompany.local \
-    "cp /opt/conjur/etc/ssl/conjur.pem /opt/conjur/etc/ssl/conjur-follower.mycompany.local.pem"
+    "[ /opt/conjur/etc/ssl/conjur.pem -ef /opt/conjur/etc/ssl/conjur-follower.mycompany.local.pem ] || cp /opt/conjur/etc/ssl/conjur.pem /opt/conjur/etc/ssl/conjur-follower.mycompany.local.pem"
   _run conjur-follower-1.mycompany.local \
     "cp /opt/conjur/etc/ssl/conjur.key /opt/conjur/etc/ssl/conjur-follower.mycompany.local.pem.key"
   _run conjur-follower-1.mycompany.local \
