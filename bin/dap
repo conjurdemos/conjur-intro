@@ -366,7 +366,7 @@ function _setup_follower {
   # hardcoded hostname-named files, which no longer exist once cert
   # separation migrates certs under ssl/external/.
   _run conjur-follower-1.mycompany.local \
-    "cp /opt/conjur/etc/ssl/conjur.pem /opt/conjur/etc/ssl/conjur-follower.mycompany.local.pem"
+    "[ /opt/conjur/etc/ssl/conjur.pem -ef /opt/conjur/etc/ssl/conjur-follower.mycompany.local.pem ] || cp /opt/conjur/etc/ssl/conjur.pem /opt/conjur/etc/ssl/conjur-follower.mycompany.local.pem"
   _run conjur-follower-1.mycompany.local \
     "cp /opt/conjur/etc/ssl/conjur.key /opt/conjur/etc/ssl/conjur-follower.mycompany.local.pem.key"
   _run conjur-follower-1.mycompany.local \
@@ -442,7 +442,9 @@ function _setup_k8s_follower {
   # "conjur-master.mycompany.local.pem" -- it's referenced by name in the
   # ConjurFollower CR generated from artifacts/k8s-follower-orchestrator/Dockerfile.
   docker cp "$(docker compose ps -q conjur-master-1.mycompany.local)":/opt/conjur/etc/ssl/. ./system/haproxy/certs
-  _run_in_kind "kubectl \$KUBE_OPTS create configmap -n cyberark-conjur conjur-cert --from-file=conjur-master.mycompany.local.pem=/etc/ssl/certs/conjur.pem"
+  # On pre-cert-separation builds conjur.pem is an absolute symlink, which
+  # dangles once copied out of the container; use the file it points at.
+  _run_in_kind "cert=/etc/ssl/certs/conjur.pem; [ -r \$cert ] || cert=/etc/ssl/certs/conjur-master.mycompany.local.pem; kubectl \$KUBE_OPTS create configmap -n cyberark-conjur conjur-cert --from-file=conjur-master.mycompany.local.pem=\$cert"
 
   # Apply manifest with Conjur Follower
   _run_in_kind "kubectl \$KUBE_OPTS apply -f /manifests/samples"
