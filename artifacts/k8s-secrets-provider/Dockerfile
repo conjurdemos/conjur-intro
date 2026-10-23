@@ -6,7 +6,6 @@ RUN apt-get update -y && \
       sed && \
     rm -rf /var/lib/apt/lists/*
 
-ARG GO_VERSION=1.24.4
 ARG KIND_VERSION=0.29.0
 ARG KUBECTL_VERSION=1.33.2
 
@@ -19,10 +18,7 @@ RUN wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
     chmod +x /usr/bin/yq
 
 # Install Go
-RUN wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz && \
-    tar -xf go${GO_VERSION}.linux-amd64.tar.gz && \
-    mv go /usr/local/ && \
-    rm go${GO_VERSION}.linux-amd64.tar.gz
+COPY --from=golang:1.27 /usr/local/go /usr/local/go
 ENV GOROOT=/usr/local/go
 ENV GOPATH=/root/go
 ENV PATH=$GOPATH/bin:$GOROOT/bin:$PATH
@@ -31,8 +27,10 @@ ENV PATH=$GOPATH/bin:$GOROOT/bin:$PATH
 RUN go install sigs.k8s.io/kind@v${KIND_VERSION}
 
 # Install Docker client
-RUN curl -fsSL https://download.docker.com/linux/$(. /etc/os-release; echo "$ID")/gpg | apt-key add - && \
-    add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/$(. /etc/os-release; echo "$ID") $(lsb_release -cs) stable" && \
+RUN . /etc/os-release && \
+    install -m 0755 -d /etc/apt/keyrings && \
+    curl -fsSL https://download.docker.com/linux/${ID}/gpg -o /etc/apt/keyrings/docker.asc && \
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/${ID} ${VERSION_CODENAME} stable" > /etc/apt/sources.list.d/docker.list && \
     apt-get update && \
     apt-get install -y docker-ce && \
     rm -rf /var/lib/apt/lists/*
