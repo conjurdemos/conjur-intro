@@ -46,7 +46,9 @@ function dotenv {
 }
 
 function _wait_for_master {
-  local master_url="https://localhost:${CONJUR_MASTER_PORT}"
+  # Set INTRO_MASTER_HOST to poll the load balancer by name when running inside
+  # dap_net, where "localhost" is not the Docker host.
+  local master_url="https://${INTRO_MASTER_HOST:-localhost}:${CONJUR_MASTER_PORT}"
 
   echo "Waiting for DAP Master to be ready... ${master_url}"
 

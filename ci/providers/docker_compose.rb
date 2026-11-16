@@ -35,12 +35,9 @@ module CI
       end
 
       def provision_follower(version:, with_load_balancer: true)
-        system({ 'VERSION' => version }, 'docker compose up --no-deps --detach conjur-follower-1.mycompany.local')
-        system('docker compose exec conjur-master-1.mycompany.local bash -c "evoke seed follower conjur-follower.mycompany.local > /opt/cyberark/dap/seeds/follower-seed.tar"')
-        system('docker compose exec conjur-follower-1.mycompany.local bash -c "evoke unpack seed /opt/cyberark/dap/seeds/follower-seed.tar && evoke configure follower"')
-
-        # Start Load Balancer
-        system('docker compose up -d --no-deps conjur-follower.mycompany.local')
+        # bin/dap also prepares the follower's cert files for its HAProxy; without
+        # them the follower load balancer exits with "No Private Key found".
+        system("bin/dap --provision-follower --version #{version}")
       end
 
       def reset_environment
@@ -120,17 +117,31 @@ module CI
 
         conjur_info = JSON.parse(response.body)['configuration']['conjur']
 
-        if conjur_info.key?('cluster_master')
-          return conjur_info['cluster_master']
+        # A promoted leader reports `cluster_leader`; `cluster_master` is the
+        # older key. With neither, the node is not in a cluster and master-1 is
+        # the only leader.
+        %w[cluster_leader cluster_master].each do |key|
+          return conjur_info[key] if conjur_info.key?(key)
         end
 
         'conjur-master-1.mycompany.local'
       end
 
-      def last_audit_event
-        last_audit = `docker compose exec #{current_master} bash -c "tail -n 1 /var/log/conjur/audit.json"`
+      # Most recent audit event for `resource` on the current leader, or nil.
+      # Requests served by a follower reach the leader's audit log
+      # asynchronously and interleaved with login/authenticate events, so the
+      # event is searched for in recent lines and retried while it arrives.
+      def last_audit_event(resource:, attempts: 10, delay: 3)
+        attempts.times do
+          lines = `docker compose exec #{current_master} bash -c "tail -n 200 /var/log/conjur/audit.json"`.lines
+          events = lines.map { |line| JSON.parse(line) rescue nil }.compact
+          match = events.reverse.find { |event| event.dig('subject@43868', 'resource') == resource }
+          return match if match
 
-        return JSON.parse(last_audit) unless last_audit.nil?
+          sleep(delay)
+        end
+
+        nil
       end
 
       def upgrade_master(version:)

@@ -166,7 +166,7 @@ Before the upgrade the new image is pulled first, so a wrong choice stops the te
 |--authenticate-user|action|• Authenticates with default user and password<br>• Displays the resulting authentication token||
 |--fetch-secrets|action|• Authenticates<br>• Retrieves variable values|Run against follower unless `--against-master` flag is present|
 |--load-policy|action|• Authenticates<br>• Loads policy|Run against master|
-|--load-policy-and-values|action|• Authenticates<br>• Loads policy and variable values|Run against master, equivalent to running '--load-policy' and '--set-secrets'|
+|--load-sample-policy-and-values|action|• Authenticates<br>• Loads policy and variable values|Run against master, equivalent to running '--load-policy' and '--set-secrets'|
 |--password `<password>`|configuration|Uses a non-default password for authentication||
 |--set-secrets|action|• Authenticates<br>• Sets variable values|Requires `--load-policy` before running|
 |--user `<conjur-user>`|configuration|Uses a non-default (`admin`) user for authentication||

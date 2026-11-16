@@ -2,7 +2,7 @@
 
 # Validation tasks
 Given('I load a variable and value') do
-  system('bin/api --load-policy-and-values')
+  system('bin/api --load-sample-policy-and-values')
 end
 
 When('I request the variable value through the API') do
@@ -16,10 +16,10 @@ Then('I get the variable value') do
 end
 
 Then('when I check the master audit log, I see the audit event') do
-  response = @provider.last_audit_event
-  expect(response['subject@43868']['resource']).to eq(
-    'demo:variable:staging/my-app-1/postgres-database/port'
-  )
+  resource = 'demo:variable:staging/my-app-1/postgres-database/port'
+  response = @provider.last_audit_event(resource: resource)
+  expect(response).not_to be_nil, "no audit event found for #{resource}"
+  expect(response['subject@43868']['resource']).to eq(resource)
   expect(response['auth@43868']['user']).to eq('demo:user:admin')
   expect(response['action@43868']['result']).to eq('success')
 end
