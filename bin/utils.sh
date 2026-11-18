@@ -1,5 +1,25 @@
 #!/usr/bin/env bash
 
+# Prefix of the registry the conjur-appliance image is pulled from, exported as
+# APPLIANCE_REGISTRY for docker-compose.yml and bin/podman-dap.
+#   1. APPLIANCE_REGISTRY, if already set, is used as is.
+#   2. Otherwise, if the Artifactory host is known (ARTIFACTORY_HOST, or
+#      INFRAPOOL_ARTIFACTORY_HOST on an InfraPool agent), the image comes from
+#      <host>/appliance-docker-latest-local.
+#   3. Otherwise the registry.tld alias is kept; it must resolve on this machine
+#      (for example through /etc/hosts).
+# The Artifactory host is never written in this repo.
+function appliance_registry {
+  local host="${INFRAPOOL_ARTIFACTORY_HOST:-${ARTIFACTORY_HOST:-}}"
+  if [[ -n "${APPLIANCE_REGISTRY:-}" ]]; then
+    printf '%s' "${APPLIANCE_REGISTRY%/}"
+  elif [[ -n "${host}" ]]; then
+    printf '%s/appliance-docker-latest-local' "${host}"
+  else
+    printf 'registry.tld'
+  fi
+}
+
 function dotenv {
   local envfile="${1:-.env}"
 

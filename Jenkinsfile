@@ -25,6 +25,9 @@ pipeline {
         script {
           // Request ExecutorV2 agents for 1 hour(s)
           infrapool = getInfraPoolAgent.connected(type: "ExecutorV2", quantity: 1, duration: 1)[0]
+          // The appliance image is pulled from Artifactory (see appliance_registry in bin/utils.sh),
+          // which requires a docker login on the agent.
+          dockerArtifactory.login(infrapool)
         }
       }
     }

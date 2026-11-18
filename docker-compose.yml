@@ -15,7 +15,7 @@ services:
       - ./files/haproxy/master:/usr/local/etc/haproxy
 
   conjur-master-1.mycompany.local:
-    image: registry.tld/conjur-appliance:${VERSION:-5.0-stable}
+    image: ${APPLIANCE_REGISTRY:-registry.tld}/conjur-appliance:${VERSION:-5.0-stable}
     shm_size: 1g
     networks:
       dap_net:
@@ -43,7 +43,7 @@ services:
       - ./policy:/policy
 
   conjur-master-2.mycompany.local:
-    image: registry.tld/conjur-appliance:${VERSION:-5.0-stable}
+    image: ${APPLIANCE_REGISTRY:-registry.tld}/conjur-appliance:${VERSION:-5.0-stable}
     networks:
       dap_net:
         ipv4_address: 12.16.23.12
@@ -65,7 +65,7 @@ services:
       - ./files:/conjur_files
 
   conjur-master-3.mycompany.local:
-    image: registry.tld/conjur-appliance:${VERSION:-5.0-stable}
+    image: ${APPLIANCE_REGISTRY:-registry.tld}/conjur-appliance:${VERSION:-5.0-stable}
     networks:
       dap_net:
         ipv4_address: 12.16.23.13
@@ -87,7 +87,7 @@ services:
       - ./files:/conjur_files
 
   conjur-master-4.mycompany.local:
-    image: registry.tld/conjur-appliance:${VERSION:-5.0-stable}
+    image: ${APPLIANCE_REGISTRY:-registry.tld}/conjur-appliance:${VERSION:-5.0-stable}
     networks:
       dap_net:
         ipv4_address: 12.16.23.14
@@ -109,7 +109,7 @@ services:
       - ./files:/conjur_files
 
   conjur-master-5.mycompany.local:
-    image: registry.tld/conjur-appliance:${VERSION:-5.0-stable}
+    image: ${APPLIANCE_REGISTRY:-registry.tld}/conjur-appliance:${VERSION:-5.0-stable}
     networks:
       dap_net:
         ipv4_address: 12.16.23.15
@@ -144,7 +144,7 @@ services:
       - ./files/haproxy/follower:/usr/local/etc/haproxy
 
   conjur-follower-1.mycompany.local:
-    image: registry.tld/conjur-appliance:${VERSION:-5.0-stable}
+    image: ${APPLIANCE_REGISTRY:-registry.tld}/conjur-appliance:${VERSION:-5.0-stable}
     networks:
       dap_net:
         ipv4_address: 12.16.23.17
