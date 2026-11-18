@@ -119,6 +119,12 @@ To connect to the UI in the browser, use ports 10443(through HA proxy) or 10444(
 
 The Artifactory host is never written in this repo.
 
+`bin/upgrade-test` takes the choice per version, so a version that is not in Artifactory yet can still be used: `FROM_SOURCE` applies to the initial version and `TO_SOURCE` to every version it is upgraded to. Each is `artifactory-latest` (the default), `artifactory-dev`, `artifactory-release` or `registry` (`registry.tld`). The Jenkins job has the same two parameters.
+```
+$ FROM_SOURCE=registry TO_SOURCE=artifactory bin/upgrade-test 5.23.1-11 5.24.1-11
+```
+Before the upgrade the new image is pulled first, so a wrong choice stops the test while the old leader is still running. `artifactory` needs `INFRAPOOL_ARTIFACTORY_HOST` or `ARTIFACTORY_HOST`.
+
 ### bin/dap
 `bin/dap` provides a dead simple mechanism for starting DAP in a variety of configurations and workflows. It provides visibility into the commands required to perform various workflows.
 
