@@ -10,6 +10,9 @@ source ./bin/utils.sh
 # Make sure .env envvars are available
 dotenv > /dev/null 2>&1 || true
 
+# Registry prefix of the conjur-appliance image (see appliance_registry in bin/utils.sh)
+export APPLIANCE_REGISTRY="$(appliance_registry)"
+
 CONJUR_MASTER_PORT=${CONJUR_MASTER_PORT:-443}
 CONJUR_FOLLOWER_PORT=${CONJUR_FOLLOWER_PORT:-450}
 CONJUR_K8S_FOLLOWER_PORT=${CONJUR_K8S_FOLLOWER_PORT:-451}
