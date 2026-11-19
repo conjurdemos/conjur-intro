@@ -159,9 +159,14 @@ Each command below needs a running leader (`bin/dap --provision-master`) and wor
 
 |Command|What it sets up|Appliance|
 |-|-|-|
-|`--provision-keycloak`|Keycloak, the `authn-oidc/keycloak` authenticator, users alice and bob|not checked|
-|`--provision-ldap-jit`|An OpenLDAP server (LDAPS) and the `authn-ldap/jit` authenticator with just-in-time user provisioning|5.24 or newer|
+|`--provision-ldap-jit`|An OpenLDAP server (LDAPS) and the `authn-ldap/jit` authenticator with just-in-time user provisioning|5.24 or newer; tested on 5.24.1 and a dev build|
+|`--provision-cert-auth`|The `authn-cert/intro` authenticator, a generated CA and a client certificate for the host `cert-client`|5.22 or newer; tested on 5.24.1 and a dev build|
+|`--provision-jwt`|The `authn-jwt/intro` authenticator, which accepts tokens signed with a generated key (no token issuer runs), and two hosts|tested on 5.24.1|
 |`--provision-ldap-sync`|The same OpenLDAP server, and LDAP Sync, which imports its users and groups into Conjur|tested on 5.23.1 and 5.24.1|
+
+**Followers and standbys.** `CONJUR_AUTHENTICATORS` is kept in each node's own `conjur.conf`, so a node that was not configured answers a login with `CONJ00004E '<authenticator>' is not enabled`. The commands therefore also configure every other running node (followers, and standbys so that they are ready for a failover): they copy the leader's authenticator list and restart the node's conjur service. (The JWT key lives in Conjur and is replicated.) After a failover the promoted standby already has them.
+
+A node that is added **after** a command ran does not get them. Run the commands again: they can be run any number of times, and a follower added later, works again. After a failover `conjur-master-1` is down and the commands cannot reach it, so they cannot be run again until it is back.
 
 #### LDAP with just-in-time provisioning
 ```
@@ -207,6 +212,51 @@ Things worth knowing:
 - The ldap-sync service is shipped switched off in the appliance (`/etc/service/conjur/ldap-sync/down`). The command starts it with `sv`; it stays up until the leader restarts, so run the command again after a restart.
 - The configuration is `artifacts/ldap/sync-policy.yml`. The service acts as the host `conjur/ldap-sync`, so the policy has to define that host, the webservice `conjur/ldap-sync`, the group `conjur/ldap-sync` (the service cannot create it itself) and the variables for the bind password and the CA.
 - `ldap-sync/sync_all_users: "true"` is set because the default member lookup filters on a `dn` attribute, which OpenLDAP does not have, so no users are found without it. The user names come from `uid` (`user_attribute_mapping/name`), because the default `cn` would give `Alice`.
+
+#### JWT with a generated key
+```
+$ bin/dap --provision-master --version <version>
+$ bin/dap --provision-jwt
+$ TOKEN=$(bin/dap --jwt-token myapp)
+$ curl -k -H "Accept-Encoding: base64" --data-urlencode "jwt=${TOKEN}" https://localhost/authn-jwt/intro/demo/authenticate
+```
+
+The command generates an RSA key into `tmp/jwt` (the private key is git-ignored), stores the public key in the `public-keys` variable, loads `artifacts/jwt/jwt-policy.yml` and enables `authn-jwt/intro`. No token issuer runs: `bin/dap --jwt-token <host>` signs a token itself, valid for an hour. It needs `openssl` and `jq` on the host.
+
+The host is the value of the token's `project_id` claim:
+
+|Host|Can read `jwt-secret`?|
+|-|-|
+|`jwt-apps/myapp`|yes|
+|`jwt-apps/other`|no (404)|
+
+Things worth knowing:
+- **Every host needs an annotation that names a claim** (`authn-jwt/intro/project_id`). Without it the authenticator answers `CONJ00099E Role must have at least one relevant annotation`.
+- **Refusals:** a token for a host that does not exist, an expired token, a token signed by another key, and a token with another issuer are all refused with 401. The leader's log gives the reason (`CONJ00007E`, `CONJ00016E`, `CONJ00035E` for signature and issuer).
+- **Re-running** keeps the key, so tokens already issued stay valid until they expire. Delete `tmp/jwt` to get a new key.
+- **Hosts and key are in Conjur**, so a follower has them after replication.
+
+#### Certificate authentication
+```
+$ bin/dap --provision-master --version <5.22 or newer>
+$ bin/dap --provision-cert-auth
+```
+
+The command generates a CA and a client certificate into `tmp/cert-auth` (the certificate carries the URI SAN `spiffe://trust.com/workload-id`), loads `artifacts/cert-auth/cert-auth-policy.yml`, stores the CA in the `ca-cert` variable, enables `authn-cert/intro` and checks that the certificate authenticates and that a certificate from another CA does not.
+
+|File in `tmp/cert-auth`|What it is|Result|
+|-|-|-|
+|`client.pem`, `client.key`|issued by the CA that Conjur trusts|authenticates as host `cert-client` (200)|
+|`untrusted-client.pem`, `untrusted-client.key`|same name and SAN, issued by another CA|refused (401)|
+
+```
+$ curl -k --cert tmp/cert-auth/client.pem --key tmp/cert-auth/client.key -X POST \
+    https://localhost/authn-cert/intro/demo/host%2Fcert-client/authenticate
+```
+
+The certificate goes through the load balancer on port 443. The only trust anchor is the CA in the `ca-cert` variable, so deleting `tmp/cert-auth` and running the command again replaces both. Cert auth is not served by standbys.
+
+Unreleased builds report their version as `0.0.dev`; the version checks of these commands let them through.
 
 ### bin/api
 
@@ -323,6 +373,9 @@ Usage: bin/dap single [options]
     --provision-secretless-broker     Configures Secretless Broker as a sidecar inside a kind cluster (Requires configured master)
     --restore-from-backup             Restores a master from backup|Requires a previously created backup
     --provision-keycloak              Configures Keycloak OIDC authenticator (Requires configured master)
+    --provision-cert-auth             Configures certificate authentication with a generated CA and client certificate (Requires configured master, appliance 5.22 or newer)
+    --provision-jwt                   Configures a JWT authenticator that accepts tokens signed with a generated key (Requires configured master)
+    --jwt-token <host>                Prints a token for the host, signed with the key from --provision-jwt
     --provision-ldap-jit              Starts an LDAP server and configures LDAP authentication with just-in-time user provisioning (Requires configured master, appliance 5.24 or newer)
     --provision-ldap-sync             Starts an LDAP server and imports its users and groups into Conjur with LDAP Sync (Requires configured master)
     --stop                            Stops all containers and cleans up cached files
