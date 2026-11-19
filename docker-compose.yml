@@ -311,6 +311,36 @@ services:
       - /proc/:/host/proc/:ro
       - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
 
+  ldap-server:
+    # osixia/openldap:latest as of 2021-02 (OpenLDAP 2.4.57); pinned by digest so the demo does not change under us
+    image: osixia/openldap@sha256:3f68751292b43564a2586fc29fb7337573e2dad692b92d4e78e49ad5c22e567b
+    hostname: ldap-server
+    networks:
+      dap_net:
+        aliases:
+          - ldap-server.mycompany.local
+    environment:
+      - LDAP_ORGANISATION=CyberArk
+      - LDAP_DOMAIN=conjur.net
+      # kics-scan ignore-line
+      - LDAP_ADMIN_PASSWORD=ldapsecret
+      - LDAP_TLS_CA_CRT_FILENAME=ca-chain.cert.pem
+      - LDAP_TLS_CRT_FILENAME=ldap-server.cert.pem
+      - LDAP_TLS_KEY_FILENAME=ldap-server.key.pem
+      - LDAP_TLS_VERIFY_CLIENT=try
+    command: --copy-service --loglevel info
+    volumes:
+      - ./artifacts/ldap/ldap.ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom/ldap.ldif:ro
+      - ./tmp/ldap-certs:/container/service/slapd/assets/certs:ro
+    # The first start generates Diffie-Hellman parameters, which takes about half a minute;
+    # port 636 only opens after that.
+    healthcheck:
+      test: ["CMD-SHELL", "ldapsearch -x -H ldaps://localhost:636 -D cn=admin,dc=conjur,dc=net -w ldapsecret -b dc=conjur,dc=net uid=alice dn | grep -q '^dn: uid=alice'"]
+      interval: 5s
+      timeout: 10s
+      retries: 40
+      start_period: 15s
+
   keycloak:
     image: registry.tld/jboss/keycloak:4.3.0.Final
     networks:

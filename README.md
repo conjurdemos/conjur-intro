@@ -154,6 +154,60 @@ Before the upgrade the new image is pulled first, so a wrong choice stops the te
 |--k8s-follower-version `<version>`|configuration|Version of K8S-Follower to use (defaults to latest)|
 |--follower-to-master-connection `<on/off>`|action|Pauses or unpauses follower connection to master|Requires a configured master|
 
+### Integrations for test, demo and docs
+Each command below needs a running leader (`bin/dap --provision-master`) and works with docker only; `bin/podman-dap` does not have them. Running a command twice is safe.
+
+|Command|What it sets up|Appliance|
+|-|-|-|
+|`--provision-keycloak`|Keycloak, the `authn-oidc/keycloak` authenticator, users alice and bob|not checked|
+|`--provision-ldap-jit`|An OpenLDAP server (LDAPS) and the `authn-ldap/jit` authenticator with just-in-time user provisioning|5.24 or newer|
+|`--provision-ldap-sync`|The same OpenLDAP server, and LDAP Sync, which imports its users and groups into Conjur|tested on 5.23.1 and 5.24.1|
+
+#### LDAP with just-in-time provisioning
+```
+$ bin/dap --provision-master --version <5.24 or newer>
+$ bin/dap --provision-ldap-jit
+```
+
+The command checks the appliance version first and stops with a message on an older one, before it changes anything. It then generates a certificate for the LDAP server into `tmp/ldap-certs`, starts the server (the first start takes about a minute), loads `artifacts/ldap/jit-policy.yml`, stores the CA certificate and the bind password, maps the LDAP group `devs` to the Conjur group `dev-team`, enables `authn-ldap/jit` and checks that alice can log in.
+
+|LDAP user|Password|In LDAP group|Can log in?|
+|-|-|-|-|
+|alice|alice|devs|yes, and becomes a member of `dev-team`|
+|bob|bob|-|no (401) until a mapping exists|
+|charles|charles|-|no (401) until a mapping exists|
+
+Users are created in Conjur under `ldap-users` the first time they log in (the password is in the table above):
+```
+$ curl -k --user alice:<password> https://localhost/authn-ldap/jit/demo/login
+```
+
+To let another user in, add a mapping as `admin` (an LDAP group, or a single user):
+```
+$ curl -k -H "Authorization: Token token=<admin token>" -H 'Content-Type: application/json' \
+    --data '{"roles":["group:dev-team"]}' https://localhost/authn-ldap/jit/demo/users/bob
+```
+
+The LDAP server is `ldaps://ldap-server:636`, base `dc=conjur,dc=net`, admin `cn=admin,dc=conjur,dc=net` with password `ldapsecret`. The authenticator uses `connect_type: ssl` (LDAPS); `tls` would mean StartTLS on port 389. The user filter is `(uid=%s)` because the default needs `posixAccount`, which the demo users do not have.
+
+`bin/dap --stop` stops the LDAP server with the rest. Delete `tmp/ldap-certs` to get a new certificate.
+
+#### LDAP Sync
+```
+$ bin/dap --provision-master --version <version>
+$ bin/dap --provision-ldap-sync
+```
+
+LDAP Sync reads users and groups from an LDAP directory and turns them into a policy; the command loads that policy for you. It starts the same OpenLDAP server as `--provision-ldap-jit`, starts the ldap-sync service on the leader, stores the CA certificate and the bind password, asks the service for the policy (`GET /ldap-sync/policy?config_name=default`) and loads it at `root`.
+
+After it ran, `alice`, `bob` and `charles` exist as Conjur users, and so do the groups `devs`, `qa` and `all-staff`. alice is a member of all three, as in LDAP. Add a user to the LDAP server and run the command again to see it imported.
+
+Things worth knowing:
+- Sync imports identities only. Imported users have no password and nothing logs them in until an authenticator is enabled; `--provision-ldap-jit` gives you one.
+- The ldap-sync service is shipped switched off in the appliance (`/etc/service/conjur/ldap-sync/down`). The command starts it with `sv`; it stays up until the leader restarts, so run the command again after a restart.
+- The configuration is `artifacts/ldap/sync-policy.yml`. The service acts as the host `conjur/ldap-sync`, so the policy has to define that host, the webservice `conjur/ldap-sync`, the group `conjur/ldap-sync` (the service cannot create it itself) and the variables for the bind password and the CA.
+- `ldap-sync/sync_all_users: "true"` is set because the default member lookup filters on a `dn` attribute, which OpenLDAP does not have, so no users are found without it. The user names come from `uid` (`user_attribute_mapping/name`), because the default `cn` would give `Alice`.
+
 ### bin/api
 
 `bin/api` enables some common policy and API flows.
@@ -269,6 +323,8 @@ Usage: bin/dap single [options]
     --provision-secretless-broker     Configures Secretless Broker as a sidecar inside a kind cluster (Requires configured master)
     --restore-from-backup             Restores a master from backup|Requires a previously created backup
     --provision-keycloak              Configures Keycloak OIDC authenticator (Requires configured master)
+    --provision-ldap-jit              Starts an LDAP server and configures LDAP authentication with just-in-time user provisioning (Requires configured master, appliance 5.24 or newer)
+    --provision-ldap-sync             Starts an LDAP server and imports its users and groups into Conjur with LDAP Sync (Requires configured master)
     --stop                            Stops all containers and cleans up cached files
     --trigger-failover                Stops current master (Requires an auto-failover cluster)
     --trust-follower-proxy            Adds Follower load balancer as a trusted proxy (Requires a configured follower)

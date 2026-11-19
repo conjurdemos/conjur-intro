@@ -61,6 +61,12 @@ Usage: bin/dap [options]:
     --provision-secretless-broker                             Configures Secretless Broker as a sidecar inside kubernetes cluster ran by kind
                                                                 (Requires configured master).
 
+    --provision-ldap-jit                                      Starts an LDAP server and configures the LDAP authenticator with just-in-time
+                                                                user provisioning (Requires configured master, appliance 5.24 or newer).
+
+    --provision-ldap-sync                                     Starts an LDAP server and imports its users and groups into Conjur with LDAP Sync
+                                                                (Requires configured master).
+
     --provision-master                                        Configures a DAP Master with account `demo` and
                                                                 password `MySecretP@ss1` behind a Layer 4 load
                                                                 balancer.
@@ -865,6 +871,216 @@ function _setup_keycloak() {
   echo "Keycloak admin console is available at: http://localhost:7777/auth/admin"
 }
 
+# Prints the version of the appliance running on the leader, for example 5.24.1-1113.10.0.
+# The image tag cannot be used: tags such as `5.0-stable` or a local `test` are not versions.
+function _leader_appliance_version {
+  docker compose exec -T conjur-master-1.mycompany.local cat /opt/conjur/etc/VERSION 2> /dev/null | tr -d '\r\n'
+}
+
+# True if the dotted version $1 is at least $2 (compares the numeric prefix only).
+function _version_at_least {
+  local have=${1%%-*} want=$2
+  [[ "$(printf '%s\n%s\n' "$want" "$have" | sort -V | head -1)" == "$want" ]]
+}
+
+# Usage: _ldap_curl <token> <curl args...>; talks to the leader's published port.
+function _ldap_curl {
+  local token=$1; shift
+  curl -sk -H "Authorization: Token token=\"${token}\"" "$@"
+}
+
+# Prints an admin token. Stops with a message when the leader does not answer, so that the callers do not go on with an
+# empty token, or (JWT, certificate authentication) leave key material behind.
+function _admin_token {
+  local url="https://localhost:${CONJUR_MASTER_PORT}" key token=""
+  key=$(curl -sfk --user "admin:${_admin_password}" "${url}/authn/demo/login") || key=""
+  if [[ -n "${key}" ]]; then
+    token=$(curl -sfk -H "Accept-Encoding: base64" --data "${key}" "${url}/authn/demo/admin/authenticate") || token=""
+  fi
+  if [[ -z "${token}" ]]; then
+    echo "Could not get an admin token from ${url}; is the leader running and healthy?" >&2
+    return 1
+  fi
+  printf '%s' "${token}"
+}
+
+# Generates the LDAP server certificate and the CA that Conjur trusts, once, into tmp/ldap-certs.
+function _generate_ldap_certs {
+  local out=./tmp/ldap-certs
+  if [[ -f "${out}/ldap-server.cert.pem" ]]; then
+    return
+  fi
+  echo "Generating the LDAP server certificate..."
+  mkdir -p "${out}"
+  ( cd tools/simple-certificates && ./generate_certificates 1 ldap-server > /dev/null 2>&1 )
+  local certs=tools/simple-certificates/certificates
+  cp "${certs}/ca-chain.cert.pem" "${out}/ca-chain.cert.pem"
+  cp "${certs}/nodes/ldap-server.mycompany.local/ldap-server.mycompany.local.cert.pem" "${out}/ldap-server.cert.pem"
+  cp "${certs}/nodes/ldap-server.mycompany.local/ldap-server.mycompany.local.key.pem" "${out}/ldap-server.key.pem"
+  # The server drops to its own user and reads these files through a bind mount, which keeps the host owner and mode,
+  # so they have to be readable by others. The CA is throwaway and tmp/ is git-ignored.
+  chmod 644 "${out}"/*.pem
+}
+
+function _start_ldap_server {
+  _generate_ldap_certs
+  echo "Starting the LDAP server (the first start takes about a minute)..."
+  docker compose up -d --no-deps --wait ldap-server
+}
+
+# Logs in as an LDAP user; prints the HTTP status. Usage: _ldap_login_status <service> <user> <password>
+function _ldap_login_status {
+  curl -sk -o /dev/null -w '%{http_code}' --user "$2:$3" "https://localhost:${CONJUR_MASTER_PORT}/authn-ldap/$1/demo/login"
+}
+
+function _setup_ldap_jit() {
+  local min_version=5.24.0 version
+  version=$(_leader_appliance_version)
+  if [[ -z "${version}" ]]; then
+    echo "Cannot read the appliance version from conjur-master-1; run --provision-master first."
+    exit 1
+  fi
+  if ! _version_at_least "${version}" "${min_version}"; then
+    echo "LDAP just-in-time provisioning needs appliance ${min_version} or newer; this leader runs ${version}."
+    exit 1
+  fi
+
+  _start_ldap_server
+
+  local token url="https://localhost:${CONJUR_MASTER_PORT}"
+  token=$(_admin_token)
+
+  echo "Loading the LDAP JIT policy..."
+  _ldap_curl "${token}" -X PATCH --data-binary @artifacts/ldap/jit-policy.yml "${url}/policies/demo/policy/root" > /dev/null
+
+  echo "Storing the LDAP CA certificate and the bind password..."
+  _ldap_curl "${token}" --data-binary @tmp/ldap-certs/ca-chain.cert.pem \
+    "${url}/secrets/demo/variable/conjur%2Fauthn-ldap%2Fjit%2Ftls-ca-cert" > /dev/null
+  _ldap_curl "${token}" --data 'ldapsecret' \
+    "${url}/secrets/demo/variable/conjur%2Fauthn-ldap%2Fjit%2Fbind-password" > /dev/null
+
+  echo "Mapping the LDAP group 'devs' to the Conjur group 'dev-team'..."
+  _ldap_curl "${token}" -H 'Content-Type: application/json' --data '{"roles":["group:dev-team"]}' \
+    "${url}/authn-ldap/jit/demo/groups/cn%3Ddevs%2Cou%3Dgroups%2Cdc%3Dconjur%2Cdc%3Dnet" > /dev/null
+
+  _append_conjur_authenticator "authn-ldap/jit"
+
+  echo "Checking: alice logs in with her LDAP password..."
+  local status
+  status=$(_ldap_login_status jit alice alice)
+  if [[ "${status}" != "200" ]]; then
+    echo "LDAP JIT check failed: alice's login returned HTTP ${status}."
+    exit 1
+  fi
+
+  cat << EOF
+
+LDAP just-in-time provisioning is set up (authenticator authn-ldap/jit).
+
+  LDAP server:  ldaps://ldap-server:636   base dc=conjur,dc=net   admin password ldapsecret
+  LDAP users:   alice/alice (group devs), bob/bob, charles/charles
+  Mapping:      LDAP group devs -> Conjur group dev-team
+
+Users are created in Conjur under 'ldap-users' on their first login. Try it:
+  curl -k --user alice:<password> ${url}/authn-ldap/jit/demo/login
+bob and charles have no mapping yet, so their logins are refused (401) until you add one.
+EOF
+}
+
+# Starts the ldap-sync service on the leader and waits until it answers.
+# The appliance ships it switched off ("normally down"), so it is not running after a restart of the leader.
+function _start_ldap_sync_service {
+  echo "Starting the ldap-sync service on conjur-master-1..."
+  if ! _run conjur-master-1.mycompany.local 'sv -w 60 start /etc/service/conjur/ldap-sync' > /dev/null; then
+    echo "Could not start the ldap-sync service on conjur-master-1; is the leader running and healthy?"
+    exit 1
+  fi
+  local i
+  for i in $(seq 1 30); do
+    if _run conjur-master-1.mycompany.local 'curl -sf -m 3 localhost:7944/version' > /dev/null 2>&1; then
+      return
+    fi
+    sleep 2
+  done
+  echo "The ldap-sync service did not answer on port 7944 within a minute."
+  exit 1
+}
+
+# Prints the generated policy (the `policy` field of the ldap-sync response) to stdout.
+function _ldap_sync_generated_policy {
+  local token=$1
+  curl -sk -H "Authorization: Token token=\"${token}\"" \
+    "https://localhost:${CONJUR_MASTER_PORT}/ldap-sync/policy?config_name=default" \
+    | jq -er 'select(.ok == true) | .policy'
+}
+
+function _setup_ldap_sync() {
+  local version
+  version=$(_leader_appliance_version)
+  if [[ -z "${version}" ]]; then
+    echo "Cannot read the appliance version from conjur-master-1; run --provision-master first."
+    exit 1
+  fi
+
+  _start_ldap_server
+  _start_ldap_sync_service
+
+  local token url="https://localhost:${CONJUR_MASTER_PORT}"
+  token=$(_admin_token)
+
+  echo "Loading the LDAP Sync configuration..."
+  _ldap_curl "${token}" -X PATCH --data-binary @artifacts/ldap/sync-policy.yml "${url}/policies/demo/policy/root" > /dev/null
+
+  echo "Storing the LDAP CA certificate and the bind password..."
+  _ldap_curl "${token}" --data-binary @tmp/ldap-certs/ca-chain.cert.pem \
+    "${url}/secrets/demo/variable/conjur%2Fldap-sync%2Ftls-ca-cert%2Fdefault" > /dev/null
+  _ldap_curl "${token}" --data 'ldapsecret' \
+    "${url}/secrets/demo/variable/conjur%2Fldap-sync%2Fbind-password%2Fdefault" > /dev/null
+
+  echo "Generating the policy from the LDAP directory and loading it..."
+  local imported
+  imported=$(mktemp)
+  if ! _ldap_sync_generated_policy "${token}" > "${imported}"; then
+    rm -f "${imported}"
+    echo "LDAP Sync could not generate the policy."
+    exit 1
+  fi
+  _ldap_curl "${token}" -X POST --data-binary @"${imported}" "${url}/policies/demo/policy/root" > /dev/null
+  rm -f "${imported}"
+
+  echo "Checking: the LDAP users and groups exist in Conjur..."
+  local missing=0 role status
+  for role in user/alice user/bob user/charles group/devs group/qa group/all-staff; do
+    status=$(_ldap_curl "${token}" -o /dev/null -w '%{http_code}' "${url}/roles/demo/${role}")
+    if [[ "${status}" != "200" ]]; then
+      echo "  missing: ${role} (HTTP ${status})"
+      missing=1
+    fi
+  done
+  if [[ ${missing} -ne 0 ]]; then
+    echo "LDAP Sync check failed."
+    exit 1
+  fi
+
+  cat << EOF
+
+LDAP Sync is set up. The users and groups of the LDAP directory were imported into Conjur.
+
+  Imported users:   alice, bob, charles
+  Imported groups:  devs (alice), qa (alice), all-staff (alice)
+  LDAP server:      ldaps://ldap-server:636   base dc=conjur,dc=net
+
+Sync imports identities, it does not log anyone in. Imported users have no password until you set one
+or enable an authenticator (see --provision-ldap-jit).
+
+To run the sync again after changing the LDAP directory:
+  bin/dap --provision-ldap-sync
+
+The ldap-sync service is switched off in the appliance and runs until the leader restarts; running this command
+starts it again.
+EOF
+}
+
 function _single_master {
   _start_master
   _configure_master
@@ -930,6 +1146,12 @@ function _cli {
 
 function _append_conjur_authenticator {
   authenticator=$1
+  # Running a provision command twice must not list the authenticator twice.
+  if [[ $DRY_RUN = false ]] && docker compose exec -T conjur-master-1.mycompany.local \
+      bash -c "grep -E '^CONJUR_AUTHENTICATORS=' /opt/conjur/etc/conjur.conf | tr ',=' '\n\n' | grep -qxF '$authenticator'" 2> /dev/null; then
+    echo "Authenticator ${authenticator} is already enabled."
+    return
+  fi
   if _run conjur-master-1.mycompany.local 'grep -q "CONJUR_AUTHENTICATORS" /opt/conjur/etc/conjur.conf'; then
     authenticator=$(echo $authenticator | sed 's/\//\\\//g')
     _run conjur-master-1.mycompany.local "sed -i 's/\(CONJUR_AUTHENTICATORS=.*\)/\1,$authenticator/' /opt/conjur/etc/conjur.conf"
@@ -1287,6 +1509,8 @@ while true ; do
     --enable-mke ) CMD="_enable_mke" ; shift ;;
     --provision-standbys ) CMD='_setup_standbys' ; shift ;;
     --provision-keycloak ) CMD='_setup_keycloak' ; shift ;;
+    --provision-ldap-jit ) CMD='_setup_ldap_jit' ; shift ;;
+    --provision-ldap-sync ) CMD='_setup_ldap_sync' ; shift ;;
     --reenroll-failed-leader ) shift ; CMD="_reenroll_failed_leader $1 $2" ; shift ; shift ;;
     --restore-from-backup ) CMD='_restore_from_backup' ; shift ;;
     --rotate-custom-certificates ) CMD='_rotate_certificates' ; shift ;;

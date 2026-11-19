@@ -1,0 +1,38 @@
+# LDAP authenticator with just-in-time user provisioning (authn-ldap/jit).
+# Users are created in Conjur on their first successful login, under `ldap-users`,
+# and receive the Conjur roles that their LDAP groups are mapped to.
+- !policy
+  id: ldap-users
+
+# Conjur group that the LDAP group `devs` is mapped to
+- !group dev-team
+
+- !policy
+  id: conjur/authn-ldap/jit
+  body:
+  - !webservice
+    annotations:
+      ldap-authn/auto-provisioning-enabled: "true"
+      # ssl = LDAPS (implicit TLS), matches the ldaps:// URI. `tls` would mean StartTLS.
+      ldap-authn/connect_type: ssl
+      ldap-authn/uri: ldaps://ldap-server:636
+      ldap-authn/base_dn: dc=conjur,dc=net
+      ldap-authn/bind_dn: cn=admin,dc=conjur,dc=net
+      # The default filter requires objectClass=posixAccount, which the demo users do not have
+      ldap-authn/filter_template: "(uid=%s)"
+
+  - !variable tls-ca-cert
+  - !variable bind-password
+
+  - !group clients
+
+  - !permit
+    role: !group clients
+    privilege: [ read, authenticate ]
+    resource: !webservice
+
+# The admin manages the group and user mappings
+- !permit
+  role: !user admin
+  privilege: [ update ]
+  resource: !webservice conjur/authn-ldap/jit

@@ -1,0 +1,67 @@
+dn: uid=alice,dc=conjur,dc=net
+cn: Alice
+sn: Smith
+uid: alice
+givenName: alice
+mail: alice@conjur.net
+objectClass: person
+objectClass: uidObject
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+objectClass: top
+userPassword: alice
+
+dn: uid=charles,dc=conjur,dc=net
+cn: Charles
+sn: Berkeley
+uid: charles
+givenName: charles
+mail: charles@conjur.net
+objectClass: person
+objectClass: uidObject
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+objectClass: top
+userPassword: charles
+
+dn: uid=bob,dc=conjur,dc=net
+cn: Bob
+sn: Somebody
+uid: bob
+givenName: bob
+mail: bob@conjur.net
+objectClass: person
+objectClass: uidObject
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+objectClass: top
+userPassword: bob
+
+dn: ou=groups,dc=conjur,dc=net
+ou: groups
+objectClass: organizationalUnit
+objectClass: top
+
+dn: cn=devs,ou=groups,dc=conjur,dc=net
+cn: devs
+objectClass: groupOfNames
+objectClass: top
+member: uid=alice,dc=conjur,dc=net
+
+dn: cn=qa,ou=groups,dc=conjur,dc=net
+cn: qa
+objectClass: groupOfNames
+objectClass: top
+member: uid=alice,dc=conjur,dc=net
+
+dn: ou=distribution-lists,dc=conjur,dc=net
+ou: distribution-lists
+objectClass: organizationalUnit
+objectClass: top
+
+dn: cn=all-staff,ou=distribution-lists,dc=conjur,dc=net
+cn: all-staff
+objectClass: groupOfNames
+objectClass: top
+member: uid=alice,dc=conjur,dc=net
+
