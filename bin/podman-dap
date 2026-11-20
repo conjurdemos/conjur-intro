@@ -72,6 +72,7 @@ function _start_master {
     podman run --name conjur-master.mycompany.local \
     -d --privileged --restart=unless-stopped \
     --security-opt seccomp=unconfined \
+    --cap-add NET_BIND_SERVICE \
     --publish "10443:443" \
     --publish "7000:7000" \
     --log-driver journald \
@@ -109,6 +110,7 @@ function _start_l7_load_balancer {
       podman run --name conjur-follower.mycompany.local \
     -d --privileged --restart=unless-stopped \
     --security-opt seccomp=unconfined \
+    --cap-add NET_BIND_SERVICE \
     --publish "10450:443" \
     --publish "7001:7000" \
     --log-driver journald \
@@ -145,7 +147,6 @@ function _setup_standby {
   --log-driver journald \
   --network dap_net \
   --volume seeds:/opt/cyberark/dap/seeds \
-  --volume master-certs:/opt/conjur/etc/ssl \
   --volume ./system/backup:/opt/conjur/backup:Z \
   --volume ./system/configuration:/opt/cyberark/dap/configuration:Z \
   --volume ./system/logs/master-$_standby_number:/var/log/conjur:Z \
@@ -222,7 +223,7 @@ function _perform_promotion {
 function _single_master {
   _start_master
   _configure_master
-  echo "DAP instance available at: 'https://localhost'"
+  echo "DAP instance available at: 'https://localhost:10443'"
   echo "Login using with the username/password: 'admin'/'$_admin_password'"
 }
 
@@ -241,6 +242,7 @@ function _setup_standbys {
   podman run --name conjur-master.mycompany.local \
   -d --privileged --restart=unless-stopped \
   --security-opt seccomp=unconfined \
+    --cap-add NET_BIND_SERVICE \
   --publish "10443:443" \
   --publish "7000:7000" \
   --log-driver journald \
@@ -258,6 +260,10 @@ function _stop {
   echo "stopping...."
   podman stop -a
   podman rm -a
+  # Named volumes outlive their containers. A leftover master-certs volume makes
+  # the next `evoke configure master` fail because conjur.pem already exists
+  # with different subject alternative names.
+  podman volume rm -f master-certs seeds follower-certs > /dev/null 2>&1 || true
 
   _command rm -rf cli_cache
   _command rm -rf system/backup
@@ -336,7 +342,7 @@ function _stop_and_rename {
 function _upgrade_via_backup_restore {
   upgrade_to="$1"
 
-  autofailover=$(curl -k https://localhost/info | jq -r .configuration.conjur.cluster_name)
+  autofailover=$(curl -k https://localhost:10443/info | jq -r .configuration.conjur.cluster_name)
 
   if [ "$autofailover" = 'production' ]; then
     _disable_autofailover
@@ -345,8 +351,10 @@ function _upgrade_via_backup_restore {
 }
 
 function _stop_and_remove_master {
-  podman stop conjur-master-1.mycompany.local 
+  podman stop conjur-master-1.mycompany.local
   podman rm conjur-master-1.mycompany.local
+  # _start_master recreates the load balancer by name as well as the master.
+  podman rm -f conjur-master.mycompany.local
 }
 
 function _restore_from_backup {
@@ -456,7 +464,7 @@ function _rotate_certificates {
 }
 
 function _pause_autofailover {
-  autofailover=$(curl -k https://localhost/info | jq -r .configuration.conjur.cluster_name)
+  autofailover=$(curl -k https://localhost:10443/info | jq -r .configuration.conjur.cluster_name)
   if [ "$autofailover" = 'production' ]; then
     _run conjur-master-2.mycompany.local "sv down cluster"
     _run conjur-master-3.mycompany.local "sv down cluster"
@@ -466,7 +474,7 @@ function _pause_autofailover {
 }
 
 function _resume_autofailover {
-  autofailover=$(curl -k https://localhost/info | jq -r .configuration.conjur.cluster_name)
+  autofailover=$(curl -k https://localhost:10443/info | jq -r .configuration.conjur.cluster_name)
   if [ "$autofailover" = 'production' ]; then
     _run conjur-master-2.mycompany.local "sv up cluster"
     _run conjur-master-3.mycompany.local "sv up cluster"
@@ -476,7 +484,7 @@ function _resume_autofailover {
 }
 
 function _wait_for_master {
-  local master_url="https://localhost"
+  local master_url="https://localhost:10443"
 
   echo "Waiting for DAP Master to be ready..."
 

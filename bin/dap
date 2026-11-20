@@ -948,7 +948,7 @@ function _disable_autofailover {
 }
 
 function _enable_autofailover {
-  autofailover=$(curl -k https://localhost:${CONJUR_MASTER_PORT}/info | jq .configuration.conjur.cluster_name)
+  autofailover=$(curl -k https://${INTRO_MASTER_HOST:-localhost}:${CONJUR_MASTER_PORT}/info | jq .configuration.conjur.cluster_name)
 
   if [ "$autofailover" = 'production' ]; then
     for ((i=2; i<=STANDBY_COUNT+1; i++))
@@ -1024,7 +1024,7 @@ function _stop_and_rename {
 function _upgrade_via_backup_restore {
   upgrade_to="$1"
 
-  autofailover=$(curl -k https://localhost:${CONJUR_MASTER_PORT}/info | jq .configuration.conjur.cluster_name)
+  autofailover=$(curl -k https://${INTRO_MASTER_HOST:-localhost}:${CONJUR_MASTER_PORT}/info | jq .configuration.conjur.cluster_name)
 
   if [ "$autofailover" = 'production' ]; then
     _disable_autofailover
@@ -1127,6 +1127,12 @@ function _import_certificates {
     "evoke ca import --force --key $cert_path/dap_master/dap-master-key.pem --set $cert_path/dap_master/dap-master.pem"
   _run conjur-master-1.mycompany.local \
     "evoke ca import --force --key $cert_path/dap_follower/dap-follower-key.pem $cert_path/dap_follower/dap-follower.pem"
+
+  # HAProxy verifies backends against the CA snapshot taken in deploy_proxy,
+  # so refresh it after the CA changes or every backend fails the TLS handshake.
+  mkdir -p ./system/haproxy/certs
+  docker cp "$(docker compose ps -q conjur-master-1.mycompany.local)":/opt/conjur/etc/ssl/. ./system/haproxy/certs
+  _reload_container 'conjur-master.mycompany.local'
 }
 
 function _rotate_certificates {
@@ -1171,7 +1177,7 @@ function _rotate_certificates {
 }
 
 function _pause_autofailover {
-  autofailover=$(curl -k https://localhost:${CONJUR_MASTER_PORT}/info | jq -r .configuration.conjur.cluster_name)
+  autofailover=$(curl -k https://${INTRO_MASTER_HOST:-localhost}:${CONJUR_MASTER_PORT}/info | jq -r .configuration.conjur.cluster_name)
   if [ "$autofailover" = 'production' ]; then
     for ((i=2; i<=STANDBY_COUNT+1; i++))
     do
@@ -1181,11 +1187,11 @@ function _pause_autofailover {
 }
 
 function _resume_autofailover {
-  autofailover=$(curl -k https://localhost:${CONJUR_MASTER_PORT}/info | jq -r .configuration.conjur.cluster_name)
+  autofailover=$(curl -k https://${INTRO_MASTER_HOST:-localhost}:${CONJUR_MASTER_PORT}/info | jq -r .configuration.conjur.cluster_name)
   if [ "$autofailover" = 'production' ]; then
     for ((i=2; i<=STANDBY_COUNT+1; i++))
     do
-      _run conjur-master-3.mycompany.local "sv up cluster"
+      _run "conjur-master-$i.mycompany.local" "sv up cluster"
     done
   fi
 }

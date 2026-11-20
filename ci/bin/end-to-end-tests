@@ -41,6 +41,7 @@ main() {
       --network dap_net \
       -v "$(pwd):$(pwd)" \
       --env PROVIDER=$provider \
+      --env INTRO_MASTER_HOST=conjur-master.mycompany.local \
       --workdir "$(pwd)" \
       cucumber /bin/bash -c "rake features"
   done

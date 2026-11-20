@@ -1,5 +1,9 @@
 - !policy
   id: production
+  # Seconds before a missing leader is considered lost. The appliance defaults
+  # to 300, which makes a failover take about five minutes.
+  annotations:
+    ttl: 30
   body:
     - !layer
 

@@ -8,7 +8,7 @@ function proxy_command {
   podman run --name client \
   --rm --privileged --restart=no \
   --network dap_net \
-  --volume .:/src/cli:Z \
+  --volume ./:/src/cli:Z \
   --volume ./cli_cache/master:/root:Z \
   -e CONJUR_APPLIANCE_URL=https://conjur-master.mycompany.local \
   -e CONJUR_ACCOUNT=demo \

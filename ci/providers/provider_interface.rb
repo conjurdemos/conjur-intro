@@ -27,7 +27,7 @@ module CI
 
       def wait_for_healthy_master; end
 
-      def last_audit_event; end
+      def last_audit_event(resource:); end
 
       def upgrade_master(version:); end
     end
