@@ -5,13 +5,58 @@ set -eu
 # An upgrade test automation tool.
 #
 # Synopsis: bin/upgrade-test <initial-version> [intermediate-versions...] <final-version>
+#
+# Where the appliance image of a version is pulled from is chosen per version:
+#   FROM_SOURCE  the initial version                     (registry, artifactory-latest, artifactory-dev or artifactory-release; default artifactory-latest)
+#   TO_SOURCE    every version it is upgraded to         (registry, artifactory-latest, artifactory-dev or artifactory-release; default artifactory-latest)
 DRY_RUN=false
+
+# Prints the registry prefix for a choice (registry, artifactory-latest, artifactory-dev or artifactory-release;
+# artifactory is the same as artifactory-latest); an empty choice means artifactory-latest.
+registry_prefix() {
+  local choice=${1:-artifactory-latest}
+
+  case "$choice" in
+    artifactory|artifactory-latest|artifactory-dev|artifactory-release)
+      local host="${INFRAPOOL_ARTIFACTORY_HOST:-${ARTIFACTORY_HOST:-}}"
+      if [ -z "$host" ]; then
+        echo "The registry choice '$choice' needs INFRAPOOL_ARTIFACTORY_HOST or ARTIFACTORY_HOST to be set." >&2
+        echo "To use the old registry instead, set FROM_SOURCE and/or TO_SOURCE to 'registry'." >&2
+        return 1
+      fi
+      local tier=${choice#artifactory}
+      tier=${tier#-}
+      printf '%s/appliance-docker-%s-local' "$host" "${tier:-latest}"
+      ;;
+    registry)
+      printf 'registry.tld'
+      ;;
+    *)
+      echo "Unknown registry '$choice'; use registry, artifactory-latest, artifactory-dev or artifactory-release." >&2
+      return 1
+      ;;
+  esac
+}
+
+# Runs a command with the appliance image taken from the registry chosen for a version.
+# Usage: with_registry <artifactory|registry> <command...>
+with_registry() {
+  local prefix
+  prefix=$(registry_prefix "$1") || exit 1
+  shift
+
+  APPLIANCE_REGISTRY="$prefix" "$@"
+}
 
 main() {
   # Ensure at least two versions (an initial and final version) have been provided
   if [ "$#" -lt 2 ]; then
       print_help
   fi
+
+  # Fail now, not in the middle of the test, on a wrong choice or a missing Artifactory host
+  registry_prefix "${FROM_SOURCE:-}" > /dev/null || exit 1
+  registry_prefix "${TO_SOURCE:-}" > /dev/null || exit 1
 
   # Pull off the initial cluster version
   local initial_version=$1; shift;
@@ -25,14 +70,14 @@ main() {
   echo
 
   header "Backup and Restore $initial_version Cluster"
-  backup_and_restore_cluster "$initial_version"
+  backup_and_restore_cluster "$initial_version" "${FROM_SOURCE:-}"
   echo
 
   # Iterate through the next versions given to upgrade through them
   for next_version in "$@"
   do
     header "Upgrade to $next_version"
-    upgrade_cluster "$next_version"
+    upgrade_cluster "$next_version" "${TO_SOURCE:-}"
     echo
 
     header "Exercise $initial_version Cluster"
@@ -40,7 +85,7 @@ main() {
     echo
 
     header "Backup and Restore $next_version Cluster"
-    backup_and_restore_cluster "$next_version"
+    backup_and_restore_cluster "$next_version" "${TO_SOURCE:-}"
     echo
 
     header "Exercise Upgraded and Restored $initial_version Cluster"
@@ -76,6 +121,10 @@ function print_help {
 An upgrade test automation tool.
 
 Synopsis: bin/upgrade-test <initial-version> [intermediate-versions...] <final-version>
+
+Where the appliance image of a version is pulled from:
+  FROM_SOURCE=registry|artifactory-latest|artifactory-dev|artifactory-release   the initial version (default: artifactory-latest)
+  TO_SOURCE=registry|artifactory-latest|artifactory-dev|artifactory-release     the versions it is upgraded to (default: artifactory-latest)
 EOF
   exit
 }
@@ -83,15 +132,15 @@ EOF
 standup_before_cluster() {
   local version=$1
 
-  echo "Provisioning $version Master..."
-  bin/dap --provision-master --version "$version"
+  echo "Provisioning $version Master (image from ${FROM_SOURCE:-artifactory-latest})..."
+  with_registry "${FROM_SOURCE:-}" bin/dap --provision-master --version "$version"
 
   # TODO: 3rd party certificates currently cause an error when attempting
   # to load policy in dap-intro
   # echo "Importing 3rd party certificates..."
   # bin/dap --import-custom-certificates
 
-  rollout_cluster "$version"
+  rollout_cluster "$version" "${FROM_SOURCE:-}"
 }
 
 exercise_cluster() {
@@ -132,28 +181,43 @@ failover_master() {
 }
 
 backup_and_restore_cluster() {
-  local version=$1
+  local version=$1 registry=$2
 
   echo "Creating backup..."
   bin/dap --create-backup
 
-  echo "Restoring backup..."
-  bin/dap --restore-from-backup --version "$version"
+  echo "Restoring backup (image from ${registry:-artifactory-latest})..."
+  with_registry "$registry" bin/dap --restore-from-backup --version "$version"
 
-  rollout_cluster "$version"
+  rollout_cluster "$version" "$registry"
 }
 
 upgrade_cluster () {
-  local version=$1
+  local version=$1 registry=$2
 
-  echo "Upgrading DAP Master to $version..."
-  bin/dap --upgrade-master "$version"
+  # Fetch the new image first: --upgrade-master stops the running leader before it starts the new one,
+  # so an image that cannot be pulled would otherwise be found only after the leader is down.
+  # An image that is already local needs no pull: docker compose would use it as it is.
+  local image
+  image="$(registry_prefix "$registry")/conjur-appliance:$version" || exit 1
+  if [ -n "$(docker images -q "$image" 2> /dev/null)" ]; then
+    echo "Using the local image $image"
+  else
+    echo "Pulling $image..."
+    if ! docker pull "$image"; then
+      echo "Could not pull $image; the cluster was not touched. Check the registry choice and the version." >&2
+      exit 1
+    fi
+  fi
 
-  rollout_cluster "$version"
+  echo "Upgrading DAP Master to $version (image from ${registry:-artifactory-latest})..."
+  with_registry "$registry" bin/dap --upgrade-master "$version"
+
+  rollout_cluster "$version" "$registry"
 }
 
 rollout_cluster() {
-  local version=$1
+  local version=$1 registry=$2
 
   # Trigger a restart of services to ensure that they come back up!
   # See: CNJR-4751
@@ -167,13 +231,13 @@ rollout_cluster() {
   bin/dap --wait-for-master
 
   echo "Provisioning $version Standbys..."
-  bin/dap --provision-standbys --version "$version"
+  with_registry "$registry" bin/dap --provision-standbys --version "$version"
 
   echo "Enabling Auto-Failover..."
   bin/dap --enable-auto-failover
 
   echo "Provisioning $version Follower"
-  bin/dap --provision-follower --version "$version"
+  with_registry "$registry" bin/dap --provision-follower --version "$version"
 }
 
 header() {

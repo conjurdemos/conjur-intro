@@ -5,11 +5,11 @@ export VERSION='5.0-stable'
 function proxy_command {
   cmd="$@"
   echo "$@"
-  podman build -t docker.io/api-client -f ./artifacts/api-client
+  podman build -t docker.io/api-client ./artifacts/api-client
   podman run --name api-client \
   --rm --privileged --restart=no \
   --network dap_net \
-  --volume .:/src:Z \
+  --volume ./:/src:Z \
   --volume ./artifacts/api-client/api-script:/src/bin/api:Z \
   --volume ./policy:/src/policy:Z \
   -w /src \

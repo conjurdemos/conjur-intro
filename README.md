@@ -119,6 +119,12 @@ To connect to the UI in the browser, use ports 10443(through HA proxy) or 10444(
 
 The Artifactory host is never written in this repo.
 
+`bin/upgrade-test` takes the choice per version, so a version that is not in Artifactory yet can still be used: `FROM_SOURCE` applies to the initial version and `TO_SOURCE` to every version it is upgraded to. Each is `artifactory-latest` (the default), `artifactory-dev`, `artifactory-release` or `registry` (`registry.tld`). The Jenkins job has the same two parameters.
+```
+$ FROM_SOURCE=registry TO_SOURCE=artifactory bin/upgrade-test 5.23.1-11 5.24.1-11
+```
+Before the upgrade the new image is pulled first, so a wrong choice stops the test while the old leader is still running. `artifactory` needs `INFRAPOOL_ARTIFACTORY_HOST` or `ARTIFACTORY_HOST`.
+
 ### bin/dap
 `bin/dap` provides a dead simple mechanism for starting DAP in a variety of configurations and workflows. It provides visibility into the commands required to perform various workflows.
 
@@ -160,7 +166,7 @@ The Artifactory host is never written in this repo.
 |--authenticate-user|action|• Authenticates with default user and password<br>• Displays the resulting authentication token||
 |--fetch-secrets|action|• Authenticates<br>• Retrieves variable values|Run against follower unless `--against-master` flag is present|
 |--load-policy|action|• Authenticates<br>• Loads policy|Run against master|
-|--load-policy-and-values|action|• Authenticates<br>• Loads policy and variable values|Run against master, equivalent to running '--load-policy' and '--set-secrets'|
+|--load-sample-policy-and-values|action|• Authenticates<br>• Loads policy and variable values|Run against master, equivalent to running '--load-policy' and '--set-secrets'|
 |--password `<password>`|configuration|Uses a non-default password for authentication||
 |--set-secrets|action|• Authenticates<br>• Sets variable values|Requires `--load-policy` before running|
 |--user `<conjur-user>`|configuration|Uses a non-default (`admin`) user for authentication||
