@@ -111,6 +111,14 @@ Similarly bin/api and bin/cli can be replaced with bin/podman-api and bin/podman
 To connect to the UI in the browser, use ports 10443(through HA proxy) or 10444(Conjur)
 ***
 
+### Where the appliance image comes from
+`bin/dap` and `bin/podman-dap` pull `conjur-appliance` from the registry named by `APPLIANCE_REGISTRY`. If it is not set:
+
+- when `ARTIFACTORY_HOST` is set (`INFRAPOOL_ARTIFACTORY_HOST` on an InfraPool agent), the image is taken from `<host>/appliance-docker-latest-local` (to use another repository, set `APPLIANCE_REGISTRY`);
+- otherwise the `registry.tld` alias is used, which has to resolve on your machine (for example through `/etc/hosts`).
+
+The Artifactory host is never written in this repo.
+
 ### bin/dap
 `bin/dap` provides a dead simple mechanism for starting DAP in a variety of configurations and workflows. It provides visibility into the commands required to perform various workflows.
 

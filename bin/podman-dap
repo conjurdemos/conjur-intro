@@ -1,4 +1,8 @@
 #!/bin/bash -e
+source "$(dirname "${0}")/utils.sh"
+
+# Registry prefix of the conjur-appliance image (see appliance_registry in bin/utils.sh)
+export APPLIANCE_REGISTRY="$(appliance_registry)"
 _admin_password="MySecretP@ss1"
 
 function _print_help {
@@ -60,7 +64,7 @@ function _start_master {
 
     if [[ "$PULL_IMAGES" = "true" ]]; then
       podman pull haproxy:alpine
-      podman pull registry.tld/conjur-appliance:$VERSION
+      podman pull ${APPLIANCE_REGISTRY}/conjur-appliance:$VERSION
     fi
 
     _set_master_single_node_proxy_config
@@ -96,7 +100,7 @@ function _start_master {
     --volume ./files/dhparam.pem:${DHPATH}/dhparam.pem \
     --volume ./files/cluster.conf:/opt/conjur/etc/cluster.conf \
     --volume ./files/etcd.conf:/etc/etcd/etcd.conf \
-    registry.tld/conjur-appliance:$VERSION
+    ${APPLIANCE_REGISTRY}/conjur-appliance:$VERSION
   fi
 }
 
@@ -148,7 +152,7 @@ function _setup_standby {
   --volume ./files:/conjur_files \
   --volume ./files/cluster.conf:/opt/conjur/etc/cluster.conf \
   --volume ./files/etcd.conf:/etc/etcd/etcd.conf \
-  registry.tld/conjur-appliance:$VERSION
+  ${APPLIANCE_REGISTRY}/conjur-appliance:$VERSION
 
   # Generate a Seed File
   _run conjur-master-1.mycompany.local \
@@ -184,7 +188,7 @@ function _setup_follower {
   --volume ./files:/conjur_files \
   --volume ./files/cluster.conf:/opt/conjur/etc/cluster.conf \
   --volume ./files/etcd.conf:/etc/etcd/etcd.conf \
-  registry.tld/conjur-appliance:$VERSION
+  ${APPLIANCE_REGISTRY}/conjur-appliance:$VERSION
 
   # Generate Seed file
   _run conjur-master-1.mycompany.local \
