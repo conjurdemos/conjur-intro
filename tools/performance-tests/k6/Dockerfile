@@ -23,10 +23,14 @@ RUN apk update && apk add git
 # go.k6.io/k6 path - building both together makes xk6 pick one module major
 # for the k6 core, silently breaking whichever extension depends on the
 # other. Pinning here keeps both extensions on the compatible pre-v2 path.
-RUN go install go.k6.io/xk6/cmd/xk6@latest
-RUN xk6 build \
+#
+# xk6, k6 and xk6-exec are pinned too: "latest" resolved k6 to v1.7.1, whose
+# dependency set (grpc v1.80.0 with x/net v0.54.0) fails to compile with
+# "undefined: http2.TrailerPrefix". Bump these deliberately and rebuild.
+RUN go install go.k6.io/xk6/cmd/xk6@v1.5.1
+RUN xk6 build --k6-version v1.8.3 \
     --with github.com/LeonAdato/xk6-output-statsd@v0.2.3 \
-    --with github.com/grafana/xk6-exec@latest
+    --with github.com/grafana/xk6-exec@v0.5.1
 
 # Install Conjur CLI
 RUN wget https://github.com/cyberark/conjur-cli-go/releases/download/v8.1.2/conjur_linux_amd64 && \
