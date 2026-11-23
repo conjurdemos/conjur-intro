@@ -1,0 +1,21 @@
+# Certificate authentication used by bin/upgrade-test: a host that authenticates with a client
+# certificate whose URI SAN matches the annotation below, issued by the CA stored in `ca-cert`.
+- !policy
+  id: conjur/authn-cert/upgrade
+  body:
+    - !webservice
+    - !variable ca-cert
+    - !group users
+    - !permit
+      role: !group users
+      privilege: [ read, authenticate ]
+      resource: !webservice
+
+- !host
+  id: cert-client
+  annotations:
+    authn-cert/upgrade/san-uri: spiffe://trust.com/workload-id
+
+- !grant
+  role: !group conjur/authn-cert/upgrade/users
+  member: !host cert-client

@@ -69,8 +69,18 @@ main() {
   exercise_cluster "$initial_version"
   echo
 
+  # Create things that must still work after every upgrade, restore and failover below
+  header "Seed Dynamic Secrets and Certificate Authentication on $initial_version"
+  seed_dynamic_secrets
+  seed_cert_auth
+  echo
+
   header "Backup and Restore $initial_version Cluster"
   backup_and_restore_cluster "$initial_version" "${FROM_SOURCE:-}"
+  echo
+
+  header "Verify Seeded Data After Restoring $initial_version"
+  verify_seeded_data
   echo
 
   # Iterate through the next versions given to upgrade through them
@@ -80,12 +90,20 @@ main() {
     upgrade_cluster "$next_version" "${TO_SOURCE:-}"
     echo
 
+    header "Verify Seeded Data After Upgrading to $next_version"
+    verify_seeded_data
+    echo
+
     header "Exercise $initial_version Cluster"
     exercise_cluster
     echo
 
     header "Backup and Restore $next_version Cluster"
     backup_and_restore_cluster "$next_version" "${TO_SOURCE:-}"
+    echo
+
+    header "Verify Seeded Data After Restoring $next_version"
+    verify_seeded_data
     echo
 
     header "Exercise Upgraded and Restored $initial_version Cluster"
@@ -101,10 +119,14 @@ main() {
   failover_master
   echo
 
+  header "Verify Seeded Data After Failover"
+  verify_seeded_data
+  echo
+
   header "Exercise Cluster After Failover"
   exercise_cluster
   if [ "${SKIP_DYNAMIC_SECRETS:-false}" != true ]; then
-    exercise_dynamic_secrets
+    exercise_dynamic_secrets after-failover
   fi
   echo
 
@@ -160,16 +182,222 @@ exercise_cluster() {
   bin/api --delete-policy
   }
 
+# Usage: exercise_dynamic_secrets [after-failover]
 exercise_dynamic_secrets() {
+  local when=${1:-}
+
+  # Versions without the issuers API (before 5.20) have nothing to exercise. The leader is asked, as
+  # seed_dynamic_secrets does, so that such a pair does not fail here on a 404.
+  if ! bin/api --against-master --supports-issuers > /dev/null 2>&1; then
+    echo "Skipping the dynamic secrets exercise: this version does not serve the issuers API"
+    return
+  fi
+
   echo "Creating dynamic secret issuer..."
   # Generate from openssl (clean ASCII output) rather than piping raw
   # /dev/urandom through tr, which mangles bytes under BSD tr / UTF-8 locales.
+  local issuer="test${RANDOM}${RANDOM}"
   local access_key_id="AKIA$(openssl rand -hex 8 | tr '[:lower:]' '[:upper:]')"
   local secret_access_key=$(openssl rand -base64 60 | tr -dc 'A-Za-z0-9' | head -c 40)
-  bin/api --create-aws-issuer "test${RANDOM}${RANDOM}" "$access_key_id" "$secret_access_key"
+  bin/api --create-aws-issuer "$issuer" "$access_key_id" "$secret_access_key"
+
+  # An issuer created after an upgrade must reach the follower by replication. Listing alone would pass with
+  # an empty list, so read this issuer through the follower.
+  #
+  # Not right after a failover: the follower's subscription stops when the leader goes away and took about four
+  # minutes (261 s, one measurement) to resume, so a new issuer is not on the follower within the retry window.
+  # That is how the cluster behaves after a failover, not a defect of the issuer, so it is not asserted there.
+  if [ "$when" = after-failover ]; then
+    echo "Not reading the new issuer through the follower: its replication resumes minutes after a failover"
+  else
+    echo "Reading the new issuer through the follower..."
+    retry_follower bin/api --get-issuer "$issuer" || return 1
+  fi
 
   echo "Listing dynamic secrets issuers..."
   bin/api --list-issuers
+}
+
+# Dynamic secrets and certificate authentication across the upgrade
+# These create fixed-name things on the initial version and check them again after every restore, upgrade
+# and failover. The checks are strict: a mismatch exits non-zero. The test has no cloud credentials, so
+# dynamic secrets use made-up AWS keys: Conjur accepts them when the issuer is created (it only checks
+# their format) and fetching a secret fails at the cloud call, which still proves that Conjur found the
+# issuer, decrypted it and resolved its credential references. See `bin/api --check-dynamic-secret`.
+#
+# SKIP_DYNAMIC_SECRETS=true and SKIP_CERT_AUTH=true skip them. They are also skipped, with the reason
+# printed, when the initial version lacks the feature (asked of the running leader, not guessed from a
+# version number).
+ISSUER_NAME=upgrade-check
+DYNAMIC_SECRET_NAME=ds-upgrade
+CERT_AUTH_HOST=cert-client
+CERT_AUTH_SERVICE=upgrade
+UPGRADE_TEST_DIR=tmp/upgrade-test
+CERT_DIR="$UPGRADE_TEST_DIR/certs"
+ISSUER_SNAPSHOT="$CERT_DIR/issuer-$ISSUER_NAME.json"
+# Seeding records here whether each feature was seeded, so that verification checks exactly those
+DYNAMIC_SECRETS_SEEDED=false
+CERT_AUTH_SEEDED=false
+
+seed_dynamic_secrets() {
+  if [ "${SKIP_DYNAMIC_SECRETS:-false}" = true ]; then
+    echo "Skipping dynamic secrets seed: SKIP_DYNAMIC_SECRETS=true"
+    return
+  fi
+  if ! bin/api --against-master --supports-issuers > /dev/null 2>&1; then
+    echo "Skipping dynamic secrets seed: this version does not serve the issuers API"
+    return
+  fi
+
+  mkdir -p "$CERT_DIR"
+  echo "Creating issuer $ISSUER_NAME before the upgrade..."
+  # Made-up keys in the right format; Conjur validates the format only
+  bin/api --create-aws-issuer "$ISSUER_NAME" AKIAIOSFODNN7EXAMPLE 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+
+  echo "Loading the dynamic secret $DYNAMIC_SECRET_NAME..."
+  bin/api --load-dynamic-policy
+
+  echo "Recording the issuer to compare against after the upgrade..."
+  bin/api --against-master --get-issuer "$ISSUER_NAME" > "$ISSUER_SNAPSHOT"
+
+  echo "Checking the dynamic secret before the upgrade..."
+  bin/api --against-master --check-dynamic-secret "$DYNAMIC_SECRET_NAME"
+  DYNAMIC_SECRETS_SEEDED=true
+}
+
+# Generate a CA and a client certificate for the host, plus a certificate from a different CA that
+# Conjur must not trust. Re-runnable: it keeps files that already exist.
+generate_cert_auth_certs() {
+  mkdir -p "$CERT_DIR"
+  (
+    cd "$CERT_DIR"
+    if [ ! -s ca.pem ]; then
+      openssl genrsa -out ca.key 2048 2> /dev/null
+      openssl req -x509 -new -key ca.key -sha256 -days 3650 -subj "/CN=Upgrade Test CA" \
+        -addext "basicConstraints=critical,CA:TRUE" \
+        -addext "keyUsage=critical,keyCertSign,cRLSign" -out ca.pem 2> /dev/null
+    fi
+    if [ ! -s client.pem ]; then
+      openssl genrsa -out client.key 2048 2> /dev/null
+      openssl req -new -key client.key -subj "/CN=upgrade-client" -out client.csr 2> /dev/null
+      printf 'basicConstraints=CA:FALSE\nkeyUsage=critical,digitalSignature\nextendedKeyUsage=clientAuth\nsubjectAltName=URI:spiffe://trust.com/workload-id\n' > client.ext
+      openssl x509 -req -in client.csr -CA ca.pem -CAkey ca.key -CAcreateserial -days 825 -sha256 \
+        -extfile client.ext -out client.pem 2> /dev/null
+    fi
+    # Same name and SAN as the real client, but signed by a CA that was never given to Conjur
+    if [ ! -s untrusted-client.pem ]; then
+      openssl genrsa -out other-ca.key 2048 2> /dev/null
+      openssl req -x509 -new -key other-ca.key -sha256 -days 3650 -subj "/CN=Untrusted CA" \
+        -addext "basicConstraints=critical,CA:TRUE" \
+        -addext "keyUsage=critical,keyCertSign,cRLSign" -out other-ca.pem 2> /dev/null
+      openssl genrsa -out untrusted-client.key 2048 2> /dev/null
+      openssl req -new -key untrusted-client.key -subj "/CN=upgrade-client" -out untrusted-client.csr 2> /dev/null
+      openssl x509 -req -in untrusted-client.csr -CA other-ca.pem -CAkey other-ca.key -CAcreateserial \
+        -days 825 -sha256 -extfile client.ext -out untrusted-client.pem 2> /dev/null
+    fi
+    # The api-client container runs as root and the mount is read-only; make the files readable
+    chmod 644 ./*.pem ./*.key
+  )
+}
+
+seed_cert_auth() {
+  if [ "${SKIP_CERT_AUTH:-false}" = true ]; then
+    echo "Skipping certificate authentication seed: SKIP_CERT_AUTH=true"
+    return
+  fi
+  if ! bin/api --against-master --supports-cert-auth > /dev/null 2>&1; then
+    echo "Skipping certificate authentication seed: this version has no certificate authenticator"
+    return
+  fi
+
+  echo "Generating the certificates..."
+  generate_cert_auth_certs
+
+  echo "Loading the certificate authenticator policy and CA..."
+  bin/api --load-cert-auth-policy
+  bin/api --set-variable-from-file "conjur/authn-cert/$CERT_AUTH_SERVICE/ca-cert" /src/certs/ca.pem
+
+  # rollout_cluster applies the same setting again after every stand-up, restore and upgrade
+  CERT_AUTH_SEEDED=true
+  enable_authenticators
+  echo "Authenticating with the client certificate before the upgrade..."
+  cert_auth_checks
+}
+
+# The authenticators are re-applied after every restore and upgrade, so cert auth must be in this list or
+# it is switched off again each time
+authenticators() {
+  if [ "$CERT_AUTH_SEEDED" = true ]; then
+    echo "authn-jwt/fake-authenticator,authn-cert/$CERT_AUTH_SERVICE,authn"
+  else
+    echo "authn-jwt/fake-authenticator,authn"
+  fi
+}
+
+enable_authenticators() {
+  # Trigger a restart of services to ensure that they come back up! See: CNJR-4751
+  _run conjur-master-1.mycompany.local \
+    "evoke variable set CONJUR_AUTHENTICATORS $(authenticators)"
+
+  # evoke variable set restarts conjur, nginx, and both postgres clusters
+  bin/dap --wait-for-master
+}
+
+# The certificate is presented to the leader through its load balancer, which passes TLS through. Only the
+# leader is checked: standbys do not run the authenticator, and the follower would need the authenticator list
+# applied on it too, which this test does not do.
+cert_auth_checks() {
+  local attempts=0
+  # The authenticator service can lag the leader's health check by a few seconds
+  until bin/api --cert-auth "$CERT_AUTH_HOST" /src/certs/client.pem /src/certs/client.key "$CERT_AUTH_SERVICE"; do
+    attempts=$((attempts + 1))
+    if [ "$attempts" -ge 10 ]; then
+      echo "Certificate authentication still failing after $attempts attempts"
+      return 1
+    fi
+    sleep 6
+  done
+  # A certificate from a CA that Conjur was not given must be rejected, or the check above proves nothing
+  bin/api --cert-auth-expect 401 "$CERT_AUTH_HOST" /src/certs/untrusted-client.pem /src/certs/untrusted-client.key "$CERT_AUTH_SERVICE"
+}
+
+# A follower's load balancer needs a few health checks to pass before it routes, and after a restore it
+# starts with no healthy backend: reads through it return HTTP 503 for about ten seconds although the
+# follower itself is healthy. Retry for a bounded time, then fail with the last output.
+retry_follower() {
+  local attempt=1
+  local max_attempts=12
+  until "$@"; do
+    if [ "$attempt" -ge "$max_attempts" ]; then
+      echo "Still failing after $max_attempts attempts: $*"
+      return 1
+    fi
+    echo "Not ready yet (attempt $attempt of $max_attempts), the follower's load balancer may still be starting; retrying in 5s..."
+    attempt=$((attempt + 1))
+    sleep 5
+  done
+}
+
+verify_seeded_data() {
+  if [ "$DYNAMIC_SECRETS_SEEDED" = true ]; then
+    echo "Verifying the issuer and dynamic secret on the leader..."
+    bin/api --against-master --check-issuer "$ISSUER_NAME" "/src/certs/issuer-$ISSUER_NAME.json"
+    bin/api --against-master --check-dynamic-secret "$DYNAMIC_SECRET_NAME"
+
+    # The follower gets issuers by replication, which CNJR-9247 broke on upgrade
+    echo "Verifying the issuer and dynamic secret on the follower..."
+    retry_follower bin/api --check-issuer "$ISSUER_NAME" "/src/certs/issuer-$ISSUER_NAME.json"
+    retry_follower bin/api --check-dynamic-secret "$DYNAMIC_SECRET_NAME"
+  else
+    echo "Dynamic secrets were not seeded; nothing to verify"
+  fi
+
+  if [ "$CERT_AUTH_SEEDED" = true ]; then
+    echo "Verifying certificate authentication..."
+    cert_auth_checks
+  else
+    echo "Certificate authentication was not seeded; nothing to verify"
+  fi
 }
 
 failover_master() {
@@ -178,6 +406,31 @@ failover_master() {
 
   echo "Waiting for healthy Master..."
   bin/dap --wait-for-master
+
+  reenable_authenticators_after_failover
+}
+
+# CONJUR_AUTHENTICATORS is kept in the leader's own /opt/conjur/etc/conjur.conf, set by `evoke variable set`
+# on the leader that is running at the time. The standby that takes over never had it set, so after a
+# failover it runs with only the default authenticator and certificate authentication answers HTTP 400.
+# Apply the setting to the node that took over, so the checks that follow test the data that came through the
+# upgrade and not this.
+reenable_authenticators_after_failover() {
+  [ "$CERT_AUTH_SEEDED" = true ] || return 0
+
+  local node standby
+  # bin/upgrade-test always provisions the default two standbys, so the new leader is master-2 or master-3
+  for standby in 2 3; do
+    node="conjur-master-$standby.mycompany.local"
+    if [ "$(docker compose exec -T "$node" bash -c 'cat /opt/conjur/etc/role 2> /dev/null' | tr -d '\r')" = master ]; then
+      echo "Applying CONJUR_AUTHENTICATORS to the new leader $node (it is not carried over from the old one)..."
+      _run "$node" "evoke variable set CONJUR_AUTHENTICATORS $(authenticators)"
+      bin/dap --wait-for-master
+      return 0
+    fi
+  done
+  echo "Could not find the new leader to re-enable the authenticators on"
+  return 1
 }
 
 backup_and_restore_cluster() {
@@ -219,16 +472,9 @@ upgrade_cluster () {
 rollout_cluster() {
   local version=$1 registry=$2
 
-  # Trigger a restart of services to ensure that they come back up!
-  # See: CNJR-4751
-  _run conjur-master-1.mycompany.local \
-    "evoke variable set CONJUR_AUTHENTICATORS authn-jwt/fake-authenticator,authn"
-
-  # evoke variable set restarts conjur, nginx, and both postgres clusters.
-  # Wait for the master to be healthy before provisioning standbys, otherwise
-  # `evoke configure standby` fails its leader DB health check while the DB
-  # is still coming back up.
-  bin/dap --wait-for-master
+  # Setting the authenticators restarts the services and waits for the master to be healthy, which the
+  # standbys need: `evoke configure standby` fails its leader DB health check while the DB is still coming back up.
+  enable_authenticators
 
   echo "Provisioning $version Standbys..."
   with_registry "$registry" bin/dap --provision-standbys --version "$version"

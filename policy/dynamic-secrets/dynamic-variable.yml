@@ -1,0 +1,10 @@
+- !policy
+  id: data/dynamic
+  body:
+    # A dynamic secret: its value is minted on request by the issuer 'upgrade-check', created by
+    # `bin/api --create-aws-issuer`. bin/upgrade-test creates it before an upgrade and checks it afterwards.
+    - !variable
+      id: ds-upgrade
+      annotations:
+        dynamic/issuer: upgrade-check
+        dynamic/method: federation-token

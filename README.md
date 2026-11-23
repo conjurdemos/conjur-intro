@@ -170,6 +170,52 @@ Before the upgrade the new image is pulled first, so a wrong choice stops the te
 |--password `<password>`|configuration|Uses a non-default password for authentication||
 |--set-secrets|action|• Authenticates<br>• Sets variable values|Requires `--load-policy` before running|
 |--user `<conjur-user>`|configuration|Uses a non-default (`admin`) user for authentication||
+|--create-aws-issuer `<name>` `<access-key-id>` `<secret-key>`|action|• Authenticates<br>• Creates an AWS issuer from the given (format-checked, not verified) keys|Run against master|
+|--get-issuer `<name>`|action|• Prints the issuer's stable fields (id, account, type, max_ttl, data)|Exits 1 unless the issuer exists. Run against follower unless `--against-master` flag is present|
+|--check-issuer `<name>` `<snapshot-file>`|action|• Compares the issuer's stable fields with a snapshot|Exits 1 on any difference|
+|--load-dynamic-policy|action|• Loads `policy/dynamic-secrets/dynamic-variable.yml` (`data/dynamic/ds-upgrade`)|Run against master. Needs the issuer `upgrade-check`|
+|--check-dynamic-secret `<name>`|action|• Fetches `data/dynamic/<name>`|Exits 1 unless the secret is issued, or fails only at the cloud call (fake credentials)|
+|--load-cert-auth-policy|action|• Loads `policy/authn-cert/upgrade.yml`|Run against master|
+|--set-variable-from-file `<variable>` `<file>`|action|• Sets a variable to the exact contents of a file|Run against master. The file must be mounted into the container (`tmp/upgrade-test/certs` is mounted at `/src/certs`)|
+|--cert-auth `<host>` `<cert>` `<key>` `[service-id]`|action|• Authenticates a host with a client certificate|Run against master. Exits 1 unless the answer is HTTP 200 with a token|
+|--cert-auth-expect `<status>` `<host>` `<cert>` `<key>` `[service-id]`|action|• Same request, expecting a specific status|Exits 1 unless the status is exactly `<status>`|
+|--supports-cert-auth, --supports-issuers|action|• Asks the leader whether it has the feature|Exit status 0 or 1|
+
+### bin/upgrade-test
+
+`bin/upgrade-test <initial-version> [intermediate-versions...] <final-version>` stands up a cluster at the
+initial version, upgrades it through the other versions by backup and restore, and checks that it still works
+after each step and after a failover.
+
+Besides loading policy and reading secrets, it creates two things on the initial version and checks them
+again after every restore, upgrade and failover:
+
+- **Dynamic secrets:** an AWS issuer (`upgrade-check`) and a dynamic secret (`data/dynamic/ds-upgrade`). The
+  issuer's stable fields must equal a snapshot taken before the upgrade, on the leader and on the follower, and
+  fetching the dynamic secret must get as far as the cloud call. The test has no cloud credentials, so the
+  issuer uses made-up keys: fetching fails at AWS with `Failed to create the dynamic secret`, which is accepted.
+  Anything else (404, 405, issuer not found, data key invalid) fails the test.
+- **Certificate authentication:** a host that authenticates with a client certificate (`authn-cert/upgrade`).
+  The same certificate must still return a token through the leader's load balancer, and a certificate from
+  another CA must still be refused (401). Only the leader is checked: standbys do not run the authenticator, and
+  a follower accepts a client certificate only once the authenticator list has been applied on it, which this
+  test does not do.
+
+`CONJUR_AUTHENTICATORS` is kept in the leader's own configuration, so it is applied again after every restore
+and upgrade, and to the node that takes over after the failover (it is not carried over from the old leader).
+
+A feature the initial version does not have is skipped with a message (the leader is asked, not the version
+number). Both can also be turned off:
+
+|Variable|Effect|
+|-|-|
+|`SKIP_DYNAMIC_SECRETS=true`|Skips the dynamic secrets seed and checks, and the dynamic secrets exercise (which also skips itself, with a message, on a version without the issuers API)|
+|`SKIP_CERT_AUTH=true`|Skips the certificate authentication seed and checks|
+|`FROM_SOURCE`, `TO_SOURCE`|Where the image of the initial version (`FROM_SOURCE`) and of every version it is upgraded to (`TO_SOURCE`) is pulled from: `artifactory-latest` (the default), `artifactory-dev`, `artifactory-release` or `registry`. See "Where the appliance image comes from"|
+
+The issuer is created with references to Conjur variables for the AWS keys, the form that current versions
+require. A version that only accepts the keys inline answers that with a 422, and the issuer is then created
+with inline keys instead. Generated certificates are written to `tmp/upgrade-test/certs`.
 
 ## Start a single DAP instance
 

@@ -8,5 +8,9 @@ source ./bin/utils.sh
 # Make sure .env envvars are available
 dotenv > /dev/null 2>&1 || true
 
+# docker-compose.yml bind-mounts this into the api-client; create it here so Docker does not create it
+# as a root-owned directory when bin/upgrade-test has not generated any certificates.
+mkdir -p tmp/upgrade-test/certs
+
 export VERSION='5.0-stable'
 docker compose run --no-deps --rm api-client bin/api "$@"
