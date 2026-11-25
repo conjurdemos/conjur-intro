@@ -122,7 +122,7 @@ load_secrets() {
         --silent \
         --insecure \
         --request POST \
-        --data 'https://keycloak:8443/auth/realms/master' \
+        --data 'https://keycloak:8443/realms/master' \
         $MASTER_CURL_URL/secrets/$CONJUR_ACCOUNT/variable/conjur%2Fauthn-oidc%2Fkeycloak-$iter%2Fprovider-uri"
 
     retry_5_times "curl --header 'Authorization: Token token=\"$token\"' \

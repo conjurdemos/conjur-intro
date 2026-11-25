@@ -2,28 +2,33 @@
 
 set -eo pipefail
 
-keycloak/bin/kcreg.sh config credentials \
-  --server http://localhost:8080/auth \
+/opt/keycloak/bin/kcreg.sh config credentials \
+  --server http://localhost:8080 \
   --realm master \
-  --user "$KEYCLOAK_USER" \
-  --password "$KEYCLOAK_PASSWORD"
+  --user "$KC_BOOTSTRAP_ADMIN_USERNAME" \
+  --password "$KC_BOOTSTRAP_ADMIN_PASSWORD"
 
-keycloak/bin/kcreg.sh create \
-  -s clientId="$KEYCLOAK_CLIENT_ID" \
-  -s "redirectUris=[\"$KEYCLOAK_REDIRECT_URI\"]" \
-  -s "secret=$KEYCLOAK_CLIENT_SECRET" \
-  -s 'serviceAccountsEnabled=true'
+# Creating a client that exists fails with "Client Identifier in use", so only create it the first time
+if /opt/keycloak/bin/kcreg.sh get "$KEYCLOAK_CLIENT_ID" > /dev/null 2>&1; then
+  echo "Client $KEYCLOAK_CLIENT_ID already exists"
+else
+  /opt/keycloak/bin/kcreg.sh create \
+    -s clientId="$KEYCLOAK_CLIENT_ID" \
+    -s "redirectUris=[\"$KEYCLOAK_REDIRECT_URI\"]" \
+    -s "secret=$KEYCLOAK_CLIENT_SECRET" \
+    -s 'serviceAccountsEnabled=true'
+fi
 
 # Enable direct access to get an id token with username & password
-keycloak/bin/kcreg.sh update conjurClient -s directAccessGrantsEnabled=true
+/opt/keycloak/bin/kcreg.sh update conjurClient -s directAccessGrantsEnabled=true
 
-keycloak/bin/kcreg.sh get "$KEYCLOAK_CLIENT_ID" | jq '.secret'
+/opt/keycloak/bin/kcreg.sh get "$KEYCLOAK_CLIENT_ID" | jq '.secret'
 
 # Increase token lifespan to 10 minutes (default 1m) for JWT authentication
-keycloak/bin/kcadm.sh config credentials \
-  --server http://localhost:8080/auth \
+/opt/keycloak/bin/kcadm.sh config credentials \
+  --server http://localhost:8080 \
   --realm master \
-  --user "$KEYCLOAK_USER" \
-  --password "$KEYCLOAK_PASSWORD"
+  --user "$KC_BOOTSTRAP_ADMIN_USERNAME" \
+  --password "$KC_BOOTSTRAP_ADMIN_PASSWORD"
 
-keycloak/bin/kcadm.sh update realms/master -s "accessTokenLifespan=600"
+/opt/keycloak/bin/kcadm.sh update realms/master -s "accessTokenLifespan=600"

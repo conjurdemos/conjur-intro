@@ -2,22 +2,27 @@
 
 set -eo pipefail
 
-echo "login as admin with user $KEYCLOAK_USER"
+echo "login as admin with user $KC_BOOTSTRAP_ADMIN_USERNAME"
 
-keycloak/bin/kcadm.sh config credentials \
-  --server http://localhost:8080/auth \
+/opt/keycloak/bin/kcadm.sh config credentials \
+  --server http://localhost:8080 \
   --realm master \
-  --user "$KEYCLOAK_USER" \
-  --password "$KEYCLOAK_PASSWORD"
+  --user "$KC_BOOTSTRAP_ADMIN_USERNAME" \
+  --password "$KC_BOOTSTRAP_ADMIN_PASSWORD"
 
-echo "creating user $1 with email $3"
+# Creating a user that exists fails, so only create it the first time; the password is set either way
+if [ -n "$(/opt/keycloak/bin/kcadm.sh get users -r master -q username="$1" --fields username --format csv --noquotes 2> /dev/null | grep -x "$1")" ]; then
+  echo "user $1 already exists"
+else
+  echo "creating user $1 with email $3"
 
-keycloak/bin/kcadm.sh create users \
-  -s username="$1" \
-  -s email="$3" \
-  -s enabled=true
+  /opt/keycloak/bin/kcadm.sh create users \
+    -s username="$1" \
+    -s email="$3" \
+    -s enabled=true
+fi
 
 echo "setting password of user $1 to $2"
-keycloak/bin/kcadm.sh set-password \
+/opt/keycloak/bin/kcadm.sh set-password \
   --username "$1" \
   -p "$2"

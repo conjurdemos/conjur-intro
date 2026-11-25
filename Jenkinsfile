@@ -11,9 +11,9 @@ pipeline {
 
   parameters {
     string(name: 'FROM', description: 'Version to upgrade from', defaultValue: '')
-    choice(name: 'FROM_SOURCE', description: 'Where the image of FROM version is pulled from, internal registry or JFrog Artifactory', choices: ['artifactory-latest', 'artifactory-dev', 'artifactory-release', 'registry'])
+    choice(name: 'FROM_SOURCE', description: 'Where the image of FROM version is pulled from, internal registry or JFrog Artifactory', choices: ['appliance-docker-latest-local', 'appliance-docker-dev-local', 'appliance-docker-release-local', 'registry.tld'])
     string(name: 'TO', description: 'Version to upgrade to', defaultValue: '')
-    choice(name: 'TO_SOURCE', description: 'Where the image of the TO version is pulled from, internal registry or JFrog Artifactory', choices: ['artifactory-latest', 'artifactory-dev', 'artifactory-release', 'registry'])
+    choice(name: 'TO_SOURCE', description: 'Where the image of the TO version is pulled from, internal registry or JFrog Artifactory', choices: ['appliance-docker-latest-local', 'appliance-docker-dev-local', 'appliance-docker-release-local', 'registry.tld'])
     booleanParam(name: 'SKIP_DYNAMIC_SECRETS', description: 'If set to true, the dynamic secrets exercise and the check that a dynamic secret created before the upgrade survives it will not be run', defaultValue: false)
     booleanParam(name: 'SKIP_CERT_AUTH', description: 'If set to true, the check that certificate authentication set up before the upgrade still works after it will not be run', defaultValue: false)
     booleanParam(name: 'COPY_ENTERPRISE_COMMIT', description: 'Copy the main branch commit to the public conjurinc GitHub organization', defaultValue: true)

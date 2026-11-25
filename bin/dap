@@ -64,6 +64,7 @@ Usage: bin/dap [options]:
     --provision-cert-auth                                     Configures certificate authentication: generates a CA and a client certificate
                                                                 (Requires configured master, appliance 5.22 or newer).
 
+    --provision-keycloak                                      Starts Keycloak and configures an OIDC authenticator for it
                                                                 (Requires configured master).
 
     --provision-jwt                                           Configures a JWT authenticator that accepts tokens signed with a generated key;
@@ -867,7 +868,7 @@ function _setup_keycloak() {
 
   bin/cli conjur policy load -b root -f ./artifacts/keycloak/oidc-policy.yml
 
-  bin/cli conjur variable set -i "conjur/authn-oidc/keycloak/provider-uri" -v "https://keycloak:8443/auth/realms/master"
+  bin/cli conjur variable set -i "conjur/authn-oidc/keycloak/provider-uri" -v "https://keycloak:8443/realms/master"
   bin/cli conjur variable set -i "conjur/authn-oidc/keycloak/id-token-user-property" -v "preferred_username"
   bin/cli conjur variable set -i "conjur/authn-oidc/keycloak/client-id" -v "conjurClient"
   bin/cli conjur variable set -i "conjur/authn-oidc/keycloak/client-secret" -v "1234"
@@ -876,9 +877,22 @@ function _setup_keycloak() {
 
   bin/cli conjur variable set -i "test-variable" -v "test-secret"
 
-  _append_conjur_authenticator "authn-oidc/keycloak"
+  # The ID-token login (POST /authn-oidc/keycloak/demo/authenticate) of this authenticator is switched off in
+  # current appliances; without the flag that endpoint answers 404. The reload that follows applies it.
+  _run conjur-master-1.mycompany.local 'grep -q "^CONJUR_FEATURE_OIDC_AUTHENTICATOR_V1_ENABLED=" /opt/conjur/etc/possum.conf || echo "CONJUR_FEATURE_OIDC_AUTHENTICATOR_V1_ENABLED=true" >> /opt/conjur/etc/possum.conf'
 
-  echo "Keycloak admin console is available at: http://localhost:7777/auth/admin"
+  _append_conjur_authenticator "authn-oidc/keycloak"
+  # _append_conjur_authenticator returns early, without a reload, when the authenticator is already enabled
+  _run conjur-master-1.mycompany.local 'sv reload conjur'
+  _wait_for_master
+  _trust_keycloak_on_other_nodes
+  _sync_authenticators_to_other_nodes
+
+  echo "Keycloak admin console is available at: http://localhost:7777/admin"
+  echo "Log in with a Keycloak ID token (users alice/alice and bob.somebody/bob; request it inside the Docker network):"
+  echo "  ID_TOKEN=\$(docker compose exec -T keycloak curl -sk -d grant_type=password -d client_id=conjurClient -d client_secret=1234 \\"
+  echo "    -d username=alice -d password=alice -d scope=openid https://keycloak:8443/realms/master/protocol/openid-connect/token | jq -r .id_token)"
+  echo "  curl -k -H 'Accept-Encoding: base64' --data-urlencode \"id_token=\${ID_TOKEN}\" https://localhost:${CONJUR_MASTER_PORT}/authn-oidc/keycloak/demo/authenticate"
 }
 
 # Prints the version of the appliance running on the leader, for example 5.24.1-1113.10.0.
@@ -1321,27 +1335,49 @@ function _wait_for_node {
   echo "Warning: ${node} did not report healthy after the restart."
 }
 
-# Copies the leader's authenticator list to every other running node and restarts
+# Copies the leader's authenticator list, and the v1 OIDC flag if it has it, to every other running node and restarts
 # its conjur service. CONJUR_AUTHENTICATORS is stored in each node's own conjur.conf, so a follower, a standby and a
 # promoted standby reject the logins of an authenticator with "'...' is not enabled" until they have it too.
 function _sync_authenticators_to_other_nodes {
   [[ $DRY_RUN = false ]] || return 0
-  local nodes node list
+  local nodes node list oidc_flag
   nodes=$(_other_nodes)
   [[ -n "${nodes}" ]] || return 0
 
   list=$(docker compose exec -T conjur-master-1.mycompany.local \
     bash -c "grep -E '^CONJUR_AUTHENTICATORS=' /opt/conjur/etc/conjur.conf" 2> /dev/null | tr -d '\r')
   [[ -n "${list}" ]] || return 0
+  oidc_flag=false
+  if docker compose exec -T conjur-master-1.mycompany.local \
+      bash -c "grep -q '^CONJUR_FEATURE_OIDC_AUTHENTICATOR_V1_ENABLED=' /opt/conjur/etc/possum.conf" 2> /dev/null; then
+    oidc_flag=true
+  fi
 
   for node in ${nodes}; do
     echo "Enabling the authenticators on ${node}..."
     docker compose exec -T "${node}" bash -c "
       sed -i '/^CONJUR_AUTHENTICATORS=/d' /opt/conjur/etc/conjur.conf
       echo '${list}' >> /opt/conjur/etc/conjur.conf
+      if [ '${oidc_flag}' = true ]; then
+        grep -q '^CONJUR_FEATURE_OIDC_AUTHENTICATOR_V1_ENABLED=' /opt/conjur/etc/possum.conf \
+          || echo 'CONJUR_FEATURE_OIDC_AUTHENTICATOR_V1_ENABLED=true' >> /opt/conjur/etc/possum.conf
+      fi
       sv restart conjur
     " > /dev/null 2>&1 || echo "Warning: could not enable the authenticators on ${node}."
     _wait_for_node "${node}"
+  done
+}
+
+# Installs Keycloak's certificate in the trust store of every other running node, so that they can validate tokens
+# (OIDC) and fetch the signing keys (JWT) over TLS; --provision-keycloak does this on the leader.
+function _trust_keycloak_on_other_nodes {
+  [[ $DRY_RUN = false ]] || return 0
+  local node
+  for node in $(_other_nodes); do
+    echo "Trusting the Keycloak certificate on ${node}..."
+    docker compose cp artifacts/keycloak/fetch-certificate "${node}:/tmp/fetch-certificate" > /dev/null 2>&1 \
+      && docker compose exec -T "${node}" bash -c 'chmod +x /tmp/fetch-certificate && /tmp/fetch-certificate' > /dev/null 2>&1 \
+      || echo "Warning: could not install the Keycloak certificate on ${node}."
   done
 }
 

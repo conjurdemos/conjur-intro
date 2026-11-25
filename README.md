@@ -119,11 +119,11 @@ To connect to the UI in the browser, use ports 10443(through HA proxy) or 10444(
 
 The Artifactory host is never written in this repo.
 
-`bin/upgrade-test` takes the choice per version, so a version that is not in Artifactory yet can still be used: `FROM_SOURCE` applies to the initial version and `TO_SOURCE` to every version it is upgraded to. Each is `artifactory-latest` (the default), `artifactory-dev`, `artifactory-release` or `registry` (`registry.tld`). The Jenkins job has the same two parameters.
+`bin/upgrade-test` takes the choice per version, so a version that is not in Artifactory yet can still be used: `FROM_SOURCE` applies to the initial version and `TO_SOURCE` to every version it is upgraded to. Each is the name of an Artifactory repository, as the appliance repository names them: `appliance-docker-latest-local` (the default), `appliance-docker-dev-local` or `appliance-docker-release-local`; or `registry.tld`. The Jenkins job has the same two parameters.
 ```
-$ FROM_SOURCE=registry TO_SOURCE=artifactory bin/upgrade-test 5.23.1-11 5.24.1-11
+$ FROM_SOURCE=registry.tld TO_SOURCE=appliance-docker-latest-local bin/upgrade-test 5.23.1-11 5.24.1-11
 ```
-Before the upgrade the new image is pulled first, so a wrong choice stops the test while the old leader is still running. `artifactory` needs `INFRAPOOL_ARTIFACTORY_HOST` or `ARTIFACTORY_HOST`.
+Before the upgrade the new image is pulled first, so a wrong choice stops the test while the old leader is still running. The Artifactory names need `INFRAPOOL_ARTIFACTORY_HOST` or `ARTIFACTORY_HOST`.
 
 ### bin/dap
 `bin/dap` provides a dead simple mechanism for starting DAP in a variety of configurations and workflows. It provides visibility into the commands required to perform various workflows.
@@ -159,14 +159,38 @@ Each command below needs a running leader (`bin/dap --provision-master`) and wor
 
 |Command|What it sets up|Appliance|
 |-|-|-|
+|`--provision-keycloak`|Keycloak (the Quarkus distribution), the `authn-oidc/keycloak` authenticator, users alice and bob.somebody|tested on 5.24.1|
 |`--provision-ldap-jit`|An OpenLDAP server (LDAPS) and the `authn-ldap/jit` authenticator with just-in-time user provisioning|5.24 or newer; tested on 5.24.1 and a dev build|
 |`--provision-cert-auth`|The `authn-cert/intro` authenticator, a generated CA and a client certificate for the host `cert-client`|5.22 or newer; tested on 5.24.1 and a dev build|
 |`--provision-jwt`|The `authn-jwt/intro` authenticator, which accepts tokens signed with a generated key (no token issuer runs), and two hosts|tested on 5.24.1|
 |`--provision-ldap-sync`|The same OpenLDAP server, and LDAP Sync, which imports its users and groups into Conjur|tested on 5.23.1 and 5.24.1|
 
-**Followers and standbys.** `CONJUR_AUTHENTICATORS` is kept in each node's own `conjur.conf`, so a node that was not configured answers a login with `CONJ00004E '<authenticator>' is not enabled`. The commands therefore also configure every other running node (followers, and standbys so that they are ready for a failover): they copy the leader's authenticator list and restart the node's conjur service. (The JWT key lives in Conjur and is replicated.) After a failover the promoted standby already has them.
+**Followers and standbys.** `CONJUR_AUTHENTICATORS` is kept in each node's own `conjur.conf`, so a node that was not configured answers a login with `CONJ00004E '<authenticator>' is not enabled`. The commands therefore also configure every other running node (followers, and standbys so that they are ready for a failover): they copy the leader's authenticator list and the OIDC flag, restart the node's conjur service, and, for Keycloak, install Keycloak's certificate in its trust store. (JWT needs neither: its key lives in Conjur and is replicated.) After a failover the promoted standby already has them.
 
-A node that is added **after** a command ran does not get them. Run the commands again: they can be run any number of times, and a follower added later, works again. After a failover `conjur-master-1` is down and the commands cannot reach it, so they cannot be run again until it is back.
+A node that is added **after** a command ran does not get them. Run the commands again: they can be run any number of times, and a follower added later, or a leader restored from a backup (the Keycloak certificate is not part of a backup), works again. After a failover `conjur-master-1` is down and the commands cannot reach it, so they cannot be run again until it is back.
+
+#### OIDC with Keycloak
+```
+$ bin/dap --provision-master --version <version>
+$ bin/dap --provision-keycloak
+```
+
+The Keycloak image is built the first time you run the command, from `artifacts/keycloak/Dockerfile`: it starts from `quay.io/keycloak/keycloak` (the Quarkus distribution, no version pinned, like in the other Conjur repositories) and adds `curl` and `jq` from `registry.access.redhat.com/ubi9`. The machine needs access to both registries, and the first run takes a few minutes longer.
+
+Starts Keycloak, creates the client `conjurClient` and the users alice (password `alice`), bob.somebody (`bob`) and not_in_conjur, loads `artifacts/keycloak/oidc-policy.yml` and enables `authn-oidc/keycloak`. Only alice has a Conjur role, and she can read `test-variable`. The command can be run again.
+
+Log in with a Keycloak ID token; request it inside the Docker network (the command prints this example when it finishes):
+```
+$ ID_TOKEN=$(docker compose exec -T keycloak curl -sk -d grant_type=password -d client_id=conjurClient -d client_secret=1234 \
+    -d username=alice -d password=alice -d scope=openid https://keycloak:8443/realms/master/protocol/openid-connect/token | jq -r .id_token)
+$ curl -k -H 'Accept-Encoding: base64' --data-urlencode "id_token=${ID_TOKEN}" https://localhost/authn-oidc/keycloak/demo/authenticate
+```
+
+Things worth knowing:
+- This is the v1 OIDC login (an ID token posted to `/authn-oidc/<service>/<account>/authenticate`). Current appliances serve it only when `CONJUR_FEATURE_OIDC_AUTHENTICATOR_V1_ENABLED=true` is in `/opt/conjur/etc/possum.conf`, and answer 404 otherwise. The command sets the flag.
+- The Keycloak admin console is at http://localhost:7777/admin (admin/admin).
+- The image has a self-signed certificate for `keycloak` and `localhost` that is created when the image is built and was valid for about 90 days when I checked. If `--provision-keycloak` starts failing on an old machine with TLS errors, rebuild the image: `docker compose build --no-cache keycloak`, then run the command again (it installs the new certificate on the nodes).
+- Because the tag is not pinned, a rebuild can pick up a newer Keycloak; if the command stops working after one, compare the Keycloak version (`docker compose exec keycloak /opt/keycloak/bin/kc.sh --version`) with the last one that worked.
 
 #### LDAP with just-in-time provisioning
 ```
@@ -315,7 +339,7 @@ number). Both can also be turned off:
 |-|-|
 |`SKIP_DYNAMIC_SECRETS=true`|Skips the dynamic secrets seed and checks, and the dynamic secrets exercise (which also skips itself, with a message, on a version without the issuers API)|
 |`SKIP_CERT_AUTH=true`|Skips the certificate authentication seed and checks|
-|`FROM_SOURCE`, `TO_SOURCE`|Where the image of the initial version (`FROM_SOURCE`) and of every version it is upgraded to (`TO_SOURCE`) is pulled from: `artifactory-latest` (the default), `artifactory-dev`, `artifactory-release` or `registry`. See "Where the appliance image comes from"|
+|`FROM_SOURCE`, `TO_SOURCE`|Where the image of the initial version (`FROM_SOURCE`) and of every version it is upgraded to (`TO_SOURCE`) is pulled from: `appliance-docker-latest-local` (the default), `appliance-docker-dev-local`, `appliance-docker-release-local` or `registry.tld`. See "Where the appliance image comes from"|
 
 The issuer is created with references to Conjur variables for the AWS keys, the form that current versions
 require. A version that only accepts the keys inline answers that with a 422, and the issuer is then created

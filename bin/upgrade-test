@@ -7,39 +7,38 @@ set -eu
 # Synopsis: bin/upgrade-test <initial-version> [intermediate-versions...] <final-version>
 #
 # Where the appliance image of a version is pulled from is chosen per version:
-#   FROM_SOURCE  the initial version                     (registry, artifactory-latest, artifactory-dev or artifactory-release; default artifactory-latest)
-#   TO_SOURCE    every version it is upgraded to         (registry, artifactory-latest, artifactory-dev or artifactory-release; default artifactory-latest)
+#   FROM_SOURCE  the initial version                     (registry.tld, appliance-docker-latest-local, appliance-docker-dev-local or appliance-docker-release-local; default appliance-docker-latest-local)
+#   TO_SOURCE    every version it is upgraded to         (registry.tld, appliance-docker-latest-local, appliance-docker-dev-local or appliance-docker-release-local; default appliance-docker-latest-local)
 DRY_RUN=false
 
-# Prints the registry prefix for a choice (registry, artifactory-latest, artifactory-dev or artifactory-release;
-# artifactory is the same as artifactory-latest); an empty choice means artifactory-latest.
+# Prints the registry prefix for a choice: registry.tld, or the name of an Artifactory repository
+# (appliance-docker-latest-local, appliance-docker-dev-local or appliance-docker-release-local) as the appliance repository
+# names them; an empty choice means appliance-docker-latest-local.
 registry_prefix() {
-  local choice=${1:-artifactory-latest}
+  local choice=${1:-appliance-docker-latest-local}
 
   case "$choice" in
-    artifactory|artifactory-latest|artifactory-dev|artifactory-release)
+    appliance-docker-latest-local|appliance-docker-dev-local|appliance-docker-release-local)
       local host="${INFRAPOOL_ARTIFACTORY_HOST:-${ARTIFACTORY_HOST:-}}"
       if [ -z "$host" ]; then
         echo "The registry choice '$choice' needs INFRAPOOL_ARTIFACTORY_HOST or ARTIFACTORY_HOST to be set." >&2
-        echo "To use the old registry instead, set FROM_SOURCE and/or TO_SOURCE to 'registry'." >&2
+        echo "To use the old registry instead, set FROM_SOURCE and/or TO_SOURCE to 'registry.tld'." >&2
         return 1
       fi
-      local tier=${choice#artifactory}
-      tier=${tier#-}
-      printf '%s/appliance-docker-%s-local' "$host" "${tier:-latest}"
+      printf '%s/%s' "$host" "$choice"
       ;;
-    registry)
+    registry.tld)
       printf 'registry.tld'
       ;;
     *)
-      echo "Unknown registry '$choice'; use registry, artifactory-latest, artifactory-dev or artifactory-release." >&2
+      echo "Unknown registry '$choice'; use registry.tld, appliance-docker-latest-local, appliance-docker-dev-local or appliance-docker-release-local." >&2
       return 1
       ;;
   esac
 }
 
 # Runs a command with the appliance image taken from the registry chosen for a version.
-# Usage: with_registry <artifactory|registry> <command...>
+# Usage: with_registry <registry choice> <command...>
 with_registry() {
   local prefix
   prefix=$(registry_prefix "$1") || exit 1
@@ -145,8 +144,8 @@ An upgrade test automation tool.
 Synopsis: bin/upgrade-test <initial-version> [intermediate-versions...] <final-version>
 
 Where the appliance image of a version is pulled from:
-  FROM_SOURCE=registry|artifactory-latest|artifactory-dev|artifactory-release   the initial version (default: artifactory-latest)
-  TO_SOURCE=registry|artifactory-latest|artifactory-dev|artifactory-release     the versions it is upgraded to (default: artifactory-latest)
+  FROM_SOURCE=registry.tld|appliance-docker-latest-local|appliance-docker-dev-local|appliance-docker-release-local   the initial version (default: appliance-docker-latest-local)
+  TO_SOURCE=registry.tld|appliance-docker-latest-local|appliance-docker-dev-local|appliance-docker-release-local     the versions it is upgraded to (default: appliance-docker-latest-local)
 EOF
   exit
 }
@@ -154,7 +153,7 @@ EOF
 standup_before_cluster() {
   local version=$1
 
-  echo "Provisioning $version Master (image from ${FROM_SOURCE:-artifactory-latest})..."
+  echo "Provisioning $version Master (image from ${FROM_SOURCE:-appliance-docker-latest-local})..."
   with_registry "${FROM_SOURCE:-}" bin/dap --provision-master --version "$version"
 
   # TODO: 3rd party certificates currently cause an error when attempting
@@ -439,7 +438,7 @@ backup_and_restore_cluster() {
   echo "Creating backup..."
   bin/dap --create-backup
 
-  echo "Restoring backup (image from ${registry:-artifactory-latest})..."
+  echo "Restoring backup (image from ${registry:-appliance-docker-latest-local})..."
   with_registry "$registry" bin/dap --restore-from-backup --version "$version"
 
   rollout_cluster "$version" "$registry"
@@ -463,7 +462,7 @@ upgrade_cluster () {
     fi
   fi
 
-  echo "Upgrading DAP Master to $version (image from ${registry:-artifactory-latest})..."
+  echo "Upgrading DAP Master to $version (image from ${registry:-appliance-docker-latest-local})..."
   with_registry "$registry" bin/dap --upgrade-master "$version"
 
   rollout_cluster "$version" "$registry"
