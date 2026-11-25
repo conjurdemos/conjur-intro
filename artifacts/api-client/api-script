@@ -25,6 +25,22 @@ Usage: bin/api [options]
     --view-roles                                                       Displays the user's roles
     --create-aws-issuer <name> <aws-access-key-id> <aws-secret-key>    Creates an AWS issuer using the provided name and credentials
     --delete-aws-issuer <name>                                         Deletes an AWS issuer by the given name
+    --list-issuers                                                     Lists the issuers (reads from the follower; use '--against-master' for the leader)
+    --get-dynamic-secret <name>                                        Fetches data/dynamic/<name> and masks the secret values
+    --get-issuer <name>                                                Prints the stable fields of an issuer; exits 1 unless it exists
+    --check-issuer <name> <snapshot-file>                              Exits 1 unless the issuer's stable fields equal the snapshot
+    --load-dynamic-policy                                              Loads policy/dynamic-secrets/dynamic-variable.yml (data/dynamic/ds-upgrade)
+    --check-dynamic-secret <name>                                      Exits 1 unless data/dynamic/<name> is served (or fails only at the cloud call)
+    --load-cert-auth-policy                                            Loads policy/authn-cert/upgrade.yml
+    --set-variable-from-file <variable> <file>                         Sets a variable to the exact contents of a file mounted in the container
+    --cert-auth <host> <cert-file> <key-file> [service-id]             Authenticates a host with a client certificate against the leader
+    --cert-auth-expect <status> <host> <cert-file> <key-file> [id]     Like --cert-auth but exits 1 unless the HTTP status is exactly <status>
+    --supports-cert-auth                                               Exits 0 if the leader has the certificate authenticator, 1 if not
+    --supports-issuers                                                 Exits 0 if the leader serves the issuers API, 1 if not
+    --patch-policy <namespace> <policy>                                Applies a policy with PATCH
+    -a, --account <account>                                            Account to use (default is 'demo')
+    --follower-url <url>                                               Follower URL (default is http://conjur-follower.mycompany.local)
+    --leader-url <url>                                                 Leader URL (default is https://conjur-master.mycompany.local)
 EOF
   exit
 }
@@ -276,12 +292,11 @@ create_aws_issuer() {
   local name="$1"
   local access_key_id="$2"
   local secret_access_key="$3"
-  local token
+  local token response body status
   token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
 
-  # AWS issuers no longer accept inline credentials; 'data' must reference
-  # Conjur variables holding the credentials, which Conjur resolves and
-  # AWS-format-validates at create time.
+  # Current versions require 'data' to reference Conjur variables holding the credentials, which Conjur
+  # resolves and AWS-format-validates at create time.
   local key_id_ref='dynamic-secrets/aws-access-key-id'
   local secret_key_ref='dynamic-secrets/aws-secret-access-key'
 
@@ -289,13 +304,7 @@ create_aws_issuer() {
   set_variable "$key_id_ref" "$access_key_id" "$token" > /dev/null
   set_variable "$secret_key_ref" "$secret_access_key" "$token" > /dev/null
 
-  response=$(curl --header "Authorization: Token token=\"$token\"" \
-       --header "Content-Type: application/json" \
-       --silent \
-       --write-out "\n%{http_code}" \
-       --insecure \
-       --request POST \
-       --data "{
+  response=$(post_issuer "$token" "{
          \"id\": \"${name}\",
          \"max_ttl\": 3600,
          \"type\": \"aws\",
@@ -303,10 +312,26 @@ create_aws_issuer() {
            \"access_key_id_secret_ref\": { \"id\": \"${key_id_ref}\" },
            \"secret_access_key_secret_ref\": { \"id\": \"${secret_key_ref}\" }
          }
-       }" \
-       "$master_url/api/issuers/demo")
+       }")
   body=$(echo "${response}" | head -n -1)
   status=$(echo "${response}" | tail -n 1)
+
+  # Older versions only accept the credentials inline and answer the reference form with exactly this 422.
+  # Fall back for that one answer only; any other failure is still an error.
+  if [ "$status" = "422" ] && echo "${body}" | grep -q 'access_key_id is a required parameter'; then
+    echo "This version does not accept credential references; creating the issuer with inline credentials" >&2
+    response=$(post_issuer "$token" "{
+         \"id\": \"${name}\",
+         \"max_ttl\": 3600,
+         \"type\": \"aws\",
+         \"data\": {
+           \"access_key_id\": \"${access_key_id}\",
+           \"secret_access_key\": \"${secret_access_key}\"
+         }
+       }")
+    body=$(echo "${response}" | head -n -1)
+    status=$(echo "${response}" | tail -n 1)
+  fi
 
   if [ "$status" -ne 201 ]; then
     echo "Error creating issuer: $status"
@@ -314,6 +339,20 @@ create_aws_issuer() {
     exit 1
   fi
   echo "${body}" | jq
+}
+
+# POST an issuer definition; prints the response body, then the HTTP status on its own line.
+post_issuer() {
+  local token="$1"
+  local json="$2"
+  curl --header "Authorization: Token token=\"$token\"" \
+       --header "Content-Type: application/json" \
+       --silent \
+       --write-out "\n%{http_code}" \
+       --insecure \
+       --request POST \
+       --data "$json" \
+       "$master_url/api/issuers/demo"
 }
 
 delete_aws_issuer() {
@@ -365,6 +404,223 @@ get_dynamic_secret() {
        jq '.data.secret_access_key = "****" | .data.session_token = "*****"'
 }
 
+# Strict checks used by bin/upgrade-test
+# Unlike most helpers above, these exit 1 with a message on any unexpected result, so that an
+# upgrade that silently breaks issuers, dynamic secrets or certificate authentication fails the test.
+
+# Fetch one issuer and print only its stable fields (no created_at / modified_at).
+# Reads from $URL: the follower by default, the leader with --against-master.
+fetch_issuer_stable() {
+  local name="$1"
+  local token response body status
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
+
+  response=$(curl --header "Authorization: Token token=\"$token\"" \
+       --silent \
+       --write-out "\n%{http_code}" \
+       --insecure \
+       "$URL/api/issuers/$ACCOUNT/$name")
+  body=$(echo "${response}" | head -n -1)
+  status=$(echo "${response}" | tail -n 1)
+
+  if [ "$status" != "200" ]; then
+    echo "Error reading issuer '$name' from $URL: HTTP $status" >&2
+    echo "${body}" >&2
+    exit 1
+  fi
+  echo "${body}" | jq -S '{id, account, type, max_ttl, data}'
+}
+
+get_issuer() {
+  fetch_issuer_stable "$1"
+}
+
+# Compare an issuer's stable fields with a snapshot taken before the upgrade.
+check_issuer() {
+  local name="$1"
+  local snapshot="$2"
+  local current
+  if [ ! -s "$snapshot" ]; then
+    echo "Snapshot file '$snapshot' is missing or empty" >&2
+    exit 1
+  fi
+  current=$(fetch_issuer_stable "$name")
+  if [ "$current" != "$(jq -S . "$snapshot")" ]; then
+    echo "Issuer '$name' at $URL differs from the snapshot taken before the upgrade:" >&2
+    echo "--- before" >&2
+    jq -S . "$snapshot" >&2
+    echo "--- now" >&2
+    echo "$current" >&2
+    exit 1
+  fi
+  echo "Issuer '$name' at $URL matches the snapshot"
+}
+
+load_dynamic_policy() {
+  local token
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
+  apply_policy 'root' 'policy/dynamic-secrets/dynamic-variable.yml' "$token"
+}
+
+# A dynamic secret is only minted by calling the cloud provider, and the test has fake credentials, so
+# there are two acceptable outcomes:
+#   200  the secret was issued (real credentials were supplied)
+#   422  "Failed to create the dynamic secret", i.e. Conjur found the issuer, decrypted it and resolved
+#        its credential references, then the cloud provider rejected the fake keys
+# Everything else means something earlier in that chain is broken after the upgrade (404 route or flag
+# missing, 405 database privileges, 422 issuer not found / data key invalid, 5xx).
+check_dynamic_secret() {
+  local name="$1"
+  local token response body status
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
+
+  response=$(curl --header "Authorization: Token token=\"$token\"" \
+       --silent \
+       --write-out "\n%{http_code}" \
+       --insecure \
+       "$URL/api/secrets/$ACCOUNT/variable/data/dynamic/$name")
+  body=$(echo "${response}" | head -n -1)
+  status=$(echo "${response}" | tail -n 1)
+
+  case "$status" in
+    200)
+      echo "Dynamic secret '$name' at $URL was issued"
+      ;;
+    422)
+      if echo "${body}" | grep -q 'Failed to create the dynamic secret'; then
+        echo "Dynamic secret '$name' at $URL reached the cloud call (fake credentials were rejected, as expected)"
+      else
+        echo "Dynamic secret '$name' at $URL: HTTP 422 for a reason other than the cloud call" >&2
+        echo "${body}" >&2
+        exit 1
+      fi
+      ;;
+    *)
+      echo "Dynamic secret '$name' at $URL: unexpected HTTP $status" >&2
+      echo "${body}" >&2
+      exit 1
+      ;;
+  esac
+}
+
+load_cert_auth_policy() {
+  local token
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
+  apply_policy 'root' 'policy/authn-cert/upgrade.yml' "$token"
+}
+
+# Set a variable to the exact contents of a file. Passing a multi-line value (a PEM) as a command line
+# argument does not work here: the dispatch below uses an unquoted eval, which splits it into words.
+# The stored size is compared with the file's size, because a silently truncated CA looks like a
+# product failure ("Credential validation failed") when it is a test failure.
+set_variable_from_file() {
+  local variable="$1"
+  local file="$2"
+  local token status stored_bytes file_bytes encoded
+  if [ ! -s "$file" ]; then
+    echo "File '$file' is missing or empty" >&2
+    exit 1
+  fi
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
+  encoded=$(echo "$variable" | sed -e 's/\//%2F/g')
+
+  status=$(curl --header "Authorization: Token token=\"$token\"" \
+       --silent --output /dev/null --write-out "%{http_code}" \
+       --insecure \
+       --data-binary "@$file" \
+       "$master_url/secrets/$ACCOUNT/variable/$encoded")
+  if [ "$status" != "201" ]; then
+    echo "Error setting variable '$variable' from '$file': HTTP $status" >&2
+    exit 1
+  fi
+
+  stored_bytes=$(curl --header "Authorization: Token token=\"$token\"" \
+       --silent --insecure \
+       "$master_url/secrets/$ACCOUNT/variable/$encoded" | wc -c)
+  file_bytes=$(wc -c < "$file")
+  if [ "$stored_bytes" -ne "$file_bytes" ]; then
+    echo "Variable '$variable' holds $stored_bytes bytes but '$file' has $file_bytes" >&2
+    exit 1
+  fi
+  echo "Variable '$variable' set from '$file' ($stored_bytes bytes)"
+}
+
+# Authenticate a host with a client certificate (mutual TLS) through the leader. The certificate is
+# presented in the TLS handshake, so this goes to the leader's load balancer, which passes TLS through.
+# Standbys do not run the authenticator, and a follower accepts the certificate only once the authenticator
+# list has been applied on it.
+cert_auth_status() {
+  local host="$1"
+  local cert="$2"
+  local key="$3"
+  local service="${4:-upgrade}"
+  local encoded_host
+  encoded_host=$(echo "host/$host" | sed -e 's/\//%2F/g')
+  curl --silent --insecure \
+       --cert "$cert" --key "$key" \
+       --request POST \
+       --output /tmp/cert-auth-token \
+       --write-out "%{http_code}" \
+       "$master_url/authn-cert/$service/$ACCOUNT/$encoded_host/authenticate"
+}
+
+cert_auth() {
+  local status
+  status=$(cert_auth_status "$@")
+  if [ "$status" != "200" ]; then
+    echo "Certificate authentication as '$1' failed: HTTP $status" >&2
+    head -c 300 /tmp/cert-auth-token >&2
+    echo >&2
+    exit 1
+  fi
+  if [ ! -s /tmp/cert-auth-token ]; then
+    echo "Certificate authentication as '$1' returned HTTP 200 but no token" >&2
+    exit 1
+  fi
+  echo "Certificate authentication as '$1' succeeded"
+}
+
+# Negative check: the request must fail with exactly the given status (e.g. 401 for a certificate signed
+# by a CA Conjur does not trust). Without it, a broken trust check would pass the check above unnoticed.
+cert_auth_expect() {
+  local expected="$1"; shift
+  local status
+  status=$(cert_auth_status "$@")
+  if [ "$status" != "$expected" ]; then
+    echo "Certificate authentication as '$1' returned HTTP $status, expected $expected" >&2
+    exit 1
+  fi
+  echo "Certificate authentication as '$1' returned HTTP $status, as expected"
+}
+
+# Capability probes
+# bin/upgrade-test uses these to decide whether the FROM version can do something at all (older ones have no
+# certificate authentication, or only the older inline form of AWS issuers). They ask the running leader, so
+# they work on development builds whose version number says nothing, and need no version table to maintain.
+
+# Exit 0 if the leader has the certificate authenticator installed, 1 if not.
+supports_cert_auth() {
+  local body
+  body=$(curl --silent --insecure "$master_url/authenticators") || return 1
+  echo "$body" | jq -e '.installed | index("authn-cert")' > /dev/null 2>&1
+}
+
+# Exit 0 if the leader serves the issuers API, 1 if not.
+# Listing issuers cannot answer this: it needs a permission that only exists once the first issuer has been
+# created, so on a fresh cluster it returns 403 even though the feature is on. Creating an issuer with an
+# empty body is rejected by the issuers API's own validation with 400, which a missing route (feature flag
+# off) cannot produce, and nothing is created.
+supports_issuers() {
+  local token status
+  token=$(authenticate_user "$ACCOUNT" "$USER" "$PASSWORD" "$master_url")
+  status=$(curl --header "Authorization: Token token=\"$token\"" \
+       --header "Content-Type: application/json" \
+       --silent --output /dev/null --write-out "%{http_code}" --insecure \
+       --request POST --data '{}' \
+       "$master_url/api/issuers/$ACCOUNT")
+  [ "$status" = "400" ]
+}
+
 # -- End functions called directly from CLI --
 
 follower_url='http://conjur-follower.mycompany.local'
@@ -402,6 +658,23 @@ while true ; do
     --delete-aws-issuer ) shift ; cmd="delete_aws_issuer $1"; shift ;;
     --list-issuers ) shift ; cmd="list_issuers" ;;
     --get-dynamic-secret ) shift ; cmd="get_dynamic_secret $1" ; shift ;;
+    --supports-cert-auth ) shift ; cmd="supports_cert_auth" ;;
+    --supports-issuers ) shift ; cmd="supports_issuers" ;;
+    --get-issuer ) shift ; cmd="get_issuer $1" ; shift ;;
+    --check-issuer ) shift ; cmd="check_issuer $1 $2" ; shift ; shift ;;
+    --load-dynamic-policy ) shift ; cmd="load_dynamic_policy" ;;
+    --check-dynamic-secret ) shift ; cmd="check_dynamic_secret $1" ; shift ;;
+    --load-cert-auth-policy ) shift ; cmd="load_cert_auth_policy" ;;
+    --set-variable-from-file ) shift ; cmd="set_variable_from_file $1 $2" ; shift ; shift ;;
+    --cert-auth )
+      # <host> <cert-file> <key-file> [service-id]. The service id is optional, so it is only taken when
+      # the next word is not another option.
+      shift ; cmd="cert_auth $1 $2 $3" ; shift ; shift ; shift
+      if [ -n "$1" ] && [ "${1#-}" = "$1" ]; then cmd="$cmd $1"; shift; fi ;;
+    --cert-auth-expect )
+      # <status> <host> <cert-file> <key-file> [service-id]
+      shift ; cmd="cert_auth_expect $1 $2 $3 $4" ; shift ; shift ; shift ; shift
+      if [ -n "$1" ] && [ "${1#-}" = "$1" ]; then cmd="$cmd $1"; shift; fi ;;
      * ) if [ -z "$1" ]; then break; else echo "$1 is not a valid option"; exit 1; fi;;
   esac
 done

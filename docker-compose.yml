@@ -250,6 +250,8 @@ services:
     volumes:
       - ./artifacts/api-client/api-script:/src/bin/api
       - ./policy:/src/policy
+      # Client certificate material that bin/upgrade-test generates for certificate authentication
+      - ./tmp/upgrade-test/certs:/src/certs:ro
 
   certificate-generator:
     build:

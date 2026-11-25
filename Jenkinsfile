@@ -14,11 +14,13 @@ pipeline {
     choice(name: 'FROM_SOURCE', description: 'Where the image of FROM version is pulled from, internal registry or JFrog Artifactory', choices: ['artifactory-latest', 'artifactory-dev', 'artifactory-release', 'registry'])
     string(name: 'TO', description: 'Version to upgrade to', defaultValue: '')
     choice(name: 'TO_SOURCE', description: 'Where the image of the TO version is pulled from, internal registry or JFrog Artifactory', choices: ['artifactory-latest', 'artifactory-dev', 'artifactory-release', 'registry'])
-    booleanParam(name: 'SKIP_DYNAMIC_SECRETS', description: 'If set to true, the exercise for dynamic secrets will not be run after upgrade', defaultValue: false)
+    booleanParam(name: 'SKIP_DYNAMIC_SECRETS', description: 'If set to true, the dynamic secrets exercise and the check that a dynamic secret created before the upgrade survives it will not be run', defaultValue: false)
+    booleanParam(name: 'SKIP_CERT_AUTH', description: 'If set to true, the check that certificate authentication set up before the upgrade still works after it will not be run', defaultValue: false)
     booleanParam(name: 'COPY_ENTERPRISE_COMMIT', description: 'Copy the main branch commit to the public conjurinc GitHub organization', defaultValue: true)
   }
   environment {
     SKIP_DYNAMIC_SECRETS = "${params.SKIP_DYNAMIC_SECRETS}"
+    SKIP_CERT_AUTH = "${params.SKIP_CERT_AUTH}"
     FROM_SOURCE = "${params.FROM_SOURCE}"
     TO_SOURCE = "${params.TO_SOURCE}"
   }
@@ -45,7 +47,7 @@ pipeline {
       }
       steps {
         script {
-          infrapool.agentSh "SKIP_DYNAMIC_SECRETS=\"${SKIP_DYNAMIC_SECRETS}\" FROM_SOURCE=\"${FROM_SOURCE}\" TO_SOURCE=\"${TO_SOURCE}\" ./bin/upgrade-test \"${FROM}\" \"${TO}\""
+          infrapool.agentSh "SKIP_DYNAMIC_SECRETS=\"${SKIP_DYNAMIC_SECRETS}\" SKIP_CERT_AUTH=\"${SKIP_CERT_AUTH}\" FROM_SOURCE=\"${FROM_SOURCE}\" TO_SOURCE=\"${TO_SOURCE}\" ./bin/upgrade-test \"${FROM}\" \"${TO}\""
         }
       }
     }
