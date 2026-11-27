@@ -17,4 +17,5 @@ openssl s_client \
 
 hash=$(openssl x509 -hash -in /etc/ssl/certs/keycloak.pem -noout)
 
-ln -s /etc/ssl/certs/keycloak.pem "/etc/ssl/certs/${hash}.0"
+# -f: the link already exists when this runs a second time
+ln -sf /etc/ssl/certs/keycloak.pem "/etc/ssl/certs/${hash}.0"

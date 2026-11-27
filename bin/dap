@@ -61,6 +61,23 @@ Usage: bin/dap [options]:
     --provision-secretless-broker                             Configures Secretless Broker as a sidecar inside kubernetes cluster ran by kind
                                                                 (Requires configured master).
 
+    --provision-cert-auth                                     Configures certificate authentication: generates a CA and a client certificate
+                                                                (Requires configured master, appliance 5.22 or newer).
+
+    --provision-keycloak                                      Starts Keycloak and configures an OIDC authenticator for it
+                                                                (Requires configured master).
+
+    --provision-jwt                                           Configures a JWT authenticator that accepts tokens signed with a generated key;
+                                                                no token issuer is needed (Requires configured master).
+
+    --jwt-token <host>                                        Prints a token for the host, signed with the key from --provision-jwt.
+
+    --provision-ldap-jit                                      Starts an LDAP server and configures the LDAP authenticator with just-in-time
+                                                                user provisioning (Requires configured master, appliance 5.24 or newer).
+
+    --provision-ldap-sync                                     Starts an LDAP server and imports its users and groups into Conjur with LDAP Sync
+                                                                (Requires configured master).
+
     --provision-master                                        Configures a DAP Master with account `demo` and
                                                                 password `MySecretP@ss1` behind a Layer 4 load
                                                                 balancer.
@@ -851,7 +868,7 @@ function _setup_keycloak() {
 
   bin/cli conjur policy load -b root -f ./artifacts/keycloak/oidc-policy.yml
 
-  bin/cli conjur variable set -i "conjur/authn-oidc/keycloak/provider-uri" -v "https://keycloak:8443/auth/realms/master"
+  bin/cli conjur variable set -i "conjur/authn-oidc/keycloak/provider-uri" -v "https://keycloak:8443/realms/master"
   bin/cli conjur variable set -i "conjur/authn-oidc/keycloak/id-token-user-property" -v "preferred_username"
   bin/cli conjur variable set -i "conjur/authn-oidc/keycloak/client-id" -v "conjurClient"
   bin/cli conjur variable set -i "conjur/authn-oidc/keycloak/client-secret" -v "1234"
@@ -860,9 +877,508 @@ function _setup_keycloak() {
 
   bin/cli conjur variable set -i "test-variable" -v "test-secret"
 
-  _append_conjur_authenticator "authn-oidc/keycloak"
+  # The ID-token login (POST /authn-oidc/keycloak/demo/authenticate) of this authenticator is switched off in
+  # current appliances; without the flag that endpoint answers 404. The reload that follows applies it.
+  _run conjur-master-1.mycompany.local 'grep -q "^CONJUR_FEATURE_OIDC_AUTHENTICATOR_V1_ENABLED=" /opt/conjur/etc/possum.conf || echo "CONJUR_FEATURE_OIDC_AUTHENTICATOR_V1_ENABLED=true" >> /opt/conjur/etc/possum.conf'
 
-  echo "Keycloak admin console is available at: http://localhost:7777/auth/admin"
+  _append_conjur_authenticator "authn-oidc/keycloak"
+  # _append_conjur_authenticator returns early, without a reload, when the authenticator is already enabled
+  _run conjur-master-1.mycompany.local 'sv reload conjur'
+  _wait_for_master
+  _trust_keycloak_on_other_nodes
+  _sync_authenticators_to_other_nodes
+
+  echo "Keycloak admin console is available at: http://localhost:7777/admin"
+  echo "Log in with a Keycloak ID token (users alice/alice and bob.somebody/bob; request it inside the Docker network):"
+  echo "  ID_TOKEN=\$(docker compose exec -T keycloak curl -sk -d grant_type=password -d client_id=conjurClient -d client_secret=1234 \\"
+  echo "    -d username=alice -d password=alice -d scope=openid https://keycloak:8443/realms/master/protocol/openid-connect/token | jq -r .id_token)"
+  echo "  curl -k -H 'Accept-Encoding: base64' --data-urlencode \"id_token=\${ID_TOKEN}\" https://localhost:${CONJUR_MASTER_PORT}/authn-oidc/keycloak/demo/authenticate"
+}
+
+# Prints the version of the appliance running on the leader, for example 5.24.1-1113.10.0.
+# The image tag cannot be used: tags such as `5.0-stable` or a local `test` are not versions.
+function _leader_appliance_version {
+  docker compose exec -T conjur-master-1.mycompany.local cat /opt/conjur/etc/VERSION 2> /dev/null | tr -d '\r\n'
+}
+
+# True if the dotted version $1 is at least $2 (compares the numeric prefix only).
+# Unreleased builds report 0.0.dev (or 0.0.dev-<timestamp>-<sha>); they contain the newest code, so they pass.
+function _version_at_least {
+  local have=${1%%-*} want=$2
+  if [[ "${have}" == 0.0.dev ]]; then
+    return 0
+  fi
+  [[ "$(printf '%s\n%s\n' "$want" "$have" | sort -V | head -1)" == "$want" ]]
+}
+
+# Usage: _ldap_curl <token> <curl args...>; talks to the leader's published port.
+function _ldap_curl {
+  local token=$1; shift
+  curl -sk -H "Authorization: Token token=\"${token}\"" "$@"
+}
+
+# Prints an admin token. Stops with a message when the leader does not answer, so that the callers do not go on with an
+# empty token, or (JWT, certificate authentication) leave key material behind.
+function _admin_token {
+  local url="https://localhost:${CONJUR_MASTER_PORT}" key token=""
+  key=$(curl -sfk --user "admin:${_admin_password}" "${url}/authn/demo/login") || key=""
+  if [[ -n "${key}" ]]; then
+    token=$(curl -sfk -H "Accept-Encoding: base64" --data "${key}" "${url}/authn/demo/admin/authenticate") || token=""
+  fi
+  if [[ -z "${token}" ]]; then
+    echo "Could not get an admin token from ${url}; is the leader running and healthy?" >&2
+    return 1
+  fi
+  printf '%s' "${token}"
+}
+
+# Generates the LDAP server certificate and the CA that Conjur trusts, once, into tmp/ldap-certs.
+function _generate_ldap_certs {
+  local out=./tmp/ldap-certs
+  if [[ -f "${out}/ldap-server.cert.pem" ]]; then
+    return
+  fi
+  echo "Generating the LDAP server certificate..."
+  mkdir -p "${out}"
+  ( cd tools/simple-certificates && ./generate_certificates 1 ldap-server > /dev/null 2>&1 )
+  local certs=tools/simple-certificates/certificates
+  cp "${certs}/ca-chain.cert.pem" "${out}/ca-chain.cert.pem"
+  cp "${certs}/nodes/ldap-server.mycompany.local/ldap-server.mycompany.local.cert.pem" "${out}/ldap-server.cert.pem"
+  cp "${certs}/nodes/ldap-server.mycompany.local/ldap-server.mycompany.local.key.pem" "${out}/ldap-server.key.pem"
+  # The server drops to its own user and reads these files through a bind mount, which keeps the host owner and mode,
+  # so they have to be readable by others. The CA is throwaway and tmp/ is git-ignored.
+  chmod 644 "${out}"/*.pem
+}
+
+function _start_ldap_server {
+  _generate_ldap_certs
+  echo "Starting the LDAP server (the first start takes about a minute)..."
+  docker compose up -d --no-deps --wait ldap-server
+}
+
+# Logs in as an LDAP user; prints the HTTP status. Usage: _ldap_login_status <service> <user> <password>
+function _ldap_login_status {
+  curl -sk -o /dev/null -w '%{http_code}' --user "$2:$3" "https://localhost:${CONJUR_MASTER_PORT}/authn-ldap/$1/demo/login"
+}
+
+function _setup_ldap_jit() {
+  local min_version=5.24.0 version
+  version=$(_leader_appliance_version)
+  if [[ -z "${version}" ]]; then
+    echo "Cannot read the appliance version from conjur-master-1; run --provision-master first."
+    exit 1
+  fi
+  if ! _version_at_least "${version}" "${min_version}"; then
+    echo "LDAP just-in-time provisioning needs appliance ${min_version} or newer; this leader runs ${version}."
+    exit 1
+  fi
+
+  _start_ldap_server
+
+  local token url="https://localhost:${CONJUR_MASTER_PORT}"
+  token=$(_admin_token)
+
+  echo "Loading the LDAP JIT policy..."
+  _ldap_curl "${token}" -X PATCH --data-binary @artifacts/ldap/jit-policy.yml "${url}/policies/demo/policy/root" > /dev/null
+
+  echo "Storing the LDAP CA certificate and the bind password..."
+  _ldap_curl "${token}" --data-binary @tmp/ldap-certs/ca-chain.cert.pem \
+    "${url}/secrets/demo/variable/conjur%2Fauthn-ldap%2Fjit%2Ftls-ca-cert" > /dev/null
+  _ldap_curl "${token}" --data 'ldapsecret' \
+    "${url}/secrets/demo/variable/conjur%2Fauthn-ldap%2Fjit%2Fbind-password" > /dev/null
+
+  echo "Mapping the LDAP group 'devs' to the Conjur group 'dev-team'..."
+  _ldap_curl "${token}" -H 'Content-Type: application/json' --data '{"roles":["group:dev-team"]}' \
+    "${url}/authn-ldap/jit/demo/groups/cn%3Ddevs%2Cou%3Dgroups%2Cdc%3Dconjur%2Cdc%3Dnet" > /dev/null
+
+  _append_conjur_authenticator "authn-ldap/jit"
+  _sync_authenticators_to_other_nodes
+
+  echo "Checking: alice logs in with her LDAP password..."
+  local status
+  status=$(_ldap_login_status jit alice alice)
+  if [[ "${status}" != "200" ]]; then
+    echo "LDAP JIT check failed: alice's login returned HTTP ${status}."
+    exit 1
+  fi
+
+  cat << EOF
+
+LDAP just-in-time provisioning is set up (authenticator authn-ldap/jit).
+
+  LDAP server:  ldaps://ldap-server:636   base dc=conjur,dc=net   admin password ldapsecret
+  LDAP users:   alice/alice (group devs), bob/bob, charles/charles
+  Mapping:      LDAP group devs -> Conjur group dev-team
+
+Users are created in Conjur under 'ldap-users' on their first login. Try it:
+  curl -k --user alice:<password> ${url}/authn-ldap/jit/demo/login
+bob and charles have no mapping yet, so their logins are refused (401) until you add one.
+EOF
+}
+
+# Starts the ldap-sync service on the leader and waits until it answers.
+# The appliance ships it switched off ("normally down"), so it is not running after a restart of the leader.
+function _start_ldap_sync_service {
+  echo "Starting the ldap-sync service on conjur-master-1..."
+  if ! _run conjur-master-1.mycompany.local 'sv -w 60 start /etc/service/conjur/ldap-sync' > /dev/null; then
+    echo "Could not start the ldap-sync service on conjur-master-1; is the leader running and healthy?"
+    exit 1
+  fi
+  local i
+  for i in $(seq 1 30); do
+    if _run conjur-master-1.mycompany.local 'curl -sf -m 3 localhost:7944/version' > /dev/null 2>&1; then
+      return
+    fi
+    sleep 2
+  done
+  echo "The ldap-sync service did not answer on port 7944 within a minute."
+  exit 1
+}
+
+# Prints the generated policy (the `policy` field of the ldap-sync response) to stdout.
+function _ldap_sync_generated_policy {
+  local token=$1
+  curl -sk -H "Authorization: Token token=\"${token}\"" \
+    "https://localhost:${CONJUR_MASTER_PORT}/ldap-sync/policy?config_name=default" \
+    | jq -er 'select(.ok == true) | .policy'
+}
+
+function _setup_ldap_sync() {
+  local version
+  version=$(_leader_appliance_version)
+  if [[ -z "${version}" ]]; then
+    echo "Cannot read the appliance version from conjur-master-1; run --provision-master first."
+    exit 1
+  fi
+
+  _start_ldap_server
+  _start_ldap_sync_service
+
+  local token url="https://localhost:${CONJUR_MASTER_PORT}"
+  token=$(_admin_token)
+
+  echo "Loading the LDAP Sync configuration..."
+  _ldap_curl "${token}" -X PATCH --data-binary @artifacts/ldap/sync-policy.yml "${url}/policies/demo/policy/root" > /dev/null
+
+  echo "Storing the LDAP CA certificate and the bind password..."
+  _ldap_curl "${token}" --data-binary @tmp/ldap-certs/ca-chain.cert.pem \
+    "${url}/secrets/demo/variable/conjur%2Fldap-sync%2Ftls-ca-cert%2Fdefault" > /dev/null
+  _ldap_curl "${token}" --data 'ldapsecret' \
+    "${url}/secrets/demo/variable/conjur%2Fldap-sync%2Fbind-password%2Fdefault" > /dev/null
+
+  echo "Generating the policy from the LDAP directory and loading it..."
+  local imported
+  imported=$(mktemp)
+  if ! _ldap_sync_generated_policy "${token}" > "${imported}"; then
+    rm -f "${imported}"
+    echo "LDAP Sync could not generate the policy."
+    exit 1
+  fi
+  _ldap_curl "${token}" -X POST --data-binary @"${imported}" "${url}/policies/demo/policy/root" > /dev/null
+  rm -f "${imported}"
+
+  echo "Checking: the LDAP users and groups exist in Conjur..."
+  local missing=0 role status
+  for role in user/alice user/bob user/charles group/devs group/qa group/all-staff; do
+    status=$(_ldap_curl "${token}" -o /dev/null -w '%{http_code}' "${url}/roles/demo/${role}")
+    if [[ "${status}" != "200" ]]; then
+      echo "  missing: ${role} (HTTP ${status})"
+      missing=1
+    fi
+  done
+  if [[ ${missing} -ne 0 ]]; then
+    echo "LDAP Sync check failed."
+    exit 1
+  fi
+
+  cat << EOF
+
+LDAP Sync is set up. The users and groups of the LDAP directory were imported into Conjur.
+
+  Imported users:   alice, bob, charles
+  Imported groups:  devs (alice), qa (alice), all-staff (alice)
+  LDAP server:      ldaps://ldap-server:636   base dc=conjur,dc=net
+
+Sync imports identities, it does not log anyone in. Imported users have no password until you set one
+or enable an authenticator (see --provision-ldap-jit).
+
+To run the sync again after changing the LDAP directory:
+  bin/dap --provision-ldap-sync
+
+The ldap-sync service is switched off in the appliance and runs until the leader restarts; running this command
+starts it again.
+EOF
+}
+
+# base64url, as JWTs use it: standard base64 with - and _ and no padding
+function _base64url {
+  openssl base64 -A | tr '+/' '-_' | tr -d '='
+}
+
+# Generates, once, into tmp/jwt: an RSA key and its public part as a JWK set (jwks.json). The key is kept, so that
+# running the command again leaves the authenticator's key, and the tokens already issued, as they are.
+function _jwt_generate_key {
+  local out=./tmp/jwt
+  if [[ -s "${out}/key.pem" && -s "${out}/jwks.json" ]]; then
+    return
+  fi
+  echo "Generating the JWT signing key..."
+  rm -rf "${out}"
+  mkdir -p "${out}"
+  openssl genrsa -out "${out}/key.pem" 2048 2> /dev/null
+  local modulus
+  modulus=$(openssl rsa -in "${out}/key.pem" -noout -modulus 2> /dev/null | sed 's/Modulus=//' | xxd -r -p | _base64url)
+  jq -nc --arg n "${modulus}" '{keys:[{kty:"RSA",use:"sig",alg:"RS256",kid:"conjur-intro",n:$n,e:"AQAB"}]}' > "${out}/jwks.json"
+}
+
+# Prints a token for the host $1 (the value of the project_id claim), signed with the generated key and valid for an hour.
+function _jwt_token {
+  local project=$1 header payload signature
+  header=$(jq -nc '{alg:"RS256",typ:"JWT",kid:"conjur-intro"}' | _base64url)
+  payload=$(jq -nc --arg p "${project}" --argjson exp "$(( $(date +%s) + 3600 ))" \
+    '{iss:"conjur-intro",project_id:$p,exp:$exp}' | _base64url)
+  signature=$(printf '%s.%s' "${header}" "${payload}" | openssl dgst -sha256 -sign ./tmp/jwt/key.pem -binary | _base64url)
+  printf '%s.%s.%s' "${header}" "${payload}" "${signature}"
+}
+
+# Prints the HTTP status of an authenticate request with the token $1.
+function _jwt_authenticate_status {
+  curl -sk -o /dev/null -w '%{http_code}' --data-urlencode "jwt=$1" \
+    "https://localhost:${CONJUR_MASTER_PORT}/authn-jwt/intro/demo/authenticate"
+}
+
+function _setup_jwt() {
+  local url="https://localhost:${CONJUR_MASTER_PORT}"
+
+  # Check for a leader before anything is written, so that a failed run leaves no key behind
+  if [[ -z "$(_leader_appliance_version)" ]]; then
+    echo "Cannot read the appliance version from conjur-master-1; run --provision-master first."
+    exit 1
+  fi
+
+  # Get the token first: with a leader that does not answer, the command stops here and leaves no key behind
+  local token
+  token=$(_admin_token)
+
+  _jwt_generate_key
+
+  echo "Loading the JWT authenticator policy..."
+  _ldap_curl "${token}" -X PATCH --data-binary @artifacts/jwt/jwt-policy.yml "${url}/policies/demo/policy/root" > /dev/null
+
+  echo "Storing the public key and the settings..."
+  local prefix="conjur%2Fauthn-jwt%2Fintro"
+  _ldap_curl "${token}" --data "{\"type\":\"jwks\",\"value\":$(cat tmp/jwt/jwks.json)}" \
+    "${url}/secrets/demo/variable/${prefix}%2Fpublic-keys" > /dev/null
+  _ldap_curl "${token}" --data "conjur-intro" "${url}/secrets/demo/variable/${prefix}%2Fissuer" > /dev/null
+  _ldap_curl "${token}" --data "project_id" "${url}/secrets/demo/variable/${prefix}%2Ftoken-app-property" > /dev/null
+  _ldap_curl "${token}" --data "jwt-apps" "${url}/secrets/demo/variable/${prefix}%2Fidentity-path" > /dev/null
+  _ldap_curl "${token}" --data "jwt-secret-value" "${url}/secrets/demo/variable/jwt-secret" > /dev/null
+
+  _append_conjur_authenticator "authn-jwt/intro"
+  _sync_authenticators_to_other_nodes
+
+  echo "Checking: myapp authenticates with a signed token and reads the secret; a token for a host it is not is refused..."
+  local conjur_token status
+  conjur_token=$(curl -sk -H "Accept-Encoding: base64" --data-urlencode "jwt=$(_jwt_token myapp)" \
+    "${url}/authn-jwt/intro/demo/authenticate")
+  status=$(_ldap_curl "${conjur_token}" -o /dev/null -w '%{http_code}' "${url}/secrets/demo/variable/jwt-secret")
+  if [[ "${status}" != "200" ]]; then
+    echo "JWT check failed: reading the secret with myapp's token returned HTTP ${status}."
+    exit 1
+  fi
+  status=$(_jwt_authenticate_status "$(_jwt_token nobody)")
+  if [[ "${status}" != "401" ]]; then
+    echo "JWT check failed: a token for a host that does not exist returned HTTP ${status}, expected 401."
+    exit 1
+  fi
+
+  cat << EOF
+
+The JWT authenticator is set up (authn-jwt/intro). No token issuer runs: the public key is stored in Conjur.
+
+  Hosts:      jwt-apps/myapp (can read the variable jwt-secret), jwt-apps/other (cannot)
+  Key:        tmp/jwt/key.pem (private), tmp/jwt/jwks.json (public, stored in the variable public-keys)
+  The host is chosen by the token's project_id claim.
+
+Get a token for a host (valid for an hour) and authenticate with it:
+  TOKEN=\$(bin/dap --jwt-token myapp)
+  curl -k -H "Accept-Encoding: base64" --data-urlencode "jwt=\${TOKEN}" ${url}/authn-jwt/intro/demo/authenticate
+
+Delete tmp/jwt to get a new key, then run the command again.
+EOF
+}
+
+# bin/dap --jwt-token <host>: prints a signed token for the host, for the authenticator set up by --provision-jwt.
+function _print_jwt_token {
+  local project=$1
+  if [[ -z "${project}" || ! -s ./tmp/jwt/key.pem ]]; then
+    echo "Usage: bin/dap --jwt-token <host>, after bin/dap --provision-jwt (which generates the key)." >&2
+    exit 1
+  fi
+  _jwt_token "${project}"
+  echo
+}
+
+# Generates, once, into tmp/cert-auth: a CA, a client certificate it signed (URI SAN spiffe://trust.com/workload-id),
+# and a second client certificate with the same name and SAN signed by a CA that Conjur is never given.
+function _generate_cert_auth_certs {
+  local out=./tmp/cert-auth
+  if [[ -s "${out}/client.pem" && -s "${out}/untrusted-client.pem" ]]; then
+    return
+  fi
+  echo "Generating the certificates..."
+  rm -rf "${out}"
+  mkdir -p "${out}"
+  (
+    cd "${out}"
+    printf 'basicConstraints=CA:FALSE\nkeyUsage=critical,digitalSignature\nextendedKeyUsage=clientAuth\nsubjectAltName=URI:spiffe://trust.com/workload-id\n' > client.ext
+    local name
+    for name in trusted untrusted; do
+      openssl genrsa -out "${name}-ca.key" 2048 2> /dev/null
+      openssl req -x509 -new -key "${name}-ca.key" -sha256 -days 3650 -subj "/CN=Intro ${name} CA" \
+        -addext "basicConstraints=critical,CA:TRUE" -addext "keyUsage=critical,keyCertSign,cRLSign" \
+        -out "${name}-ca.pem" 2> /dev/null
+    done
+    mv trusted-ca.pem ca.pem
+    mv trusted-ca.key ca.key
+    openssl genrsa -out client.key 2048 2> /dev/null
+    openssl req -new -key client.key -subj "/CN=cert-client" -out client.csr 2> /dev/null
+    openssl x509 -req -in client.csr -CA ca.pem -CAkey ca.key -CAcreateserial -days 825 -sha256 \
+      -extfile client.ext -out client.pem 2> /dev/null
+    openssl genrsa -out untrusted-client.key 2048 2> /dev/null
+    openssl req -new -key untrusted-client.key -subj "/CN=cert-client" -out untrusted-client.csr 2> /dev/null
+    openssl x509 -req -in untrusted-client.csr -CA untrusted-ca.pem -CAkey untrusted-ca.key -CAcreateserial \
+      -days 825 -sha256 -extfile client.ext -out untrusted-client.pem 2> /dev/null
+  )
+}
+
+# Authenticates host cert-client with a client certificate; prints the HTTP status.
+# Usage: _cert_auth_status <certificate> <key>
+function _cert_auth_status {
+  curl -sk -o /dev/null -w '%{http_code}' --cert "$1" --key "$2" -X POST \
+    "https://localhost:${CONJUR_MASTER_PORT}/authn-cert/intro/demo/host%2Fcert-client/authenticate"
+}
+
+function _setup_cert_auth() {
+  local min_version=5.22.0 version
+  version=$(_leader_appliance_version)
+  if [[ -z "${version}" ]]; then
+    echo "Cannot read the appliance version from conjur-master-1; run --provision-master first."
+    exit 1
+  fi
+  if ! _version_at_least "${version}" "${min_version}"; then
+    echo "Certificate authentication needs appliance ${min_version} or newer; this leader runs ${version}."
+    exit 1
+  fi
+
+  # Get the token first: with a leader that does not answer, the command stops here and leaves no certificates behind
+  local token url="https://localhost:${CONJUR_MASTER_PORT}"
+  token=$(_admin_token)
+
+  _generate_cert_auth_certs
+
+  echo "Loading the certificate authenticator policy..."
+  _ldap_curl "${token}" -X PATCH --data-binary @artifacts/cert-auth/cert-auth-policy.yml "${url}/policies/demo/policy/root" > /dev/null
+
+  echo "Storing the CA certificate and a secret for the host..."
+  _ldap_curl "${token}" --data-binary @tmp/cert-auth/ca.pem \
+    "${url}/secrets/demo/variable/conjur%2Fauthn-cert%2Fintro%2Fca-cert" > /dev/null
+  _ldap_curl "${token}" --data "cert-secret-value" "${url}/secrets/demo/variable/cert-secret" > /dev/null
+
+  _append_conjur_authenticator "authn-cert/intro"
+  _sync_authenticators_to_other_nodes
+
+  echo "Checking: the host authenticates with its certificate, and a certificate from another CA is refused..."
+  local status
+  status=$(_cert_auth_status tmp/cert-auth/client.pem tmp/cert-auth/client.key)
+  if [[ "${status}" != "200" ]]; then
+    echo "Certificate authentication check failed: the trusted certificate returned HTTP ${status}."
+    exit 1
+  fi
+  status=$(_cert_auth_status tmp/cert-auth/untrusted-client.pem tmp/cert-auth/untrusted-client.key)
+  if [[ "${status}" != "401" ]]; then
+    echo "Certificate authentication check failed: a certificate from an untrusted CA returned HTTP ${status}, expected 401."
+    exit 1
+  fi
+
+  cat << EOF
+
+Certificate authentication is set up (authenticator authn-cert/intro).
+
+  Host:         cert-client (can read the variable cert-secret)
+  Certificates: tmp/cert-auth/client.pem and client.key   (URI SAN spiffe://trust.com/workload-id, signed by tmp/cert-auth/ca.pem)
+  Refused:      tmp/cert-auth/untrusted-client.pem        (same name and SAN, signed by a CA that Conjur does not trust)
+
+Try it:
+  curl -k --cert tmp/cert-auth/client.pem --key tmp/cert-auth/client.key -X POST \\
+    ${url}/authn-cert/intro/demo/host%2Fcert-client/authenticate
+
+Delete tmp/cert-auth to get new certificates.
+EOF
+}
+
+# Names of the running nodes other than conjur-master-1 that can serve logins: standbys (for a failover) and the follower.
+function _other_nodes {
+  docker compose ps --format '{{.Service}}' 2> /dev/null \
+    | grep -E '^conjur-(master-[2-9]|follower-[0-9]+)\.mycompany\.local$' | sort
+}
+
+# Waits until the node's own /health answers 200, up to about two minutes.
+function _wait_for_node {
+  local node=$1 i
+  for i in $(seq 1 40); do
+    if docker compose exec -T "${node}" curl -sk -m 5 -o /dev/null -w '%{http_code}' https://localhost/health 2> /dev/null | grep -q 200; then
+      return 0
+    fi
+    sleep 3
+  done
+  echo "Warning: ${node} did not report healthy after the restart."
+}
+
+# Copies the leader's authenticator list, and the v1 OIDC flag if it has it, to every other running node and restarts
+# its conjur service. CONJUR_AUTHENTICATORS is stored in each node's own conjur.conf, so a follower, a standby and a
+# promoted standby reject the logins of an authenticator with "'...' is not enabled" until they have it too.
+function _sync_authenticators_to_other_nodes {
+  [[ $DRY_RUN = false ]] || return 0
+  local nodes node list oidc_flag
+  nodes=$(_other_nodes)
+  [[ -n "${nodes}" ]] || return 0
+
+  list=$(docker compose exec -T conjur-master-1.mycompany.local \
+    bash -c "grep -E '^CONJUR_AUTHENTICATORS=' /opt/conjur/etc/conjur.conf" 2> /dev/null | tr -d '\r')
+  [[ -n "${list}" ]] || return 0
+  oidc_flag=false
+  if docker compose exec -T conjur-master-1.mycompany.local \
+      bash -c "grep -q '^CONJUR_FEATURE_OIDC_AUTHENTICATOR_V1_ENABLED=' /opt/conjur/etc/possum.conf" 2> /dev/null; then
+    oidc_flag=true
+  fi
+
+  for node in ${nodes}; do
+    echo "Enabling the authenticators on ${node}..."
+    docker compose exec -T "${node}" bash -c "
+      sed -i '/^CONJUR_AUTHENTICATORS=/d' /opt/conjur/etc/conjur.conf
+      echo '${list}' >> /opt/conjur/etc/conjur.conf
+      if [ '${oidc_flag}' = true ]; then
+        grep -q '^CONJUR_FEATURE_OIDC_AUTHENTICATOR_V1_ENABLED=' /opt/conjur/etc/possum.conf \
+          || echo 'CONJUR_FEATURE_OIDC_AUTHENTICATOR_V1_ENABLED=true' >> /opt/conjur/etc/possum.conf
+      fi
+      sv restart conjur
+    " > /dev/null 2>&1 || echo "Warning: could not enable the authenticators on ${node}."
+    _wait_for_node "${node}"
+  done
+}
+
+# Installs Keycloak's certificate in the trust store of every other running node, so that they can validate tokens
+# (OIDC) and fetch the signing keys (JWT) over TLS; --provision-keycloak does this on the leader.
+function _trust_keycloak_on_other_nodes {
+  [[ $DRY_RUN = false ]] || return 0
+  local node
+  for node in $(_other_nodes); do
+    echo "Trusting the Keycloak certificate on ${node}..."
+    docker compose cp artifacts/keycloak/fetch-certificate "${node}:/tmp/fetch-certificate" > /dev/null 2>&1 \
+      && docker compose exec -T "${node}" bash -c 'chmod +x /tmp/fetch-certificate && /tmp/fetch-certificate' > /dev/null 2>&1 \
+      || echo "Warning: could not install the Keycloak certificate on ${node}."
+  done
 }
 
 function _single_master {
@@ -930,6 +1446,12 @@ function _cli {
 
 function _append_conjur_authenticator {
   authenticator=$1
+  # Running a provision command twice must not list the authenticator twice.
+  if [[ $DRY_RUN = false ]] && docker compose exec -T conjur-master-1.mycompany.local \
+      bash -c "grep -E '^CONJUR_AUTHENTICATORS=' /opt/conjur/etc/conjur.conf | tr ',=' '\n\n' | grep -qxF '$authenticator'" 2> /dev/null; then
+    echo "Authenticator ${authenticator} is already enabled."
+    return
+  fi
   if _run conjur-master-1.mycompany.local 'grep -q "CONJUR_AUTHENTICATORS" /opt/conjur/etc/conjur.conf'; then
     authenticator=$(echo $authenticator | sed 's/\//\\\//g')
     _run conjur-master-1.mycompany.local "sed -i 's/\(CONJUR_AUTHENTICATORS=.*\)/\1,$authenticator/' /opt/conjur/etc/conjur.conf"
@@ -1287,6 +1809,11 @@ while true ; do
     --enable-mke ) CMD="_enable_mke" ; shift ;;
     --provision-standbys ) CMD='_setup_standbys' ; shift ;;
     --provision-keycloak ) CMD='_setup_keycloak' ; shift ;;
+    --provision-cert-auth ) CMD='_setup_cert_auth' ; shift ;;
+    --provision-jwt ) CMD='_setup_jwt' ; shift ;;
+    --jwt-token ) shift ; _print_jwt_token "$1" ; exit ;;
+    --provision-ldap-jit ) CMD='_setup_ldap_jit' ; shift ;;
+    --provision-ldap-sync ) CMD='_setup_ldap_sync' ; shift ;;
     --reenroll-failed-leader ) shift ; CMD="_reenroll_failed_leader $1 $2" ; shift ; shift ;;
     --restore-from-backup ) CMD='_restore_from_backup' ; shift ;;
     --rotate-custom-certificates ) CMD='_rotate_certificates' ; shift ;;

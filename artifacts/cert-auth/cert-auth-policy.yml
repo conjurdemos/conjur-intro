@@ -1,0 +1,35 @@
+# Certificate authenticator (authn-cert/intro): a host authenticates with a client certificate that
+# was issued by the CA stored in the `ca-cert` variable and whose URI SAN matches the host annotation.
+- !policy
+  id: conjur/authn-cert/intro
+  body:
+  - !webservice
+    annotations:
+      description: Authentication service for clients that present a certificate.
+
+  # The CA that issued the client certificates; the only trust anchor the authenticator uses
+  - !variable ca-cert
+
+  - !group users
+
+  - !permit
+    role: !group users
+    privilege: [ read, authenticate ]
+    resource: !webservice
+
+# The host name in the authenticate URL, and the URI SAN that its certificate must carry
+- !host
+  id: cert-client
+  annotations:
+    authn-cert/intro/san-uri: spiffe://trust.com/workload-id
+
+- !grant
+  role: !group conjur/authn-cert/intro/users
+  member: !host cert-client
+
+- !variable cert-secret
+
+- !permit
+  role: !host cert-client
+  privilege: [ read, execute ]
+  resource: !variable cert-secret

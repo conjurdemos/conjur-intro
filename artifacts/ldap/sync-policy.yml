@@ -1,0 +1,49 @@
+# LDAP Sync: configuration for importing users and groups from the LDAP server
+# started by bin/dap --provision-ldap-sync.
+- !policy
+  id: conjur/ldap-sync
+  body:
+  # The identity the ldap-sync service uses to read its configuration and the
+  # bind password (host/conjur/ldap-sync). It owns the resources below.
+  - !host
+
+  - !webservice
+    owner: !host
+
+  # The sync creates this group if it is missing, with an API call that the appliance no longer has,
+  # so it has to exist beforehand.
+  - !group
+    owner: !host
+
+  # The service checks these privileges on the webservice for whoever calls it
+  - !permit
+    role: !user /admin
+    privilege: [ read, update, execute ]
+    resource: !webservice
+
+  - !resource
+    id: default
+    owner: !host
+    kind: configuration
+    annotations:
+      ldap-sync/connect_type: ssl
+      ldap-sync/host: ldap-server
+      ldap-sync/port: 636
+      ldap-sync/bind_dn: cn=admin,dc=conjur,dc=net
+      ldap-sync/base_dn: dc=conjur,dc=net
+      ldap-sync/user_filter: (objectClass=inetOrgPerson)
+      ldap-sync/group_filter: (objectClass=groupOfNames)
+      # The demo users are named by uid (alice); the default, cn, would give 'Alice'
+      ldap-sync/user_attribute_mapping/name: uid
+      # Import every user the filter finds, not only the members of imported groups: the member lookup
+      # filters on a `dn` attribute, which OpenLDAP does not have, so it finds nobody.
+      ldap-sync/sync_all_users: "true"
+
+  - !variable
+    id: bind-password/default
+    owner: !host
+
+  # CA that signed the LDAP server certificate (needed for connect_type ssl and tls)
+  - !variable
+    id: tls-ca-cert/default
+    owner: !host
